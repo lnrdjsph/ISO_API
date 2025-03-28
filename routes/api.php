@@ -20,8 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/test', [TestController::class, 'testConnection']);
-
-
-
-Route::post('/get-user-data', [UserController::class, 'getUserData']);
+Route::prefix('iso-api')->group(function () {
+    Route::get('/test', [TestController::class, 'testConnection']);
+    Route::post('/get-user-data', [UserController::class, 'getUserData']);
+});
