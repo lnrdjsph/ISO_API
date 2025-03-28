@@ -24,3 +24,4 @@ Route::prefix('iso-api')->group(function () {
     Route::get('/test', [TestController::class, 'testConnection']);
     Route::post('/get-user-data', [UserController::class, 'getUserData']);
 });
+echo 'test';
