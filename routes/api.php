@@ -4,6 +4,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OtpController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
@@ -23,4 +25,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::prefix('iso-api')->group(function () {
     Route::get('/test', [TestController::class, 'testConnection']);
     Route::post('/get-user-data', [UserController::class, 'getUserData']);
+    Route::post('/otp-send', [OtpController::class, 'sendOtp']);
+    Route::post('/otp-verify', [OtpController::class, 'verifyOtp']);
 });
