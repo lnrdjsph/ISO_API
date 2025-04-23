@@ -7,16 +7,20 @@ use Illuminate\Support\Facades\DB;
 
 class UserPoints extends Model
 {
-    protected $table = 'user_points'; // Optional if unused
+    // Define the table if it doesn't follow Laravel's convention
+    protected $table = 'user_points';  // Use the correct table name if applicable
+
+    // Define any relationships, methods, or properties if needed
 
     /**
-     * Get the loyalty points based on card number.
+     * Get the loyalty points based on card number
      *
      * @param string $cardNumber
-     * @return float|null
+     * @return array
      */
-    public static function getLoyaltyPoints(string $cardNumber): ?float
+    public static function getLoyaltyPoints($cardNumber)
     {
+        // SQL query to calculate the loyalty points
         $query = "
             SELECT 
                 ((NVL(ACCT_BAL.TOTAL_OUTSTANDING, 0) / 100) - (NVL(ACCT_BAL.NOT_SETTLE, 0) / 100)) AS LLTY_POINTS
@@ -31,8 +35,9 @@ class UserPoints extends Model
                 AND ACCT_BAL.BALANCE_TYPE = 'ACCT_BAL'
         ";
 
+        // Execute the query with the parameter and return the result
         $result = DB::select($query, ['card_number' => $cardNumber]);
 
-        return $result[0]->LLTY_POINTS ?? null;
+        return $result;  // Return the result (loyalty points)
     }
 }
