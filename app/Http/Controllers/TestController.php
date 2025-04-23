@@ -22,7 +22,7 @@ class TestController extends Controller
                     $query->where('CRD.CARD_NO', 'like', '88887241%')
                           ->orWhere('CRD.CARD_NO', 'like', '88887240%');
                 })
-                ->limit(100)
+                ->limit(200)
                 ->get()
                 ->groupBy('card_no')
                 ->map(function ($items) {
