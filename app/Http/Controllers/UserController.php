@@ -9,17 +9,18 @@ class UserController extends Controller
 {
     public function getUserData(Request $request)
     {
-        $cardNo = $request->input('card_no');
+        $cardNo = trim($request->input('card_no'));
 
-        // Handle null, empty, or non-16 digit values
+        // 1. Validate input format
         if (empty($cardNo) || strlen($cardNo) !== 16 || !is_numeric($cardNo)) {
             return response()->json([
-                "message" => "Invalid card number",
+                "message" => "Invalid card number format. Must be 16 numeric digits.",
                 "status" => "400",
             ]);
         }
 
         try {
+            // 2. Validate prefix
             $cardType = '';
             if (strpos($cardNo, '88887241') === 0) {
                 $cardType = 'MBC 1';
@@ -27,11 +28,12 @@ class UserController extends Controller
                 $cardType = 'MBC 2';
             } else {
                 return response()->json([
-                    "message" => "Invalid card number",
+                    "message" => "Card prefix not recognized. Must start with 88887241 or 88887240.",
                     "status" => "400",
                 ]);
             }
 
+            // 3. Query the database
             $users = DB::table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
                 ->select('CRD.*')
@@ -58,13 +60,15 @@ class UserController extends Controller
                     return $data;
                 });
 
+            // 4. No matching record
             if ($users->isEmpty()) {
                 return response()->json([
-                    "message" => "Invalid card number",
+                    "message" => "Card not found or inactive in database.",
                     "status" => "400",
                 ]);
             }
 
+            // 5. Success
             return response()->json([
                 "message" => "success",
                 "status" => "200",
@@ -72,10 +76,11 @@ class UserController extends Controller
             ]);
         } catch (\Illuminate\Database\QueryException $ex) {
             return response()->json([
-                "message" => "error",
+                "message" => "Database query error.",
                 "status" => "500",
                 "error" => $ex->getMessage()
             ]);
         }
     }
+
 }

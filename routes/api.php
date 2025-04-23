@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\Icard\UserPointsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,4 +28,6 @@ Route::prefix('iso-api')->group(function () {
     Route::post('/get-user-data', [UserController::class, 'getUserData']);
     Route::post('/otp-send', [OtpController::class, 'sendOtp']);
     Route::post('/otp-verify', [OtpController::class, 'verifyOtp']);
+    Route::post('/loyalty-points', [UserPointsController::class, 'getLoyaltyPoints']);
+   
 });
