@@ -17,19 +17,19 @@ class OtpController extends Controller
     public function sendOtp(Request $request)
     {
         $otp = $this->otpService->generateOtp($request->ip());
-    
+
         return response()->json([
             'message' => 'OTP sent successfully.',
             'otp' => config('app.debug') ? $otp : null
         ]);
     }
-    
+
     public function verifyOtp(Request $request)
     {
         $request->validate(['otp' => 'required|digits:6']);
-    
+
         $result = $this->otpService->verifyOtp($request->ip(), $request->otp);
-    
+
         return response()->json($result);
     }
 }
