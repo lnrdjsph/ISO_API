@@ -14,13 +14,10 @@ class OtpService
      */
     public function generateOtp($key)
     {
-<<<<<<< HEAD
 	$otp = rand(100000, 999999);
 	$createdAt = Carbon::now('Asia/Manila'); // Set timezone to +8 (Asia/Manila)
-=======
         $otp = rand(100000, 999999);
         $createdAt = Carbon::now('Asia/Manila'); // Set timezone to +8 (Asia/Manila)
->>>>>>> 24c577ccc084027ffdc951912fcc879b989faf94
         Cache::put("otp_{$key}", ['otp' => $otp, 'created_at' => $createdAt], $this->otpExpiration);
         return $otp;
     }
