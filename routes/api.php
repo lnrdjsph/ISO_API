@@ -33,3 +33,8 @@ Route::prefix('iso-api')->group(function () {
 
    
 });
+
+
+use App\Http\Controllers\OracleRmsController;
+
+Route::post('/oracle-rms/item', [OracleRmsController::class, 'fetchItemData']);

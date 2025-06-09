@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateOrdersTable extends Migration
+{
+    public function up()
+    {
+        Schema::connection('oracle_local')->create('orders', function (Blueprint $table) {
+            $table->increments('id'); // Use increments for Oracle
+            $table->string('channel_order');
+            $table->string('time_order'); // Use string instead of time()
+            $table->string('payment_center')->nullable();
+            $table->string('mode_payment')->nullable();
+            $table->date('payment_date')->nullable();
+            $table->string('mode_dispatching')->nullable();
+            $table->date('delivery_date')->nullable();
+            $table->text('address')->nullable();
+            $table->string('landmark')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('orders');
+    }
+}

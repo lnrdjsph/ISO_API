@@ -11,7 +11,7 @@ class TestController extends Controller
     public function testConnection()
     {
         try {
-            $users = DB::table('VDC_P_CRD.CRD_DM_CRD AS CRD')
+            $users = DB::connection('oracle')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
                 ->select('CRD.*')
                 ->addSelect('CNTC.CNCT_LINE_TYP', 'CNTC.CNCT_VAL')
@@ -22,7 +22,7 @@ class TestController extends Controller
                     $query->where('CRD.CARD_NO', 'like', '88887241%')
                           ->orWhere('CRD.CARD_NO', 'like', '88887240%');
                 })
-                ->limit(200)
+                ->limit(1000)
                 ->get()
                 ->groupBy('card_no')
                 ->map(function ($items) {
