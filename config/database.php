@@ -33,7 +33,46 @@ return [
     |
     */
 
-    'connections' => [
+        'connections' => [
+        
+        'oracle_local' => [
+            'driver'   => env('LOCAL_DB_CONNECTION', 'oracle'),
+            'host'     => env('LOCAL_DB_HOST', 'localhost'),
+            'port'     => env('LOCAL_DB_PORT', '1522'),
+            'database' => env('LOCAL_DB_SERVICE_NAME', 'XE'),  // <== use "database" here
+            'username' => env('LOCAL_DB_USERNAME', 'system'),
+            'password' => env('LOCAL_DB_PASSWORD', 'biboy123'),
+            'charset'  => 'AL32UTF8',
+            'prefix'   => '',
+        ],
+
+
+        'oracle_mbc' => [
+            'driver'   => env('DB_CONNECTION', 'oracle'),
+            'host'     => env('DB_HOST', '10.128.0.23'),
+            'port'     => env('DB_PORT', '1521'),
+            'database' => env('DB_SERVICE_NAME', 'orcl1'), 
+            'username' => env('DB_USERNAME', 'crdappmgr'),
+            'password' => env('DB_PASSWORD', 'crdappmgr'),
+            'charset'  => 'AL32UTF8',
+            'prefix'   => '',
+        ],
+
+
+        'oracle_rms' => [
+            'driver'         => 'oracle',
+            'tns'            => '',
+            'host'           => env('ORACLE_RMS_HOST', '172.100.20.141'),
+            'port'           => env('ORACLE_RMS_PORT', '1521'),
+            'database'       => env('ORACLE_RMS_DATABASE', 'MGRMST'),
+            'username'       => env('ORACLE_RMS_USERNAME', 'rmsprd'),
+            'password'       => env('ORACLE_RMS_PASSWORD', 'noida123'),
+            'charset'        => 'AL32UTF8',
+            'prefix'         => '',
+            'prefix_schema'  => env('DB_SCHEMA_PREFIX', ''),
+            'edition'        => env('DB_EDITION', 'ora$base'),
+            'server_version' => env('DB_SERVER_VERSION', '11g'),
+        ],
 
         'sqlite' => [
             'driver' => 'sqlite',

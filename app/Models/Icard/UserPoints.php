@@ -36,7 +36,7 @@ class UserPoints extends Model
         ";
 
         // Execute the query with the parameter and return the result
-        $result = DB::select($query, ['card_number' => $cardNumber]);
+        $result = DB::connection('oracle_mbc')->select($query, ['card_number' => $cardNumber]);
 
         return $result;  // Return the result (loyalty points)
     }

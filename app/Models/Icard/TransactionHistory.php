@@ -12,7 +12,7 @@ class TransactionHistory extends Model
 
     public static function getRecentTransactions($cardNumber)
     {
-        return DB::select("
+        return DB::connection('oracle_mbc')->select("
             SELECT * FROM (
                 SELECT 
                     TO_CHAR(TRAN.ADDED_DATE, 'DD-MON-YYYY HH24:MI') AS TRANSACTION_DATE,
