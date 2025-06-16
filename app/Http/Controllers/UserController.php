@@ -37,8 +37,10 @@ class UserController extends Controller
             $users = DB::connection('oracle')
                 ->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
+                ->leftJoin('LOYALTY_MASTER AS LM', 'CRD.CARD_NO', '=', 'LM.IC_MRC_CARD_NO')
                 ->select('CRD.*')
                 ->addSelect('CNTC.CNCT_LINE_TYP', 'CNTC.CNCT_VAL')
+                ->addSelect('LM.MP_EMAIL') // Add this to get the email from LOYALTY_MASTER
                 ->where('CRD.CARD_TYP', 'LLTY')
                 ->whereIn('CRD.PRODUCT_TYP', ['INST_CUST_CARD', 'INST_LOY'])
                 ->where('CRD.STATUS_CODE', '1')
@@ -49,17 +51,21 @@ class UserController extends Controller
                 ->map(function ($items) use ($cardType) {
                     $first = $items->first();
                     $meta = [];
+
                     foreach ($items as $item) {
                         if ($item->cnct_line_typ) {
                             $meta[$item->cnct_line_typ] = $item->cnct_val;
                         }
                     }
+
                     $data = (array) $first;
                     unset($data['cnct_line_typ'], $data['cnct_val']);
                     $data['cnct_meta'] = $meta;
                     $data['card_type'] = $cardType;
+
                     return $data;
                 });
+
 
             // 4. No matching record
             if ($users->isEmpty()) {

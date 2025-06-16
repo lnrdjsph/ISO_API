@@ -61,11 +61,8 @@ aside a:hover::after {
                 </li>
                 <li class="rounded">
                     <div class="{{ request()->is('products*') ? 'bg-gray-100  border-l-8 border-blue-600' : '' }} rounded">
-                        <a href="{{ route('products.index') }}"
-                        class="block px-4 py-2 hover:text-gray-500 font-medium
-                        {{ request()->routeIs('products.index') ? 'font-bold' : '' }}">
-                            Products
-                        </a>
+
+                        
 
                         @if (request()->is('products*'))
                         <ul class="mt-1 rounded transition-all duration-300">

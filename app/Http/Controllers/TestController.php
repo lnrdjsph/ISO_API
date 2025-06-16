@@ -13,31 +13,38 @@ class TestController extends Controller
         try {
             $users = DB::connection('oracle')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
+                ->leftJoin('LOYALTY_MASTER AS LM', 'CRD.CARD_NO', '=', 'LM.IC_MRC_CARD_NO')
                 ->select('CRD.*')
                 ->addSelect('CNTC.CNCT_LINE_TYP', 'CNTC.CNCT_VAL')
+                ->addSelect('LM.MP_EMAIL') // Include email from LOYALTY_MASTER
                 ->where('CRD.CARD_TYP', 'LLTY')
                 ->whereIn('CRD.PRODUCT_TYP', ['INST_CUST_CARD', 'INST_LOY'])
                 ->where('CRD.STATUS_CODE', '1')
+                ->where('CRD.CARD_NO', '8888724000001946')
                 ->where(function ($query) {
                     $query->where('CRD.CARD_NO', 'like', '88887241%')
-                          ->orWhere('CRD.CARD_NO', 'like', '88887240%');
+                        ->orWhere('CRD.CARD_NO', 'like', '88887240%');
                 })
-                ->limit(1000)
+                ->limit(10)
                 ->get()
                 ->groupBy('card_no')
                 ->map(function ($items) {
                     $first = $items->first();
                     $meta = [];
+
                     foreach ($items as $item) {
                         if ($item->cnct_line_typ) {
                             $meta[$item->cnct_line_typ] = $item->cnct_val;
                         }
                     }
+
                     $data = (array) $first;
                     unset($data['cnct_line_typ'], $data['cnct_val']); // Remove CNCT fields
                     $data['cnct_meta'] = $meta;
+
                     return $data;
                 });
+
         
             return response()->json([
                 "message" => "success",
