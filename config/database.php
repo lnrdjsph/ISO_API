@@ -34,18 +34,6 @@ return [
     */
 
         'connections' => [
-        
-        'oracle_local' => [
-            'driver'   => env('LOCAL_DB_CONNECTION', 'oracle'),
-            'host'     => env('LOCAL_DB_HOST', 'localhost'),
-            'port'     => env('LOCAL_DB_PORT', '1522'),
-            'database' => env('LOCAL_DB_SERVICE_NAME', 'XE'),  // <== use "database" here
-            'username' => env('LOCAL_DB_USERNAME', 'system'),
-            'password' => env('LOCAL_DB_PASSWORD', 'biboy123'),
-            'charset'  => 'AL32UTF8',
-            'prefix'   => '',
-        ],
-
 
         'oracle_mbc' => [
             'driver'   => env('DB_CONNECTION', 'oracle'),
