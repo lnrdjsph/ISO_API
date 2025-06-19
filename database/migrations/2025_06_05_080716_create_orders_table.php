@@ -8,7 +8,7 @@ class CreateOrdersTable extends Migration
 {
     public function up()
     {
-        Schema::connection('oracle_local')->create('orders', function (Blueprint $table) {
+        Schema::connection('mysql')->create('orders', function (Blueprint $table) {
             $table->increments('id'); // Use increments for Oracle
             $table->string('channel_order');
             $table->string('time_order'); // Use string instead of time()

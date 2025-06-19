@@ -8,7 +8,7 @@ class CreateOrderItemsTable extends Migration
 {
     public function up()
     {
-        Schema::connection('oracle_local')->create('order_items', function (Blueprint $table) {
+        Schema::connection('mysql')->create('order_items', function (Blueprint $table) {
             $table->increments('id'); // Use increments for Oracle
             $table->unsignedInteger('order_id'); // Foreign key, unsigned int
             
