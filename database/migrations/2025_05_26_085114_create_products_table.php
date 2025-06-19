@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::connection('oracle_local')->create('PRODUCTS', function (Blueprint $table) {
+        Schema::connection('mysql')->create('PRODUCTS', function (Blueprint $table) {
             $table->bigIncrements('ID');
             $table->string('SKU')->unique();
             $table->string('NAME');

@@ -25,9 +25,9 @@ class ProductController extends Controller
                 $direction = 'asc';
             }
 
-            $products = DB::connection('oracle_local')
-                ->table('PRODUCTS')
-                ->select('SKU', 'NAME')
+            $products = DB::connection('mysql')
+                ->table('products')
+                ->select('SKU as sku', 'NAME as name')
                 ->orderBy($sort, $direction)
                 ->paginate(10)
                 ->appends($request->query());
@@ -93,8 +93,8 @@ class ProductController extends Controller
     {
         $query = strtolower($request->query('query'));
 
-        $results = DB::connection('oracle_local')
-            ->table('PRODUCTS')
+        $results = DB::connection('mysql')
+            ->table('products')
             ->select('SKU as sku', 'NAME as name')
             ->where(function ($q) use ($query) {
                 $q->whereRaw('LOWER(NAME) LIKE ?', ["%{$query}%"])
@@ -126,8 +126,8 @@ class ProductController extends Controller
         $request->validate([
             'sku' => 'required|array',
             'sku.*' => ['required', function ($attribute, $value, $fail) {
-                $exists = DB::connection('oracle_local')
-                    ->table('PRODUCTS') // Consistent table name
+                $exists = DB::connection('mysql')
+                    ->table('products') // Consistent table name
                     ->where('SKU', strtoupper($value))
                     ->exists();
                 if ($exists) {
@@ -148,7 +148,7 @@ class ProductController extends Controller
             ];
         }
 
-        DB::connection('oracle_local')->table('PRODUCTS')->insert($insertData);
+        DB::connection('mysql')->table('products')->insert($insertData);
 
         return redirect()->back()->with('success', 'Products added successfully.');
     }
@@ -200,8 +200,8 @@ class ProductController extends Controller
                 }
 
                 // Check if SKU already exists
-                $exists = DB::connection('oracle_local')
-                    ->table('PRODUCTS')
+                $exists = DB::connection('mysql')
+                    ->table('products')
                     ->where('SKU', strtoupper($sku))
                     ->exists();
 
@@ -221,7 +221,7 @@ class ProductController extends Controller
 
             // Bulk insert valid records
             if (!empty($insertData)) {
-                DB::connection('oracle_local')->table('PRODUCTS')->insert($insertData);
+                DB::connection('mysql')->table('products')->insert($insertData);
             }
 
             // Prepare response messages
@@ -309,8 +309,8 @@ class ProductController extends Controller
 
             // Check for existing SKUs in batch
             if (!empty($skusToCheck)) {
-                $existingSkus = DB::connection('oracle_local')
-                    ->table('PRODUCTS')
+                $existingSkus = DB::connection('mysql')
+                    ->table('products')
                     ->whereIn('SKU', $skusToCheck)
                     ->pluck('SKU')
                     ->toArray();

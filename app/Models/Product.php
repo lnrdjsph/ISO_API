@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\DB;
 
 class Product
 {
-    protected static $connection = 'oracle_local';
-    protected static $table = 'PRODUCTS';
+    protected static $connection = 'mysql';
+    protected static $table = 'products';
 
     public static function all()
     {

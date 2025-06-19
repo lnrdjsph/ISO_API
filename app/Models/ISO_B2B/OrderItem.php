@@ -9,7 +9,7 @@ class OrderItem extends Model
 {
     use HasFactory;
 
-    protected $connection = 'oracle_local';  // specify connection
+    protected $connection = 'mysql';  // specify connection
 
     protected $table = 'order_items';
 
