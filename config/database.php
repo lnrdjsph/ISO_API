@@ -36,12 +36,12 @@ return [
         'connections' => [
 
         'oracle_mbc' => [
-            'driver'   => env('DB_CONNECTION', 'oracle'),
-            'host'     => env('DB_HOST', '10.128.0.23'),
-            'port'     => env('DB_PORT', '1521'),
-            'database' => env('DB_SERVICE_NAME', 'orcl1'), 
-            'username' => env('DB_USERNAME', 'crdappmgr'),
-            'password' => env('DB_PASSWORD', 'crdappmgr'),
+            'driver'   => env('MBC_DB_CONNECTION', 'oracle'),
+            'host'     => env('MBC_DB_HOST', '10.128.0.23'),
+            'port'     => env('MBC_DB_PORT', '1521'),
+            'database' => env('MBC_DB_SERVICE_NAME', 'orcl1'), 
+            'username' => env('MBC_DB_USERNAME', 'crdappmgr'),
+            'password' => env('MBC_DB_PASSWORD', 'crdappmgr'),
             'charset'  => 'AL32UTF8',
             'prefix'   => '',
         ],
