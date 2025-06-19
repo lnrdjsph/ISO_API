@@ -11,7 +11,7 @@ class TestController extends Controller
     public function testConnection()
     {
         try {
-            $users = DB::connection('oracle')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
+            $users = DB::connection('oracle_mbc')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
                 ->leftJoin('LOYALTY_MASTER AS LM', 'CRD.CARD_NO', '=', 'LM.IC_MRC_CARD_NO')
                 ->select('CRD.*')
