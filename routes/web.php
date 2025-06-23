@@ -28,7 +28,9 @@ Route::get('/', function () {
 // routes/web.php
 
 use App\Http\Controllers\ProductController;
-
+Route::get('/', function () {
+    return 'Laravel is working!';
+});
 Route::prefix('products')->name('products.')->group(function () {
     Route::get('/', [ProductController::class, 'index'])->name('index');
     Route::get('/search', [ProductController::class, 'search'])->name('search');
