@@ -65,29 +65,34 @@ aside a:hover::after {
                         
 
                         @if (request()->is('products*'))
-                        <ul class="mt-1 rounded transition-all duration-300">
-                            <li class="relative">
-                                <a href="{{ route('products.index') }}"
-                                class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
-                                {{ request()->routeIs('products.index') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
-                                    Product List
-                                </a>
-                            </li>
-                            <li class="relative">
-                                <a href="{{ route('products.create') }}"
-                                class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
-                                {{ request()->routeIs('products.create') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
-                                    Add New Product
-                                </a>
-                            </li>
-                            <li class="relative">
-                                <a href="{{ route('products.import') }}"
-                                class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
-                                {{ request()->routeIs('products.import.show') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
-                                    Import CSV
-                                </a>
-                            </li>
-                        </ul>
+                            <ul class="mt-1 rounded transition-all duration-300">
+                                <li class="relative">
+                                    <a href="{{ route('products.index') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
+                                    {{ request()->routeIs('products.index') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                                        Product List
+                                    </a>
+                                </li>
+                                <li class="relative">
+                                    <a href="{{ route('products.create') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
+                                    {{ request()->routeIs('products.create') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                                        Add New Product
+                                    </a>
+                                </li>
+                                <li class="relative">
+                                    <a href="{{ route('products.import') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
+                                    {{ request()->routeIs('products.import.show') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                                        Import CSV
+                                    </a>
+                                </li>
+                            </ul>
+                        @else
+                            <a href="{{ route('products.index') }}" 
+                            class="block px-4 py-2 rounded hover:bg-gray-100">
+                            Products
+                            </a>
                         @endif
                     </div>
                 </li>
