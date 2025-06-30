@@ -594,201 +594,195 @@ class RMSCommerceSynchronizationController extends Controller
      */
 
 
-private function uploadFileViaSSH($filename, $remoteDirectory)
-{
-    $filename = trim((string) $filename);
-    Log::debug("Starting SSH upload process", ['filename' => $filename, 'type' => gettype($filename), 'action' => 'validation']);
+    private function uploadFileViaSSH($filename, $remoteDirectory)
+    {
+        $filename = trim((string) $filename);
+        Log::debug("Starting SSH upload process", ['filename' => $filename, 'type' => gettype($filename), 'action' => 'validation']);
 
-    if (!preg_match('/\.csv$/i', $filename)) {
-        Log::error("Invalid file type - only CSV files allowed", ['filename' => $filename, 'action' => 'validation']);
-        return false;
-    }
-
-    $localFilePath = storage_path('app/sync/output/' . $filename);
-    $localFilePath = (string) $localFilePath;
-    Log::debug("Local file verification", ['path' => $localFilePath, 'exists' => file_exists($localFilePath), 'action' => 'file_check']);
-
-    if (!file_exists($localFilePath)) {
-        Log::error("Local file not found", ['path' => $localFilePath, 'action' => 'file_check']);
-        return false;
-    }
-
-    $fileSize = filesize($localFilePath);
-    $startTime = microtime(true);
-    $lastLogTime = $startTime;
-    $lastLoggedPercent = 0;
-
-    $remoteDirectory = rtrim((string) $remoteDirectory, '/');
-    $remoteFilePath = (string) "{$remoteDirectory}/{$filename}";
-
-    Log::debug("Remote path configuration", [
-        'directory' => $remoteDirectory,
-        'full_path' => $remoteFilePath,
-        'file_size_bytes' => $fileSize,
-        'file_size_human' => $this->formatBytes($fileSize),
-        'action' => 'path_setup'
-    ]);
-
-try {
-    $host = (string) $this->config['sftp']['host'];
-    $port = (string) ($this->config['sftp']['port'] ?? '22');
-    $user = (string) $this->config['sftp']['user'];
-    $pass = (string) $this->config['sftp']['pass'];
-
-    Log::debug("SSH connection initialization", ['host' => $host, 'port' => $port, 'user' => $user, 'pass_length' => strlen($pass), 'action' => 'ssh_connect']);
-
-    $ssh = new \phpseclib3\Net\SSH2($host, (int) $port);
-    $ssh->setTimeout(2);
-
-    if (!$ssh->login($user, $pass)) {
-        throw new \Exception("SSH login failed");
-    }
-
-    Log::info("SSH authentication successful", ['action' => 'ssh_auth']);
-
-    if (!$ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX)) {
-        throw new \Exception("Failed to open shell");
-    }
-
-    $mkdirCmd = "mkdir -p " . escapeshellarg($remoteDirectory) . "\n";
-    Log::debug("Creating remote directory", ['command' => $mkdirCmd, 'action' => 'directory_create']);
-    $ssh->write($mkdirCmd);
-    $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
-
-    $ssh->write("cat > " . escapeshellarg($remoteFilePath) . "\n");
-
-    $handle = fopen($localFilePath, 'r');
-    $bytesSent = 0;
-    $chunkSize = 8192;
-
-    while (!feof($handle)) {
-        $chunk = fread($handle, $chunkSize);
-        $ssh->write($chunk);
-        $bytesSent += strlen($chunk);
-
-        $percent = round(($bytesSent / $fileSize) * 100, 2);
-        $currentTime = microtime(true);
-
-        if ($percent - $lastLoggedPercent >= 5 || ($currentTime - $lastLogTime) >= 10) {
-            $elapsed = $currentTime - $startTime;
-            $speed = $bytesSent / $elapsed;
-            $remaining = ($fileSize - $bytesSent) / max($speed, 1);
-
-            $progressData = [
-                'filename' => $filename,
-                'percent_complete' => $percent,
-                'bytes_sent' => $bytesSent,
-                'bytes_total' => $fileSize,
-                'transfer_rate_kb' => round($speed / 1024, 2),
-                'time_elapsed_seconds' => round($elapsed, 2),
-                'time_remaining_seconds' => round($remaining, 2),
-                'action' => 'transfer_progress'
-            ];
-
-            Log::info("Upload progress update", $progressData);
-            error_log("[Progress] " . json_encode($progressData));
-
-            $lastLogTime = $currentTime;
-            $lastLoggedPercent = $percent;
-        }
-    }
-    fclose($handle);
-
-    $ssh->write("\x04");
-    $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
-
-    $totalTime = microtime(true) - $startTime;
-    $avgSpeed = $fileSize / $totalTime;
-
-    Log::info("File transfer completed", [
-        'filename' => $filename,
-        'bytes_sent' => $bytesSent,
-        'expected_size' => $fileSize,
-        'total_time_seconds' => round($totalTime, 2),
-        'average_speed_kb' => round($avgSpeed / 1024, 2),
-        'action' => 'transfer_complete'
-    ]);
-
-    $ssh->write("stat -c%s " . escapeshellarg($remoteFilePath) . "\n");
-    $rawStatOutput = $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
-
-    // Extract the file size from the second line of the output
-    $lines = preg_split('/\r\n|\n|\r/', trim($rawStatOutput));
-
-    // Find the first numeric value in the lines
-    $remoteSize = 0;
-    foreach ($lines as $line) {
-        if (is_numeric(trim($line))) {
-            $remoteSize = (int) trim($line);
-            break;
-        }
-    }
-
-    Log::debug("Upload verification started", [
-        'remote_size' => $remoteSize,
-        'local_size' => $fileSize,
-        'raw_response' => $rawStatOutput,
-        'action' => 'size_verification'
-    ]);
-
-    if ((int) $remoteSize !== (int) $fileSize) {
-        throw new \Exception("Size mismatch (local: $fileSize, remote: $remoteSize)");
-    }
-
-
-    $ssh->write("chmod 644 " . escapeshellarg($remoteFilePath) . "\n");
-    $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
-
-    Log::info("File upload successfully completed", [
-        'filename' => $filename,
-        'remote_path' => $remoteFilePath,
-        'size_bytes' => $fileSize,
-        'size_human' => $this->formatBytes($fileSize),
-        'total_transfer_time_seconds' => round($totalTime, 2),
-        'average_speed_kb' => round($avgSpeed / 1024, 2),
-        'action' => 'upload_success'
-    ]);
-
-    return true;
-
-} catch (\Exception $e) {
-    Log::debug("Attempting to clean up failed upload", ['action' => 'cleanup']);
-    Log::error("SSH upload failed", [
-        'error' => $e->getMessage(),
-        'local_path' => $localFilePath,
-        'remote_path' => $remoteFilePath,
-        'bytes_transferred' => $bytesSent,
-        'percent_complete' => round(($bytesSent / $fileSize) * 100, 2),
-        'time_elapsed_seconds' => round(microtime(true) - $startTime, 2),
-        'trace' => $e->getTraceAsString(),
-        'action' => 'upload_failed'
-    ]);
-    return false;
-}
- catch (\Exception $e) {
-        $totalTime = isset($startTime) ? microtime(true) - $startTime : 0;
-
-        if (isset($ssh)) {
-            $ssh->write("rm -f " . escapeshellarg($remoteFilePath) . "\n");
-            $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
-            Log::debug("Attempting to clean up failed upload", ['action' => 'cleanup']);
+        if (!preg_match('/\.csv$/i', $filename)) {
+            Log::error("Invalid file type - only CSV files allowed", ['filename' => $filename, 'action' => 'validation']);
+            return false;
         }
 
-        Log::error("SSH upload failed", [
-            'error' => $e->getMessage(),
-            'local_path' => $localFilePath,
-            'remote_path' => $remoteFilePath,
-            'bytes_transferred' => $bytesSent ?? 0,
-            'percent_complete' => isset($bytesSent) ? round(($bytesSent / $fileSize) * 100, 2) : 0,
-            'time_elapsed_seconds' => round($totalTime, 2),
-            'trace' => $e->getTraceAsString(),
-            'action' => 'upload_failed'
+        $localFilePath = storage_path('app/sync/output/' . $filename);
+        $localFilePath = (string) $localFilePath;
+
+        Log::debug("Local file verification", ['path' => $localFilePath, 'exists' => file_exists($localFilePath), 'action' => 'file_check']);
+
+        if (!file_exists($localFilePath)) {
+            Log::error("Local file not found", ['path' => $localFilePath, 'action' => 'file_check']);
+            return false;
+        }
+
+        // Force set local file permission to 775
+        chmod($localFilePath, 0775);
+
+        $fileSize = filesize($localFilePath);
+        if ($fileSize == 0) {
+            Log::error("File is empty, skipping upload.", ['filename' => $filename, 'action' => 'empty_file']);
+            return false;
+        }
+
+        $startTime = microtime(true);
+        $lastLogTime = $startTime;
+        $lastLoggedPercent = 0;
+
+        $remoteDirectory = rtrim((string) $remoteDirectory, '/');
+        $remoteFilePath = "{$remoteDirectory}/{$filename}";
+
+        Log::debug("Remote path configuration", [
+            'directory' => $remoteDirectory,
+            'full_path' => $remoteFilePath,
+            'file_size_bytes' => $fileSize,
+            'file_size_human' => $this->formatBytes($fileSize),
+            'action' => 'path_setup'
         ]);
 
-        return false;
-    }
-}
+        try {
+            $host = (string) $this->config['sftp']['host'];
+            $port = (string) ($this->config['sftp']['port'] ?? '22');
+            $user = (string) $this->config['sftp']['user'];
+            $pass = (string) $this->config['sftp']['pass'];
 
+            Log::debug("SSH connection initialization", ['host' => $host, 'port' => $port, 'user' => $user, 'pass_length' => strlen($pass), 'action' => 'ssh_connect']);
+
+            $ssh = new \phpseclib3\Net\SSH2($host, (int) $port);
+            $ssh->setTimeout(2);
+
+            if (!$ssh->login($user, $pass)) {
+                throw new \Exception("SSH login failed");
+            }
+
+            Log::info("SSH authentication successful", ['action' => 'ssh_auth']);
+
+            if (!$ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX)) {
+                throw new \Exception("Failed to open shell");
+            }
+
+            $mkdirCmd = "mkdir -p " . escapeshellarg($remoteDirectory) . "\n";
+            Log::debug("Creating remote directory", ['command' => $mkdirCmd, 'action' => 'directory_create']);
+            $ssh->write($mkdirCmd);
+            $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
+
+            $ssh->write("cat > " . escapeshellarg($remoteFilePath) . "\n");
+
+            $handle = fopen($localFilePath, 'r');
+            $bytesSent = 0;
+            $chunkSize = 8192;
+
+            while (!feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+                $ssh->write($chunk);
+                $bytesSent += strlen($chunk);
+
+                $percent = round(($bytesSent / $fileSize) * 100, 2);
+                $currentTime = microtime(true);
+
+                if ($percent - $lastLoggedPercent >= 5 || ($currentTime - $lastLogTime) >= 10) {
+                    $elapsed = $currentTime - $startTime;
+                    $speed = $bytesSent / max($elapsed, 1); // Avoid division by zero
+                    $remaining = ($fileSize - $bytesSent) / max($speed, 1);
+
+                    $progressData = [
+                        'filename' => $filename,
+                        'percent_complete' => $percent,
+                        'bytes_sent' => $bytesSent,
+                        'bytes_total' => $fileSize,
+                        'transfer_rate_kb' => round($speed / 1024, 2),
+                        'time_elapsed_seconds' => round($elapsed, 2),
+                        'time_remaining_seconds' => round($remaining, 2),
+                        'action' => 'transfer_progress'
+                    ];
+
+                    Log::info("Upload progress update", $progressData);
+                    error_log("[Progress] " . json_encode($progressData));
+
+                    $lastLogTime = $currentTime;
+                    $lastLoggedPercent = $percent;
+                }
+            }
+            fclose($handle);
+
+            $ssh->write("\x04");
+            $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
+
+            $totalTime = microtime(true) - $startTime;
+            $avgSpeed = $fileSize / max($totalTime, 1); // Avoid division by zero
+
+            Log::info("File transfer completed", [
+                'filename' => $filename,
+                'bytes_sent' => $bytesSent,
+                'expected_size' => $fileSize,
+                'total_time_seconds' => round($totalTime, 2),
+                'average_speed_kb' => round($avgSpeed / 1024, 2),
+                'action' => 'transfer_complete'
+            ]);
+
+            $ssh->write("stat -c%s " . escapeshellarg($remoteFilePath) . "\n");
+            $rawStatOutput = $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
+
+            $lines = preg_split('/\r\n|\n|\r/', trim($rawStatOutput));
+            $remoteSize = 0;
+
+            foreach ($lines as $line) {
+                if (is_numeric(trim($line))) {
+                    $remoteSize = (int) trim($line);
+                    break;
+                }
+            }
+
+            Log::debug("Upload verification started", [
+                'remote_size' => $remoteSize,
+                'local_size' => $fileSize,
+                'raw_response' => $rawStatOutput,
+                'action' => 'size_verification'
+            ]);
+
+            if ((int) $remoteSize !== (int) $fileSize) {
+                throw new \Exception("Size mismatch (local: $fileSize, remote: $remoteSize)");
+            }
+
+            $ssh->write("chmod 644 " . escapeshellarg($remoteFilePath) . "\n");
+            $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
+
+            Log::info("File upload successfully completed", [
+                'filename' => $filename,
+                'remote_path' => $remoteFilePath,
+                'size_bytes' => $fileSize,
+                'size_human' => $this->formatBytes($fileSize),
+                'total_transfer_time_seconds' => round($totalTime, 2),
+                'average_speed_kb' => round($avgSpeed / 1024, 2),
+                'action' => 'upload_success'
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+
+            if (isset($ssh)) {
+                $ssh->write("rm -f " . escapeshellarg($remoteFilePath) . "\n");
+                $ssh->read('[$#>]', \phpseclib3\Net\SSH2::READ_REGEX);
+                Log::debug("Attempting to clean up failed upload", ['action' => 'cleanup']);
+            }
+
+            $timeElapsed = isset($startTime) ? microtime(true) - $startTime : 0;
+            $bytesSent = $bytesSent ?? 0;
+            $percentComplete = ($fileSize > 0 && $bytesSent > 0) ? round(($bytesSent / $fileSize) * 100, 2) : 0;
+
+            Log::error("SSH upload failed", [
+                'error' => $e->getMessage(),
+                'local_path' => $localFilePath,
+                'remote_path' => $remoteFilePath ?? '',
+                'bytes_transferred' => $bytesSent,
+                'percent_complete' => $percentComplete,
+                'time_elapsed_seconds' => round($timeElapsed, 2),
+                'trace' => $e->getTraceAsString(),
+                'action' => 'upload_failed'
+            ]);
+
+            return false;
+        }
+    }
 
 
 
