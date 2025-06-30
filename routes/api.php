@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\Icard\UserPointsController;
 use App\Http\Controllers\Icard\TransactionHistoryController;
+use App\Http\Controllers\RMSCommerceSynchronizationController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -38,3 +39,17 @@ Route::prefix('iso-api')->group(function () {
 use App\Http\Controllers\OracleRmsController;
 
 Route::post('/oracle-rms/item', [OracleRmsController::class, 'fetchItemData']);
+
+
+Route::prefix('v1')->group(function () {
+    Route::prefix('rms-sync')->group(function () {
+        // Start synchronization
+        Route::post('/synchronize', [RMSCommerceSynchronizationController::class, 'synchronize']);
+        
+        // Get synchronization status
+        Route::get('/status', [RMSCommerceSynchronizationController::class, 'status']);
+        
+        // Get logs (optional)
+        Route::get('/logs', [RMSCommerceSynchronizationController::class, 'getLogs']);
+    });
+});
