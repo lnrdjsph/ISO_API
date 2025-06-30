@@ -5,7 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>My App</title>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet" />
+    {{-- <link href="{{ mix('css/app.css') }}" rel="stylesheet" /> --}}
+    @vite('resources/css/app.css')
+
 </head>
 <style>
 <style>
@@ -40,7 +42,7 @@ aside a:hover::after {
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-white sticky top-0 relative z-30 md:relative fixed transform -trangray-x-full md:trangray-x-0 transition-transform duration-300 ease-in-out">
+    <aside id="sidebar" class="hidden md:block w-64 bg-white sticky top-0 h-screen z-30">
         <div class="p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-lg font-semibold">ISO B2B</h2>
             <!-- Close button for mobile -->
@@ -60,11 +62,11 @@ aside a:hover::after {
                     </a>
                 </li>
                 <li class="rounded">
-                    <div class="{{ request()->is('products*') ? 'bg-gray-100  border-l-8 border-blue-600' : '' }} rounded">
+                    <div class="{{ request()->routeIs('products*') ? 'bg-gray-100  border-l-8 border-blue-600' : '' }} rounded">
 
                         
 
-                        @if (request()->is('products*'))
+                        @if (request()->routeIs('products*'))
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('products.index') }}"
@@ -110,16 +112,65 @@ aside a:hover::after {
         </nav>
     </aside>
 
+    <!-- Mobile Header (Mobile only) -->
+    <header class="block md:hidden bg-white border-b px-6 py-4 flex justify-between items-center">
+        <h2 class="text-lg font-semibold">ISO B2B</h2>
+        <button id="toggleMobileMenu" class="p-2 rounded hover:bg-gray-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Mobile Menu -->
+    <nav id="mobileMenu" class="hidden md:hidden bg-white p-4 border-b space-y-2">
+
+        <a href="{{ route('orders.index') }}" class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('orders.index') ? 'bg-gray-200 font-bold' : '' }}">
+            Orders
+        </a>
+
+        <!-- Expandable Products Menu -->
+        <div>
+            <button id="toggleMobileProducts" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 flex justify-between items-center {{ request()->routeIs('products*') ? 'bg-gray-100 border-l-8 border-blue-600' : '' }}">
+                Products
+                <svg id="mobileProductsIcon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            <ul id="mobileProductsMenu" class="hidden mt-1 rounded transition-all duration-300">
+                <li class="relative">
+                    <a href="{{ route('products.index') }}" class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300 {{ request()->routeIs('products.index') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                        Product List
+                    </a>
+                </li>
+                <li class="relative">
+                    <a href="{{ route('products.create') }}" class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300 {{ request()->routeIs('products.create') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                        Add New Product
+                    </a>
+                </li>
+                <li class="relative">
+                    <a href="{{ route('products.import') }}" class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300 {{ request()->routeIs('products.import.show') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                        Import CSV
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <a href="#" class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
+            Dashboard
+        </a>
+    </nav>
+
      <!-- Main Content -->
     <div class="w-full md:flex-1 min-h-screen">
-        <!-- Top bar with hamburger menu -->
+        {{-- <!-- Top bar with hamburger menu -->
         <div class="bg-white border-b px-6 py-4 md:hidden">
             <button id="toggleSidebar" class="p-2 rounded hover:bg-gray-100">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
             </button>
-        </div>
+        </div> --}}
         
         <!-- Content area -->
         <main>
@@ -127,7 +178,24 @@ aside a:hover::after {
         </main>
     </div>
 
+    @vite('resources/js/app.js')
     <script>
+        // Toggle mobile menu
+        document.getElementById('toggleMobileMenu').addEventListener('click', () => {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Toggle mobile products dropdown
+        document.getElementById('toggleMobileProducts').addEventListener('click', () => {
+            const productsMenu = document.getElementById('mobileProductsMenu');
+            const productsIcon = document.getElementById('mobileProductsIcon');
+
+            productsMenu.classList.toggle('hidden');
+            productsIcon.classList.toggle('rotate-180'); // For arrow animation
+        });
+
+
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         const toggleSidebar = document.getElementById('toggleSidebar');
@@ -191,6 +259,5 @@ aside a:hover::after {
             }
         });
     </script>
-
 </body>
 </html>
