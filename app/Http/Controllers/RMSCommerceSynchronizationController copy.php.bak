@@ -126,8 +126,8 @@ class RMSCommerceSynchronizationController extends Controller
 
                 Log::info("Processing Store: {$storeCode}-{$storeName}, Item Code: {$itemCode}, Item Department: {$itemDepartment}");
 
-                $filename = "{$storeName}.csv";
-                $remoteDirectory = rtrim($this->config['sftp']['dir'], '/') . '/' . $storeName . '/';
+                $filename = "{$storeName}-{$itemDepartment}.csv";
+                $remoteDirectory = rtrim($this->config['sftp']['dir'], '/') . '/' . $storeName . '-' . $itemDepartment . '/';
                 try {
                     // Handle backup
                     $this->handleBackupFile($filename);
@@ -173,37 +173,26 @@ class RMSCommerceSynchronizationController extends Controller
     private function readItemList()
     {
         $filePath = $this->config['itemlist_csv'];
-
         if (!file_exists($filePath)) {
             throw new Exception('Itemlist CSV file not found: ' . $filePath);
         }
 
         $items = [];
-
         if (($handle = fopen($filePath, 'r')) !== false) {
             $header = fgetcsv($handle);
-
-            if ($header === false || count($header) < 2) {
-                fclose($handle);
-                throw new Exception('Invalid or incomplete CSV header in: ' . $filePath);
-            }
-
             while (($data = fgetcsv($handle)) !== false) {
-                if (empty($data[0]) || empty($data[1])) continue; // Skip empty or incomplete rows
+                if (count($data) < 2) continue; // Skip incomplete rows
 
                 $items[] = [
-                    'item_code' => trim($data[0]),
-                    'department' => trim($data[1])
+                    'item_code' => $data[0],
+                    'department' => $data[1]
                 ];
             }
             fclose($handle);
-        } else {
-            throw new Exception('Failed to open file: ' . $filePath);
         }
 
         return $items;
     }
-
 
 
     /**
@@ -212,37 +201,26 @@ class RMSCommerceSynchronizationController extends Controller
     private function readStoresList()
     {
         $filePath = $this->config['stores_csv'];
-
         if (!file_exists($filePath)) {
             throw new Exception('Stores CSV file not found: ' . $filePath);
         }
 
         $stores = [];
-
         if (($handle = fopen($filePath, 'r')) !== false) {
             $header = fgetcsv($handle);
-
-            if ($header === false || count($header) < 2) {
-                fclose($handle);
-                throw new Exception('Invalid or incomplete CSV header in: ' . $filePath);
-            }
-
             while (($data = fgetcsv($handle)) !== false) {
-                if (empty($data[0]) || empty($data[1])) continue; // Skip empty or incomplete rows
+                if (count($data) < 2) continue; // Skip incomplete rows
 
                 $stores[] = [
-                    'store_code' => trim($data[0]),
-                    'store_name' => trim($data[1])
+                    'store_code' => $data[0],
+                    'store_name' => $data[1]
                 ];
             }
             fclose($handle);
-        } else {
-            throw new Exception('Failed to open file: ' . $filePath);
         }
 
         return $stores;
     }
-
 
 
     /**
@@ -415,11 +393,11 @@ class RMSCommerceSynchronizationController extends Controller
         if (strtolower($department) === 'supermarket') {
             // Supermarket allocation logic
             if ($stock > 31) {
-                return (int)($stock * .5);
+                return (int)($stock * 1);
             } else {
                 return 0; // Out of stock for supermarket
             }
-        } else {
+        } elseif (strtolower($department) === 'departmentstore') {
             // Department store returns actual stock
             return $stock;
         }
