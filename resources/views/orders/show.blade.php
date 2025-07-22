@@ -1,58 +1,160 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto p-4">
-    <h1 class="text-xl font-bold mb-4">Order Details - ID: {{ $order->id }}</h1>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Sales Order Details</h1>
+                        <p class="text-gray-600 mt-1">Review detailed information about the selected order.</p>
+                    </div>
+            </div>
+        </div>
 
-    <div class="mb-6">
-        <p><strong>Channel Order:</strong> {{ $order->channel_order }}</p>
-        <p><strong>Time Order:</strong> {{ $order->time_order }}</p>
-        <p><strong>Payment Center:</strong> {{ $order->payment_center ?? '-' }}</p>
-        <p><strong>Mode Payment:</strong> {{ $order->mode_payment ?? '-' }}</p>
-        <p><strong>Payment Date:</strong> {{ $order->payment_date ?? '-' }}</p>
-        <p><strong>Mode Dispatching:</strong> {{ $order->mode_dispatching ?? '-' }}</p>
-        <p><strong>Delivery Date:</strong> {{ $order->delivery_date ?? '-' }}</p>
-        <p><strong>Address:</strong> {{ $order->address ?? '-' }}</p>
-        <p><strong>Landmark:</strong> {{ $order->landmark ?? '-' }}</p>
-    </div>
+        <div class="grid grid-cols-4 md:grid-cols-3 gap-6 bg-white p-6 border rounded-xl shadow-sm mb-6">
 
-    <table class="min-w-full border border-gray-300 text-sm">
-        <thead class="bg-slate-100 text-left">
-            <tr>
-                <th class="border px-2 py-1">SKU</th>
-                <th class="border px-2 py-1">Item Description</th>
-                <th class="border px-2 py-1 text-right">Price / PC</th>
-                <th class="border px-2 py-1 text-right">Price</th>
-                {{-- <th class="border px-2 py-1 text-center">Order / CS</th> --}}
-                <th class="border px-2 py-1 text-right">Total Qty</th>
-                <th class="border px-2 py-1 text-right">Amount</th>
-                <th class="border px-2 py-1">Remarks</th>
-                <th class="border px-2 py-1">Store Order No.</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($order->items as $item)
-                <tr>
-                    <td class="border px-2 py-1">{{ $item->sku }}</td>
-                    <td class="border px-2 py-1">{{ $item->item_description }}</td>
-                    <td class="border px-2 py-1 text-right">{{ number_format($item->price_per_pc, 2) }}</td>
-                    <td class="border px-2 py-1 text-right">{{ number_format($item->price, 2) }}</td>
-                    {{-- <td class="border px-2 py-1 text-center">{{ $item->order_per_cs }}</td> --}}
-                    <td class="border px-2 py-1 text-right">{{ $item->total_qty }}</td>
-                    <td class="border px-2 py-1 text-right">{{ number_format($item->amount, 2) }}</td>
-                    <td class="border px-2 py-1">{{ $item->remarks }}</td>
-                    <td class="border px-2 py-1">{{ $item->store_order_no }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="9" class="border px-2 py-4 text-center">No items found for this order.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+            <!-- Column 1 -->
+            <div class="space-y-4">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">Customer Info</h3>
 
-    <div class="mt-6">
-        <a href="{{ route('orders.index') }}" class="text-indigo-600 hover:underline">&larr; Back to Orders</a>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">MBC Card No</p>
+                    <p class="font-medium text-gray-900">{{ $order->mbc_card_no ?? '-' }}</p>
+                </div>
+
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Customer Name</p>
+                    <p class="font-medium text-gray-900">{{ $order->customer_name ?? '-' }}</p>
+                </div>
+
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Contact Number</p>
+                    <p class="font-medium text-gray-900">{{ $order->contact_number ?? '-' }}</p>
+                </div>
+            </div>
+           
+            <!-- Column 3 -->
+            <div class="space-y-4">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">Payment & Delivery Info</h3>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Payment Center</p>
+                    <p class="font-medium text-gray-900">{{ $order->payment_center ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Mode of Payment</p>
+                    <p class="font-medium text-gray-900">{{ $order->mode_payment ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Payment Date</p>
+                    <p class="font-medium text-gray-900">{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('F j, Y') : '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Mode of Dispatching</p>
+                    <p class="font-medium text-gray-900">{{ $order->mode_dispatching ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Delivery/Pickup Date</p>
+                    <p class="font-medium text-gray-900">{{ $order->delivery_date ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Address / Landmark</p>
+                    <p class="font-medium text-gray-900">
+                        {{ $order->address ?? '-' }}
+                        @if(!empty($order->landmark))
+                            <br><span class="text-gray-500 text-sm">{{ $order->landmark }}</span>
+                        @endif
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Column 4 -->
+            <div class="space-y-4">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">Order Info</h3>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Requesting Store</p>
+                    <p class="font-medium text-gray-900">{{ $order->requesting_store }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Requested By</p>
+                    <p class="font-medium text-gray-900">{{ $order->requested_by }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Channel Order</p>
+                    <p class="font-medium text-gray-900">{{ $order->channel_order }}</p>
+                </div>                
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Date & Time of Order</p>
+                    <p class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($order->time_order)->format('F j, Y - h:i A') }}</p>
+                </div>                
+            </div>
+
+        </div>
+
+
+        <div class="overflow-x-auto bg-white p-4 border rounded-xl shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Ordered Items</h2>
+            <table class="min-w-full text-sm text-gray-700 border border-gray-200">
+                <thead class="bg-gray-100 text-xs uppercase">
+                    <tr>
+                        <th rowspan="2" class="border p-1 text-left">SKU</th>
+                        <th rowspan="2" class="border p-1 text-left">Item Description</th>
+                        <th rowspan="2" class="border p-1 text-center">Scheme</th>
+                        <th rowspan="2" class="border p-1 text-center">Price/PC</th>
+                        <th rowspan="2" class="border p-1 text-center">Price</th>
+                        <th colspan="3" class="border p-1 text-center">Order in Cases</th>
+                        <th rowspan="2" class="border p-1 text-center">Total Qty</th>
+                        <th rowspan="2" class="border p-1 text-center">Amount</th>
+                        <th rowspan="2" class="border p-1">Remarks</th>
+                        <th rowspan="2" class="border p-1">Store Order No.</th>
+                    </tr>
+                    <tr>
+                        <th class="border p-1 text-center">QTY/PC</th>
+                        <th class="border p-1 text-center">QTY/CS</th>
+                        <th class="border p-1 text-center">Freebies</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @forelse ($order->items as $item)
+                        <tr class="hover:bg-gray-50 transition {{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
+                            <td class="border p-2">{{ $item->sku }}</td>
+                            <td class="border p-2">{{ $item->item_description }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->scheme }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ number_format($item->price_per_pc, 2) }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ number_format($item->price, 2) }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->qty_per_pc }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->qty_per_cs }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->freebies_per_cs }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->total_qty }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ number_format($item->amount, 2) }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->remarks }}</td>
+                            <td class="border p-2 text-center" contenteditable="true">{{ $item->store_order_no }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="12" class="border px-4 py-4 text-center text-gray-500">No items found for this order.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+
+            </table>
+        </div>
+ 
+
+        <div class="mt-6">
+            <a href="{{ route('orders.index') }}"
+            class="inline-block px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm rounded-md">
+                &larr; Back to Orders
+            </a>
+        </div>
     </div>
 </div>
 @endsection

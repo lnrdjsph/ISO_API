@@ -147,7 +147,8 @@ class RMSCommerceSynchronizationController extends Controller
                         'item_code' => $itemCode,
                         'department' => $itemDepartment,
                         'filename' => $filename,
-                        'records_processed' => $recordsProcessed
+                        'records_processed' => $recordsProcessed,
+                        'processed_at' => date('Y-m-d H:i:s')
                     ];
 
                     $totalFiles++;
