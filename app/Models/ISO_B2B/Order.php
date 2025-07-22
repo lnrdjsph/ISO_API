@@ -9,8 +9,7 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $connection = 'mysql';  // specify connection
-
+    protected $connection = 'mysql';
     protected $table = 'orders';
 
     protected $fillable = [
@@ -23,6 +22,13 @@ class Order extends Model
         'delivery_date',
         'address',
         'landmark',
+
+        // Newly added fields
+        'requesting_store',
+        'requested_by',
+        'mbc_card_no',
+        'customer_name',
+        'contact_number',
     ];
 
     public function items()

@@ -17,9 +17,9 @@ use App\Http\Controllers\ProductController;
 Route::prefix('iso-api')->group(function () {
     // Orders routes
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
 
     // Products routes
     Route::prefix('products')->name('products.')->group(function () {

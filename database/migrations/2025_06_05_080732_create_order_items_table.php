@@ -9,23 +9,24 @@ class CreateOrderItemsTable extends Migration
     public function up()
     {
         Schema::connection('mysql')->create('order_items', function (Blueprint $table) {
-            $table->increments('id'); // Use increments for Oracle
-            $table->unsignedInteger('order_id'); // Foreign key, unsigned int
-            
-            // your other columns here, example:
+            $table->id();
+            $table->unsignedInteger('order_id');
+
             $table->string('sku')->nullable();
             $table->string('item_description')->nullable();
+            $table->string('scheme')->nullable(); // ✅ Added
             $table->decimal('price_per_pc', 10, 2)->nullable();
             $table->decimal('price', 10, 2)->nullable();
-            $table->string('order_per_cs')->nullable();
-            $table->integer('total_qty')->nullable();
+            $table->integer('qty_per_pc')->default(0);
+            $table->integer('qty_per_cs')->default(0);
+            $table->integer('freebies_per_cs')->default(0); // ❗ Change to integer for consistency
+            $table->integer('total_qty')->default(0);
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('remarks')->nullable();
             $table->string('store_order_no')->nullable();
 
             $table->timestamps();
 
-            // Add foreign key constraint
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
         });
     }
@@ -35,4 +36,3 @@ class CreateOrderItemsTable extends Migration
         Schema::dropIfExists('order_items');
     }
 }
-

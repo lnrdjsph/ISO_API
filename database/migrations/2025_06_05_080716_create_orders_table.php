@@ -9,9 +9,15 @@ class CreateOrdersTable extends Migration
     public function up()
     {
         Schema::connection('mysql')->create('orders', function (Blueprint $table) {
-            $table->increments('id'); // Use increments for Oracle
+            $table->increments('id');
+            $table->string('requesting_store');
+            $table->string('requested_by');
+            $table->string('mbc_card_no')->nullable(); // ✅ Added
+            $table->string('customer_name')->nullable(); // ✅ Added
+            $table->string('contact_number')->nullable(); // ✅ Added
+
             $table->string('channel_order');
-            $table->string('time_order'); // Use string instead of time()
+            $table->string('time_order'); // Using string for flexibility
             $table->string('payment_center')->nullable();
             $table->string('mode_payment')->nullable();
             $table->date('payment_date')->nullable();

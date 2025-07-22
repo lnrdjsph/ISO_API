@@ -9,8 +9,7 @@ class OrderItem extends Model
 {
     use HasFactory;
 
-    protected $connection = 'mysql';  // specify connection
-
+    protected $connection = 'mysql';
     protected $table = 'order_items';
 
     protected $fillable = [
@@ -19,7 +18,10 @@ class OrderItem extends Model
         'item_description',
         'price_per_pc',
         'price',
-        // 'order_per_cs',
+        'qty_per_pc',        // New
+        'qty_per_cs',        // New
+        'freebies_per_cs',      // New
+        'scheme',               // New
         'total_qty',
         'amount',
         'remarks',
