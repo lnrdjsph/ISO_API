@@ -104,16 +104,16 @@
             <table class="min-w-full text-sm text-gray-700 border border-gray-200">
                 <thead class="bg-gray-100 text-xs uppercase">
                     <tr>
-                        <th rowspan="2" class="border p-1 text-left">SKU</th>
-                        <th rowspan="2" class="border p-1 text-left">Item Description</th>
-                        <th rowspan="2" class="border p-1 text-center">Scheme</th>
-                        <th rowspan="2" class="border p-1 text-center">Price/PC</th>
-                        <th rowspan="2" class="border p-1 text-center">Price</th>
-                        <th colspan="3" class="border p-1 text-center">Order in Cases</th>
-                        <th rowspan="2" class="border p-1 text-center">Total Qty</th>
-                        <th rowspan="2" class="border p-1 text-center">Amount</th>
-                        <th rowspan="2" class="border p-1">Remarks</th>
-                        <th rowspan="2" class="border p-1">Store Order No.</th>
+                        <th rowspan="2" class="border px-2 py-1 text-left">SKU</th>
+                        <th rowspan="2" class="border px-2 py-1 text-left">Item Description</th>
+                        <th rowspan="2" class="border px-2 py-1 text-center">Scheme</th>
+                        <th rowspan="2" class="border px-2 py-1 text-center">Price/PC</th>
+                        <th rowspan="2" class="border px-2 py-1 text-center">Price</th>
+                        <th colspan="3" class="border px-2 py-1 text-center">Order in Cases</th>
+                        <th rowspan="2" class="border px-2 py-1 text-center">Total Qty</th>
+                        <th rowspan="2" class="border px-2 py-1 text-center">Amount</th>
+                        <th rowspan="2" class="border px-2 py-1">Remarks</th>
+                        <th rowspan="2" class="border px-2 py-1">Store Order No.</th>
                     </tr>
                     <tr>
                         <th class="border p-1 text-center">QTY/PC</th>

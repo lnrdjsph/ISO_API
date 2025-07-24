@@ -54,19 +54,12 @@ aside a:hover::after {
         </div>
         <nav class="p-4">
             <ul class="space-y-2">
-                {{-- <li>
-                    <a href="{{ route('orders.index') }}" 
-                    class="block px-4 py-2 rounded hover:bg-gray-100
-                    {{ request()->routeIs('orders.index') ? 'bg-gray-200 font-bold' : '' }}">
-                    Orders
-                    </a>
-                </li> --}}
+
+                {{-- Orders Group --}}
                 <li class="rounded">
-                    <div class="{{ request()->routeIs('orders*') ? 'bg-gray-100  border-l-8 border-blue-600' : '' }} rounded">
-
-                        
-
+                    <div class="{{ request()->routeIs('orders*') ? 'bg-gray-100 border-l-8 border-blue-600' : '' }} rounded">
                         @if (request()->routeIs('orders*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Orders</h3>
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('orders.index') }}"
@@ -75,15 +68,6 @@ aside a:hover::after {
                                         Order List
                                     </a>
                                 </li>
-
-                                <li class="relative">
-                                    <a href="{{ route('orders.create') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
-                                    {{ request()->routeIs('orders.create') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
-                                        Enroll New Order
-                                    </a>
-                                </li>
-
                                 @if (preg_match('/orders\/\d+$/', request()->path()))
                                     <li class="relative">
                                         <a href="{{ url()->current() }}"
@@ -93,23 +77,44 @@ aside a:hover::after {
                                         </a>
                                     </li>
                                 @endif
-
-
                             </ul>
                         @else
                             <a href="{{ route('orders.index') }}" 
                             class="block px-4 py-2 rounded hover:bg-gray-100">
-                            Orders
+                                Orders
                             </a>
                         @endif
                     </div>
                 </li>
+
+                {{-- Forms Group --}}
                 <li class="rounded">
-                    <div class="{{ request()->routeIs('products*') ? 'bg-gray-100  border-l-8 border-blue-600' : '' }} rounded">
+                    <div class="{{ request()->routeIs('forms*') ? 'bg-gray-100 border-l-8 border-blue-600' : '' }} rounded">
+                        @if (request()->routeIs('forms*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Forms</h3>
+                            <ul class="mt-1 rounded transition-all duration-300">
+                                <li class="relative">
+                                    <a href="{{ route('forms.create') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
+                                    {{ request()->routeIs('forms.create') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : '' }}">
+                                        Sales Order Form
+                                    </a>
+                                </li>
+                            </ul>
+                        @else
+                            <a href="{{ route('forms.create') }}" 
+                            class="block px-4 py-2 rounded hover:bg-gray-100">
+                                Forms
+                            </a>
+                        @endif
+                    </div>
+                </li>
 
-                        
-
+                {{-- Products Group --}}
+                <li class="rounded">
+                    <div class="{{ request()->routeIs('products*') ? 'bg-gray-100 border-l-8 border-blue-600' : '' }} rounded">
                         @if (request()->routeIs('products*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Products</h3>
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('products.index') }}"
@@ -118,7 +123,6 @@ aside a:hover::after {
                                         Product List
                                     </a>
                                 </li>
-
                                 <li class="relative">
                                     <a href="{{ route('products.create') }}"
                                     class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
@@ -126,7 +130,6 @@ aside a:hover::after {
                                         Add New Product
                                     </a>
                                 </li>
-
                                 <li class="relative">
                                     <a href="{{ route('products.import') }}"
                                     class="block pl-6 py-2 hover:text-gray-400 rounded-r-md transition-all duration-300
@@ -138,22 +141,23 @@ aside a:hover::after {
                         @else
                             <a href="{{ route('products.index') }}" 
                             class="block px-4 py-2 rounded hover:bg-gray-100">
-                            Products
+                                Products
                             </a>
                         @endif
                     </div>
                 </li>
 
-
+                {{-- Dashboard --}}
                 <li>
                     <a href="#" 
                     class="block px-4 py-2 rounded hover:bg-gray-100
                     {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
-                    Dashboard
+                        Dashboard
                     </a>
                 </li>
 
             </ul>
+
         </nav>
     </aside>
 

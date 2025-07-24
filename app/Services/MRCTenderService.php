@@ -33,6 +33,12 @@ class MRCTenderService
 
             $firstname = $customer->firstname;
             $lastname = $customer->lastname;
+            Log::debug("Customer Info", [
+                'card' => $card,
+                'firstname' => $firstname,
+                'lastname' => $lastname,
+                'raw_data' => (array) $customer
+            ]);
 
             // Generate reference number
             $referenceNumber = $this->getReference($conn);
@@ -43,9 +49,8 @@ class MRCTenderService
                 throw new Exception("Card not active.");
             }
 
-            // Convert amount to minor units
-            $amnt = 100;
-            $total = number_format($reqAmount * $amnt, 0, '', '');
+            // Convert amount to minor units (cents)
+            $total = number_format($reqAmount * 100, 0, '', '');
 
             // Get TID/MID
             $tidmid = $conn->selectOne("
@@ -74,25 +79,50 @@ class MRCTenderService
                 [$referenceNumber, $card, $reqAmount, $before->bfor_points]
             );
 
+            // Build ISO8583 message using JAK8583
             $this->iso->setMTI('0200');
-            $this->iso->setField(3, '590000');                                 // Field 3: 6 digits, numeric
-            $this->iso->setField(4, str_pad($total, 12, '0', STR_PAD_LEFT));   // Field 4: 12 digits, numeric
-            $this->iso->setField(11, str_pad($referenceNumber, 6, '0', STR_PAD_LEFT)); // Field 11: 6-digit numeric STAN
-            $this->iso->setField(22, str_pad('012', 3, '0', STR_PAD_LEFT));    // Field 22: 3-digit POS Entry Mode
-            $this->iso->setField(24, str_pad('177', 3, '0', STR_PAD_LEFT));    // Field 24: 3-digit NII
-            $this->iso->setField(25, str_pad('00', 2, '0', STR_PAD_LEFT));     // Field 25: 2-digit POS condition code
-            $this->iso->setField(35, '' . $card . '=20121010000059600');             // Field 35: Track 2 data, no LL prefix
-            $this->iso->setField(41, str_pad('99999023', 8, '0', STR_PAD_LEFT));     // Field 41: 8-digit numeric TID
-            $this->iso->setField(42, str_pad('000017770000606', 15, '0', STR_PAD_LEFT));    // Field 42: 15-digit numeric MID
+            $this->iso->setField(3, '590000');                                 // Processing code
+            $this->iso->setField(4, $total);                                   // Amount in minor units
+            $this->iso->setField(11, (string)$referenceNumber);                // STAN
+            $this->iso->setField(22, '012');                                   // POS Entry Mode
+            $this->iso->setField(24, '177');                                   // NII
+            $this->iso->setField(25, '00');                                    // POS condition code
+            $this->iso->setField(35, $card . '=20121010000059600');           // Track 2 data
+            $this->iso->setField(41, '99999023');                             // TID
+            $this->iso->setField(42, '000017770000606');                      // MID
 
+            Log::debug('ISO8583 Message Fields Set', [
+                'mti' => '0200',
+                'field_3' => '590000',
+                'field_4' => $total,
+                'field_11' => $referenceNumber,
+                'field_35' => $card . '=20121010000059600',
+                'field_41' => '99999023',
+                'field_42' => '000017770000606'
+            ]);
 
-
+            // Send the message
             $response = $this->iso->send();
+
+            if (!$response) {
+                throw new Exception("No response received from ISO8583 server");
+            }
 
             $responseCode = $response->getField(39);
             $retrievalNo = $response->getField(37);
             $systemTrace = $response->getField(11);
 
+            Log::debug('ISO8583 Response Fields', [
+                'response_code' => $responseCode,
+                'retrieval_no' => $retrievalNo,
+                'system_trace' => $systemTrace,
+                'all_fields' => method_exists($response, 'getAllFields') ? $response->getAllFields() : 'N/A'
+            ]);
+
+            // Check if transaction was approved
+            if ($responseCode !== '00') {
+                throw new Exception("Transaction declined with response code: " . $responseCode);
+            }
 
             // Get after points
             $after = $conn->selectOne("SELECT NVL(VDC_P_CRD.GETPOINTS(?) / 100, 0) AS AFTER_POINTS FROM VDC_P_CRD.CRD_DM_CRD WHERE CARD_NO = ?", [$card, $card]);
@@ -105,10 +135,10 @@ class MRCTenderService
                 [$after->after_points, 'Transaction Approved', $tid, $retrievalNo, $systemTrace, $card, $referenceNumber]
             );
 
-            // Update to open again
-            $conn->update("UPDATE MRCATOM_TID_MID SET STATUS = 1, USED_DATE_TIME = SYSDATE WHERE TID = ?", [$tid]);
+            // Update TID/MID back to available
+            $conn->update("UPDATE MRCATOM_TID_MID SET STATUS = 0, USED_DATE_TIME = SYSDATE WHERE TID = ?", [$tid]);
 
-            // Return response
+            // Return successful response
             $msgObj = [
                 'code' => '200',
                 'message' => 'Transaction Approved',
@@ -117,10 +147,29 @@ class MRCTenderService
                 'expiry_date' => $valid->ic_mrc_expiry_date,
                 'retrieval_no' => $retrievalNo,
                 'card_name' => $firstname . ' ' . $lastname,
-                'points' => $reqAmount
+                'points' => $reqAmount,
+                'reference_number' => $referenceNumber,
+                'system_trace' => $systemTrace,
+                'before_points' => $before->bfor_points,
+                'after_points' => $after->after_points
             ];
+
         } catch (Exception $e) {
-            Log::error("MRCTender Error: " . $e->getMessage());
+            Log::error("MRCTender Error: " . $e->getMessage(), [
+                'card' => $card ?? 'N/A',
+                'amount' => $reqAmount ?? 'N/A',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Update TID/MID back to available if it was locked
+            if (isset($tid)) {
+                try {
+                    $conn->update("UPDATE MRCATOM_TID_MID SET STATUS = 0 WHERE TID = ?", [$tid]);
+                } catch (Exception $rollbackException) {
+                    Log::error("Failed to rollback TID status: " . $rollbackException->getMessage());
+                }
+            }
+
             $msgObj = [
                 'code' => '500',
                 'message' => 'Failed: ' . $e->getMessage(),
@@ -133,7 +182,12 @@ class MRCTenderService
 
     private function getReference($conn)
     {
-        $ref = $conn->selectOne("SELECT MRCATOM_SEQ.nextval AS ref FROM DUAL");
-        return $ref->ref ?? uniqid();
+        try {
+            $ref = $conn->selectOne("SELECT MRCATOM_SEQ.nextval AS ref FROM DUAL");
+            return $ref->ref ?? time(); // fallback to timestamp if sequence fails
+        } catch (Exception $e) {
+            Log::warning("Failed to get sequence, using timestamp: " . $e->getMessage());
+            return time();
+        }
     }
 }

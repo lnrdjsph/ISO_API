@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::connection('mysql')->create('PRODUCTS', function (Blueprint $table) {
+        Schema::connection('mysql')->create('products', function (Blueprint $table) {
             $table->bigIncrements('ID');
             $table->string('SKU')->unique();
             $table->string('NAME');
@@ -17,6 +17,6 @@ return new class extends Migration {
 
     public function down()
     {
-        Schema::connection('oracle_local')->dropIfExists('PRODUCTS');
+        Schema::connection('oracle_local')->dropIfExists('products');
     }
 };

@@ -116,6 +116,11 @@ class ProductController extends Controller
         return view('products.create');
     }
 
+    public function scheme()
+    {
+        return view('products.scheme');
+    }
+
     // Store new product
     public function store(Request $request)
     {
