@@ -227,7 +227,7 @@
                         <div class="order-content grid grid-cols-1 md:grid-cols-2 gap-6 ">
 
                             <!-- LEFT SIDE: Editable Inputs -->
-                            <div class="editable-side space-y-4 transition-all duration-300 ease-in-out max-h-[2000px] overflow-hidden opacity-100 py-4 mb-6">
+                            <div class="editable-side space-y-4 transition-all duration-300 ease-in-out max-h-[2000px] opacity-100 py-4 mb-6">
                                 <!-- SKU + Description -->
                                 <div class="product-row grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <!-- SKU -->
