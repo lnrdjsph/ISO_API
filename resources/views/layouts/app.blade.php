@@ -52,119 +52,120 @@ aside a:hover::after {
             </button>
         </div>
         <nav class="p-4">
-<ul class="space-y-2    ">
+            <ul class="space-y-2    ">
+                {{-- Dashboard --}}
+                <li>
+                    <a href="{{ route('dashboard') }}" 
+                    class="block px-4 py-2 rounded hover:bg-gray-100
+                    {{ request()->routeIs('') ? 'bg-gray-200 font-bold' : '' }}">
+                        Dashboard
+                    </a>
+                </li>
+                
+                {{-- Orders Group --}}
+                <li class="rounded">
+                    <div class="{{ request()->routeIs('orders*') ? 'bg-gray-100' : '' }} rounded">
+                        @if (request()->routeIs('orders*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Orders</h3>
+                            <ul class="mt-1 rounded transition-all duration-300">
+                                <li class="relative">
+                                    <a href="{{ route('orders.index') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
+                                    {{ request()->routeIs('orders.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Sales Order List
+                                    </a>
+                                </li>
+                                @if (preg_match('/orders\/\d+$/', request()->path()))
+                                <li class="relative">
+                                    <a href="{{ url()->current() }}"
+                                        class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
+                                        before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium">
+                                        Sales Order Details
+                                    </a>
+                                </li>
+                                @endif
+                            </ul>
+                        @else
+                            <a href="{{ route('orders.index') }}" 
+                            class="block px-4 py-2 rounded hover:bg-gray-100">
+                                Orders
+                            </a>
+                        @endif
+                    </div>
+                </li>
 
-    {{-- Orders Group --}}
-    <li class="rounded">
-        <div class="{{ request()->routeIs('orders*') ? 'bg-gray-100' : '' }} rounded">
-            @if (request()->routeIs('orders*'))
-                <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Orders</h3>
-                <ul class="mt-1 rounded transition-all duration-300">
-                    <li class="relative">
-                        <a href="{{ route('orders.index') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
-                           {{ request()->routeIs('orders.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Sales Order List
-                        </a>
-                    </li>
-                    @if (preg_match('/orders\/\d+$/', request()->path()))
-                    <li class="relative">
-                        <a href="{{ url()->current() }}"
-                            class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
-                            before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium">
-                            Sales Order Details
-                        </a>
-                    </li>
-                    @endif
-                </ul>
-            @else
-                <a href="{{ route('orders.index') }}" 
-                   class="block px-4 py-2 rounded hover:bg-gray-100">
-                    Orders
-                </a>
-            @endif
-        </div>
-    </li>
+                {{-- Forms Group --}}
+                <li class="rounded">
+                    <div class="{{ request()->routeIs('forms*') ? 'bg-gray-100' : '' }} rounded">
+                        @if (request()->routeIs('forms*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Forms</h3>
+                            <ul class="mt-1 rounded transition-all duration-300">
+                                <li class="relative">
+                                    <a href="{{ route('forms.sof') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    {{ request()->routeIs('forms.sof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Sales Order Form
+                                    </a>
+                                </li>
+                                <li class="relative">
+                                    <a href="{{ route('forms.rof') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    {{ request()->routeIs('forms.rof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Request Order Form
+                                    </a>
+                                </li>    
+                            </ul>
+                        @else
+                            <a href="{{ route('forms.sof') }}" 
+                            class="block px-4 py-2 rounded hover:bg-gray-100">
+                                Forms
+                            </a>
+                        @endif
+                        
 
-    {{-- Forms Group --}}
-    <li class="rounded">
-        <div class="{{ request()->routeIs('forms*') ? 'bg-gray-100' : '' }} rounded">
-            @if (request()->routeIs('forms*'))
-                <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Forms</h3>
-                <ul class="mt-1 rounded transition-all duration-300">
-                    <li class="relative">
-                        <a href="{{ route('forms.sof') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
-                           {{ request()->routeIs('forms.sof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Sales Order Form
-                        </a>
-                    </li>
-                    <li class="relative">
-                        <a href="{{ route('forms.rof') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
-                           {{ request()->routeIs('forms.rof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Request Order Form
-                        </a>
-                    </li>    
-                </ul>
-            @else
-                <a href="{{ route('forms.sof') }}" 
-                   class="block px-4 py-2 rounded hover:bg-gray-100">
-                    Forms
-                </a>
-            @endif
-            
+                    </div>
+                </li>
 
-        </div>
-    </li>
+                {{-- Products Group --}}
+                <li class="rounded">
+                    <div class="{{ request()->routeIs('products*') ? 'bg-gray-100' : '' }} rounded">
+                        @if (request()->routeIs('products*'))
+                            <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Products</h3>
+                            <ul class="mt-1 rounded transition-all duration-300">
+                                <li class="relative">
+                                    <a href="{{ route('products.index') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    {{ request()->routeIs('products.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Product List
+                                    </a>
+                                </li>
+                                <li class="relative">
+                                    <a href="{{ route('products.create') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    {{ request()->routeIs('products.create') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Add New Product
+                                    </a>
+                                </li>
+                                <li class="relative">
+                                    <a href="{{ route('products.import.show') }}"
+                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    {{ request()->routeIs('products.import.show') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
+                                        Import CSV
+                                    </a>
+                                </li>
+                            </ul>
+                        @else
+                            <a href="{{ route('products.index') }}" 
+                            class="block px-4 py-2 rounded hover:bg-gray-100">
+                                Products
+                            </a>
+                        @endif
+                    </div>
+                </li>
 
-    {{-- Products Group --}}
-    <li class="rounded">
-        <div class="{{ request()->routeIs('products*') ? 'bg-gray-100' : '' }} rounded">
-            @if (request()->routeIs('products*'))
-                <h3 class="px-4 py-1 text-xs text-gray-500 uppercase tracking-wider">Products</h3>
-                <ul class="mt-1 rounded transition-all duration-300">
-                    <li class="relative">
-                        <a href="{{ route('products.index') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
-                           {{ request()->routeIs('products.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Product List
-                        </a>
-                    </li>
-                    <li class="relative">
-                        <a href="{{ route('products.create') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
-                           {{ request()->routeIs('products.create') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Add New Product
-                        </a>
-                    </li>
-                    <li class="relative">
-                        <a href="{{ route('products.import.show') }}"
-                           class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
-                           {{ request()->routeIs('products.import.show') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
-                            Import CSV
-                        </a>
-                    </li>
-                </ul>
-            @else
-                <a href="{{ route('products.index') }}" 
-                   class="block px-4 py-2 rounded hover:bg-gray-100">
-                    Products
-                </a>
-            @endif
-        </div>
-    </li>
 
-    {{-- Dashboard --}}
-    <li>
-        <a href="#" 
-           class="block px-4 py-2 rounded hover:bg-gray-100
-           {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
-            Dashboard
-        </a>
-    </li>
 
-</ul>
+            </ul>
 
 
         </nav>

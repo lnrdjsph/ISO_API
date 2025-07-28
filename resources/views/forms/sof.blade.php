@@ -635,25 +635,34 @@ function attachCollapseListener(row) {
 
     toggle.addEventListener('click', () => {
         const content = row.querySelector('.order-content .editable-side');
+        const readonly = row.querySelector('.order-content .readonly-side');
         const icon = toggle.querySelector('.collapse-icon');
 
-        if (!content || !icon) return;
+        if (!content || !readonly || !icon) return;
 
         const collapsed = content.classList.contains('max-h-0');
 
+        // Toggle editable-side visibility
         content.classList.toggle('max-h-0', !collapsed);
         content.classList.toggle('opacity-0', !collapsed);
         content.classList.toggle('py-0', !collapsed);
         content.classList.toggle('mb-0', !collapsed);
+        content.classList.toggle('hidden', !collapsed); // ← new
 
         content.classList.toggle('max-h-[2000px]', collapsed);
         content.classList.toggle('opacity-100', collapsed);
         content.classList.toggle('py-4', collapsed);
         content.classList.toggle('mb-6', collapsed);
+        content.classList.toggle('block', collapsed); // ← new
+
+        // Make readonly full-width if collapsed
+        readonly.classList.toggle('md:col-span-2', !collapsed); // ← new
+        readonly.classList.toggle('md:col-span-1', collapsed);  // ← new
 
         icon.classList.toggle('rotate-180');
     });
 }
+
 
     document.querySelectorAll('.order-row').forEach(row => {
         attachCollapseListener(row);

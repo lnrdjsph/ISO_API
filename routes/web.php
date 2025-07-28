@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\FormsController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,4 @@ Route::prefix('b2b2c')->group(function () {
 
 
 // Default welcome route
-Route::get('/', function () {
-    return 'Laravel is working!';
-});
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
