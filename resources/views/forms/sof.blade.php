@@ -15,7 +15,7 @@
         </div>
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Sales Order Form</h1>
-          <p class="text-gray-600 mt-1">Fill out the form to create a new order record.</p>
+          <p class="text-gray-600 mt-1">Fill out the form to create a new sales order record.</p>
         </div>
       </div>
     </div>
@@ -28,18 +28,21 @@
     @endif
 
     @if($errors->any())
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl shadow-sm">
         <p class="text-red-800 font-medium">❌ Please fix the following errors:</p>
-        <ul class="mt-2 list-disc list-inside text-red-700">
-          @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-      </div>
+        <div class="max-h-48 overflow-y-auto pr-2 mt-2">
+            <ul class="list-disc list-inside text-red-700 space-y-1">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
     @endif
 
+
     <!-- Order Form -->
-    <form method="POST" action="{{ route('orders.store') }}" class="bg-white p-6 rounded-xl shadow-lg space-y-6">
+    <form method="POST" action="{{ route('forms.sof_submit') }}" class="bg-white p-6 rounded-xl shadow-lg space-y-6">
       @csrf
       
         <!-- Request Details -->
@@ -103,21 +106,87 @@
         <section class="bg-white p-4 rounded-lg shadow-sm mb-6">
             <h2 class="text-lg font-semibold mb-4">Payment Information</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                <!-- Alpine.js CDN (include in your <head> if not yet) -->
+                <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+                <div x-data="{
+                        open: false,
+                        search: '',
+                        options: [
+                            'S10-MAASIN',
+                            'S17-TACLOBAN',
+                            'S19-METRO BAY-BAY',
+                            'F18-ALANG-ALANG',
+                            'F19-HILONGOS',
+                            'S8-TOLEDO',
+                            'H9-CARCAR',
+                            'H10-BOGO'
+                        ],
+                        select(option) {
+                            this.search = option;
+                            this.open = false;
+                        },
+                        filtered() {
+                            return this.options.filter(o => o.toLowerCase().includes(this.search.toLowerCase()));
+                        }
+                    }"
+                    x-init="search = '{{ old('payment_center') }}'"
+                    class="relative"
+                >
                     <label class="block mb-1 text-sm">Payment Center</label>
-                    <input value="{{ old('payment_center') }}" type="text" name="payment_center" 
-                        class="w-full p-2 rounded border border-gray-300 text-sm" placeholder="Payment Center">
+                    <input
+                        value="{{ old('payment_center') }}"
+                        x-model="search"
+                        @input="open = true"
+                        @click="open = true"
+                        @keydown.escape="open = false"
+                        type="text"
+                        name="payment_center"
+                        placeholder="Select or type Payment Center"
+                        class="w-full p-2 rounded border border-gray-300 text-sm"
+                        autocomplete="off"
+                    >
+
+                    <ul x-show="open && filtered().length"
+                        @click.outside="open = false"
+                        class="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow-lg max-h-40 overflow-auto text-sm"
+                    >
+                        <template x-for="option in filtered()" :key="option">
+                            <li
+                                @click="select(option)"
+                                class="cursor-pointer px-3 py-2 hover:bg-gray-100"
+                                x-text="option"
+                            ></li>
+                        </template>
+                    </ul>
                 </div>
 
+
+                
                 <div>
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" />
+                    <style>
+                    .tagify__dropdown__item:hover {
+                        background-color: #f3f4f6; /* Tailwind gray-100 */
+                        color: black;
+                    }
+                    </style>
+                    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
                     <label class="block mb-1 text-sm">Mode of Payment</label>
-                    <select name="mode_payment" class="w-full p-2 rounded border border-gray-300 text-sm">
-                        <option disabled {{ old('mode_payment') ? '' : 'selected' }}>Select payment mode</option>
-                        <option value="GCash" {{ old('mode_payment') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                        <option value="PayMaya" {{ old('mode_payment') == 'PayMaya' ? 'selected' : '' }}>PayMaya</option>
-                        <option value="Card" {{ old('mode_payment') == 'Card' ? 'selected' : '' }}>Card</option>
-                    </select>
+                    <input name="mode_payment" placeholder="Select or type payment mode" value="{{ old('mode_payment') }}" class="w-full p-2 rounded border border-gray-300 text-sm">
                 </div>
+
+                <script>
+                new Tagify(document.querySelector('input[name=mode_payment]'), {
+                    whitelist: ["PO15%", "Cash", "Bank Card", "Online Payment"],
+                    dropdown: {
+                        enabled: 0,
+                        maxItems: 10
+                    }
+                });
+                </script>
+
+
 
                 <div>
                     <label class="block mb-1 text-sm">Payment Date</label>
@@ -133,15 +202,16 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 text-sm">Mode of Dispatching</label>
+ 
                     <select name="mode_dispatching" 
                         class="w-full p-2 rounded border border-gray-300 text-sm dispatch-controller"
-                        data-hide-value="Pick-up" data-target=".delivery-group">
+                        data-hide-value="Customer Pick-up" data-target=".delivery-group">
                         
                         <option value="" disabled {{ old('mode_dispatching') ? '' : 'selected' }}>Select dispatch mode</option>
-                        <option value="Pick-up" {{ old('mode_dispatching') == 'Pick-up' ? 'selected' : '' }}>Pick-up</option>
-                        <option value="Delivery" {{ old('mode_dispatching') == 'Delivery' ? 'selected' : '' }}>Delivery</option>
-                        <option value="Courier" {{ old('mode_dispatching') == 'Courier' ? 'selected' : '' }}>Courier</option>
-                        <option value="Other" {{ old('mode_dispatching') == 'Other' ? 'selected' : '' }}>Other</option>
+                        <option value="Customer Pick-up" {{ old('mode_dispatching') == 'Customer Pick-up' ? 'selected' : '' }}>Customer Pick-up</option>
+                        <option value="Delivery Direct to Customer" {{ old('mode_dispatching') == 'Delivery Direct to Customer' ? 'selected' : '' }}>Delivery Direct to Customer</option>
+                        {{-- <option value="Courier" {{ old('mode_dispatching') == 'Courier' ? 'selected' : '' }}>Courier</option>
+                        <option value="Other" {{ old('mode_dispatching') == 'Other' ? 'selected' : '' }}>Other</option> --}}
                     </select>
                 </div>
 
@@ -403,14 +473,37 @@
       </div> --}}
 
       <!-- Submit Button -->
-      <div class="text-right">
-        <button type="submit" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-[1.02] transition">Submit Order</button>
-      </div>
+        <button id="submitBtn" type="submit"
+        class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-[1.02] transition duration-1000 flex items-center justify-center hover:scale-[1.02] transition">
+        Submit Order
+        </button>
     </form>
   </div>
 </div>
 
 <script>
+
+
+  const form = document.querySelector('form');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.classList.remove('hover:shadow-lg', 'hover:scale-[1.02]');
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    submitBtn.innerHTML = `
+      <svg class="w-5 h-5 mr-2 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none"
+           viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10"
+                stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+      Processing…
+    `;
+  });
+
 let rowIndex = 1;
 
 document.addEventListener('DOMContentLoaded', function () {

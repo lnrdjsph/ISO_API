@@ -124,7 +124,7 @@
 
                 <tbody>
                     @forelse ($order->items as $item)
-                        <tr class="hover:bg-gray-50 transition {{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
+                        <tr class="hover:bg-gray-50 transition {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="border p-2">{{ $item->sku }}</td>
                             <td class="border p-2">{{ $item->item_description }}</td>
                             <td class="border p-2 text-center" contenteditable="true">{{ $item->scheme }}</td>

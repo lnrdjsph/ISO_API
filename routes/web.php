@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\FormsController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -14,14 +16,23 @@ use App\Http\Controllers\ProductController;
 |
 */
 
-Route::prefix('iso-api')->group(function () {
-    // Orders routes
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
-    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-    
-    Route::get('/forms/create', [OrderController::class, 'create'])->name('forms.create');
-    // Products routes
+Route::prefix('b2b2c')->group(function () {
+
+    // Orders Routes
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::get('/{id}', [OrderController::class, 'show'])->name('show');
+    });
+
+    // Forms Routes
+    Route::prefix('forms')->name('forms.')->group(function () {
+        Route::get('/sof', [FormsController::class, 'sof'])->name('sof');
+        Route::post('/sof', [FormsController::class, 'sof_submit'])->name('sof_submit');
+        Route::get('/rof', [FormsController::class, 'rof'])->name('rof');
+        Route::post('/rof', [FormsController::class, 'rof_submit'])->name('rof_submit');
+    });
+
+    // Products Routes
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/search', [ProductController::class, 'search'])->name('search');
@@ -29,13 +40,17 @@ Route::prefix('iso-api')->group(function () {
         Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/scheme', [ProductController::class, 'scheme'])->name('scheme');
 
-        // CSV Import routes
-        Route::get('/import', [ProductController::class, 'showImport'])->name('import.show');
-        Route::post('/import', [ProductController::class, 'import'])->name('import');
-        Route::get('/import/template', [ProductController::class, 'downloadTemplate'])->name('import.template');
-        Route::get('/import/validate', [ProductController::class, 'validateCsv'])->name('import.validate');
+        // CSV Import Routes
+        Route::prefix('import')->name('import.')->group(function () {
+            Route::get('/', [ProductController::class, 'showImport'])->name('show');
+            Route::post('/', [ProductController::class, 'import'])->name('upload');
+            Route::get('/template', [ProductController::class, 'downloadTemplate'])->name('template');
+            Route::get('/validate', [ProductController::class, 'validateCsv'])->name('validate');
+        });
     });
+
 });
+
 
 // Default welcome route
 Route::get('/', function () {
