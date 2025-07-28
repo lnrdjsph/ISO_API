@@ -45,15 +45,18 @@
             @if(session('import_errors'))
                 <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
                     <p class="font-semibold mb-2">Import completed with errors:</p>
-                    <ul class="list-disc list-inside space-y-1">
-                        @foreach(session('import_errors') as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    <div class="max-h-48 overflow-y-auto pr-2">
+                        <ul class="list-disc list-inside space-y-1">
+                            @foreach(session('import_errors') as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
                 </div>
             @endif
 
-            <form action="{{ route('products.import') }}" method="POST" enctype="multipart/form-data" id="csvImportForm">
+
+            <form action="{{ route('products.import.upload') }}" method="POST" enctype="multipart/form-data" id="csvImportForm">
                 @csrf
                 
                 {{-- Drop Zone --}}
