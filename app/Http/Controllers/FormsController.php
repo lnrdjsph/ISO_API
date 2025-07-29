@@ -92,6 +92,7 @@ class FormsController extends Controller
 
         // Save each item
         foreach ($validated['orders'] as $item) {
+            // Save main item
             $order->items()->create([
                 'sku' => $item['sku'] ?? null,
                 'item_description' => $item['item_description'] ?? null,
@@ -100,13 +101,34 @@ class FormsController extends Controller
                 'price' => $item['price'] ?? 0,
                 'qty_per_pc' => $item['qty_per_pc'] ?? 0,
                 'qty_per_cs' => $item['qty_per_cs'] ?? 0,
-                'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
-                'total_qty' => $item['total_qty'] ?? 0,
+                'freebies_per_cs' => 0,
+                'total_qty' => $item['qty_per_cs'] ?? 0,
                 'amount' => $item['amount'] ?? 0,
                 'remarks' => $item['remarks'] ?? null,
                 'store_order_no' => $item['store_order_no'] ?? null,
+                'item_type' => 'PRODUCT',
+            ]);
+
+            // Save freebie as separate item
+            $schemeType = $item['scheme_type'] ?? 'SAME_FREEBIE';
+            $isDiffFreebie = $schemeType === 'DIFF_FREEBIE';
+
+            $order->items()->create([
+                'sku' => $isDiffFreebie ? ($item['freebie_sku'] ?? null) : ($item['sku'] ?? null),
+                'item_description' => $isDiffFreebie ? ($item['freebie_description'] ?? null) : ($item['item_description'] ?? null),
+                'price_per_pc' => $isDiffFreebie ? ($item['freebies_price_per_pc'] ?? 0) : ($item['price_per_pc'] ?? 0),
+                'price' => $isDiffFreebie ? ($item['freebies_price'] ?? 0) : ($item['price'] ?? 0),
+                'qty_per_pc' => $isDiffFreebie ? ($item['freebies_qty_per_pc'] ?? 0) : ($item['qty_per_pc'] ?? 0),
+                'qty_per_cs' => 0,
+                'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
+                'total_qty' => $item['freebies_per_cs'] ?? 0,
+                'amount' => $item['freebie_amount'] ?? 0,
+                'remarks' => $item['remarks'] ?? null,
+                'store_order_no' => $item['store_order_no'] ?? null,
+                'item_type' => 'FREEBIE',
             ]);
         }
+
 
         return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
     }

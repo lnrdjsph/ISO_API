@@ -19,11 +19,12 @@ class CreateOrderItemsTable extends Migration
             $table->decimal('price', 10, 2)->nullable();
             $table->integer('qty_per_pc')->default(0);
             $table->integer('qty_per_cs')->default(0);
-            $table->integer('freebies_per_cs')->default(0); // ❗ Change to integer for consistency
+            $table->string('freebies_per_cs')->default(0); // ❗ Change to integer for consistency
             $table->integer('total_qty')->default(0);
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('remarks')->nullable();
             $table->string('store_order_no')->nullable();
+            $table->string('item_type')->default('MAIN'); // MAIN or FREEBIE
 
             $table->timestamps();
 
