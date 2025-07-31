@@ -18,86 +18,93 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-4 md:grid-cols-3 gap-6 bg-white p-6 border rounded-xl shadow-sm mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 bg-white p-6 border rounded-xl shadow-sm mb-6">
 
-            <!-- Column 1 -->
-            <div class="space-y-4">
-                <h3 class="text-md font-semibold text-gray-700 mb-2">Customer Info</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="space-y-4">
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">Customer Info</h3>
 
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">MBC Card No</p>
-                    <p class="font-medium text-gray-900">{{ $order->mbc_card_no ?? '-' }}</p>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">MBC Card No</p>
+                        <p class="font-medium text-gray-900">{{ $order->mbc_card_no ?? '-' }}</p>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Customer Name</p>
+                        <p class="font-medium text-gray-900">{{ $order->customer_name ?? '-' }}</p>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Contact Number</p>
+                        <p class="font-medium text-gray-900">{{ $order->contact_number ?? '-' }}</p>
+                    </div>
                 </div>
+            
 
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Customer Name</p>
-                    <p class="font-medium text-gray-900">{{ $order->customer_name ?? '-' }}</p>
-                </div>
-
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Contact Number</p>
-                    <p class="font-medium text-gray-900">{{ $order->contact_number ?? '-' }}</p>
+                <div class="space-y-4">
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">Payment Info</h3>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Payment Center</p>
+                        <p class="font-medium text-gray-900">{{ $order->payment_center ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Mode of Payment</p>
+                        <p class="font-medium text-gray-900">{{ $order->mode_payment ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Payment Date</p>
+                        <p class="font-medium text-gray-900">{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('F j, Y') : '-' }}</p>
+                    </div>
                 </div>
             </div>
-           
-            <!-- Column 3 -->
-            <div class="space-y-4">
-                <h3 class="text-md font-semibold text-gray-700 mb-2">Payment & Delivery Info</h3>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Payment Center</p>
-                    <p class="font-medium text-gray-900">{{ $order->payment_center ?? '-' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Mode of Payment</p>
-                    <p class="font-medium text-gray-900">{{ $order->mode_payment ?? '-' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Payment Date</p>
-                    <p class="font-medium text-gray-900">{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('F j, Y') : '-' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Mode of Dispatching</p>
-                    <p class="font-medium text-gray-900">{{ $order->mode_dispatching ?? '-' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Delivery/Pickup Date</p>
-                    <p class="font-medium text-gray-900">{{ $order->delivery_date ?? '-' }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Address / Landmark</p>
-                    <p class="font-medium text-gray-900">
-                        {{ $order->address ?? '-' }}
-                        @if(!empty($order->landmark))
-                            <br><span class="text-gray-500 text-sm">{{ $order->landmark }}</span>
-                        @endif
-                    </p>
+            
+        
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="space-y-4">
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">Delivery Info</h3>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Mode of Dispatching</p>
+                        <p class="font-medium text-gray-900">{{ $order->mode_dispatching ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Delivery/Pickup Date</p>
+                        <p class="font-medium text-gray-900">{{ $order->delivery_date ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Address</p>
+                        <p class="font-medium text-gray-900">{{ $order->address ?? '-' }}</p>
+                    </div>
+
+                    @if(!empty($order->landmark))
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Landmark</p>
+                            <p class="font-medium text-gray-900">{{ $order->landmark }}</p>
+                        </div>
+                    @endif
                 </div>
 
+
+                <div class="space-y-4">
+                    <h3 class="text-md font-semibold text-gray-700 mb-2">Order Info</h3>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Requesting Store</p>
+                        <p class="font-medium text-gray-900">{{ $order->requesting_store }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Requested By</p>
+                        <p class="font-medium text-gray-900">{{ $order->requested_by }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Channel Order</p>
+                        <p class="font-medium text-gray-900">{{ $order->channel_order }}</p>
+                    </div>                
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Date & Time of Order</p>
+                        <p class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($order->time_order)->format('F j, Y - h:i A') }}</p>
+                    </div>                
+                </div>
             </div>
-
-            <!-- Column 4 -->
-            <div class="space-y-4">
-                <h3 class="text-md font-semibold text-gray-700 mb-2">Order Info</h3>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Requesting Store</p>
-                    <p class="font-medium text-gray-900">{{ $order->requesting_store }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Requested By</p>
-                    <p class="font-medium text-gray-900">{{ $order->requested_by }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Channel Order</p>
-                    <p class="font-medium text-gray-900">{{ $order->channel_order }}</p>
-                </div>                
-                <div>
-                    <p class="text-sm text-gray-600 mb-1">Date & Time of Order</p>
-                    <p class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($order->time_order)->format('F j, Y - h:i A') }}</p>
-                </div>                
-            </div>
-
         </div>
-
 
         <div class="overflow-x-auto bg-white p-4 border rounded-xl shadow-sm">
             <h2 class="text-lg font-semibold text-gray-700 mb-4">Ordered Items</h2>

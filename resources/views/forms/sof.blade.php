@@ -42,7 +42,7 @@
 
 
     <!-- Order Form -->
-    <form method="POST" action="{{ route('forms.sof_submit') }}" >
+    <form method="POST" action="{{ route('forms.sof_submit') }}" id="order-form">
       @csrf
         <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
             <!-- Request Details -->
@@ -262,13 +262,13 @@
             </div>
             <!-- Order Items Table -->
             <div class="overflow-x-auto space-y-6">
-                @php
-                    $orders = old('orders', [ [] ]); // fallback: 1 empty row
-                @endphp
+                    @php
+                        $orders = old('orders', [ [] ]); // fallback: 1 empty row
+                    @endphp
                 <div id="order-items" class="space-y-6">
                     <!-- Sample Row -->
                     @foreach ($orders as $i => $order)
-                    <div class="order-row relative border p-6 rounded-xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md space-y-6 bg-white transition-all duration-300 ease-in-out overflow-hidden max-h-[1000px] opacity-100 py-4 mb-6">
+                    <div class="order-row relative border rounded-xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md space-y-6 bg-white transition-all duration-300 ease-in-out overflow-hidden max-h-[1000px] opacity-100 mb-6">
                         <!-- Remove Button (Top-Right Trash Icon) -->
                         <div class="flex items-center space-x-3 mb-4">
                             <div class="item-number w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
@@ -391,16 +391,16 @@
                                             <!-- Freebies Price/PCS -->
                                             <div>
                                                 <label class="block text-sm font-medium mb-1">Freebie Price/PC</label>
-                                                <input type="number" step="0.01" name="orders[{{ $i }}][freebies_price_per_pc]"
-                                                    value="{{ old("orders.$i.freebies_price_per_pc") }}"
+                                                <input type="number" step="0.01" name="orders[{{ $i }}][freebie_price_per_pc]"
+                                                    value="{{ old("orders.$i.freebie_price_per_pc") }}"
                                                     class="w-full p-2 border border-gray-300 rounded text-left focus:outline-none focus:ring-gray-900 focus:border-gray-300"
                                                     placeholder="0.00" />
                                             </div>
                                             <!-- Frebies Price -->
                                             <div class="hidden">
                                                 <label class="block text-sm font-medium mb-1">Freebie Price</label>
-                                                <input type="hidden" step="0.01" name="orders[{{ $i }}][freebies_price]"
-                                                    value="{{ old("orders.$i.freebies_price") }}"
+                                                <input type="hidden" step="0.01" name="orders[{{ $i }}][freebie_price]"
+                                                    value="{{ old("orders.$i.freebie_price") }}"
                                                     class="w-full p-2 border border-gray-300 rounded text-left focus:outline-none focus:ring-gray-900 focus:border-gray-300"
                                                     placeholder="0.00" />
                                             </div>
@@ -408,8 +408,8 @@
                                             <!-- Freebies QTY/PCS -->
                                             <div>
                                                 <label class="block text-sm font-medium mb-1">Freebie QTY/PC</label>
-                                                <input type="number" name="orders[{{ $i }}][freebies_qty_per_pc]"
-                                                    value="{{ old("orders.$i.freebies_qty_per_pc") }}"
+                                                <input type="number" name="orders[{{ $i }}][freebie_qty_per_pc]"
+                                                    value="{{ old("orders.$i.freebie_qty_per_pc") }}"
                                                     class="qty-pcs w-full p-2 border border-gray-300 rounded text-right focus:outline-none focus:ring-gray-900 focus:border-gray-300"  style="text-align: left;" placeholder="0"/>
                                             </div>
 
@@ -430,10 +430,14 @@
                                             <div>
                                                 <label class="block text-sm font-medium mb-1">Remarks</label>
                                                 <select name="orders[{{ $i }}][remarks]" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-gray-900 focus:border-gray-300">
-                                                    <option value="" disabled hidden {{ old("orders.$i.remarks") ? '' : 'selected' }}>Select remarks</option>
-                                                    <option value="For SO (Special Order)" {{ old("orders.$i.remarks") == 'For SO (Special Order)' ? 'selected' : '' }}>For SO (Special Order)</option>
-                                                    <option value="For RMS Approval" {{ old("orders.$i.remarks") == 'For RMS Approval' ? 'selected' : '' }}>For RMS Approval</option>
+                                                    @php
+                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? '');
+                                                    @endphp
+                                                    <option value="" disabled hidden {{ $selectedRemarks === '' ? 'selected' : '' }}>Select remarks</option>
+                                                    <option value="For SO (Special Order)" {{ $selectedRemarks === 'For SO (Special Order)' ? 'selected' : '' }}>For SO (Special Order)</option>
+                                                    <option value="For RMS Approval" {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>For RMS Approval</option>
                                                 </select>
+
                                             </div>
 
 
@@ -539,8 +543,8 @@
                                     </tbody>
                                 </table>
                             </div>
-                        @endforeach
-                </div>
+                            @endforeach
+                        </div>
 
                 <!-- Add Row Button -->
                 <div class="mt-8">
@@ -587,6 +591,37 @@
     </form>
   </div>
 </div>
+{{-- <script>
+document.getElementById('order-form').addEventListener('submit', function (e) {
+    e.preventDefault(); // prevent actual submission
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {};
+
+    for (let [key, value] of formData.entries()) {
+        // group array-style names like orders[0][sku]
+        if (key.includes('[')) {
+            const matches = key.match(/^([^\[]+)\[([0-9]+)\]\[([^\]]+)\]$/);
+            if (matches) {
+                const group = matches[1];
+                const index = matches[2];
+                const field = matches[3];
+
+                if (!data[group]) data[group] = [];
+                if (!data[group][index]) data[group][index] = {};
+                data[group][index][field] = value;
+            } else {
+                data[key] = value;
+            }
+        } else {
+            data[key] = value;
+        }
+    }
+
+    console.log('Form Data:', data);
+});
+</script> --}}
 
 <script>
 
@@ -625,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Reset input fields and update names
         newRow.querySelectorAll('input').forEach(input => {
             input.value = '';
-            input.name = input.name.replace(/\[\d+\]/, `[${rowIndex}]`);
+            input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
             input.removeAttribute('data-selected');
         });
 
@@ -794,7 +829,7 @@ function attachSchemeTypeListener(row) {
     const skuHidden = freebieSection?.querySelector('.freebie-sku-hidden');
     const descHidden = freebieSection?.querySelector('.freebie-desc-hidden');
     const searchInput = freebieSection?.querySelector('.freebie-search');
-    const priceInput = freebieSection?.querySelector('input[name$="[freebies_price_per_pc]"]');
+    const priceInput = freebieSection?.querySelector('input[name$="[freebie_price_per_pc]"]');
 
     if (select) {
         select.addEventListener('change', function () {
@@ -852,14 +887,14 @@ function calculateRowTotals(row) {
   const breakdownFreebieAmount = row.querySelector('.breakdown-freebie-amount');
 
   // Freebie inputs
-  const freebiePriceInput = row.querySelector('input[name*="[freebies_price_per_pc]"]');
-  const freebieQtyPcInput = row.querySelector('input[name*="[freebies_qty_per_pc]"]');
+  const freebiePriceInput = row.querySelector('input[name*="[freebie_price_per_pc]"]');
+  const freebieQtyPcInput = row.querySelector('input[name*="[freebie_qty_per_pc]"]');
   const freebieQtyCsInput = row.querySelector('input[name*="[freebies_per_cs]"]');
-  const freebiePriceInputField = row.querySelector('input[name*="[freebies_price]"]');
+  const freebiePriceInputField = row.querySelector('input[name*="[freebie_price]"]');
 
 
   // Hidden fields
-  const freebieAmountHidden = row.querySelector('.computed-freebie-amount');
+  const freebieAmountHidden = row.querySelector('input[name*="[freebie_amount]"]');
   const totalQtyHidden = row.querySelector('.computed-total-qty');
   const freebiesHidden = row.querySelector('.computed-freebies');
   const priceHidden = row.querySelector('.computed-price');
@@ -946,7 +981,7 @@ function formatCurrency(value) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const formatInputs = document.querySelectorAll('input[name*="[price_per_pc]"], input[name*="[freebies_price_per_pc]"]');
+  const formatInputs = document.querySelectorAll('input[name*="[price_per_pc]"], input[name*="[freebie_price_per_pc]"]');
 
   formatInputs.forEach(input => {
     input.addEventListener('blur', function () {
@@ -1159,9 +1194,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Freebie Fields
             const freebieSku = format(getInputValue('input[name*="[freebie_sku]"]', container));
             const freebieDesc = format(getInputValue('input[name*="[freebie_description]"]', container));
-            const freebiePrice = format(getInputValue('input[name*="[freebies_price_per_pc]"]', container));
-            const freebiePriceTotal = format(getInputValue('input[name*="[freebies_price]"]', container));
-            const freebieQtyPc = format(getInputValue('input[name*="[freebies_qty_per_pc]"]', container));
+            const freebiePrice = format(getInputValue('input[name*="[freebie_price_per_pc]"]', container));
+            const freebiePriceTotal = format(getInputValue('input[name*="[freebie_price]"]', container));
+            const freebieQtyPc = format(getInputValue('input[name*="[freebie_qty_per_pc]"]', container));
             const freebieQtyCS = format(getInputValue('input[name*="[freebies_per_cs]"]', container));
             const freebieQty = freebies;
             const freebieAmount = format(getInputValue('input[name*="[freebie_amount]"]', container));
