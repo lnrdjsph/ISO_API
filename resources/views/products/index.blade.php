@@ -285,7 +285,7 @@
 
                 <!-- Enhanced Pagination -->
                 <div class="px-6 py-4 bg-white backdrop-blur-sm rounded-b-3xl">
-                    {{ $products->onEachSide(1)->links() }}
+                    {{ $products->withPath('/iso-api' . request()->getPathInfo())->onEachSide(1)->links() }}
                 </div>
             </div>
         </div>
