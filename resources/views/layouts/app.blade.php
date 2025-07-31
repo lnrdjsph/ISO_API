@@ -70,7 +70,7 @@ aside a:hover::after {
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('orders.index') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded transition-all duration-300 relative
                                     {{ request()->routeIs('orders.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Sales Order List
                                     </a>
@@ -78,7 +78,7 @@ aside a:hover::after {
                                 @if (preg_match('/orders\/\d+$/', request()->path()))
                                 <li class="relative">
                                     <a href="{{ url()->current() }}"
-                                        class="block pl-6 py-2 hover:text-gray-400 rounded transition-all duration-300 relative
+                                        class="block pl-6 py-2 hover:text-indigo-500 rounded transition-all duration-300 relative
                                         before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium">
                                         Sales Order Details
                                     </a>
@@ -102,14 +102,14 @@ aside a:hover::after {
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('forms.sof') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 relative
                                     {{ request()->routeIs('forms.sof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Sales Order Form
                                     </a>
                                 </li>
                                 <li class="relative">
                                     <a href="{{ route('forms.rof') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 relative
                                     {{ request()->routeIs('forms.rof') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Request Order Form
                                     </a>
@@ -134,21 +134,21 @@ aside a:hover::after {
                             <ul class="mt-1 rounded transition-all duration-300">
                                 <li class="relative">
                                     <a href="{{ route('products.index') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 relative
                                     {{ request()->routeIs('products.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Product List
                                     </a>
                                 </li>
                                 <li class="relative">
                                     <a href="{{ route('products.create') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 relative
                                     {{ request()->routeIs('products.create') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Add New Product
                                     </a>
                                 </li>
                                 <li class="relative">
                                     <a href="{{ route('products.import.show') }}"
-                                    class="block pl-6 py-2 hover:text-gray-400 rounded-md transition-all duration-300 relative
+                                    class="block pl-6 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 relative
                                     {{ request()->routeIs('products.import.show') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }}">
                                         Import CSV
                                     </a>
@@ -198,17 +198,17 @@ aside a:hover::after {
             </button>
             <ul id="mobileProductsMenu" class="hidden mt-1 rounded transition-all duration-300">
                 <li class="relative">
-                    <a href="{{ route('products.index') }}" class="block pl-4 py-2 hover:text-gray-400 rounded-md transition-all duration-300 {{ request()->routeIs('products.index') ? 'border-l-8 border-blue-600' : '' }}">
+                    <a href="{{ route('products.index') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.index') ? 'border-l-8 border-blue-600' : '' }}">
                         Product List
                     </a>
                 </li>
                 <li class="relative">
-                    <a href="{{ route('products.create') }}" class="block pl-4 py-2 hover:text-gray-400 rounded-md transition-all duration-300 {{ request()->routeIs('products.create') ? 'border-l-8 border-blue-600' : '' }}">
+                    <a href="{{ route('products.create') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.create') ? 'border-l-8 border-blue-600' : '' }}">
                         Add New Product
                     </a>
                 </li>
                 <li class="relative">
-                    <a href="{{ route('products.import.show') }}" class="block pl-4 py-2 hover:text-gray-400 rounded-md transition-all duration-300 {{ request()->routeIs('products.import.show') ? 'border-l-8 border-blue-600' : '' }}">
+                    <a href="{{ route('products.import.show') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.import.show') ? 'border-l-8 border-blue-600' : '' }}">
                         Import CSV
                     </a>
                 </li>

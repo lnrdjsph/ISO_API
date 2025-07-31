@@ -16,17 +16,19 @@ class OrderItem extends Model
         'order_id',
         'sku',
         'item_description',
+        'scheme',
         'price_per_pc',
         'price',
-        'qty_per_pc',        // New
-        'qty_per_cs',        // New
-        'freebies_per_cs',      // New
-        'scheme',               // New
+        'qty_per_pc',
+        'qty_per_cs',
+        'freebies_per_cs',
         'total_qty',
         'amount',
         'remarks',
         'store_order_no',
+        'item_type',
     ];
+
 
     public function order()
     {
