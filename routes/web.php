@@ -5,6 +5,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\FormsController;
 use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +18,20 @@ use App\Http\Controllers\DashboardController;
 |
 */
 
-Route::prefix('b2b2c')->group(function () {
+Route::middleware(['auth'])->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard'); // protected home
+
+    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard.view');
+
+    Route::post('/logout', function () {
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect('/login');
+    })->name('logout');
+});
+
+Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
     // Orders Routes
     Route::prefix('orders')->name('orders.')->group(function () {
@@ -40,6 +54,11 @@ Route::prefix('b2b2c')->group(function () {
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/scheme', [ProductController::class, 'scheme'])->name('scheme');
+
+        // New bulk operation routes
+        Route::post('/bulk-update', [ProductController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::post('/bulk-archive', [ProductController::class, 'bulkArchive'])->name('bulk-archive');
+        Route::post('/bulk-restore', [ProductController::class, 'bulkRestore'])->name('bulk-restore');
 
         // CSV Import Routes
         Route::prefix('import')->name('import.')->group(function () {
