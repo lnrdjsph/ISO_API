@@ -409,7 +409,11 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Products added successfully.');
     }
 
-    // Handle CSV import
+    public function getSkus()
+    {
+        $skus = DB::table('products')->pluck('sku')->map(fn($sku) => strtoupper($sku));
+        return response()->json($skus);
+    }
     public function import(Request $request)
     {
         $request->validate([
@@ -421,128 +425,69 @@ class ProductController extends Controller
             $csvContent = file_get_contents($file->getRealPath());
             $lines = array_filter(
                 preg_split('/\r\n|\r|\n/', trim($csvContent)),
-                function ($line) {
-                    $clean = trim($line);
-                    if ($clean === '') return false; // empty line
-
-                    $columns = str_getcsv($clean);
-                    // All fields are empty
-                    return count(array_filter($columns, fn($col) => trim($col) !== '')) > 0;
-                }
+                fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
             );
 
             if (count($lines) < 2) {
-                return redirect()->back()->with('import_errors', ['CSV file must contain at least a header and one data row.']);
+                return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
             }
 
-            // Skip header row
             $dataLines = array_slice($lines, 1);
-            $successCount = 0;
             $errors = [];
             $insertData = [];
-            
+            $updateData = [];
+
+            $existingSkus = DB::table('products')->pluck('sku')->map(fn($sku) => strtoupper($sku))->toArray();
 
             foreach ($dataLines as $lineNumber => $line) {
-                $rowNumber = $lineNumber + 2; // +2 because we start from line 1 and skip header
+                $rowNumber = $lineNumber + 2;
                 $columns = str_getcsv(trim($line));
 
-                // Validate row has exactly 7 columns
                 if (count($columns) < 8) {
-                    $errors[] = "Row {$rowNumber}: Missing required columns. Expected 8 columns (SKU, Description, Case Pack, SRP, Allocation Per Case, Cash/Bank/Card Scheme, PO15 Scheme, Freebie SKU).";
+                    $errors[] = "Row {$rowNumber}: Missing required columns.";
                     continue;
                 }
 
-                $sku = trim($columns[0]);
-                $description = trim($columns[1]);
-                $casePack = trim($columns[2]);
-                $srp = trim($columns[3]);
-                $allocationPerCase = trim($columns[4]);
-                $cashBankCardScheme = trim($columns[5]);
-                $po15Scheme = trim($columns[6]);
-                $freebieSku = trim($columns[7]);
+                [$sku, $description, $casePack, $srp, $allocationPerCase, $cashBankCardScheme, $po15Scheme, $freebieSku] = array_map('trim', $columns);
 
-                // Validate required fields
-                if (empty($sku)) {
+                // Field validations
+                if (!$sku) {
                     $errors[] = "Row {$rowNumber}: SKU is required";
                     continue;
                 }
-
-                if (empty($description)) {
+                if (!$description) {
                     $errors[] = "Row {$rowNumber}: Product Description is required";
                     continue;
                 }
-
-                if (empty($casePack)) {
-                    $errors[] = "Row {$rowNumber}: Case Pack is required";
-                    continue;
-                }
-
-                if (empty($srp)) {
-                    $errors[] = "Row {$rowNumber}: SRP is required";
-                    continue;
-                }
-
-                if (empty($allocationPerCase)) {
-                    $errors[] = "Row {$rowNumber}: Allocation Per Case is required";
-                    continue;
-                }
-
-                if (empty($cashBankCardScheme)) {
-                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme is required";
-                    continue;
-                }
-
-                if (empty($po15Scheme)) {
-                    $errors[] = "Row {$rowNumber}: PO15 Scheme is required";
-                    continue;
-                }
-
-                // Validate numeric fields
-                if (!is_numeric($casePack) || intval($casePack) <= 0) {
+                if (!is_numeric($casePack) || $casePack <= 0) {
                     $errors[] = "Row {$rowNumber}: Case Pack must be a positive number";
                     continue;
                 }
-
-                if (!is_numeric($srp) || floatval($srp) <= 0) {
+                if (!is_numeric($srp) || $srp <= 0) {
                     $errors[] = "Row {$rowNumber}: SRP must be a positive number";
                     continue;
                 }
-
-                if (!is_numeric($allocationPerCase) || floatval($allocationPerCase) <= 0) {
+                if (!is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
                     $errors[] = "Row {$rowNumber}: Allocation Per Case must be a positive number";
                     continue;
                 }
-
                 if (!preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
-                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format (e.g. 15+1)";
+                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format";
                     continue;
                 }
-
                 if (!preg_match('/^\d+\+\d+$/', $po15Scheme)) {
-                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format (e.g. 8+1)";
+                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format";
                     continue;
                 }
-
-                if (empty($freebieSku)) {
+                if (!$freebieSku) {
                     $errors[] = "Row {$rowNumber}: Freebie SKU is required";
                     continue;
                 }
 
+                $formattedSku = strtoupper($sku);
 
-                // Check if SKU already exists
-                $exists = DB::connection('mysql')
-                    ->table('products')
-                    ->where('sku', strtoupper($sku))
-                    ->exists();
-
-                if ($exists) {
-                    $errors[] = "Row {$rowNumber}: SKU '{$sku}' already exists";
-                    continue;
-                }
-
-                // Prepare data for insertion
-                $insertData[] = [
-                    'sku' => strtoupper($sku),
+                $record = [
+                    'sku' => $formattedSku,
                     'description' => $description,
                     'case_pack' => intval($casePack),
                     'srp' => floatval($srp),
@@ -550,30 +495,47 @@ class ProductController extends Controller
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
                     'freebie_sku' => $freebieSku,
-                    'created_at' => now(),
                     'updated_at' => now(),
+                    'created_at' => now(),
                 ];
-                $successCount++;
+
+                if (in_array($formattedSku, $existingSkus)) {
+                    $updateData[] = $record;
+                } else {
+                    $insertData[] = $record;
+                }
             }
 
-            // Bulk insert valid records
-            if (!empty($insertData)) {
-                DB::connection('mysql')->table('products')->insert($insertData);
+            $allData = array_merge($insertData, $updateData);
+
+            if (!empty($allData)) {
+                DB::table('products')->upsert($allData, ['sku'], [
+                    'description',
+                    'case_pack',
+                    'srp',
+                    'allocation_per_case',
+                    'cash_bank_card_scheme',
+                    'po15_scheme',
+                    'freebie_sku',
+                    'updated_at'
+                ]);
             }
 
-            // Prepare response messages
-            if ($successCount > 0 && empty($errors)) {
-                return redirect()->back()->with('import_success', "Successfully imported {$successCount} products.");
-            } elseif ($successCount > 0 && !empty($errors)) {
-                return redirect()->back()
-                    ->with('import_success', "Successfully imported {$successCount} products.")
-                    ->with('import_errors', $errors);
+            $insertedCount = count($insertData);
+            $updatedCount = count($updateData);
+
+            $summary = "Import complete: {$insertedCount} inserted, {$updatedCount} updated.";
+
+            if (($insertedCount + $updatedCount) > 0 && empty($errors)) {
+                return redirect()->back()->with('import_success', $summary);
+            } elseif (!empty($errors)) {
+                return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
             } else {
                 return redirect()->back()->with('import_errors', array_merge(['No products were imported.'], $errors));
             }
 
-        } catch (Exception $e) {
-            return redirect()->back()->with('import_errors', ['An error occurred during import: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
 

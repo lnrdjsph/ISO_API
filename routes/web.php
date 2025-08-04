@@ -60,6 +60,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/bulk-archive', [ProductController::class, 'bulkArchive'])->name('bulk-archive');
         Route::post('/bulk-restore', [ProductController::class, 'bulkRestore'])->name('bulk-restore');
 
+        Route::get('/skus', [ProductController::class, 'getSkus'])->name('get-skus');
         // CSV Import Routes
         Route::prefix('import')->name('import.')->group(function () {
             Route::get('/', [ProductController::class, 'showImport'])->name('show');
