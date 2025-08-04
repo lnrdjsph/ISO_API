@@ -458,10 +458,13 @@ function renderPreviewChunk() {
             <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
             <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
             <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
-            <td class="px-4 py-3 text-xs text-white font-semibold rounded 
-                ${action === 'update' ? 'text-yellow-500' : 'text-green-500'}">
-                ${action.toUpperCase()}
+            <td class="px-4 py-3 text-xs">
+                <span class="inline-block px-2 py-1 font-semibold rounded-full 
+                    ${action === 'update' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                    ${action.toUpperCase()}
+                </span>
             </td>
+
         `;
         previewTableBody.appendChild(tr);
     });
