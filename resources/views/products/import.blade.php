@@ -260,6 +260,7 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">CBC Scheme</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">PO15 Scheme</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Freebie SKU</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Action</th>
                         </tr>
                     </thead>
                     <tbody id="previewTableBody" class="divide-y divide-gray-200">
@@ -354,8 +355,16 @@
                 }
                 progressBar.style.width = progress + '%';
                 progressText.textContent = Math.round(progress) + '% complete';
-            }, 200);
+            }, 200);    
         }
+
+        let existingSkus = [];
+
+        fetch("{{ route('products.get-skus') }}")
+            .then(res => res.json())
+            .then(data => {
+                existingSkus = data.map(s => s.toUpperCase());
+            });
 
         // Process CSV file
         function processFile(file) {
@@ -434,43 +443,49 @@
             previewSection.scrollIntoView({ behavior: 'smooth' });
         });
 
-        function renderPreviewChunk() {
-            const nextChunk = csvData.slice(previewOffset, previewOffset + PREVIEW_LIMIT);
-            nextChunk.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-gray-50');
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
-                `;
-                previewTableBody.appendChild(tr);
-            });
+function renderPreviewChunk() {
+    const nextChunk = csvData.slice(previewOffset, previewOffset + PREVIEW_LIMIT);
+    nextChunk.forEach(row => {
+        const action = existingSkus.includes(row.sku.toUpperCase()) ? 'update' : 'insert';
+        const tr = document.createElement('tr');
+        tr.classList.add('hover:bg-gray-50');
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
+            <td class="px-4 py-3 text-xs text-white font-semibold rounded 
+                ${action === 'update' ? 'text-yellow-500' : 'text-green-500'}">
+                ${action.toUpperCase()}
+            </td>
+        `;
+        previewTableBody.appendChild(tr);
+    });
 
-            previewOffset += PREVIEW_LIMIT;
+    previewOffset += PREVIEW_LIMIT;
 
-            const loadMoreRow = document.getElementById('loadMoreRow');
-            if (loadMoreRow) loadMoreRow.remove();
+    const loadMoreRow = document.getElementById('loadMoreRow');
+    if (loadMoreRow) loadMoreRow.remove();
 
-            if (previewOffset < csvData.length) {
-                const tr = document.createElement('tr');
-                tr.id = 'loadMoreRow';
-                tr.innerHTML = `
-                    <td colspan="8" class="px-6 py-4 text-sm text-center">
-                        <button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
-                            Load more (${csvData.length - previewOffset} more records)
-                        </button>
-                    </td>
-                `;
-                previewTableBody.appendChild(tr);
-                document.getElementById('loadMoreBtn').addEventListener('click', renderPreviewChunk);
-            }
-        }
+    if (previewOffset < csvData.length) {
+        const tr = document.createElement('tr');
+        tr.id = 'loadMoreRow';
+        tr.innerHTML = `
+            <td colspan="8" class="px-6 py-4 text-sm text-center">
+                <button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
+                    Load more (${csvData.length - previewOffset} more records)
+                </button>
+            </td>
+        `;
+        previewTableBody.appendChild(tr);
+        document.getElementById('loadMoreBtn').addEventListener('click', renderPreviewChunk);
+    }
+}
+
 
 
         // Download template
