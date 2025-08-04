@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>My App</title>
     {{-- <link href="{{ mix('css/app.css') }}" rel="stylesheet" /> --}}
     @vite('resources/css/app.css')
@@ -85,6 +86,7 @@ aside a:hover::after {
                                 </li>
                                 @endif
                             </ul>
+
                         @else
                             <a href="{{ route('orders.index') }}" 
                             class="block px-4 py-2 rounded hover:bg-gray-100">
@@ -167,58 +169,144 @@ aside a:hover::after {
 
             </ul>
 
-
+            <!-- Logout -->
+            <form method="POST" action="{{ route('logout') }}" class="absolute bottom-6 left-0 w-full px-4">
+                @csrf
+                <button type="submit" class="w-full text-left py-2 rounded hover:bg-red-100 text-red-600 font-medium text-center">
+                    Logout
+                </button>
+            </form>
         </nav>
     </aside>
 
-    <!-- Mobile Header (Mobile only) -->
-    <header class="block md:hidden bg-white border-b px-6 py-4 flex justify-between items-center">
-        <h2 class="text-lg font-semibold">ISO B2B</h2>
-        <button id="toggleMobileMenu" class="p-2 rounded hover:bg-gray-100">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-        </button>
-    </header>
-
-    <!-- Mobile Menu -->
-    <nav id="mobileMenu" class="hidden md:hidden bg-white p-4 border-b space-y-2">
-
-        <a href="{{ route('orders.index') }}" class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('orders.index') ? 'bg-gray-200 font-bold' : '' }}">
-            Orders
-        </a>
-
-        <!-- Expandable Products Menu -->
-        <div>
-            <button id="toggleMobileProducts" class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 flex justify-between items-center {{ request()->routeIs('products*') ? 'bg-gray-100 border-0 border-blue-600' : '' }}">
-                Products
-                <svg id="mobileProductsIcon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    <!-- Mobile Header -->
+    <header class="block md:hidden bg-white border-b px-6 py-4 flex justify-between items-center z-30 relative">
+        <div class="flex items-center space-x-4">
+            <button id="toggleMobileMenu" class="p-2 rounded hover:bg-gray-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-            <ul id="mobileProductsMenu" class="hidden mt-1 rounded transition-all duration-300">
-                <li class="relative">
-                    <a href="{{ route('products.index') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.index') ? 'border-l-8 border-blue-600' : '' }}">
-                        Product List
-                    </a>
-                </li>
-                <li class="relative">
-                    <a href="{{ route('products.create') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.create') ? 'border-l-8 border-blue-600' : '' }}">
-                        Add New Product
-                    </a>
-                </li>
-                <li class="relative">
-                    <a href="{{ route('products.import.show') }}" class="block pl-4 py-2 hover:text-indigo-500 rounded-md transition-all duration-300 {{ request()->routeIs('products.import.show') ? 'border-l-8 border-blue-600' : '' }}">
-                        Import CSV
-                    </a>
-                </li>
-            </ul>
+            <h2 class="text-lg font-semibold">ISO B2B</h2>
         </div>
+    </header>
 
-        <a href="#" class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
-            Dashboard
-        </a>
+    <!-- Mobile Nav -->
+    <nav id="mobileMenu" class="hidden md:hidden bg-white p-4 border-b">
+        <ul class="space-y-2">
+            {{-- Dashboard --}}
+            <li>
+                <a href="{{ route('dashboard') }}"
+                    class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
+                    Dashboard
+                </a>
+            </li>
+            <!-- Orders Group -->
+            @php $isOrders = request()->routeIs('orders*'); @endphp
+            <li class="rounded {{ $isOrders ? 'bg-gray-100' : '' }}">
+                <button
+                    class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 flex justify-between items-center {{ $isOrders ? 'bg-gray-100' : '' }}"
+                    data-toggle="mobile-orders">
+                    Orders
+                    <svg class="w-4 h-4 transform transition-transform {{ $isOrders ? 'rotate-180' : '' }}"
+                        data-icon="mobile-orders" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <ul id="mobile-orders" class="{{ $isOrders ? '' : 'hidden' }} mt-1 rounded transition-all duration-300">
+                    <li>
+                        <a href="{{ route('orders.index') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('orders.index') ? 'text-blue-800 font-medium' : '' }}">
+                            Sales Order List
+                        </a>
+                    </li>
+                    @if (preg_match('/orders\/\d+$/', request()->path()))
+                        <li>
+                            <a href="{{ url()->current() }}"
+                                class="block pl-6 py-2 hover:text-indigo-500 text-blue-800 font-medium">
+                                Sales Order Details
+                            </a>
+                        </li>
+                    @endif
+                </ul>
+            </li>
+
+            <!-- Forms Group -->
+            @php $isForms = request()->routeIs('forms*'); @endphp
+            <li class="rounded {{ $isForms ? 'bg-gray-100' : '' }}">
+                <button
+                    class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 flex justify-between items-center"
+                    data-toggle="mobile-forms">
+                    Forms
+                    <svg class="w-4 h-4 transform transition-transform {{ $isForms ? 'rotate-180' : '' }}"
+                        data-icon="mobile-forms" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <ul id="mobile-forms" class="{{ $isForms ? '' : 'hidden' }} mt-1 rounded transition-all duration-300">
+                    <li>
+                        <a href="{{ route('forms.sof') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('forms.sof') ? 'text-blue-800 font-medium' : '' }}">
+                            Sales Order Form
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('forms.rof') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('forms.rof') ? 'text-blue-800 font-medium' : '' }}">
+                            Request Order Form
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- Products Group -->
+            @php $isProducts = request()->routeIs('products*'); @endphp
+            <li class="rounded {{ $isProducts ? 'bg-gray-100' : '' }}">
+                <button
+                    class="w-full text-left px-4 py-2 rounded hover:bg-gray-100 flex justify-between items-center"
+                    data-toggle="mobile-products">
+                    Products
+                    <svg class="w-4 h-4 transform transition-transform {{ $isProducts ? 'rotate-180' : '' }}"
+                        data-icon="mobile-products" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <ul id="mobile-products" class="{{ $isProducts ? '' : 'hidden' }} mt-1 rounded transition-all duration-300">
+                    <li>
+                        <a href="{{ route('products.index') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('products.index') ? 'text-blue-800 font-medium' : '' }}">
+                            Product List
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('products.create') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('products.create') ? 'text-blue-800 font-medium' : '' }}">
+                            Add New Product
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('products.import.show') }}"
+                            class="block pl-6 py-2 hover:text-indigo-500 {{ request()->routeIs('products.import.show') ? 'text-blue-800 font-medium' : '' }}">
+                            Import CSV
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+        </ul>
+        <!-- Logout -->
+        <form method="POST" action="{{ route('logout') }}" class="absolute bottom-6 left-0 w-full px-4">
+            @csrf
+            <button type="submit" class="w-full text-left px-4 py-2 rounded hover:bg-red-100 text-red-600 font-medium">
+                Logout
+            </button>
+        </form>
     </nav>
+
 
      <!-- Main Content -->
     <div class="w-full md:flex-1 min-h-screen">
@@ -238,85 +326,24 @@ aside a:hover::after {
     </div>
 
     @vite('resources/js/app.js')
-    <script>
-        // Toggle mobile menu
-        document.getElementById('toggleMobileMenu').addEventListener('click', () => {
-            const mobileMenu = document.getElementById('mobileMenu');
-            mobileMenu.classList.toggle('hidden');
+<script>
+    // Mobile menu main toggle
+    document.getElementById('toggleMobileMenu')?.addEventListener('click', () => {
+        document.getElementById('mobileMenu')?.classList.toggle('hidden');
+    });
+
+    // Handle section toggles (Products, Orders, Forms)
+    document.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-toggle');
+            const submenu = document.getElementById(targetId);
+            const icon = document.querySelector(`[data-icon="${targetId}"]`);
+
+            submenu?.classList.toggle('hidden');
+            icon?.classList.toggle('rotate-180');
         });
+    });
+</script>
 
-        // Toggle mobile products dropdown
-        document.getElementById('toggleMobileProducts').addEventListener('click', () => {
-            const productsMenu = document.getElementById('mobileProductsMenu');
-            const productsIcon = document.getElementById('mobileProductsIcon');
-
-            productsMenu.classList.toggle('hidden');
-            productsIcon.classList.toggle('rotate-180'); // For arrow animation
-        });
-
-
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const closeSidebar = document.getElementById('closeSidebar');
-        const toggleSidebarDesktop = document.getElementById('toggleSidebarDesktop');
-        const mainContent = document.querySelector('.flex-1');
-        
-        let sidebarCollapsed = false;
-
-        // Mobile sidebar toggle
-        function openSidebar() {
-            sidebar.classList.remove('-trangray-x-full');
-            overlay.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeSidebarMobile() {
-            sidebar.classList.add('-trangray-x-full');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Desktop sidebar toggle
-        function toggleSidebarDesktopFunc() {
-            sidebarCollapsed = !sidebarCollapsed;
-            
-            if (sidebarCollapsed) {
-                sidebar.classList.add('w-0', 'overflow-hidden');
-                sidebar.classList.remove('w-64');
-            } else {
-                sidebar.classList.remove('w-0', 'overflow-hidden');
-                sidebar.classList.add('w-64');
-            }
-        }
-
-        // Event listeners
-        toggleSidebar?.addEventListener('click', openSidebar);
-        closeSidebar?.addEventListener('click', closeSidebarMobile);
-        overlay?.addEventListener('click', closeSidebarMobile);
-        toggleSidebarDesktop?.addEventListener('click', toggleSidebarDesktopFunc);
-
-        // Close sidebar on window resize if mobile
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 768) {
-                closeSidebarMobile();
-                // Reset desktop sidebar state
-                if (sidebarCollapsed) {
-                    sidebar.classList.remove('w-0', 'overflow-hidden');
-                    sidebar.classList.add('w-64');
-                    sidebarCollapsed = false;
-                }
-            }
-        });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth < 768) {
-                if (!sidebar.contains(e.target) && !toggleSidebar.contains(e.target) && !sidebar.classList.contains('-trangray-x-full')) {
-                    closeSidebarMobile();
-                }
-            }
-        });
-    </script>
 </body>
 </html>

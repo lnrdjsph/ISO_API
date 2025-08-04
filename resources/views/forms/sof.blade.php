@@ -164,27 +164,18 @@
 
                     
                     <div>
-                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" />
-                        <style>
-                        .tagify__dropdown__item:hover {
-                            background-color: #f3f4f6; /* Tailwind gray-100 */
-                            color: black;
-                        }
-                        </style>
-                        <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
                         <label class="block mb-1 text-sm">Mode of Payment</label>
-                        <input name="mode_payment" placeholder="Select or type payment mode" value="{{ old('mode_payment') }}" class="w-full p-2 rounded border border-gray-300 text-sm">
-                    </div>
 
-                    <script>
-                    new Tagify(document.querySelector('input[name=mode_payment]'), {
-                        whitelist: ["PO15%", "Cash", "Bank Card", "Online Payment"],
-                        dropdown: {
-                            enabled: 0,
-                            maxItems: 10
-                        }
-                    });
-                    </script>
+                        <select name="mode_payment" 
+                            class="w-full p-2 rounded border border-gray-300 text-sm">
+                            
+                            <option value="" disabled {{ old('mode_payment') ? '' : 'selected' }}>Select or type payment mode</option>
+                            <option value="PO15%" {{ old('mode_payment') == 'PO15%' ? 'selected' : '' }}>PO15%</option>
+                            <option value="Cash" {{ old('mode_payment') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="Bank Card" {{ old('mode_payment') == 'Bank Card' ? 'selected' : '' }}>Bank Card</option>
+                            <option value="Online Payment" {{ old('mode_payment') == 'Online Payment' ? 'selected' : '' }}>Online Payment</option>
+                        </select>
+                    </div>
 
 
 
@@ -622,7 +613,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
     console.log('Form Data:', data);
 });
 </script> --}}
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 
 
@@ -850,10 +841,6 @@ function attachSchemeTypeListener(row) {
 }
 
 
-
-</script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
 // Listen to input events on QTY and Price fields
 document.addEventListener('DOMContentLoaded', function () {
   const allRows = document.querySelectorAll('.order-row');
@@ -1100,7 +1087,7 @@ $(document).on('click', '.product-item', function () {
     const container = selected.closest('.relative');
 
     const sku = selected.data('sku');
-    const name = selected.data('name');
+    const name = selected.data('descriiption');
 
     // Detect target input type
     const isFreebie = container.find('.freebie-search').length > 0;
@@ -1270,8 +1257,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateTable(); // Initial load
 });
-
-
 
 
 </script>

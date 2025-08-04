@@ -7,31 +7,68 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Exception;
+use App\Http\Requests\BulkUpdateProductsRequest;
+use App\Policies\ProductPolicy;
+use Illuminate\Support\Facades\Gate;
+use App\Events\ProductsBulkArchived;
+use Illuminate\Support\Facades\Log;
+
 
 class ProductController extends Controller
 {
+    public function __construct()
+    {
+        // Apply middleware
+        $this->middleware('auth');
+        $this->middleware('throttle:bulk_operations,5,10')->only(['bulkUpdate', 'bulkArchive']);
+    }
     // Show product search view
     public function index(Request $request)
     {
         try {
-            $sort = $request->get('sort', 'SKU');
+            $sort = $request->get('sort', 'sku');
             $direction = $request->get('direction', 'asc');
 
-            $allowedSorts = ['SKU', 'NAME'];
-            if (!in_array(strtoupper($sort), $allowedSorts)) {
-                $sort = 'SKU';
+            $allowedSorts = ['sku', 'description'];
+            if (!in_array(strtolower($sort), $allowedSorts)) {
+                $sort = 'sku';
             }
             if (!in_array(strtolower($direction), ['asc', 'desc'])) {
                 $direction = 'asc';
             }
+            
 
+            // Fetch paginated products from MySQL
             $products = DB::connection('mysql')
                 ->table('products')
-                ->select('SKU as sku', 'NAME as name')
+                ->select(
+                    'id',
+                    'sku',
+                    'description',
+                    'case_pack',
+                    'srp',
+                    'allocation_per_case',
+                    'cash_bank_card_scheme',
+                    'po15_scheme',
+                    'freebie_sku',
+                )
                 ->orderBy($sort, $direction)
                 ->paginate(10)
                 ->appends($request->query());
 
+            // Fetch freebie descriptions using freebie_sku matched against sku
+            $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
+
+            $freebieDescriptions = DB::connection('mysql')
+                ->table('products')
+                ->whereIn('sku', $freebieSkus)
+                ->pluck('description', 'sku'); // [sku => description]
+
+            foreach ($products as $product) {
+                $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
+            }
+
+            // Enrich each product with Oracle RMS data
             foreach ($products as $product) {
                 $oracleData = DB::connection('oracle_rms')->selectOne("
                     SELECT * FROM (
@@ -70,7 +107,6 @@ class ProductController extends Controller
                     ) WHERE ROWNUM = 1
                 ", [$product->sku]);
 
-
                 if ($oracleData) {
                     $product->department = $oracleData->department ?? null;
                     $product->brand = $oracleData->brand ?? null;
@@ -88,6 +124,8 @@ class ProductController extends Controller
     }
 
 
+
+
     // Handle AJAX product search
     public function search(Request $request)
     {
@@ -95,11 +133,12 @@ class ProductController extends Controller
 
         $results = DB::connection('mysql')
             ->table('products')
-            ->select('SKU as sku', 'NAME as name')
+            ->select('sku as sku', 'description as description')
             ->where(function ($q) use ($query) {
-                $q->whereRaw('LOWER(NAME) LIKE ?', ["%{$query}%"])
-                ->orWhereRaw('LOWER(SKU) LIKE ?', ["%{$query}%"]);
+                $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
+                ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
             })
+            ->whereNull('archived_at')
             ->get();
 
         return response()->json($results);
@@ -107,8 +146,220 @@ class ProductController extends Controller
 
 
 
+   /**
+     * Bulk update with enhanced security
+     */
 
+    public function bulkUpdate(BulkUpdateProductsRequest $request)
+    {
+        try {
+            $productIds = $request->input('product_ids');
+            
+            // Build update array with only fields that have values
+            $updateData = collect($request->validated())
+                ->except(['product_ids'])
+                ->filter(function ($value) {
+                    return !is_null($value) && $value !== '';
+                })
+                ->toArray();
 
+            if (empty($updateData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No fields to update. Please provide at least one field value.'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+            
+            // Use the model method if you're using Eloquent
+            $updatedCount = Product::bulkUpdateFields($productIds, $updateData);
+            
+            // Or use raw query as shown earlier
+            // $updatedCount = DB::table('products')->whereIn('id', $productIds)->update($updateData);
+
+            $this->logBulkActivity('bulk_update', $productIds, $updateData);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully updated {$updatedCount} products",
+                'updated_count' => $updatedCount,
+                'updated_fields' => array_keys($updateData)
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating products: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk archive with enhanced security
+     */
+    public function bulkArchive(Request $request)
+    {
+        if (!Gate::allows('bulk-archive', Product::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to archive products.'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'product_ids' => 'required|array|min:1|max:' . config('app.max_bulk_operation_size', 100),
+            'product_ids.*' => 'exists:products,id',
+            'archive_reason' => 'nullable|string|max:500', // Optional reason for archiving
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $productIds = $request->input('product_ids');
+            $archiveReason = $request->input('archive_reason');
+
+            DB::beginTransaction();
+
+            // Check if products are not already archived
+            $nonArchivedCount = Product::whereIn('id', $productIds)
+                ->whereNull('archived_at')
+                ->count();
+
+            if ($nonArchivedCount === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'All selected products are already archived.'
+                ], 400);
+            }
+
+            $archivedCount = Product::whereIn('id', $productIds)
+                ->whereNull('archived_at')
+                ->update([
+                    'archived_at' => now(),
+                    'archived_by' => auth()->id(),
+                    'archive_reason' => $archiveReason,
+                    'updated_at' => now()
+                ]);
+
+            // Log the bulk archive activity
+            $this->logBulkActivity('bulk_archive', $productIds, [
+                'reason' => $archiveReason
+            ]);
+
+            // Fire event
+            event(new ProductsBulkArchived($productIds, auth()->user(), $archiveReason));
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully archived {$archivedCount} products",
+                'archived_count' => $archivedCount
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Bulk archive failed', [
+                'user_id' => auth()->id(),
+                'product_ids' => $productIds ?? [],
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while archiving products. Please try again.'
+            ], 500);
+        }
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'product_ids' => 'required|array|min:1',
+                'product_ids.*' => 'exists:mysql.products,id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+            }
+
+            $productIds = $request->input('product_ids');
+
+            DB::connection('mysql')->beginTransaction();
+            $count = DB::connection('mysql')->table('products')
+                ->whereIn('id', $productIds)
+                ->whereNotNull('archived_at')
+                ->update(['archived_at' => null, 'updated_at' => now()]);
+
+            $this->logBulkActivity('bulk_restore', $productIds);
+            DB::connection('mysql')->commit();
+
+            return response()->json(['success' => true, 'message' => "Restored {$count} products", 'restored_count' => $count]);
+        } catch (Exception $e) {
+            DB::connection('mysql')->rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+        /**
+     * Enhanced logging method
+     */
+    private function logBulkActivity($action, $productIds, $data = null)
+    {
+        try {
+            $activityData = [
+                'user_id' => auth()->id(),
+                'action' => $action,
+                'description' => $this->generateActivityDescription($action, count($productIds)),
+                'properties' => json_encode([
+                    'product_ids' => $productIds,
+                    'product_count' => count($productIds),
+                    'updated_fields' => $data ? array_keys($data) : null,
+                    'data' => $data,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'timestamp' => now()->toISOString()
+                ]),
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+
+            DB::table('activity_logs')->insert($activityData);
+
+            // Also log to Laravel's log file for debugging
+            Log::info("Bulk operation performed", $activityData);
+
+        } catch (Exception $e) {
+            Log::error('Failed to log bulk activity: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate activity description
+     */
+    private function generateActivityDescription($action, $count)
+    {
+        $descriptions = [
+            'bulk_update' => "Updated {$count} products via bulk operation",
+            'bulk_archive' => "Archived {$count} products via bulk operation",
+            'bulk_restore' => "Restored {$count} products via bulk operation"
+        ];
+
+        return $descriptions[$action] ?? "Performed {$action} on {$count} products";
+    }
 
     // Show create product form
     public function create()
@@ -125,7 +376,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $skus = $request->input('sku');
-        $names = $request->input('name');
+        $descriptions = $request->input('description');
 
         // Validate arrays presence
         $request->validate([
@@ -133,22 +384,22 @@ class ProductController extends Controller
             'sku.*' => ['required', function ($attribute, $value, $fail) {
                 $exists = DB::connection('mysql')
                     ->table('products') // Consistent table name
-                    ->where('SKU', strtoupper($value))
+                    ->where('sku', strtoupper($value))
                     ->exists();
                 if ($exists) {
-                    $fail('The SKU '.$value.' has already been taken.');
+                    $fail('The sku '.$value.' has already been taken.');
                 }
             }],
-            'name' => 'required|array',
-            'name.*' => 'required|string',
+            'description' => 'required|array',
+            'description.*' => 'required|string',
         ]);
 
         // Prepare bulk insert data
         $insertData = [];
         foreach ($skus as $index => $sku) {
             $insertData[] = [
-                'SKU' => strtoupper($sku),
-                'NAME' => $names[$index],
+                'sku' => strtoupper($sku),
+                'description' => $descriptions[$index],
                 'CREATED_AT' => now(),
             ];
         }
@@ -168,7 +419,17 @@ class ProductController extends Controller
         try {
             $file = $request->file('csv_file');
             $csvContent = file_get_contents($file->getRealPath());
-            $lines = array_filter(explode("\n", $csvContent), 'strlen');
+            $lines = array_filter(
+                preg_split('/\r\n|\r|\n/', trim($csvContent)),
+                function ($line) {
+                    $clean = trim($line);
+                    if ($clean === '') return false; // empty line
+
+                    $columns = str_getcsv($clean);
+                    // All fields are empty
+                    return count(array_filter($columns, fn($col) => trim($col) !== '')) > 0;
+                }
+            );
 
             if (count($lines) < 2) {
                 return redirect()->back()->with('import_errors', ['CSV file must contain at least a header and one data row.']);
@@ -179,19 +440,26 @@ class ProductController extends Controller
             $successCount = 0;
             $errors = [];
             $insertData = [];
+            
 
             foreach ($dataLines as $lineNumber => $line) {
                 $rowNumber = $lineNumber + 2; // +2 because we start from line 1 and skip header
                 $columns = str_getcsv(trim($line));
 
-                // Validate row has exactly 2 columns
-                if (count($columns) < 2) {
-                    $errors[] = "Row {$rowNumber}: Missing required columns (SKU, Description)";
+                // Validate row has exactly 7 columns
+                if (count($columns) < 8) {
+                    $errors[] = "Row {$rowNumber}: Missing required columns. Expected 8 columns (SKU, Description, Case Pack, SRP, Allocation Per Case, Cash/Bank/Card Scheme, PO15 Scheme, Freebie SKU).";
                     continue;
                 }
 
                 $sku = trim($columns[0]);
                 $description = trim($columns[1]);
+                $casePack = trim($columns[2]);
+                $srp = trim($columns[3]);
+                $allocationPerCase = trim($columns[4]);
+                $cashBankCardScheme = trim($columns[5]);
+                $po15Scheme = trim($columns[6]);
+                $freebieSku = trim($columns[7]);
 
                 // Validate required fields
                 if (empty($sku)) {
@@ -204,10 +472,67 @@ class ProductController extends Controller
                     continue;
                 }
 
+                if (empty($casePack)) {
+                    $errors[] = "Row {$rowNumber}: Case Pack is required";
+                    continue;
+                }
+
+                if (empty($srp)) {
+                    $errors[] = "Row {$rowNumber}: SRP is required";
+                    continue;
+                }
+
+                if (empty($allocationPerCase)) {
+                    $errors[] = "Row {$rowNumber}: Allocation Per Case is required";
+                    continue;
+                }
+
+                if (empty($cashBankCardScheme)) {
+                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme is required";
+                    continue;
+                }
+
+                if (empty($po15Scheme)) {
+                    $errors[] = "Row {$rowNumber}: PO15 Scheme is required";
+                    continue;
+                }
+
+                // Validate numeric fields
+                if (!is_numeric($casePack) || intval($casePack) <= 0) {
+                    $errors[] = "Row {$rowNumber}: Case Pack must be a positive number";
+                    continue;
+                }
+
+                if (!is_numeric($srp) || floatval($srp) <= 0) {
+                    $errors[] = "Row {$rowNumber}: SRP must be a positive number";
+                    continue;
+                }
+
+                if (!is_numeric($allocationPerCase) || floatval($allocationPerCase) <= 0) {
+                    $errors[] = "Row {$rowNumber}: Allocation Per Case must be a positive number";
+                    continue;
+                }
+
+                if (!preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
+                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format (e.g. 15+1)";
+                    continue;
+                }
+
+                if (!preg_match('/^\d+\+\d+$/', $po15Scheme)) {
+                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format (e.g. 8+1)";
+                    continue;
+                }
+
+                if (empty($freebieSku)) {
+                    $errors[] = "Row {$rowNumber}: Freebie SKU is required";
+                    continue;
+                }
+
+
                 // Check if SKU already exists
                 $exists = DB::connection('mysql')
                     ->table('products')
-                    ->where('SKU', strtoupper($sku))
+                    ->where('sku', strtoupper($sku))
                     ->exists();
 
                 if ($exists) {
@@ -217,9 +542,16 @@ class ProductController extends Controller
 
                 // Prepare data for insertion
                 $insertData[] = [
-                    'SKU' => strtoupper($sku),
-                    'NAME' => $description,
-                    'CREATED_AT' => now(),
+                    'sku' => strtoupper($sku),
+                    'description' => $description,
+                    'case_pack' => intval($casePack),
+                    'srp' => floatval($srp),
+                    'allocation_per_case' => intval($allocationPerCase),
+                    'cash_bank_card_scheme' => $cashBankCardScheme,
+                    'po15_scheme' => $po15Scheme,
+                    'freebie_sku' => $freebieSku,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
                 $successCount++;
             }
@@ -248,7 +580,7 @@ class ProductController extends Controller
     // Download CSV template
     public function downloadTemplate()
     {
-        $csvContent = "SKU,Product Description\n";
+        $csvContent = "sku,Product Description\n";
         $csvContent .= "ABC001,Premium Wireless Headphones\n";
         $csvContent .= "DEF002,Bluetooth Speaker System\n";
         $csvContent .= "GHI003,Smart Watch Series X\n";
@@ -304,7 +636,7 @@ class ProductController extends Controller
                 $description = trim($columns[1]);
 
                 if (empty($sku) || empty($description)) {
-                    $errors[] = "Row {$rowNumber}: SKU and Description are required";
+                    $errors[] = "Row {$rowNumber}: sku and Description are required";
                     continue;
                 }
 
@@ -312,16 +644,16 @@ class ProductController extends Controller
                 $validRows++;
             }
 
-            // Check for existing SKUs in batch
+            // Check for existing skus in batch
             if (!empty($skusToCheck)) {
                 $existingSkus = DB::connection('mysql')
                     ->table('products')
-                    ->whereIn('SKU', $skusToCheck)
-                    ->pluck('SKU')
+                    ->whereIn('sku', $skusToCheck)
+                    ->pluck('sku')
                     ->toArray();
 
                 foreach ($existingSkus as $existingSku) {
-                    $errors[] = "SKU '{$existingSku}' already exists in database";
+                    $errors[] = "sku '{$existingSku}' already exists in database";
                 }
             }
 
