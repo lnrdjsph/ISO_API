@@ -15,7 +15,6 @@ class ProductPolicy
      */
     public function bulkUpdate(User $user)
     {
-        // Adjust this logic based on your role/permission system
         return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasPermission('bulk_edit_products');
     }
 

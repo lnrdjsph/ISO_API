@@ -118,19 +118,19 @@
                                     </svg>
                                 </button>
                             </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <!-- First Row: SKU & Product Name -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <div class="space-y-2">
                                     <label for="sku_0" class="block text-sm font-medium text-gray-700 flex items-center space-x-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
                                         </svg>
-                                        <span>SKU</span>
-                                        <span class="text-red-500">*</span>
+                                        <span>SKU</span><span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" name="sku[]" id="sku_0" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md" 
-                                           placeholder="Enter product SKU" required>
+                                    <input type="text" name="sku[]" id="sku_0" placeholder="Enter product SKU"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                                        required>
                                 </div>
 
                                 <div class="md:col-span-2 space-y-2">
@@ -138,17 +138,57 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                         </svg>
-                                        <span>Product Name</span>
-                                        <span class="text-red-500">*</span>
+                                        <span>Product Name</span><span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" name="name[]" id="name_0" 
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md" 
-                                           placeholder="Enter product name" required>
+                                    <input type="text" name="name[]" id="name_0" placeholder="Enter product name"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                                        required>
                                 </div>
                             </div>
+
+                            <!-- Second Row: Additional Fields -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div>
+                                    <label for="case_pack_0" class="block text-sm font-medium text-gray-700">Case Pack</label>
+                                    <input type="number" name="case_pack[]" id="case_pack_0" placeholder="e.g. 24"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="srp_0" class="block text-sm font-medium text-gray-700">SRP</label>
+                                    <input type="number" step="0.01" name="srp[]" id="srp_0" placeholder="e.g. 99.99"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="allocation_per_case_0" class="block text-sm font-medium text-gray-700">Allocation / Case</label>
+                                    <input type="number" name="allocation_per_case[]" id="allocation_per_case_0" placeholder="e.g. 100"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="cbc_scheme_0" class="block text-sm font-medium text-gray-700">C/BC Scheme</label>
+                                    <input type="text" name="cbc_scheme[]" id="cbc_scheme_0" placeholder="e.g. 12+1"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="po15_scheme_0" class="block text-sm font-medium text-gray-700">PO15 Scheme</label>
+                                    <input type="text" name="po15_scheme[]" id="po15_scheme_0" placeholder="e.g. 5+1"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+
+                                <div>
+                                    <label for="freebie_sku_0" class="block text-sm font-medium text-gray-700">Freebie SKU</label>
+                                    <input type="text" name="freebie_sku[]" id="freebie_sku_0" placeholder="e.g. FB123"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Add Product Button -->
                 <div class="mt-8">

@@ -42,6 +42,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
     // Forms Routes
     Route::prefix('forms')->name('forms.')->group(function () {
         Route::get('/sof', [FormsController::class, 'sof'])->name('sof');
+        Route::get('/sof_search', [FormsController::class, 'search'])->name('sof_search');
         Route::post('/sof', [FormsController::class, 'sof_submit'])->name('sof_submit');
         Route::get('/rof', [FormsController::class, 'rof'])->name('rof');
         Route::post('/rof', [FormsController::class, 'rof_submit'])->name('rof_submit');

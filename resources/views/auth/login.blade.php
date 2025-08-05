@@ -1,5 +1,15 @@
 <x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div class="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
+        
+
+        {{-- Logo --}}
+        <div class="mb-6">
+            <img src="{{ asset('images/MarengEms_Logo.png') }}" alt="Logo" class="h-[300px] w-auto mx-auto">
+        </div>
+
+
+        {{-- Login Form --}}
+        
         <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
             <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
 
@@ -9,6 +19,7 @@
 
             <form method="POST" action="{{ route('login') }}">
                 @csrf
+
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-1" for="email">Email</label>

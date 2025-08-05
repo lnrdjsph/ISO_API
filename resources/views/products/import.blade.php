@@ -279,12 +279,12 @@
         box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
     }
 </style>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         let csvData = null;
         let previewOffset = 0;
-        const PREVIEW_LIMIT = 10;   
+        const PREVIEW_LIMIT = 20;   
         
         const dropZone = document.getElementById('dropZone');
         const csvFile = document.getElementById('csvFile');
@@ -366,6 +366,10 @@
                 existingSkus = data.map(s => s.toUpperCase());
             });
 
+        function getAllUploadedSkus() {
+            return csvData.map(row => row.sku.toUpperCase());
+        }
+
         // Process CSV file
         function processFile(file) {
             const reader = new FileReader();
@@ -390,7 +394,7 @@
                         allocation_per_case: cols[4] || '',
                         cash_bank_card_scheme: cols[5] || '',
                         po15_scheme: cols[6] || '',
-                        freebie_sku: cols[7] || ''
+                        freebie_sku: (cols[7] || '').split('/').map(s => s.trim()).join('/')
                     };
                 }).filter(row => row.sku && row.description);
 
@@ -438,56 +442,84 @@
             previewOffset = 0;
             previewTableBody.innerHTML = '';
             recordCount.textContent = `${csvData.length} records found`;
+
+            const hasUpdate = csvData.some(row =>
+                existingSkus.includes(row.sku.toUpperCase())
+            );
+
+            if (hasUpdate) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Heads up!',
+                    text: 'Some SKUs already exist and will be updated. Please review the data carefully.',
+                    confirmButtonColor: '#f59e0b',
+                    confirmButtonText: 'Got it',
+                });
+            }
             renderPreviewChunk();
             previewSection.classList.remove('hidden');
             previewSection.scrollIntoView({ behavior: 'smooth' });
         });
 
-function renderPreviewChunk() {
-    const nextChunk = csvData.slice(previewOffset, previewOffset + PREVIEW_LIMIT);
-    nextChunk.forEach(row => {
-        const action = existingSkus.includes(row.sku.toUpperCase()) ? 'update' : 'insert';
-        const tr = document.createElement('tr');
-        tr.classList.add('hover:bg-gray-50');
-        tr.innerHTML = `
-            <td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
-            <td class="px-4 py-3 text-xs">
-                <span class="inline-block px-2 py-1 font-semibold rounded-full 
-                    ${action === 'update' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
-                    ${action.toUpperCase()}
-                </span>
-            </td>
+        function renderPreviewChunk() {
+            let hasUpdate = false;
+            const nextChunk = csvData.slice(previewOffset, previewOffset + PREVIEW_LIMIT);
+            nextChunk.forEach(row => {
+                const action = existingSkus.includes(row.sku.toUpperCase()) ? 'update' : 'insert';
+                const tr = document.createElement('tr');
+                tr.classList.add('hover:bg-gray-50');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">
+                        ${(() => {
+                            if (!row.freebie_sku) return '';
+                            const uploadedSkus = getAllUploadedSkus();
+                            const freebies = row.freebie_sku.split('/');
+                            const invalid = freebies.some(sku => {
+                                const trimmedSku = sku.trim().toUpperCase();
+                                return !existingSkus.includes(trimmedSku) && !uploadedSkus.includes(trimmedSku);
+                            });
+                            return escapeHtml(row.freebie_sku) + (invalid
+                                ? ' <span title="SKU not recognized" class="text-yellow-600 font-bold">&#9432;</span>'
+                                : '');
+                        })()}
+                    </td>
 
-        `;
-        previewTableBody.appendChild(tr);
-    });
+                    <td class="px-4 py-3 text-xs">
+                        <span class="inline-block px-2 py-1 font-semibold rounded-full 
+                            ${action === 'update' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                            ${action.toUpperCase()}
+                        </span>
+                    </td>
 
-    previewOffset += PREVIEW_LIMIT;
+                `;
+                previewTableBody.appendChild(tr);
+            });
+            previewOffset += PREVIEW_LIMIT;
 
-    const loadMoreRow = document.getElementById('loadMoreRow');
-    if (loadMoreRow) loadMoreRow.remove();
+            const loadMoreRow = document.getElementById('loadMoreRow');
+            if (loadMoreRow) loadMoreRow.remove();
 
-    if (previewOffset < csvData.length) {
-        const tr = document.createElement('tr');
-        tr.id = 'loadMoreRow';
-        tr.innerHTML = `
-            <td colspan="8" class="px-6 py-4 text-sm text-center">
-                <button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
-                    Load more (${csvData.length - previewOffset} more records)
-                </button>
-            </td>
-        `;
-        previewTableBody.appendChild(tr);
-        document.getElementById('loadMoreBtn').addEventListener('click', renderPreviewChunk);
-    }
-}
+            if (previewOffset < csvData.length) {
+                const tr = document.createElement('tr');
+                tr.id = 'loadMoreRow';
+                tr.innerHTML = `
+                    <td colspan="8" class="px-6 py-4 text-sm text-center">
+                        <button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
+                            Load more (${csvData.length - previewOffset} more records)
+                        </button>
+                    </td>
+                `;
+                previewTableBody.appendChild(tr);
+                document.getElementById('loadMoreBtn').addEventListener('click', renderPreviewChunk);
+            }
+        }
 
 
 

@@ -1042,7 +1042,7 @@ $(document).on('keyup focus', '.product-search, .freebie-search', function () {
             `);
 
             $.ajax({
-                url: '{{ route("products.search") }}',
+                url: '{{ route("forms.sof_search") }}',
                 data: { query: query },
                 success: function (data) {
                     input.removeClass('animate-pulse');
@@ -1051,8 +1051,8 @@ $(document).on('keyup focus', '.product-search, .freebie-search', function () {
                     const cleanedQuery = query.replace(/[^a-z0-9]/gi, '');
                     const filtered = data.filter(item => {
                         const cleanSku = item.sku.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                        const cleanName = item.name.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                        return cleanSku.includes(cleanedQuery) || cleanName.includes(cleanedQuery);
+                        const cleanDescription = item.description.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                        return cleanSku.includes(cleanedQuery) || cleanDescription.includes(cleanedQuery);
                     });
 
                     if (filtered.length === 0) {
@@ -1062,9 +1062,9 @@ $(document).on('keyup focus', '.product-search, .freebie-search', function () {
                             resultList.append(`
                                 <li class="product-item px-4 py-2 hover:bg-gray-100 cursor-pointer transition-all"
                                     data-sku="${product.sku}"
-                                    data-name="${product.name}">
+                                    data-name="${product.description}">
                                     <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
-                                    ${product.name}
+                                    ${product.description}
                                 </li>
                             `);
                         });

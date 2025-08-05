@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ISO_B2B\Order;
 use App\Models\ISO_B2B\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\Validator;
 
 class FormsController extends Controller
 {
@@ -155,6 +157,32 @@ class FormsController extends Controller
         return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
     }
 
+    
+    // Handle AJAX product search
+    public function search(Request $request)
+    {
+        $query = strtolower($request->query('query'));
+
+        $results = DB::connection('mysql')
+            ->table('products')
+            ->select('sku as sku', 
+                    'description as description',
+                    'srp as srp',
+                    'allocation_per_case as allocation_per_case',
+                    'cash_bank_card_scheme as cash_bank_card_scheme',
+                    'po15_scheme as po15_scheme',
+                    'freebie_sku as freebie_sku'
+            
+            )
+            ->where(function ($q) use ($query) {
+                $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
+                ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
+            })
+            ->whereNull('archived_at')
+            ->get();
+
+        return response()->json($results);
+    }
 
     public function rof()
     {
