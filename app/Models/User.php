@@ -41,4 +41,20 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        $rolePermissions = [
+            'admin' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
+            'manager' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
+            'user' => ['view_products'],
+        ];
+
+        return in_array($permission, $rolePermissions[$this->role] ?? []);
+    }
 }

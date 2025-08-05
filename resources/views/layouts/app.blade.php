@@ -43,14 +43,13 @@ aside a:hover::after {
 
     <!-- Sidebar -->
     <aside id="sidebar" class="hidden md:block w-64 bg-white sticky top-0 h-screen z-30">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h2 class="text-lg font-semibold">ISO B2B</h2>
-            <!-- Close button for mobile -->
-            <button id="closeSidebar" class="md:hidden p-1 rounded hover:bg-gray-100">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+        <div class="p-6 border-b border-gray-200 flex justify-center items-center">
+            {{-- <h2 class="text-lg font-semibold">ISO B2B</h2> --}}
+            {{-- Logo --}}
+            <div class="">
+                <img src="{{ asset('images/MarengEms_Logo.png') }}" alt="Logo" class="h-[125px] w-auto mx-auto">
+            </div>
+
         </div>
         <nav class="p-4">
             <ul class="space-y-2    ">
@@ -188,20 +187,26 @@ aside a:hover::after {
                         d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-            <h2 class="text-lg font-semibold">ISO B2B</h2>
+            <h2 class="text-lg font-semibold">ISO B2BC</h2>
+
         </div>
     </header>
 
     <!-- Mobile Nav -->
     <nav id="mobileMenu" class="hidden md:hidden bg-white p-4 border-b">
         <ul class="space-y-2">
-            {{-- Dashboard --}}
-            <li>
-                <a href="{{ route('dashboard') }}"
-                    class="block px-4 py-2 rounded hover:bg-gray-100 {{ request()->routeIs('dashboard') ? 'bg-gray-200 font-bold' : '' }}">
-                    Dashboard
-                </a>
-            </li>
+        @php
+            $isDashboard = url()->current() === route('dashboard');
+        @endphp
+
+        <li>
+            <a href="{{ route('dashboard') }}"
+            class="block px-4 py-2 rounded hover:bg-gray-100 {{ $isDashboard ? 'bg-gray-200 font-bold' : '' }}">
+                Dashboard
+            </a>
+        </li>
+
+
             <!-- Orders Group -->
             @php $isOrders = request()->routeIs('orders*'); @endphp
             <li class="rounded {{ $isOrders ? 'bg-gray-100' : '' }}">

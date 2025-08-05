@@ -7,18 +7,18 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\User;
 
-class ProductsBulkUpdated
+class ProductsBulkArchived
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public array $productIds;
-    public array $updateData;
     public User $user;
+    public ?string $reason;
 
-    public function __construct(array $productIds, array $updateData, User $user)
+    public function __construct(array $productIds, User $user, ?string $reason = null)
     {
         $this->productIds = $productIds;
-        $this->updateData = $updateData;
         $this->user = $user;
+        $this->reason = $reason;
     }
 }

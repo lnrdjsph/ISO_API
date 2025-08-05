@@ -20,7 +20,7 @@ class ProductController extends Controller
     {
         // Apply middleware
         $this->middleware('auth');
-        $this->middleware('throttle:bulk_operations,5,10')->only(['bulkUpdate', 'bulkArchive']);
+        // $this->middleware('throttle:bulk_operations,5,10')->only(['bulkUpdate', 'bulkArchive']);
     }
     // Show product search view
     public function index(Request $request)
