@@ -12,6 +12,7 @@ use App\Policies\ProductPolicy;
 use Illuminate\Support\Facades\Gate;
 use App\Events\ProductsBulkArchived;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 
 
 class ProductController extends Controller
@@ -38,8 +39,9 @@ class ProductController extends Controller
             }
             
 
-            // Fetch paginated products from MySQL
-            $products = DB::connection('mysql')
+            $search = strtolower($request->get('query'));
+
+            $productsQuery = DB::connection('mysql')
                 ->table('products')
                 ->select(
                     'id',
@@ -51,10 +53,25 @@ class ProductController extends Controller
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'freebie_sku',
-                )
-                ->orderBy($sort, $direction)
+                );
+
+            // Add this for search
+            if ($search) {
+                $productsQuery->where(function ($q) use ($search) {
+                    $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
+                });
+
+                // Optional: If search was triggered by clicking a SKU suggestion
+                if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
+                    $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
+                }
+            }
+
+            $products = $productsQuery->orderBy($sort, $direction)
                 ->paginate(10)
                 ->appends($request->query());
+
 
             // Fetch freebie descriptions using freebie_sku matched against sku
             $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
@@ -138,11 +155,76 @@ class ProductController extends Controller
                 $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
                 ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
             })
-            // ->whereNull('archived_at')
+            ->whereNull('archived_at')
             ->get();
 
         return response()->json($results);
     }
+
+
+
+public function export(Request $request)
+{
+    $productsQuery = DB::connection('mysql')
+        ->table('products')
+        ->select(
+            'sku',
+            'description',
+            'case_pack',
+            'srp',
+            'allocation_per_case',
+            'cash_bank_card_scheme',
+            'po15_scheme',
+            'freebie_sku'
+        );
+
+    // Apply filter if SKU is provided
+    if ($request->filled('sku')) {
+        $skus = explode(',', $request->sku);
+        $productsQuery->whereIn('sku', $skus);
+    }
+
+    $products = $productsQuery->get();
+
+    // Set dynamic filename
+    $filename = 'products_export_' . date('Ymd_His') . '.csv';
+
+    // Set headers
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => "attachment; filename=\"$filename\"",
+    ];
+
+    // Stream CSV response
+    $callback = function () use ($products) {
+        $handle = fopen('php://output', 'w');
+        // Write CSV header
+        fputcsv($handle, [
+            'SKU', 'Description', 'Case Pack', 'SRP',
+            'Allocation per Case', 'Cash/Bank/Card Scheme',
+            'PO15 Scheme', 'Freebie SKU'
+        ]);
+
+        // Write each product
+        foreach ($products as $product) {
+            fputcsv($handle, [
+                $product->sku,
+                $product->description,
+                $product->case_pack,
+                $product->srp,
+                $product->allocation_per_case,
+                $product->cash_bank_card_scheme,
+                $product->po15_scheme,
+                $product->freebie_sku
+            ]);
+        }
+
+        fclose($handle);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
+
 
 
 

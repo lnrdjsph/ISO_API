@@ -55,6 +55,8 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/scheme', [ProductController::class, 'scheme'])->name('scheme');
+        Route::get('/export', [ProductController::class, 'export'])->name('export');
+
 
         // New bulk operation routes
         Route::post('/bulk-update', [ProductController::class, 'bulkUpdate'])->name('bulk-update');
