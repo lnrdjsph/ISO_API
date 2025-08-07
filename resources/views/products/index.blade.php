@@ -133,23 +133,28 @@
 
             <!-- Search and Actions Bar -->
             <div class="mb-8">
-                <div class="flex justify-between items-start gap-4 flex-nowrap overflow-x-auto">
+                <div class="flex justify-between items-start gap-4 flex-nowrap ">
 
-                    <!-- Search Input -->
-                    <div class="relative max-w-lg w-full flex-shrink-0">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
-                        <input type="text" id="product-search"
-                            class="w-full pl-12 pr-4 py-3 bg-white/60 border border-gray-200/60 rounded-2xl 
+                    <form method="GET" action="{{ route('products.index') }}" class="w-full max-w-lg">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                            <input type="text" name="query" id="product-search" value="{{ request('query') }}" autocomplete="off"
+                                class="w-full pl-12 pr-4 py-3 bg-white/60 border border-gray-200/60 rounded-2xl 
                                     focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
                                     placeholder-gray-400 text-gray-700 backdrop-blur-sm transition-all duration-200
                                     hover:bg-white/80 hover:shadow-lg"
-                            placeholder="Search by SKU or product description..."/>
-                    </div>
+                                placeholder="Search by SKU or product description..."/>
+                                <ul id="product-list" class="absolute z-[999] mt-1 w-full bg-white rounded-xl shadow-xl hidden"></ul>
+
+
+                        </div>
+                    </form>
+
                     <!-- Bulk Actions Bar -->
                     <div id="bulk-actions-bar" class="hidden ">
                         <div class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-1 border border-blue-500/20">
@@ -205,13 +210,13 @@
                         </button>
 
                         <!-- Export -->
-                        <button class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60 rounded-xl transition">
+                        <a href="{{ route('products.export', request()->query()) }}" class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100/60 rounded-xl transition">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                             Export
-                        </button>
+                        </a>
 
                         <!-- Add Product -->
                         <a href="{{ route('products.create') }}"
@@ -242,13 +247,15 @@
                         $currentSort = request('sort', 'sku');
                         $currentDirection = request('direction', 'asc');
 
-                        function sortRoute($column) {
-                            $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
+                        if (!function_exists('sortRoute')) {
+                            function sortRoute($column) {
+                                $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
 
-                            return route('products.index', array_merge(request()->except(['page', 'direction', 'sort']), [
-                                'sort' => $column,
-                                'direction' => request('sort') === $column ? $direction : 'asc',
-                            ]));
+                                return route('products.index', array_merge(request()->except(['page', 'direction', 'sort']), [
+                                    'sort' => $column,
+                                    'direction' => request('sort') === $column ? $direction : 'asc',
+                                ]));
+                            }
                         }
                     @endphp
                         <thead>
@@ -367,7 +374,7 @@
 </div>
 
 <!-- Bulk Edit Modal -->
-<div id="bulk-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden">
+<div id="bulk-edit-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
@@ -435,25 +442,43 @@
 </div>
 
 <!-- Bulk Archive Confirmation Modal -->
-<div id="bulk-archive-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden">
+<div id="bulk-archive-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
             <div class="p-6">
                 <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
                     <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                 </div>
+
                 <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Archive Products</h3>
-                <p class="text-gray-600 text-center mb-6">
-                    Are you sure you want to archive <span id="archive-selected-count" class="font-semibold text-red-600">0</span> selected products? This action can be undone later.
+
+                <p class="text-gray-600 text-center mb-4">
+                    Are you sure you want to archive
+                    <span id="archive-selected-count" class="font-semibold text-red-600">0</span>
+                    selected products? This action can be undone later.
                 </p>
-                
+
+                <!-- Optional archive reason -->
+                <div class="mb-4">
+                    <label for="archive-reason-input" class="block text-sm font-medium text-gray-700 mb-1">
+                        Archive Reason <span class="text-gray-400 text-xs">(optional)</span>
+                    </label>
+                    <textarea id="archive-reason-input"
+                              class="w-full px-4 py-2 border rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                              rows="3"
+                              maxlength="500"
+                              placeholder="Enter reason for archiving (max 500 characters)..."></textarea>
+                </div>
+
                 <div class="flex space-x-3">
-                    <button type="button" id="cancel-bulk-archive" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors duration-200">
+                    <button type="button" id="cancel-bulk-archive"
+                            class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors duration-200">
                         Cancel
                     </button>
-                    <button type="button" id="confirm-bulk-archive" class="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors duration-200">
+                    <button type="button" id="confirm-bulk-archive"
+                            class="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors duration-200">
                         Archive Products
                     </button>
                 </div>
@@ -461,6 +486,7 @@
         </div>
     </div>
 </div>
+
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -590,6 +616,11 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
+                        searchInput.removeClass('animate-pulse');
+                        list.empty();
+
+                        // Always show list when results are present
+                        list.removeClass('hidden');
                     // Show success message
                     showNotification('Products updated successfully!', 'success');
                     
@@ -614,113 +645,117 @@
                 }
             });
         });
+        // Ensure CSRF token is set for all AJAX requests
+$.ajaxSetup({
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+});
 
-        // Bulk Archive Modal
-        $('#bulk-archive-btn').click(function() {
-            if (selectedProducts.size === 0) {
-                alert('Please select products first');
-                return;
+// Show modal
+$('#bulk-archive-btn').click(function () {
+    if (selectedProducts.size === 0) {
+        alert('Please select products first');
+        return;
+    }
+    $('#bulk-archive-modal').removeClass('hidden').addClass('flex');
+});
+
+// Cancel modal
+$('#cancel-bulk-archive').click(function () {
+    $('#bulk-archive-modal').addClass('hidden').removeClass('flex');
+});
+
+// Confirm archive
+$('#confirm-bulk-archive').click(function () {
+    const productIds = Array.from(selectedProducts);
+    const archiveReason = $('#archive-reason-input').val();
+    const button = $(this);
+    const originalText = button.text();
+
+    button.prop('disabled', true).html(`
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Archiving...
+    `);
+
+    $.ajax({
+        url: '{{ route("products.bulk-archive") }}',
+        method: 'POST',
+        data: {
+            product_ids: productIds,
+            archive_reason: archiveReason
+        },
+        success: function (response) {
+            if (response.success) {
+                showNotification(response.message, 'success');
+                $('#bulk-archive-modal').addClass('hidden').removeClass('flex');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(response.message, 'error');
             }
-            $('#bulk-archive-modal').removeClass('hidden').addClass('flex');
-        });
-
-        $('#cancel-bulk-archive').click(function() {
-            $('#bulk-archive-modal').addClass('hidden').removeClass('flex');
-        });
-
-        // Bulk Archive Confirmation
-        $('#confirm-bulk-archive').click(function() {
-            const productIds = Array.from(selectedProducts);
-            const button = $(this);
-            const originalText = button.text();
-            
-            // Show loading state
-            button.prop('disabled', true).html(`
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Archiving...
-            `);
-
-            $.ajax({
-                url: '{{ route("products.bulk-archive") }}',
-                method: 'POST',
-                data: {
-                    product_ids: productIds,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    // Show success message
-                    showNotification('Products archived successfully!', 'success');
-                    
-                    // Close modal and refresh page
-                    $('#bulk-archive-modal').addClass('hidden').removeClass('flex');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                },
-                error: function(xhr) {
-                    let errorMessage = 'An error occurred while archiving products.';
-                    
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    
-                    showNotification(errorMessage, 'error');
-                },
-                complete: function() {
-                    // Reset button state
-                    button.prop('disabled', false).text(originalText);
-                }
-            });
-        });
-
-        // Notification function
-        function showNotification(message, type = 'info') {
-            const bgColor = type === 'success' ? 'bg-green-500' : 
-                           type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-            
-            const notification = $(`
-                <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
-                    <div class="flex items-center">
-                        <span class="mr-3">${message}</span>
-                        <button class="ml-auto text-white hover:text-gray-200" onclick="$(this).parent().parent().remove()">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            `);
-            
-            $('body').append(notification);
-            
-            // Animate in
-            setTimeout(() => {
-                notification.removeClass('translate-x-full');
-            }, 100);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                notification.addClass('translate-x-full');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 5000);
+        },
+        error: function (xhr) {
+            const message = xhr.responseJSON?.message || 'An error occurred.';
+            showNotification(message, 'error');
+        },
+        complete: function () {
+            button.prop('disabled', false).text(originalText);
         }
+    });
+});
 
-        // Close modals when clicking outside
-        $('#bulk-edit-modal, #bulk-archive-modal').click(function(e) {
-            if (e.target === this) {
-                $(this).addClass('hidden').removeClass('flex');
-            }
-        });
+// Notification utility
+function showNotification(message, type = 'info') {
+    const bgColor = type === 'success' ? 'bg-green-500' :
+                    type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+    const notification = $(`
+        <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
+            <div class="flex items-center">
+                <span class="mr-3">${message}</span>
+                <button class="ml-auto text-white hover:text-gray-200" onclick="$(this).closest('div').remove()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `);
+
+    $('body').append(notification);
+    setTimeout(() => notification.removeClass('translate-x-full'), 100);
+    setTimeout(() => {
+        notification.addClass('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Close modal if clicked outside
+$('#bulk-edit-modal, #bulk-archive-modal').click(function (e) {
+    if (e.target === this) {
+        $(this).addClass('hidden').removeClass('flex');
+    }
+});
+
 
         // Search functionality (existing code)
         let debounceTimeout;
 
+        function highlightMatch(text, query) {
+            if (!query) return text;
+
+            // Escape special characters in the query
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+        }
+
         function performSearch(query) {
+
             const list = $('#product-list');
             const searchInput = $('#product-search');
 
@@ -744,6 +779,7 @@
                     data: { query: query },
                     success: function (data) {
                         searchInput.removeClass('animate-pulse');
+                        list.removeClass('hidden');
                         list.empty();
 
                         let cleanedQuery = query.replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -766,7 +802,7 @@
                         } else {
                             filtered.forEach((item, index) => {
                                 const listItem = $('<li>')
-                                    .addClass('px-6 py-4 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0')
+                                    .addClass('px-6 py-4 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0 opacity-0 translate-y-2')
                                     .attr('data-sku', item.sku)
                                     .attr('data-description', item.description)
                                     .html(`
@@ -774,7 +810,9 @@
                                             <div class="flex-1">
                                                 <div class="flex items-center">
                                                     <span class="text-xs font-mono font-medium text-gray-500 px-2 py-1 bg-gray-100/60 rounded mr-3">${item.sku}</span>
-                                                    <span class="font-medium text-gray-800">${item.description}</span>
+                                                    <span class="font-medium text-gray-800">
+                                                        ${highlightMatch(item.description, query)}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -782,15 +820,18 @@
                                             </svg>
                                         </div>
                                     `);
-                                
+
+                                // Animate item in
                                 setTimeout(() => {
-                                    listItem.addClass('opacity-100 translate-y-0');
+                                    listItem
+                                        .removeClass('opacity-0 translate-y-2')
+                                        .addClass('opacity-100 translate-y-0');
                                 }, index * 50);
-                                
-                                listItem.addClass('opacity-0 translate-y-2 transition-all duration-200');
+
                                 list.append(listItem);
                             });
                         }
+
                     },
                     error: function() {
                         searchInput.removeClass('animate-pulse');
@@ -829,20 +870,27 @@
             $(this).addClass('bg-blue-100/60 scale-95');
             
             setTimeout(() => {
-                $('#product-search').val(`${sku} - ${description}`);
-                $('#product-list').empty().addClass('hidden');
+                if (sku) {
+                    $('#product-search').val(`${sku}`);
+                    $('#product-list').empty().addClass('hidden');
+                    $('#product-search').closest('form').submit();
+                }
             }, 150);
+
         });
 
         $(document).on('click', function (e) {
             const target = $(e.target);
-            if (
-                !target.closest('#product-search').length &&
-                !target.closest('#product-list').length
-            ) {
-                $('#product-list').empty().addClass('hidden');
-            }
+            setTimeout(() => {
+                if (
+                    !target.closest('#product-search').length &&
+                    !target.closest('#product-list').length
+                ) {
+                    $('#product-list').empty().addClass('hidden');
+                }
+            }, 10); // let inner clicks finish first
         });
+
     });
 </script>
 

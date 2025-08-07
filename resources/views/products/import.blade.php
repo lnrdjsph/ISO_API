@@ -371,54 +371,86 @@
         }
 
         // Process CSV file
-        function processFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const csv = e.target.result;
-                const lines = csv.split('\n').filter(line => line.trim());
-                
-                if (lines.length < 2) {
-                    alert('CSV file must contain at least a header and one data row.');
-                    resetUpload();
-                    return;
-                }
+function processFile(file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const csv = e.target.result;
+        const lines = csv.split('\n').filter(line => line.trim());
 
-                // Parse CSV data
-                csvData = lines.slice(1).map(line => {
-                    const cols = line.split(',').map(col => col.trim().replace(/"/g, ''));
-                    return {
-                        sku: cols[0] || '',
-                        description: cols[1] || '',
-                        case_pack: cols[2] || '',
-                        srp: cols[3] || '',
-                        allocation_per_case: cols[4] || '',
-                        cash_bank_card_scheme: cols[5] || '',
-                        po15_scheme: cols[6] || '',
-                        freebie_sku: (cols[7] || '').split('/').map(s => s.replace(/\s+/g, '')).join('/')
-
-                    };
-                }).filter(row => row.sku && row.description);
-
-                console.log(csvData.map(row => row.freebie_sku));
-
-                if (csvData.length === 0) {
-                    alert('No valid data found in CSV file. Please check the format.');
-                    resetUpload();
-                    return;
-                }
-
-                // Show success
-                setTimeout(() => {
-                    uploadProgress.classList.add('hidden');
-                    fileInfo.classList.remove('hidden');
-                    fileName.textContent = file.name;
-                    fileDetails.textContent = `${csvData.length} products ready to import • ${(file.size / 1024).toFixed(1)} KB`;
-                    previewBtn.classList.remove('hidden');
-                    importBtn.classList.remove('hidden');
-                }, 500);
-            };
-            reader.readAsText(file);
+        if (lines.length < 2) {
+            alert('CSV file must contain at least a header and one data row.');
+            resetUpload();
+            return;
         }
+
+        const expectedColumns = 8; // Exclude action, which is auto-detected
+        const validRows = [];
+
+        lines.slice(1).forEach((line, index) => {
+            const rowNum = index + 2;
+            const cols = line.split(',').map(col => col.trim().replace(/"/g, ''));
+
+            if (cols.length !== expectedColumns) {
+                console.warn(`Row ${rowNum} skipped: Expected ${expectedColumns} columns, found ${cols.length}`);
+                return;
+            }
+
+            const [
+                sku,
+                description,
+                case_pack,
+                srp,
+                allocation,
+                cbc_scheme,
+                po15_scheme,
+                freebie_sku_raw
+            ] = cols;
+
+            const freebie_sku = freebie_sku_raw.split('/').map(s => s.replace(/\s+/g, '')).join('/');
+
+            // Per-column validation
+            if (!sku || !/^\d+$/.test(sku)) return;
+            if (!description) return;
+            if (!case_pack || isNaN(case_pack)) return;
+            if (!srp || isNaN(srp.replace(/[₱,]/g, ''))) return;
+            if (!allocation || isNaN(allocation)) return;
+            if (!cbc_scheme || !/^\d+\+\d+$/.test(cbc_scheme)) return;
+            if (!po15_scheme || !/^\d+\+\d+$/.test(po15_scheme)) return;
+            if (!freebie_sku || !/^\d+(\/\d+)*$/.test(freebie_sku)) return;
+
+            validRows.push({
+                sku,
+                description,
+                case_pack,
+                srp,
+                allocation_per_case: allocation,
+                cash_bank_card_scheme: cbc_scheme,
+                po15_scheme,
+                freebie_sku
+            });
+        });
+
+        if (validRows.length === 0) {
+            alert('No valid data found in CSV file. Please check the format.');
+            resetUpload();
+            return;
+        }
+
+        csvData = validRows;
+
+        setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+            fileInfo.classList.remove('hidden');
+            fileName.textContent = file.name;
+            fileDetails.textContent = `${csvData.length} products ready to import • ${(file.size / 1024).toFixed(1)} KB`;
+            previewBtn.classList.remove('hidden');
+            importBtn.classList.remove('hidden');
+        }, 500);
+    };
+
+    reader.readAsText(file);
+}
+
 
         // Reset upload state
         function resetUpload() {
@@ -450,6 +482,10 @@
                 existingSkus.includes(row.sku.toUpperCase())
             );
 
+            // Always render and show the preview section first
+            renderPreviewChunk();
+            previewSection.classList.remove('hidden');
+
             if (hasUpdate) {
                 Swal.fire({
                     icon: 'warning',
@@ -457,11 +493,21 @@
                     text: 'Some SKUs already exist and will be updated. Please review the data carefully.',
                     confirmButtonColor: '#f59e0b',
                     confirmButtonText: 'Got it',
+                }).then((result) => {
+                    // Only scroll AFTER the user clicks "Got it"
+                    if (result.isConfirmed) {
+                        setTimeout(() => {
+                            previewSection.scrollIntoView({ 
+                                behavior: 'smooth',
+                                block: 'start' 
+                            });
+                        }, 500); // Small delay to let Swal cleanup finish
+                    }
                 });
+            } else {
+                // No warning needed, scroll immediately
+                previewSection.scrollIntoView({ behavior: 'smooth' });
             }
-            renderPreviewChunk();
-            previewSection.classList.remove('hidden');
-            previewSection.scrollIntoView({ behavior: 'smooth' });
         });
 
         function renderPreviewChunk() {

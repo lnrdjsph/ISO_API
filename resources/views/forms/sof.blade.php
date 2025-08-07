@@ -231,8 +231,7 @@
                         >
                             <option value="" disabled {{ old('mode_payment') ? '' : 'selected' }}>Select or type payment mode</option>
                             <option value="PO15%" {{ old('mode_payment') == 'PO15%' ? 'selected' : '' }}>PO15%</option>
-                            <option value="Cash" {{ old('mode_payment') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="Bank Card" {{ old('mode_payment') == 'Bank Card' ? 'selected' : '' }}>Bank Card</option>
+                            <option value="Cash / Bank Card" {{ old('mode_payment') == 'Cash' ? 'selected' : '' }}>Cash / Bank Card</option>
                         </select>
                         <label
                             class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-500"
@@ -1262,7 +1261,7 @@ $(document).on('click', '.product-item', function () {
         let scheme = '';
         if (paymentMode === 'PO15%') {
             scheme = po15Scheme || '';
-        } else if (paymentMode === 'Cash' || paymentMode === 'Bank Card') {
+        } else if (paymentMode === 'Cash / Bank Card') {
             scheme = cashBankCardScheme || '';
         }
 
