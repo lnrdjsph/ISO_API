@@ -62,8 +62,8 @@ class FormsController extends Controller
 
                 'freebie_sku' => 'nullable|string',
                 'freebie_description' => 'nullable|string',
-                'freebie_price_per_pc' => 'nullable|integer',
-                'freebie_price' => 'nullable|integer',
+                'freebie_price_per_pc' => 'nullable|numeric',
+                'freebie_price' => 'nullable|numeric',
                 'freebie_qty_per_pc' => 'nullable|integer',
                 
             ])->validate();
@@ -158,31 +158,38 @@ class FormsController extends Controller
     }
 
     
-    // Handle AJAX product search
     public function search(Request $request)
     {
         $query = strtolower($request->query('query'));
+        $keywords = preg_split('/\s+/', $query, -1, PREG_SPLIT_NO_EMPTY);
 
         $results = DB::connection('mysql')
             ->table('products')
-            ->select('sku as sku', 
-                    'description as description',
-                    'srp as srp',
-                    'allocation_per_case as allocation_per_case',
-                    'cash_bank_card_scheme as cash_bank_card_scheme',
-                    'po15_scheme as po15_scheme',
-                    'freebie_sku as freebie_sku'
-            
+            ->select(
+                'sku',
+                'description',
+                'srp',
+                'case_pack',
+                'allocation_per_case',
+                'cash_bank_card_scheme',
+                'po15_scheme',
+                'freebie_sku'
             )
-            ->where(function ($q) use ($query) {
-                $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
-                ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
+            ->where(function ($q) use ($keywords) {
+                foreach ($keywords as $word) {
+                    $q->orWhere(function ($subQ) use ($word) {
+                        $subQ->whereRaw('LOWER(description) LIKE ?', ["%{$word}%"])
+                            ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$word}%"]);
+                    });
+                }
             })
+
             ->whereNull('archived_at')
             ->get();
 
         return response()->json($results);
     }
+
 
     public function rof()
     {

@@ -394,9 +394,12 @@
                         allocation_per_case: cols[4] || '',
                         cash_bank_card_scheme: cols[5] || '',
                         po15_scheme: cols[6] || '',
-                        freebie_sku: (cols[7] || '').split('/').map(s => s.trim()).join('/')
+                        freebie_sku: (cols[7] || '').split('/').map(s => s.replace(/\s+/g, '')).join('/')
+
                     };
                 }).filter(row => row.sku && row.description);
+
+                console.log(csvData.map(row => row.freebie_sku));
 
                 if (csvData.length === 0) {
                     alert('No valid data found in CSV file. Please check the format.');
@@ -476,20 +479,8 @@
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">
-                        ${(() => {
-                            if (!row.freebie_sku) return '';
-                            const uploadedSkus = getAllUploadedSkus();
-                            const freebies = row.freebie_sku.split('/');
-                            const invalid = freebies.some(sku => {
-                                const trimmedSku = sku.trim().toUpperCase();
-                                return !existingSkus.includes(trimmedSku) && !uploadedSkus.includes(trimmedSku);
-                            });
-                            return escapeHtml(row.freebie_sku) + (invalid
-                                ? ' <span title="SKU not recognized" class="text-yellow-600 font-bold">&#9432;</span>'
-                                : '');
-                        })()}
-                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
+
 
                     <td class="px-4 py-3 text-xs">
                         <span class="inline-block px-2 py-1 font-semibold rounded-full 
