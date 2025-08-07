@@ -138,7 +138,7 @@ class ProductController extends Controller
                 $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
                 ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
             })
-            ->whereNull('archived_at')
+            // ->whereNull('archived_at')
             ->get();
 
         return response()->json($results);
