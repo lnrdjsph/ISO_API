@@ -70,15 +70,6 @@ class FormsController extends Controller
         }
                 // Save main order info
 
-        // Clean up mode_payment to ensure it's a string or array
-        $modePaymentDecoded = collect(json_decode($validated['mode_payment'], true))
-            ->pluck('value')
-            ->filter()
-            ->values()
-            ->toArray();
-
-        // Overwrite cleaned value back into $validated
-        $validated['mode_payment'] = implode(', ', $modePaymentDecoded); // or store as array if DB field is JSON
 
         $order = Order::create([
             'channel_order' => $validated['channel_order'],
