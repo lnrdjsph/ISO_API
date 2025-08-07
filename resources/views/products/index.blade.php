@@ -241,6 +241,15 @@
                     @php
                         $currentSort = request('sort', 'sku');
                         $currentDirection = request('direction', 'asc');
+
+                        function sortRoute($column) {
+                            $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
+
+                            return route('products.index', array_merge(request()->except(['page', 'direction', 'sort']), [
+                                'sort' => $column,
+                                'direction' => request('sort') === $column ? $direction : 'asc',
+                            ]));
+                        }
                     @endphp
                         <thead>
                             <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
@@ -250,7 +259,7 @@
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-sm font-bold uppercase text-blue">
-                                    <a href="{{ sortUrl('sku') }}" class="flex items-center space-x-2 group">
+                                    <a href="{{ sortRoute('sku') }}" class="flex items-center space-x-2 group">
                                         <span>SKU</span>
                                         @if($currentSort === 'sku')
                                             <svg class="w-4 h-4 {{ $currentDirection === 'asc' ? '' : 'rotate-180' }} text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,7 +273,7 @@
                                     </a>
                                 </th>
                                 <th class="px-6 py-4 text-left text-sm font-bold uppercase text-blue">
-                                    <a href="{{ sortUrl('description') }}" class="flex items-center space-x-2 group">
+                                    <a href="{{ sortRoute('description') }}" class="flex items-center space-x-2 group">
                                         <span>Product description</span>
                                         @if($currentSort === 'description')
                                             <svg class="w-4 h-4 {{ $currentDirection === 'asc' ? '' : 'rotate-180' }} text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

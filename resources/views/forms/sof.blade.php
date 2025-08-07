@@ -190,64 +190,36 @@
             <section class="bg-white p-4  ">
                 <h2 class="text-lg font-semibold mb-4">Payment Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+                    <div class="relative">
+                        <input
+                            list="payment-centers"
+                            name="payment_center"
+                            id="payment_center"
+                            placeholder=" "
+                            class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            autocomplete="off"
+                            value="{{ old('payment_center') }}"
+                        >
 
-                    <div x-data="{
-                        open: false,
-                        search: @json(old('payment_center')),
-                        options: [
-                            'S10-MAASIN', 'S17-TACLOBAN', 'S19-METRO BAY-BAY',
-                            'F18-ALANG-ALANG', 'F19-HILONGOS', 'S8-TOLEDO',
-                            'H9-CARCAR', 'H10-BOGO'
-                        ],
-                        select(option) {
-                            this.search = option;
-                            this.open = false;
-                        },
-                        get filtered() {
-                            if (!this.search) return this.options;
-                            return this.options.filter(o =>
-                                o.toLowerCase().includes(this.search.toLowerCase())
-                            );
-                        }
-                    }">
-                        <div class="relative">
-                            <input
-                                x-model="search"
-                                @focus="open = true"
-                                @input="open = true"
-                                @click="open = true"
-                                @keydown.escape="open = false"
-                                @blur="setTimeout(() => open = false, 150)"
-                                type="text"
-                                name="payment_center"
-                                placeholder=" "
-                                class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                                autocomplete="off"
-                            >
-                    <label
-                        :class="(search && search.length > 0) || open 
-                            ? 'top-1 text-xs text-gray-600' 
-                            : 'top-3.5 text-sm text-gray-500'"
-                        class="absolute left-3 transition-all pointer-events-none"
-                    >
-                        Payment Center
-                    </label>
+                        <label
+                            for="payment_center"
+                            class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"
+                        >
+                            Payment Center
+                        </label>
 
-                            <ul
-                                x-show="open && filtered.length"
-                                class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow max-h-48 overflow-y-auto text-sm"
-                            >
-                                <template x-for="option in filtered" :key="option">
-                                    <li
-                                        @click="select(option)"
-                                        class="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                                        x-text="option"
-                                    ></li>
-                                </template>
-                            </ul>
-                        </div>
+                        <datalist id="payment-centers">
+                            <option value="S10-MAASIN">
+                            <option value="S17-TACLOBAN">
+                            <option value="S19-METRO BAY-BAY">
+                            <option value="F18-ALANG-ALANG">
+                            <option value="F19-HILONGOS">
+                            <option value="S8-TOLEDO">
+                            <option value="H9-CARCAR">
+                            <option value="H10-BOGO">
+                        </datalist>
                     </div>
+
 
                     
                         <!-- Mode of Payment -->
@@ -289,84 +261,109 @@
                 </div>
             </section>
 
-<!-- Dispatch Info -->
-<section class="bg-white p-4">
-    <h2 class="text-lg font-semibold mb-4">Dispatch Details</h2>
+            <!-- Dispatch Info -->
+            <section class="bg-white p-4">
+                <h2 class="text-lg font-semibold mb-4">Dispatch Details</h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Mode of Dispatching -->
-        <div class="relative">
-            <select
-                name="mode_dispatching"
-                id="mode_dispatching"
-                class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                autocomplete="off"
-                data-hide-value="Customer Pick-up"
-                data-target=".delivery-group"
-            >
-                <option value="" disabled {{ old('mode_dispatching') ? '' : 'selected' }}> Select Mode of Dispatch</option>
-                <option value="Customer Pick-up" {{ old('mode_dispatching') == 'Customer Pick-up' ? 'selected' : '' }}>Customer Pick-up</option>
-                <option value="Delivery Direct to Customer" {{ old('mode_dispatching') == 'Delivery Direct to Customer' ? 'selected' : '' }}>Delivery Direct to Customer</option>
-            </select>
-            <label for="mode_dispatching"
-                class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                Mode of Dispatching
-            </label>
-        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Mode of Dispatching -->
+                    <div class="relative">
+                        <select
+                            name="mode_dispatching"
+                            id="mode_dispatching"
+                            class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            autocomplete="off"
+                            data-hide-value="Customer Pick-up"
+                            data-target=".delivery-group"
+                        >
+                            <option value="" disabled {{ old('mode_dispatching') ? '' : 'selected' }}> Select Mode of Dispatch</option>
+                            <option value="Customer Pick-up" {{ old('mode_dispatching') == 'Customer Pick-up' ? 'selected' : '' }}>Customer Pick-up</option>
+                            <option value="Delivery Direct to Customer" {{ old('mode_dispatching') == 'Delivery Direct to Customer' ? 'selected' : '' }}>Delivery Direct to Customer</option>
+                        </select>
+                        <label for="mode_dispatching"
+                            class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                            Mode of Dispatching
+                        </label>
+                    </div>
 
-        <!-- Delivery/Pick-up Date -->
-        <div class="relative">
-            <input
-                type="date"
-                name="delivery_date"
-                id="delivery_date"
-                value="{{ old('delivery_date') }}"
-                class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-            />
-            <label for="delivery_date"
-                class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                Delivery/Pick-up Date
-            </label>
-        </div>
-    </div>
+                    <!-- Delivery/Pick-up Date -->
+                    <div class="relative">
+                        <input
+                            type="date"
+                            name="delivery_date"
+                            id="delivery_date"
+                            value="{{ old('delivery_date') }}"
+                            class="required-input peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                        />
+                        <label for="delivery_date"
+                            class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                            Delivery/Pick-up Date
+                        </label>
+                    </div>
+                </div>
 
-    <!-- Delivery Details (Initially Hidden) -->
-    <div class="delivery-group overflow-hidden transition-all duration-200 ease-in-out opacity-0 max-h-0 hidden mt-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="relative">
-                <input
-                    value="{{ old('address') }}"
-                    type="text"
-                    name="address"
-                    id="address"
-                    class="peer w-full p-3 pt-5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <label for="address"
-                    class="absolute left-3 top-3 text-sm text-gray-500 transition-all duration-150
-                           peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm
-                           peer-focus:top-1 peer-focus:text-xs peer-focus:text-blue-500">
-                    Address
-                </label>
-            </div>
+                <!-- Delivery Details (Initially Hidden) -->
+                <div class="delivery-group overflow-hidden transition-all duration-200 ease-in-out opacity-0 max-h-0 hidden mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input
+                                value="{{ old('address') }}"
+                                type="text"
+                                name="address"
+                                id="address"
+                                class="peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            />
+                            <label for="address"
+                                class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                Address
+                            </label>
+                        </div>
 
-            <div class="relative">
-                <input
-                    value="{{ old('landmark') }}"
-                    type="text"
-                    name="landmark"
-                    id="landmark"
-                    class="peer w-full p-3 pt-5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <label for="landmark"
-                    class="absolute left-3 top-3 text-sm text-gray-500 transition-all duration-150
-                           peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm
-                           peer-focus:top-1 peer-focus:text-xs peer-focus:text-blue-500">
-                    Landmark
-                </label>
-            </div>
-        </div>
-    </div>
-</section>
+                        <div class="relative">
+                            <input
+                                value="{{ old('landmark') }}"
+                                type="text"
+                                name="landmark"
+                                id="landmark"
+                                class="peer block w-full appearance-none border border-gray-300 rounded-md px-3 pt-6 pb-2 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                            />
+                            <label for="landmark"
+                                class="absolute left-3 top-1.5 text-gray-500 text-xs transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                Landmark
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modeDispatching = document.getElementById("mode_dispatching");
+        const deliveryGroup = document.querySelector(".delivery-group");
+
+        function toggleDeliveryGroup() {
+            const value = modeDispatching.value.trim().toLowerCase();
+            const shouldShow = value === "delivery direct to customer".toLowerCase();
+
+            if (shouldShow) {
+                deliveryGroup.classList.remove("hidden", "opacity-0", "max-h-0");
+                deliveryGroup.classList.add("opacity-100", "max-h-screen");
+            } else {
+                deliveryGroup.classList.add("opacity-0", "max-h-0");
+                deliveryGroup.classList.remove("opacity-100", "max-h-screen");
+                // Delay hiding completely after transition
+                setTimeout(() => {
+                    if (!shouldShow) deliveryGroup.classList.add("hidden");
+                }, 200);
+            }
+        }
+
+        // Initial state on load
+        toggleDeliveryGroup();
+
+        // Toggle on change
+        modeDispatching.addEventListener("change", toggleDeliveryGroup);
+    });
+</script>
 
         </div>
 
@@ -428,13 +425,16 @@
                                 <!-- SKU + Description -->
                                 <div class="product-row grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <!-- Unified Search Input -->
-                                    <div class="relative w-full">
+                                    <div class="relative w-full" x-data="{ value: '{{ old("orders.$i.sku") && old("orders.$i.item_description") ? old("orders.$i.sku") . ' - ' . old("orders.$i.item_description") : '' }}' }">
                                         <label class="block text-sm font-medium mb-1">Main Product</label>
                                         <input type="text"
-                                            class="product-search w-full p-2 bg-yellow-50 border border-gray-300 rounded focus:outline-none focus:ring-gray-900 focus:border-gray-300"
+                                            x-model="value"
+                                            :class="value === '' ? 'bg-yellow-50' : 'bg-white'"
+                                            class="product-search w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-gray-900 focus:border-gray-300"
                                             placeholder="Enter SKU or Description"
                                             autocomplete="off"
-                                            value="{{ old("orders.$i.sku") && old("orders.$i.item_description") ? old("orders.$i.sku") . ' - ' . old("orders.$i.item_description") : '' }}" />
+                                            name="orders[{{ $i }}][display]"
+                                        >
 
                                         <ul class="search-results absolute z-10 bg-white border border-gray-200 rounded shadow mt-1 hidden max-h-60 overflow-y-auto"></ul>
 
@@ -443,14 +443,17 @@
                                         <input type="hidden" name="orders[{{ $i }}][item_description]" class="desc-hidden" value="{{ old("orders.$i.item_description") }}">
                                     </div>
 
-                                    <!-- QTY/CS -->
-                                    <div>
+                                                                        <!-- QTY/CS -->
+                                    <div x-data="{ qty: '{{ old("orders.$i.qty_per_cs") }}' }">
                                         <label class="block text-sm font-medium mb-1">QTY/CS</label>
-                                        <input type="number" name="orders[{{ $i }}][qty_per_cs]"
-                                            value="{{ old("orders.$i.qty_per_cs") }}"
-                                            class="qty-cs w-full p-2 border border-gray-300 rounded text-right focus:outline-none focus:ring-gray-900 focus:border-gray-300" style="text-align: left;"  placeholder="0" />
-                                            
+                                        <input type="number"
+                                            x-model="qty"
+                                            :class="qty === '' ? 'bg-yellow-50' : 'bg-white'"
+                                            name="orders[{{ $i }}][qty_per_cs]"
+                                            class="qty-cs w-full p-2 border border-gray-300 rounded text-right focus:outline-none focus:ring-gray-900 focus:border-gray-300"
+                                            placeholder="0" style="text-align: left;">
                                     </div>
+
                                     
                                 </div>
 
@@ -529,7 +532,7 @@
                                         <label class="block text-sm font-medium mb-1">Freebie QTY/CS</label>
                                                 <input type="text" name="orders[{{ $i }}][freebies_per_cs]"
                                                 value="{{ old("orders.$i.freebies_per_cs") }}"  
-                                                class="computed-freebies w-full p-2 bg-green-50 border border-gray-300 rounded text-right focus:outline-none focus:ring-gray-900 focus:border-gray-300" style="text-align: left;"  placeholder="0"  readonly/>
+                                                class="computed-freebies w-full p-2 bg-gray-50 border border-gray-300 rounded text-right focus:outline-none focus:ring-gray-900 focus:border-gray-300" style="text-align: left;"  placeholder="0"  readonly/>
                                     </div>
                                 </div>
 
