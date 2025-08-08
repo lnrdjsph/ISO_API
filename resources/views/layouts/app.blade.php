@@ -10,32 +10,7 @@
     @vite('resources/css/app.css')
 
 </head>
-{{-- <style>
-aside a {
-    position: relative;
-    text-decoration: none;
-    display: inline-block; /* Makes ::after match the text width */
-}
 
-aside a::after {
-    content: '';
-    position: absolute;
-    bottom: 1px;
-    left: 0;
-    height: 2px;
-    width: 97.5%;
-    background-image: linear-gradient(to right, #2563eb, #4f46e5); /* Tailwind: from-blue-600 to-indigo-600 */
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.2s ease-in-out;
-}
-
-
-aside a:hover::after {
-    transform: scaleX(1);
-}
-
-</style> --}}
 <body class="bg-gray-100 md:flex relative">
 
     <!-- Mobile overlay -->
@@ -329,7 +304,25 @@ aside a:hover::after {
             @yield('content')
         </main>
     </div>
+<style>
+@keyframes loading-shimmer {
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+}
 
+.loading-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.9) 0%,     /* Blue-600 start */
+    rgba(96, 165, 250, 0.8) 50%,   /* Blue-400 highlight */
+    rgba(37, 99, 235, 0.9) 100%    /* Blue-600 end */
+  );
+  background-size: 600px 100%;
+  animation: loading-shimmer 0.8s infinite linear;
+  color: white !important; /* Keep text readable */
+}
+
+</style>
     @vite('resources/js/app.js')
 <script>
     // Mobile menu main toggle
@@ -346,6 +339,14 @@ aside a:hover::after {
 
             submenu?.classList.toggle('hidden');
             icon?.classList.toggle('rotate-180');
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("nav a").forEach(link => {
+            link.addEventListener("click", function() {
+                this.classList.add("loading-bg");
+            });
         });
     });
 </script>
