@@ -306,22 +306,20 @@
     </div>
 <style>
 @keyframes loading-shimmer {
-  0% { background-position: -300px 0; }
-  100% { background-position: 300px 0; }
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
 }
 
 .loading-bg {
   background: linear-gradient(
     90deg,
-    rgba(37, 99, 235, 0.9) 0%,     /* Blue-600 start */
-    rgba(96, 165, 250, 0.8) 50%,   /* Blue-400 highlight */
-    rgba(37, 99, 235, 0.9) 100%    /* Blue-600 end */
+    rgba(229, 231, 235, 0) 25%,
+    rgba(229, 231, 235, 0.6) 50%,
+    rgba(229, 231, 235, 0) 75%
   );
-  background-size: 600px 100%;
-  animation: loading-shimmer 0.8s infinite linear;
-  color: white !important; /* Keep text readable */
+  background-size: 400px 100%;
+  animation: loading-shimmer 1.2s infinite linear;
 }
-
 </style>
     @vite('resources/js/app.js')
 <script>
@@ -342,13 +340,13 @@
         });
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("nav a").forEach(link => {
-            link.addEventListener("click", function() {
-                this.classList.add("loading-bg");
-            });
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("nav a").forEach(link => {
+        link.addEventListener("click", function() {
+            this.classList.add("loading-bg");
         });
     });
+});
 </script>
 
 </body>
