@@ -455,41 +455,75 @@ public function export(Request $request)
     }
 
     // Store new product
-    public function store(Request $request)
-    {
-        $skus = $request->input('sku');
-        $descriptions = $request->input('description');
+public function store(Request $request)
+{
+    $skus                 = $request->input('sku');
+    $descriptions         = $request->input('description');
+    $casePacks            = $request->input('case_pack');
+    $srps                 = $request->input('srp');
+    $allocationPerCases   = $request->input('allocation_per_case');
+    $cashBankCardSchemes  = $request->input('cbc_scheme');
+    $po15Schemes          = $request->input('po15_scheme');
+    $freebieSkus          = $request->input('freebie_sku');
 
-        // Validate arrays presence
-        $request->validate([
-            'sku' => 'required|array',
-            'sku.*' => ['required', function ($attribute, $value, $fail) {
+    // Validate arrays presence
+    $request->validate([
+        'sku' => 'required|array',
+        'sku.*' => [
+            'required',
+            function ($attribute, $value, $fail) {
                 $exists = DB::connection('mysql')
-                    ->table('products') // Consistent table name
+                    ->table('products')
                     ->where('sku', strtoupper($value))
                     ->exists();
                 if ($exists) {
-                    $fail('The sku '.$value.' has already been taken.');
+                    $fail('The sku ' . $value . ' has already been taken.');
                 }
-            }],
-            'description' => 'required|array',
-            'description.*' => 'required|string',
-        ]);
+            }
+        ],
+        'description' => 'required|array',
+        'description.*' => 'required|string',
 
-        // Prepare bulk insert data
-        $insertData = [];
-        foreach ($skus as $index => $sku) {
-            $insertData[] = [
-                'sku' => strtoupper($sku),
-                'description' => $descriptions[$index],
-                'CREATED_AT' => now(),
-            ];
-        }
+        'case_pack' => 'nullable|array',
+        'case_pack.*' => 'nullable|numeric',
 
-        DB::connection('mysql')->table('products')->insert($insertData);
+        'srp' => 'nullable|array',
+        'srp.*' => 'nullable|numeric',
 
-        return redirect()->back()->with('success', 'Products added successfully.');
+        'allocation_per_case' => 'nullable|array',
+        'allocation_per_case.*' => 'nullable|numeric',
+
+        'cash_bank_card_scheme' => 'nullable|array',
+        'cash_bank_card_scheme.*' => 'nullable|string',
+
+        'po15_scheme' => 'nullable|array',
+        'po15_scheme.*' => 'nullable|string',
+
+        'freebie_sku' => 'nullable|array',
+        'freebie_sku.*' => 'nullable|string',
+    ]);
+
+    // Prepare bulk insert data
+    $insertData = [];
+    foreach ($skus as $index => $sku) {
+        $insertData[] = [
+            'sku'                     => strtoupper($sku),
+            'description'             => $descriptions[$index] ?? null,
+            'case_pack'               => $casePacks[$index] !== null && $casePacks[$index] !== '' ? $casePacks[$index] : 0,
+            'srp'                     => $srps[$index] ?? null,
+            'allocation_per_case'     => $allocationPerCases[$index] ?? null,
+            'cash_bank_card_scheme'   => $cashBankCardSchemes[$index] ?? null,
+            'po15_scheme'             => $po15Schemes[$index] ?? null,
+            'freebie_sku'             => $freebieSkus[$index] ?? null,
+            'created_at'              => now(),
+        ];
     }
+
+    DB::connection('mysql')->table('products')->insert($insertData);
+
+    return redirect()->back()->with('success', 'Products added successfully.');
+}
+
 
     public function getSkus()
     {
