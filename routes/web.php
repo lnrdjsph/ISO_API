@@ -37,6 +37,11 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
+        //orders.update route
+        Route::put('/{order}', [OrderController::class, 'update'])->name('update');
+        //orders.archive route
+        Route::post('/archive', [OrderController::class, 'archive'])->name('archive');
+
     });
 
     // Forms Routes
@@ -56,6 +61,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/scheme', [ProductController::class, 'scheme'])->name('scheme');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+        Route::get('/allocation', [ProductController::class, 'getAllocation'])->name('allocation');
 
 
         // New bulk operation routes

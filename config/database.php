@@ -62,6 +62,22 @@ return [
             'server_version' => env('DB_SERVER_VERSION', '11g'),
         ],
 
+
+        'oracle_wms' => [
+            'driver'         => 'oracle',
+            'tns'            => '',
+            'host'           => env('ORACLE_WMS_HOST', 'sitwmsdb.metro.com.ph'),
+            'port'           => env('ORACLE_WMS_PORT', '1521'),
+            'database'       => env('ORACLE_WMS_DATABASE', 'MGMST'),
+            'username'       => env('ORACLE_WMS_USERNAME', 'shop_metro'),
+            'password'       => env('ORACLE_WMS_PASSWORD', 'somethingforyou'),
+            'charset'        => 'AL32UTF8',
+            'prefix'         => '',
+            'prefix_schema'  => env('DB_SCHEMA_PREFIX', ''),
+            'edition'        => env('DB_EDITION', 'ora$base'),
+            'server_version' => env('DB_SERVER_VERSION', '11g'),
+        ],
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),

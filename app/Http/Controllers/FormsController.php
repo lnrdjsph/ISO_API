@@ -16,8 +16,26 @@ class FormsController extends Controller
     public function sof()
     {
         $orders = Order::with('items')->get();
-        return view('forms.sof', compact('orders'));
+
+        $today = now()->format('Ymd');
+
+        // Find latest sof_id for today
+        $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
+            ->orderBy('sof_id', 'desc')
+            ->first();
+
+        if ($latest) {
+            $lastNumber = (int) substr($latest->sof_id, -3);
+            $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $nextNumber = '001';
+        }
+
+        $nextSofId = "SOF{$today}-{$nextNumber}";
+
+        return view('forms.sof', compact('orders', 'nextSofId'));
     }
+
 
 
 
@@ -70,8 +88,23 @@ class FormsController extends Controller
         }
                 // Save main order info
 
+                    // === Generate SOF ID ===
+        $today = now()->format('Ymd');
+        $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
+            ->orderBy('sof_id', 'desc')
+            ->first();
+
+        if ($latest) {
+            $lastNumber = (int) substr($latest->sof_id, -3);
+            $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $nextNumber = '001';
+        }
+
+        $nextSofId = "SOF{$today}-{$nextNumber}";
 
         $order = Order::create([
+            'sof_id' => $nextSofId, // <-- add this
             'channel_order' => $validated['channel_order'],
             'time_order' => $validated['time_order'],
             'payment_center' => $validated['payment_center'],

@@ -13,6 +13,7 @@ class Order extends Model
     protected $table = 'orders';
 
     protected $fillable = [
+        'sof_id', // Newly added field
         'channel_order',
         'time_order',
         'payment_center',

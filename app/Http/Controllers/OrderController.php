@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ISO_B2B\Order;
 use App\Models\ISO_B2B\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
@@ -124,6 +126,114 @@ class OrderController extends Controller
     //     return redirect()->route('orders.create')->with('success', 'Order created successfully.');
     // }
 
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:orders,id',
+            // Customer Info
+            'mbc_card_no' => 'nullable|string|max:255',
+            'customer_name' => 'nullable|string|max:255',
+            'contact_number' => 'nullable|string|max:255',
+            
+            // Payment Info
+            'payment_center' => 'nullable|string',
+            'mode_payment' => 'nullable|string',
+            'payment_date' => 'nullable|date',
+            
+            // Delivery Info
+            'mode_dispatching' => 'nullable|string',
+            'delivery_date' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'landmark' => 'nullable|string|max:255',
+            
+            // Items validation
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:order_items,id',
+            'items.*.sku' => 'required|string|max:255',
+            'items.*.item_description' => 'required|string|max:500',
+            'items.*.scheme' => 'required|string',
+            'items.*.price_per_pc' => 'required|numeric|min:0',
+            'items.*.price' => 'required|numeric|min:0',
+            'items.*.qty_per_pc' => 'required|integer|min:0',
+            'items.*.total_qty' => 'required|integer|min:0',
+            'items.*.amount' => 'required|numeric|min:0',
+            'items.*.remarks' => 'nullable|string|max:255',
+            'items.*.store_order_no' => 'nullable|string|max:255',
+        ]);
 
+        try {
+            DB::beginTransaction();
 
+            // Find the order
+            $order = Order::findOrFail($id);
+
+            // Update order fields
+            $order->update([
+                'mbc_card_no' => $validated['mbc_card_no'],
+                'customer_name' => $validated['customer_name'],
+                'contact_number' => $validated['contact_number'],
+                'payment_center' => $validated['payment_center'],
+                'mode_payment' => $validated['mode_payment'],
+                'payment_date' => $validated['payment_date'],
+                'mode_dispatching' => $validated['mode_dispatching'],
+                'delivery_date' => $validated['delivery_date'],
+                'address' => $validated['address'],
+                'landmark' => $validated['landmark'],
+            ]);
+
+            // Update order items
+            foreach ($validated['items'] as $itemData) {
+                $orderItem = OrderItem::findOrFail($itemData['id']);
+                
+                // Check if it's a freebie item - freebies shouldn't have their amount calculated the same way
+                $isFreebieItem = ($itemData['scheme'] === 'Freebie');
+                
+                // For regular items: amount = price_per_pc * total_qty
+                // For freebie items: keep original amount or set to 0 depending on business logic
+                if ($isFreebieItem) {
+                    $calculatedAmount = 0; // Freebies typically have 0 amount
+                } else {
+                    $calculatedAmount = $itemData['price_per_pc'] * $itemData['total_qty'];
+                }
+                
+                $orderItem->update([
+                    'sku' => $itemData['sku'],
+                    'item_description' => $itemData['item_description'],
+                    'scheme' => $itemData['scheme'],
+                    'price_per_pc' => $itemData['price_per_pc'],
+                    'price' => $itemData['price'],
+                    'qty_per_pc' => $itemData['qty_per_pc'],
+                    'total_qty' => $itemData['total_qty'],
+                    'amount' => $calculatedAmount,
+                    'remarks' => $itemData['remarks'],
+                    'store_order_no' => $itemData['store_order_no'],
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('orders.show', $order->id)
+                ->with('success', 'Order updated successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
+        }
+    }
+
+    public function archive(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'archived';
+        $order->save();
+
+        return redirect()->route('orders.index')->with('success', 'Order archived successfully.');
+    }
 }
