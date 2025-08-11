@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Gate;
 use App\Events\ProductsBulkArchived;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use App\Jobs\FetchAllocationJob;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Cache;
+
+
 
 
 class ProductController extends Controller
@@ -23,11 +28,12 @@ class ProductController extends Controller
         $this->middleware('auth');
         // $this->middleware('throttle:bulk_operations,5,10')->only(['bulkUpdate', 'bulkArchive']);
     }
+
     // Show product search view
     public function index(Request $request)
     {
         try {
-            $sort = $request->get('sort', 'sku');
+            $sort = $request->get('sort', 'description');
             $direction = $request->get('direction', 'asc');
 
             $allowedSorts = ['sku', 'description'];
@@ -37,7 +43,6 @@ class ProductController extends Controller
             if (!in_array(strtolower($direction), ['asc', 'desc'])) {
                 $direction = 'asc';
             }
-            
 
             $search = strtolower($request->get('query'));
 
@@ -49,20 +54,19 @@ class ProductController extends Controller
                     'description',
                     'case_pack',
                     'srp',
-                    'allocation_per_case',
                     'cash_bank_card_scheme',
                     'po15_scheme',
-                    'freebie_sku',
+                    'freebie_sku'
                 );
 
-            // Add this for search
+            // Search filter
             if ($search) {
                 $productsQuery->where(function ($q) use ($search) {
                     $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
                 });
 
-                // Optional: If search was triggered by clicking a SKU suggestion
+                // Optional: exact match for SKU
                 if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
                     $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
                 }
@@ -72,65 +76,86 @@ class ProductController extends Controller
                 ->paginate(10)
                 ->appends($request->query());
 
-
-            // Fetch freebie descriptions using freebie_sku matched against sku
+            // Freebie descriptions
             $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
 
             $freebieDescriptions = DB::connection('mysql')
                 ->table('products')
                 ->whereIn('sku', $freebieSkus)
-                ->pluck('description', 'sku'); // [sku => description]
+                ->pluck('description', 'sku');
 
             foreach ($products as $product) {
                 $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
             }
 
-            // Enrich each product with Oracle RMS data
+            // Enrich products with Oracle RMS & WMS data
             foreach ($products as $product) {
-                $oracleData = DB::connection('oracle_rms')->selectOne("
-                    SELECT * FROM (
-                        SELECT
-                            item_master.item_parent AS sku,
-                            item_master.item_desc AS description,
-                            deps.dept_name AS department,
-                            uda_values.uda_value_desc AS brand,
-                            groups.group_name,
-                            COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
-                            class.class_name AS class_name
-                        FROM item_supplier
-                        LEFT JOIN item_master 
-                            ON item_supplier.item = item_master.item
-                        LEFT JOIN uda_item_lov 
-                            ON item_supplier.item = uda_item_lov.item 
-                            AND item_master.item = uda_item_lov.item
-                        LEFT JOIN uda_values 
-                            ON uda_item_lov.uda_value = uda_values.uda_value 
-                            AND uda_item_lov.uda_id = uda_values.uda_id
-                        LEFT JOIN deps 
-                            ON deps.dept = item_master.dept
-                        LEFT JOIN groups 
-                            ON groups.group_no = deps.group_no
-                        LEFT JOIN class 
-                            ON class.dept = item_master.dept 
-                            AND class.class = item_master.class
-                        LEFT JOIN (
-                            SELECT item, SUM(stock_on_hand) AS stock_on_hand
-                            FROM item_loc_soh
-                            GROUP BY item
-                        ) stock 
-                            ON stock.item = item_master.item
-                        WHERE uda_values.uda_id = 9
-                        AND item_master.item = ?
-                    ) WHERE ROWNUM = 1
-                ", [$product->sku]);
+                // // Oracle RMS data
+                // $oracleData = DB::connection('oracle_rms')->selectOne("
+                //     SELECT * FROM (
+                //         SELECT
+                //             item_master.item_parent AS sku,
+                //             item_master.item_desc AS description,
+                //             deps.dept_name AS department,
+                //             uda_values.uda_value_desc AS brand,
+                //             groups.group_name,
+                //             COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
+                //             class.class_name AS class_name
+                //         FROM item_supplier
+                //         LEFT JOIN item_master 
+                //             ON item_supplier.item = item_master.item
+                //         LEFT JOIN uda_item_lov 
+                //             ON item_supplier.item = uda_item_lov.item 
+                //             AND item_master.item = uda_item_lov.item
+                //         LEFT JOIN uda_values 
+                //             ON uda_item_lov.uda_value = uda_values.uda_value 
+                //             AND uda_item_lov.uda_id = uda_values.uda_id
+                //         LEFT JOIN deps 
+                //             ON deps.dept = item_master.dept
+                //         LEFT JOIN groups 
+                //             ON groups.group_no = deps.group_no
+                //         LEFT JOIN class 
+                //             ON class.dept = item_master.dept 
+                //             AND class.class = item_master.class
+                //         LEFT JOIN (
+                //             SELECT item, SUM(stock_on_hand) AS stock_on_hand
+                //             FROM item_loc_soh
+                //             GROUP BY item
+                //         ) stock 
+                //             ON stock.item = item_master.item
+                //         WHERE uda_values.uda_id = 9
+                //         AND item_master.item = ?
+                //     ) WHERE ROWNUM = 1
+                // ", [$product->sku]);
 
-                if ($oracleData) {
-                    $product->department = $oracleData->department ?? null;
-                    $product->brand = $oracleData->brand ?? null;
-                    $product->group_name = $oracleData->group_name ?? null;
-                    $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
-                    $product->class_name = $oracleData->class_name ?? null;
-                }
+                // if ($oracleData) {
+                //     $product->department = $oracleData->department ?? null;
+                //     $product->brand = $oracleData->brand ?? null;
+                //     $product->group_name = $oracleData->group_name ?? null;
+                //     $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
+                //     $product->class_name = $oracleData->class_name ?? null;
+                // }
+
+                // $allocation = DB::connection('oracle_wms')->selectOne("
+                //     SELECT SUM(sub_outer.unit_qty) AS total_unit_qty
+                //     FROM (
+                //         SELECT sub_inner.unit_qty
+                //         FROM (
+                //             SELECT ci.unit_qty, c.container_id
+                //             FROM rwms.container c
+                //             JOIN rwms.container_item ci
+                //                 ON c.facility_id = ci.facility_id
+                //             AND c.container_id = ci.container_id
+                //             WHERE c.container_status NOT IN ('S','D','A')
+                //             AND ci.item_id = ?
+                //         ) sub_inner
+                //         WHERE ROWNUM <= 5
+                //     ) sub_outer
+                // ", [$product->sku]);
+
+                // $product->allocation_per_case = $allocation->total_unit_qty ?? 0;
+
+
             }
 
             return view('products.index', compact('products'));
@@ -139,6 +164,191 @@ class ProductController extends Controller
             return view('errors.db_error', ['error' => $e->getMessage()]);
         }
     }
+
+
+    // public function getAllocation(Request $request)
+    // {
+    //     $sku = $request->input('sku');
+    //     if (!$sku) {
+    //         return response()->json(['error' => 'SKU is required'], 400);
+    //     }
+
+    //     // Dispatch background job
+    //     FetchAllocationJob::dispatch($sku);
+
+    //     // Immediately respond (you can optionally return cached value if exists)
+    //     $cached = Cache::get("allocation_{$sku}", null);
+
+    //     return response()->json([
+    //         'sku' => $sku,
+    //         'allocation_per_case' => $cached,
+    //     ]);
+    // }
+
+
+    public function getAllocation(Request $request)
+{
+    $sku = $request->input('sku');
+    if (!$sku) {
+        return response()->json(['error' => 'SKU is required'], 400);
+    }
+
+    // Query directly from Oracle WMS connection
+    $allocation = DB::connection('oracle_wms')->selectOne("
+        SELECT SUM(ci.unit_qty) AS total_unit_qty
+        FROM rwms.container c
+        JOIN rwms.container_item ci ON c.facility_id = ci.facility_id AND c.container_id = ci.container_id
+        WHERE c.container_status NOT IN ('S','D','A')
+        AND ci.item_id = ?
+    ", [$sku]);
+
+    $totalQty = $allocation->total_unit_qty ?? 0;
+
+    // Optionally cache result for 30 minutes
+    Cache::put("allocation_{$sku}", $totalQty, now()->addMinutes(30));
+
+    return response()->json([
+        'sku' => $sku,
+        'allocation_per_case' => $totalQty,
+    ]);
+}
+
+
+    // // Show product search view
+    // public function index(Request $request)
+    // {
+    //     try {
+    //         $sort = $request->get('sort', 'sku');
+    //         $direction = $request->get('direction', 'asc');
+
+    //         $allowedSorts = ['sku', 'description'];
+    //         if (!in_array(strtolower($sort), $allowedSorts)) {
+    //             $sort = 'sku';
+    //         }
+    //         if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+    //             $direction = 'asc';
+    //         }
+
+    //         $search = strtolower($request->get('query'));
+
+    //         $productsQuery = DB::connection('mysql')
+    //             ->table('products')
+    //             ->select(
+    //                 'id',
+    //                 'sku',
+    //                 'description',
+    //                 'case_pack',
+    //                 'srp',
+    //                 'cash_bank_card_scheme',
+    //                 'po15_scheme',
+    //                 'freebie_sku'
+    //             );
+
+    //         // Search filter
+    //         if ($search) {
+    //             $productsQuery->where(function ($q) use ($search) {
+    //                 $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
+    //                 ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
+    //             });
+
+    //             // Optional: exact match for SKU
+    //             if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
+    //                 $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
+    //             }
+    //         }
+
+    //         $products = $productsQuery->orderBy($sort, $direction)
+    //             ->paginate(10)
+    //             ->appends($request->query());
+
+    //         // Freebie descriptions
+    //         $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
+
+    //         $freebieDescriptions = DB::connection('mysql')
+    //             ->table('products')
+    //             ->whereIn('sku', $freebieSkus)
+    //             ->pluck('description', 'sku');
+
+    //         foreach ($products as $product) {
+    //             $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
+    //         }
+
+    //         // Enrich products with Oracle RMS & WMS data
+    //         foreach ($products as $product) {
+    //             // // Oracle RMS data
+    //             // $oracleData = DB::connection('oracle_rms')->selectOne("
+    //             //     SELECT * FROM (
+    //             //         SELECT
+    //             //             item_master.item_parent AS sku,
+    //             //             item_master.item_desc AS description,
+    //             //             deps.dept_name AS department,
+    //             //             uda_values.uda_value_desc AS brand,
+    //             //             groups.group_name,
+    //             //             COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
+    //             //             class.class_name AS class_name
+    //             //         FROM item_supplier
+    //             //         LEFT JOIN item_master 
+    //             //             ON item_supplier.item = item_master.item
+    //             //         LEFT JOIN uda_item_lov 
+    //             //             ON item_supplier.item = uda_item_lov.item 
+    //             //             AND item_master.item = uda_item_lov.item
+    //             //         LEFT JOIN uda_values 
+    //             //             ON uda_item_lov.uda_value = uda_values.uda_value 
+    //             //             AND uda_item_lov.uda_id = uda_values.uda_id
+    //             //         LEFT JOIN deps 
+    //             //             ON deps.dept = item_master.dept
+    //             //         LEFT JOIN groups 
+    //             //             ON groups.group_no = deps.group_no
+    //             //         LEFT JOIN class 
+    //             //             ON class.dept = item_master.dept 
+    //             //             AND class.class = item_master.class
+    //             //         LEFT JOIN (
+    //             //             SELECT item, SUM(stock_on_hand) AS stock_on_hand
+    //             //             FROM item_loc_soh
+    //             //             GROUP BY item
+    //             //         ) stock 
+    //             //             ON stock.item = item_master.item
+    //             //         WHERE uda_values.uda_id = 9
+    //             //         AND item_master.item = ?
+    //             //     ) WHERE ROWNUM = 1
+    //             // ", [$product->sku]);
+
+    //             // if ($oracleData) {
+    //             //     $product->department = $oracleData->department ?? null;
+    //             //     $product->brand = $oracleData->brand ?? null;
+    //             //     $product->group_name = $oracleData->group_name ?? null;
+    //             //     $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
+    //             //     $product->class_name = $oracleData->class_name ?? null;
+    //             // }
+
+    //             $allocation = DB::connection('oracle_wms')->selectOne("
+    //                 SELECT SUM(sub_outer.unit_qty) AS total_unit_qty
+    //                 FROM (
+    //                     SELECT sub_inner.unit_qty
+    //                     FROM (
+    //                         SELECT ci.unit_qty, c.container_id
+    //                         FROM rwms.container c
+    //                         JOIN rwms.container_item ci
+    //                             ON c.facility_id = ci.facility_id
+    //                         AND c.container_id = ci.container_id
+    //                         WHERE c.container_status NOT IN ('S','D','A')
+    //                         AND ci.item_id = ?
+    //                     ) sub_inner
+    //                     WHERE ROWNUM <= 5
+    //                 ) sub_outer
+    //             ", [$product->sku]);
+
+    //             $product->allocation_per_case = $allocation->total_unit_qty ?? 0;
+
+
+    //         }
+
+    //         return view('products.index', compact('products'));
+
+    //     } catch (\Exception $e) {
+    //         return view('errors.db_error', ['error' => $e->getMessage()]);
+    //     }
+    // }
 
 
 
@@ -163,67 +373,67 @@ class ProductController extends Controller
 
 
 
-public function export(Request $request)
-{
-    $productsQuery = DB::connection('mysql')
-        ->table('products')
-        ->select(
-            'sku',
-            'description',
-            'case_pack',
-            'srp',
-            'allocation_per_case',
-            'cash_bank_card_scheme',
-            'po15_scheme',
-            'freebie_sku'
-        );
+    public function export(Request $request)
+    {
+        $productsQuery = DB::connection('mysql')
+            ->table('products')
+            ->select(
+                'sku',
+                'description',
+                'case_pack',
+                'srp',
+                'allocation_per_case',
+                'cash_bank_card_scheme',
+                'po15_scheme',
+                'freebie_sku'
+            );
 
-    // Apply filter if SKU is provided
-    if ($request->filled('sku')) {
-        $skus = explode(',', $request->sku);
-        $productsQuery->whereIn('sku', $skus);
-    }
-
-    $products = $productsQuery->get();
-
-    // Set dynamic filename
-    $filename = 'products_export_' . date('Ymd_His') . '.csv';
-
-    // Set headers
-    $headers = [
-        'Content-Type' => 'text/csv',
-        'Content-Disposition' => "attachment; filename=\"$filename\"",
-    ];
-
-    // Stream CSV response
-    $callback = function () use ($products) {
-        $handle = fopen('php://output', 'w');
-        // Write CSV header
-        fputcsv($handle, [
-            'SKU', 'Description', 'Case Pack', 'SRP',
-            'Allocation per Case', 'Cash/Bank/Card Scheme',
-            'PO15 Scheme', 'Freebie SKU'
-        ]);
-
-        // Write each product
-        foreach ($products as $product) {
-            fputcsv($handle, [
-                $product->sku,
-                $product->description,
-                $product->case_pack,
-                $product->srp,
-                $product->allocation_per_case,
-                $product->cash_bank_card_scheme,
-                $product->po15_scheme,
-                $product->freebie_sku
-            ]);
+        // Apply filter if SKU is provided
+        if ($request->filled('sku')) {
+            $skus = explode(',', $request->sku);
+            $productsQuery->whereIn('sku', $skus);
         }
 
-        fclose($handle);
-    };
+        $products = $productsQuery->get();
 
-    return response()->stream($callback, 200, $headers);
-}
+        // Set dynamic filename
+        $filename = 'products_export_' . date('Ymd_His') . '.csv';
+
+        // Set headers
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        // Stream CSV response
+        $callback = function () use ($products) {
+            $handle = fopen('php://output', 'w');
+            // Write CSV header
+            fputcsv($handle, [
+                'SKU', 'Description', 'Case Pack', 'SRP',
+                'Allocation per Case', 'Cash/Bank/Card Scheme',
+                'PO15 Scheme', 'Freebie SKU'
+            ]);
+
+            // Write each product
+            foreach ($products as $product) {
+                fputcsv($handle, [
+                    $product->sku,
+                    $product->description,
+                    $product->case_pack,
+                    $product->srp,
+                    $product->allocation_per_case,
+                    $product->cash_bank_card_scheme,
+                    $product->po15_scheme,
+                    $product->freebie_sku
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 
 
 
@@ -455,74 +665,74 @@ public function export(Request $request)
     }
 
     // Store new product
-public function store(Request $request)
-{
-    $skus                 = $request->input('sku');
-    $descriptions         = $request->input('description');
-    $casePacks            = $request->input('case_pack');
-    $srps                 = $request->input('srp');
-    $allocationPerCases   = $request->input('allocation_per_case');
-    $cashBankCardSchemes  = $request->input('cbc_scheme');
-    $po15Schemes          = $request->input('po15_scheme');
-    $freebieSkus          = $request->input('freebie_sku');
+    public function store(Request $request)
+    {
+        $skus                 = $request->input('sku');
+        $descriptions         = $request->input('description');
+        $casePacks            = $request->input('case_pack');
+        $srps                 = $request->input('srp');
+        $allocationPerCases   = $request->input('allocation_per_case');
+        $cashBankCardSchemes  = $request->input('cbc_scheme');
+        $po15Schemes          = $request->input('po15_scheme');
+        $freebieSkus          = $request->input('freebie_sku');
 
-    // Validate arrays presence
-    $request->validate([
-        'sku' => 'required|array',
-        'sku.*' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                $exists = DB::connection('mysql')
-                    ->table('products')
-                    ->where('sku', strtoupper($value))
-                    ->exists();
-                if ($exists) {
-                    $fail('The sku ' . $value . ' has already been taken.');
+        // Validate arrays presence
+        $request->validate([
+            'sku' => 'required|array',
+            'sku.*' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $exists = DB::connection('mysql')
+                        ->table('products')
+                        ->where('sku', strtoupper($value))
+                        ->exists();
+                    if ($exists) {
+                        $fail('The sku ' . $value . ' has already been taken.');
+                    }
                 }
-            }
-        ],
-        'description' => 'required|array',
-        'description.*' => 'required|string',
+            ],
+            'description' => 'required|array',
+            'description.*' => 'required|string',
 
-        'case_pack' => 'nullable|array',
-        'case_pack.*' => 'nullable|numeric',
+            'case_pack' => 'nullable|array',
+            'case_pack.*' => 'nullable|numeric',
 
-        'srp' => 'nullable|array',
-        'srp.*' => 'nullable|numeric',
+            'srp' => 'nullable|array',
+            'srp.*' => 'nullable|numeric',
 
-        'allocation_per_case' => 'nullable|array',
-        'allocation_per_case.*' => 'nullable|numeric',
+            'allocation_per_case' => 'nullable|array',
+            'allocation_per_case.*' => 'nullable|numeric',
 
-        'cash_bank_card_scheme' => 'nullable|array',
-        'cash_bank_card_scheme.*' => 'nullable|string',
+            'cash_bank_card_scheme' => 'nullable|array',
+            'cash_bank_card_scheme.*' => 'nullable|string',
 
-        'po15_scheme' => 'nullable|array',
-        'po15_scheme.*' => 'nullable|string',
+            'po15_scheme' => 'nullable|array',
+            'po15_scheme.*' => 'nullable|string',
 
-        'freebie_sku' => 'nullable|array',
-        'freebie_sku.*' => 'nullable|string',
-    ]);
+            'freebie_sku' => 'nullable|array',
+            'freebie_sku.*' => 'nullable|string',
+        ]);
 
-    // Prepare bulk insert data
-    $insertData = [];
-    foreach ($skus as $index => $sku) {
-        $insertData[] = [
-            'sku'                     => strtoupper($sku),
-            'description'             => $descriptions[$index] ?? null,
-            'case_pack'               => $casePacks[$index] !== null && $casePacks[$index] !== '' ? $casePacks[$index] : 0,
-            'srp'                     => $srps[$index] ?? null,
-            'allocation_per_case'     => $allocationPerCases[$index] ?? null,
-            'cash_bank_card_scheme'   => $cashBankCardSchemes[$index] ?? null,
-            'po15_scheme'             => $po15Schemes[$index] ?? null,
-            'freebie_sku'             => $freebieSkus[$index] ?? null,
-            'created_at'              => now(),
-        ];
+        // Prepare bulk insert data
+        $insertData = [];
+        foreach ($skus as $index => $sku) {
+            $insertData[] = [
+                'sku'                     => strtoupper($sku),
+                'description'             => $descriptions[$index] ?? null,
+                'case_pack'               => $casePacks[$index] !== null && $casePacks[$index] !== '' ? $casePacks[$index] : 0,
+                'srp'                     => $srps[$index] ?? null,
+                'allocation_per_case'     => $allocationPerCases[$index] ?? null,
+                'cash_bank_card_scheme'   => $cashBankCardSchemes[$index] ?? null,
+                'po15_scheme'             => $po15Schemes[$index] ?? null,
+                'freebie_sku'             => $freebieSkus[$index] ?? null,
+                'created_at'              => now(),
+            ];
+        }
+
+        DB::connection('mysql')->table('products')->insert($insertData);
+
+        return redirect()->back()->with('success', 'Products added successfully.');
     }
-
-    DB::connection('mysql')->table('products')->insert($insertData);
-
-    return redirect()->back()->with('success', 'Products added successfully.');
-}
 
 
     public function getSkus()
@@ -530,6 +740,7 @@ public function store(Request $request)
         $skus = DB::table('products')->pluck('sku')->map(fn($sku) => strtoupper($sku));
         return response()->json($skus);
     }
+    
     public function import(Request $request)
     {
         $request->validate([
@@ -553,7 +764,12 @@ public function store(Request $request)
             $insertData = [];
             $updateData = [];
 
-            $existingSkus = DB::table('products')->pluck('sku')->map(fn($sku) => strtoupper($sku))->toArray();
+            $existingSkus = DB::table('products')
+                ->pluck('sku')
+                ->map(fn($sku) => strtoupper($sku))
+                ->toArray();
+
+            $seenCsvSkus = []; // track duplicates within CSV
 
             foreach ($dataLines as $lineNumber => $line) {
                 $rowNumber = $lineNumber + 2;
@@ -564,13 +780,20 @@ public function store(Request $request)
                     continue;
                 }
 
-                [$sku, $description, $casePack, $srp, $allocationPerCase, $cashBankCardScheme, $po15Scheme, $freebieSku] = array_map('trim', $columns);
+                [$sku, $description, $casePack, $srp, $allocationPerCase, $cashBankCardScheme, $po15Scheme, $freebieSku] =
+                    array_map('trim', $columns);
 
                 // Field validations
                 if (!$sku) {
                     $errors[] = "Row {$rowNumber}: SKU is required";
                     continue;
                 }
+                if (in_array(strtoupper($sku), $seenCsvSkus)) {
+                    $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
+                    continue;
+                }
+                $seenCsvSkus[] = strtoupper($sku);
+
                 if (!$description) {
                     $errors[] = "Row {$rowNumber}: Product Description is required";
                     continue;
