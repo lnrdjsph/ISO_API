@@ -11,7 +11,16 @@
 						name="csrf-token"
 						content="{{ csrf_token() }}"
 				>
-				<title>My App</title>
+				<meta
+						name="description"
+						content="ISO B2B Ordering System"
+				>
+				<meta
+						name="theme-color"
+						content="darkblue"
+				/>
+				<title>ISO B2B Ordering System</title>
+
 				<link
 						rel="icon"
 						type="image/png"
@@ -41,8 +50,9 @@
 								<div class="">
 										<img
 												src="{{ asset('images/MarengEms_Logo.png') }}"
+												lazyload="lazy"
 												alt="Logo"
-												class="mx-auto h-[125px] w-auto"
+												class="mx-auto h-[75px] w-auto md:h-[125px] md:w-auto"
 										>
 								</div>
 
@@ -467,6 +477,13 @@
 												}, 5000); // remove after 5s
 										});
 								});
+						});
+
+
+						document.addEventListener('DOMContentLoaded', function() {
+								if (document.body.innerText.includes('Page Expired')) {
+										window.location.reload();
+								}
 						});
 				</script>
 
