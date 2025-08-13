@@ -26,6 +26,7 @@ class CreateOrdersTable extends Migration
             $table->date('delivery_date')->nullable();
             $table->text('address')->nullable();
             $table->string('landmark')->nullable();
+            $table->string('order_status')->default('pending'); // ✅ Added with default value
             $table->timestamps();
         });
     }

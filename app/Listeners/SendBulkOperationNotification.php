@@ -14,7 +14,7 @@ class SendBulkOperationNotification
     public function handleBulkUpdate(ProductsBulkUpdated $event)
     {
         // Send notification to administrators about bulk update
-        $adminUsers = User::where('role', 'admin')->get();
+        $adminUsers = User::where('role', 'super admin')->get();
         
         foreach ($adminUsers as $admin) {
             $admin->notify(new BulkOperationNotification(
@@ -29,7 +29,7 @@ class SendBulkOperationNotification
     public function handleBulkArchive(ProductsBulkArchived $event)
     {
         // Send notification about bulk archive
-        $adminUsers = User::where('role', 'admin')->get();
+        $adminUsers = User::where('role', 'super admin')->get();
         
         foreach ($adminUsers as $admin) {
             $admin->notify(new BulkOperationNotification(

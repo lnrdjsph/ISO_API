@@ -182,6 +182,48 @@
 												</div>
 										</li>
 
+										@auth
+												@if (auth()->user()->role === 'super admin')
+														{{-- Users Group --}}
+														<li class="rounded">
+																<div class="{{ request()->routeIs('users*') ? 'bg-gray-100' : '' }} rounded">
+																		@if (request()->routeIs('users*'))
+																				<h3 class="px-4 py-1 text-xs uppercase tracking-wider text-gray-500">Users</h3>
+																				<ul class="mt-1 rounded transition-all duration-300">
+																						<li class="relative">
+																								<a
+																										href="{{ route('users.index') }}"
+																										class="{{ request()->routeIs('users.index') ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium' : '' }} relative block rounded py-2 pl-6 transition-all duration-300 hover:text-indigo-500"
+																								>
+																										User List
+																								</a>
+																						</li>
+																						@if (preg_match('/users\/\d+$/', request()->path()))
+																								<li class="relative">
+																										<a
+																												href="{{ url()->current() }}"
+																												class="relative block rounded py-2 pl-6 font-medium text-blue-800 transition-all duration-300 before:absolute before:left-2 before:top-1/2 before:h-2 before:w-2 before:-translate-y-1/2 before:rounded-full before:bg-blue-600 before:content-[''] hover:text-indigo-500"
+																										>
+																												User Details
+																										</a>
+																								</li>
+																						@endif
+																				</ul>
+																		@else
+																				<a
+																						href="{{ route('users.index') }}"
+																						class="block rounded px-4 py-2 hover:bg-gray-100"
+																				>
+																						Users
+																				</a>
+																		@endif
+																</div>
+														</li>
+												@endif
+										@endauth
+
+
+
 								</ul>
 
 								<!-- Logout -->

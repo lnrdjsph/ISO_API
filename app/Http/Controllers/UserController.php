@@ -2,12 +2,108 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function getUserData(Request $request)
+
+
+
+    public function index(Request $request)
+    {
+        $query = User::query();
+
+        // Filter by role
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        // Filter by user_location
+        if ($request->filled('user_location')) {
+            $query->where('user_location', $request->user_location);
+        }
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->orderBy('name')->paginate(10)->withQueryString();
+
+        return view('users.user_management', compact('users'));
+    }
+
+
+    // Show form to create user
+    public function create()
+    {
+        return view('users.user_create');
+    }
+
+    // Store new user
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:6|confirmed',
+            'role'          => ['required', Rule::in(['super admin', 'admin', 'user'])],
+            'user_location' => 'required|string|max:10',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+
+        User::create($validated);
+
+        return redirect()->route('users.index')->with('success', 'User created successfully.');
+    }
+
+    // Show edit form
+    public function edit(User $user)
+    {
+        return view('users.edit', compact('user'));
+    }
+
+    // Update user
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'password'      => 'nullable|string|min:6|confirmed',
+            'role'          => ['required', Rule::in(['super admin', 'admin', 'user', 'manager'])],
+            'user_location' => 'required|string|max:10',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+    }
+
+    // Delete user
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+    }
+       
+
+
+        public function getUserData(Request $request)
     {
         $cardNo = trim($request->input('card_no'));
 
@@ -89,5 +185,4 @@ class UserController extends Controller
             ]);
         }
     }
-
 }

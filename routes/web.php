@@ -81,6 +81,21 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
 });
 
+use App\Http\Controllers\UserController;
+
+// User Management routes
+Route::prefix('/users')->name('users.')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::get('/create', [UserController::class, 'create'])->name('create');
+    Route::post('/', [UserController::class, 'store'])->name('store');
+    Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+    Route::put('/{user}', [UserController::class, 'update'])->name('update');
+    Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+});
+
 
 // Default welcome route
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+// unauthorized route
+Route::view('/403', 'errors.403');

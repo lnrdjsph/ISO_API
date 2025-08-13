@@ -15,7 +15,7 @@ class ProductPolicy
      */
     public function bulkUpdate(User $user)
     {
-        return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasPermission('bulk_edit_products');
+        return $user->hasRole('superadmin') || $user->hasRole('admin') || $user->hasRole('manager') || $user->hasPermission('bulk_edit_products');
     }
 
     /**
@@ -23,7 +23,7 @@ class ProductPolicy
      */
     public function bulkArchive(User $user)
     {
-        return $user->hasRole('admin') || $user->hasRole('manager') || $user->hasPermission('bulk_archive_products');
+        return $user->hasRole('superadmin') || $user->hasRole('admin') || $user->hasRole('manager') || $user->hasPermission('bulk_archive_products');
     }
 
     /**

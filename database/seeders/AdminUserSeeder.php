@@ -20,7 +20,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Biboy',
                 'password' => Hash::make('BIBOY'),
-                'role' => 'admin',
+                'role' => 'super admin',
                 'user_location' => 'f2', 
             ]
         );
@@ -30,7 +30,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Gene',
                 'password' => Hash::make('GENE'),
-                'role' => 'admin',
+                'role' => 'super admin',
                 'user_location' => 'h8', 
             ]
         );
