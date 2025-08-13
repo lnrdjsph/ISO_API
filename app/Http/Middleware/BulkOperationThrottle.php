@@ -16,7 +16,7 @@ class BulkOperationThrottle
         $user = $request->user();
 
         // Skip throttling if user is admin
-        if ($user && $user->role === 'admin') {
+        if ($user && ($user->role === 'admin' || $user->role === 'super admin')) {
             return $next($request);
         }
 
