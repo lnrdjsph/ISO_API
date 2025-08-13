@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Response;
 use App\Jobs\FetchAllocationJob;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 
 
@@ -29,10 +30,17 @@ class ProductController extends Controller
         // $this->middleware('throttle:bulk_operations,5,10')->only(['bulkUpdate', 'bulkArchive']);
     }
 
-    // Show product search view
     public function index(Request $request)
     {
         try {
+            $userLocation = strtolower(auth()->user()->user_location);
+            $tableName = 'products_' . $userLocation;
+
+            // Check if table exists in the connection before query
+            if (!Schema::connection('mysql')->hasTable($tableName)) {
+                throw new \Exception("The database table '{$tableName}' does not exist.");
+            }
+
             $sort = $request->get('sort', 'description');
             $direction = $request->get('direction', 'asc');
 
@@ -47,11 +55,12 @@ class ProductController extends Controller
             $search = strtolower($request->get('query'));
 
             $productsQuery = DB::connection('mysql')
-                ->table('products')
+                ->table($tableName)
                 ->select(
                     'id',
                     'sku',
                     'description',
+                    'allocation_per_case',
                     'case_pack',
                     'srp',
                     'cash_bank_card_scheme',
@@ -59,14 +68,12 @@ class ProductController extends Controller
                     'freebie_sku'
                 );
 
-            // Search filter
             if ($search) {
                 $productsQuery->where(function ($q) use ($search) {
                     $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
                 });
 
-                // Optional: exact match for SKU
                 if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
                     $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
                 }
@@ -76,86 +83,15 @@ class ProductController extends Controller
                 ->paginate(10)
                 ->appends($request->query());
 
-            // Freebie descriptions
             $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
 
             $freebieDescriptions = DB::connection('mysql')
-                ->table('products')
+                ->table($tableName)
                 ->whereIn('sku', $freebieSkus)
                 ->pluck('description', 'sku');
 
             foreach ($products as $product) {
                 $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
-            }
-
-            // Enrich products with Oracle RMS & WMS data
-            foreach ($products as $product) {
-                // // Oracle RMS data
-                // $oracleData = DB::connection('oracle_rms')->selectOne("
-                //     SELECT * FROM (
-                //         SELECT
-                //             item_master.item_parent AS sku,
-                //             item_master.item_desc AS description,
-                //             deps.dept_name AS department,
-                //             uda_values.uda_value_desc AS brand,
-                //             groups.group_name,
-                //             COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
-                //             class.class_name AS class_name
-                //         FROM item_supplier
-                //         LEFT JOIN item_master 
-                //             ON item_supplier.item = item_master.item
-                //         LEFT JOIN uda_item_lov 
-                //             ON item_supplier.item = uda_item_lov.item 
-                //             AND item_master.item = uda_item_lov.item
-                //         LEFT JOIN uda_values 
-                //             ON uda_item_lov.uda_value = uda_values.uda_value 
-                //             AND uda_item_lov.uda_id = uda_values.uda_id
-                //         LEFT JOIN deps 
-                //             ON deps.dept = item_master.dept
-                //         LEFT JOIN groups 
-                //             ON groups.group_no = deps.group_no
-                //         LEFT JOIN class 
-                //             ON class.dept = item_master.dept 
-                //             AND class.class = item_master.class
-                //         LEFT JOIN (
-                //             SELECT item, SUM(stock_on_hand) AS stock_on_hand
-                //             FROM item_loc_soh
-                //             GROUP BY item
-                //         ) stock 
-                //             ON stock.item = item_master.item
-                //         WHERE uda_values.uda_id = 9
-                //         AND item_master.item = ?
-                //     ) WHERE ROWNUM = 1
-                // ", [$product->sku]);
-
-                // if ($oracleData) {
-                //     $product->department = $oracleData->department ?? null;
-                //     $product->brand = $oracleData->brand ?? null;
-                //     $product->group_name = $oracleData->group_name ?? null;
-                //     $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
-                //     $product->class_name = $oracleData->class_name ?? null;
-                // }
-
-                // $allocation = DB::connection('oracle_wms')->selectOne("
-                //     SELECT SUM(sub_outer.unit_qty) AS total_unit_qty
-                //     FROM (
-                //         SELECT sub_inner.unit_qty
-                //         FROM (
-                //             SELECT ci.unit_qty, c.container_id
-                //             FROM rwms.container c
-                //             JOIN rwms.container_item ci
-                //                 ON c.facility_id = ci.facility_id
-                //             AND c.container_id = ci.container_id
-                //             WHERE c.container_status NOT IN ('S','D','A')
-                //             AND ci.item_id = ?
-                //         ) sub_inner
-                //         WHERE ROWNUM <= 5
-                //     ) sub_outer
-                // ", [$product->sku]);
-
-                // $product->allocation_per_case = $allocation->total_unit_qty ?? 0;
-
-
             }
 
             return view('products.index', compact('products'));
@@ -164,6 +100,146 @@ class ProductController extends Controller
             return view('errors.db_error', ['error' => $e->getMessage()]);
         }
     }
+
+
+
+
+    // // Show product search view
+    // public function index(Request $request)
+    // {
+    //     try {
+    //         $sort = $request->get('sort', 'description');
+    //         $direction = $request->get('direction', 'asc');
+
+    //         $allowedSorts = ['sku', 'description'];
+    //         if (!in_array(strtolower($sort), $allowedSorts)) {
+    //             $sort = 'sku';
+    //         }
+    //         if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+    //             $direction = 'asc';
+    //         }
+
+    //         $search = strtolower($request->get('query'));
+
+    //         $productsQuery = DB::connection('mysql')
+    //             ->table('products')
+    //             ->select(
+    //                 'id',
+    //                 'sku',
+    //                 'description',
+    //                 'allocation_per_case',
+    //                 'case_pack',
+    //                 'srp',
+    //                 'cash_bank_card_scheme',
+    //                 'po15_scheme',
+    //                 'freebie_sku'
+    //             );
+
+    //         // Search filter
+    //         if ($search) {
+    //             $productsQuery->where(function ($q) use ($search) {
+    //                 $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
+    //                 ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
+    //             });
+
+    //             // Optional: exact match for SKU
+    //             if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
+    //                 $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
+    //             }
+    //         }
+
+    //         $products = $productsQuery->orderBy($sort, $direction)
+    //             ->paginate(10)
+    //             ->appends($request->query());
+
+    //         // Freebie descriptions
+    //         $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
+
+    //         $freebieDescriptions = DB::connection('mysql')
+    //             ->table('products')
+    //             ->whereIn('sku', $freebieSkus)
+    //             ->pluck('description', 'sku');
+
+    //         foreach ($products as $product) {
+    //             $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
+    //         }
+
+    //         // Enrich products with Oracle RMS & WMS data
+    //         foreach ($products as $product) {
+    //             // // Oracle RMS data
+    //             // $oracleData = DB::connection('oracle_rms')->selectOne("
+    //             //     SELECT * FROM (
+    //             //         SELECT
+    //             //             item_master.item_parent AS sku,
+    //             //             item_master.item_desc AS description,
+    //             //             deps.dept_name AS department,
+    //             //             uda_values.uda_value_desc AS brand,
+    //             //             groups.group_name,
+    //             //             COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
+    //             //             class.class_name AS class_name
+    //             //         FROM item_supplier
+    //             //         LEFT JOIN item_master 
+    //             //             ON item_supplier.item = item_master.item
+    //             //         LEFT JOIN uda_item_lov 
+    //             //             ON item_supplier.item = uda_item_lov.item 
+    //             //             AND item_master.item = uda_item_lov.item
+    //             //         LEFT JOIN uda_values 
+    //             //             ON uda_item_lov.uda_value = uda_values.uda_value 
+    //             //             AND uda_item_lov.uda_id = uda_values.uda_id
+    //             //         LEFT JOIN deps 
+    //             //             ON deps.dept = item_master.dept
+    //             //         LEFT JOIN groups 
+    //             //             ON groups.group_no = deps.group_no
+    //             //         LEFT JOIN class 
+    //             //             ON class.dept = item_master.dept 
+    //             //             AND class.class = item_master.class
+    //             //         LEFT JOIN (
+    //             //             SELECT item, SUM(stock_on_hand) AS stock_on_hand
+    //             //             FROM item_loc_soh
+    //             //             GROUP BY item
+    //             //         ) stock 
+    //             //             ON stock.item = item_master.item
+    //             //         WHERE uda_values.uda_id = 9
+    //             //         AND item_master.item = ?
+    //             //     ) WHERE ROWNUM = 1
+    //             // ", [$product->sku]);
+
+    //             // if ($oracleData) {
+    //             //     $product->department = $oracleData->department ?? null;
+    //             //     $product->brand = $oracleData->brand ?? null;
+    //             //     $product->group_name = $oracleData->group_name ?? null;
+    //             //     $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
+    //             //     $product->class_name = $oracleData->class_name ?? null;
+    //             // }
+
+    //             // $allocation = DB::connection('oracle_wms')->selectOne("
+    //             //     SELECT SUM(sub_outer.unit_qty) AS total_unit_qty
+    //             //     FROM (
+    //             //         SELECT sub_inner.unit_qty
+    //             //         FROM (
+    //             //             SELECT ci.unit_qty, c.container_id
+    //             //             FROM rwms.container c
+    //             //             JOIN rwms.container_item ci
+    //             //                 ON c.facility_id = ci.facility_id
+    //             //             AND c.container_id = ci.container_id
+    //             //             WHERE c.container_status NOT IN ('S','D','A')
+    //             //             AND ci.item_id = ?
+    //             //         ) sub_inner
+    //             //         WHERE ROWNUM <= 5
+    //             //     ) sub_outer
+    //             // ", [$product->sku]);
+
+    //             // $product->allocation_per_case = $allocation->total_unit_qty ?? 0;
+
+
+    //         }
+
+    //         return view('products.index', compact('products'));
+
+    //     } catch (\Exception $e) {
+    //         return view('errors.db_error', ['error' => $e->getMessage()]);
+    //     }
+    // }
 
 
     // public function getAllocation(Request $request)
@@ -187,31 +263,48 @@ class ProductController extends Controller
 
 
     public function getAllocation(Request $request)
-{
-    $sku = $request->input('sku');
-    if (!$sku) {
-        return response()->json(['error' => 'SKU is required'], 400);
+    {
+        $sku = $request->input('sku');
+        if (!$sku) {
+            return response()->json(['error' => 'SKU is required'], 400);
+        }
+
+        // Extend PHP execution time for slow Oracle queries
+        set_time_limit(300); // seconds
+
+        try {
+            $allocation = DB::connection('oracle_wms')->selectOne("
+                SELECT SUM(ci.unit_qty) AS total_unit_qty
+                FROM (
+                    SELECT facility_id, container_id
+                    FROM rwms.container
+                    WHERE container_status NOT IN ('S','D','A')
+                ) c
+                JOIN (
+                    SELECT facility_id, container_id, unit_qty
+                    FROM rwms.container_item
+                    WHERE item_id = ?
+                ) ci
+                ON c.facility_id = ci.facility_id
+                AND c.container_id = ci.container_id
+            ", [$sku]);
+
+            $totalQty = $allocation->total_unit_qty ?? 0;
+
+            return response()->json([
+                'sku' => $sku,
+                'allocation_per_case' => $totalQty,
+            ]);
+        } catch (\Throwable $e) {
+            // If Oracle is slow or fails, respond with an error
+            return response()->json([
+                'sku' => $sku,
+                'error' => 'Failed to fetch allocation',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // Query directly from Oracle WMS connection
-    $allocation = DB::connection('oracle_wms')->selectOne("
-        SELECT SUM(ci.unit_qty) AS total_unit_qty
-        FROM rwms.container c
-        JOIN rwms.container_item ci ON c.facility_id = ci.facility_id AND c.container_id = ci.container_id
-        WHERE c.container_status NOT IN ('S','D','A')
-        AND ci.item_id = ?
-    ", [$sku]);
-
-    $totalQty = $allocation->total_unit_qty ?? 0;
-
-    // Optionally cache result for 30 minutes
-    Cache::put("allocation_{$sku}", $totalQty, now()->addMinutes(30));
-
-    return response()->json([
-        'sku' => $sku,
-        'allocation_per_case' => $totalQty,
-    ]);
-}
 
 
     // // Show product search view
@@ -380,9 +473,9 @@ class ProductController extends Controller
             ->select(
                 'sku',
                 'description',
+                'allocation_per_case',
                 'case_pack',
                 'srp',
-                'allocation_per_case',
                 'cash_bank_card_scheme',
                 'po15_scheme',
                 'freebie_sku'
@@ -420,9 +513,9 @@ class ProductController extends Controller
                 fputcsv($handle, [
                     $product->sku,
                     $product->description,
+                    $product->allocation_per_case,
                     $product->case_pack,
                     $product->srp,
-                    $product->allocation_per_case,
                     $product->cash_bank_card_scheme,
                     $product->po15_scheme,
                     $product->freebie_sku
@@ -737,10 +830,33 @@ class ProductController extends Controller
 
     public function getSkus()
     {
-        $skus = DB::table('products')->pluck('sku')->map(fn($sku) => strtoupper($sku));
-        return response()->json($skus);
+        try {
+            // 1. Get user's location
+            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $tableName = "products_{$userLocation}";
+
+            // 2. Check if table exists
+            if (!Schema::connection('mysql')->hasTable($tableName)) {
+                return response()->json([
+                    'error' => "Table '{$tableName}' does not exist."
+                ], 404);
+            }
+
+            // 3. Fetch SKUs from the location-specific table
+            $skus = DB::table($tableName)
+                ->pluck('sku')
+                ->map(fn($sku) => strtoupper($sku));
+
+            return response()->json($skus);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch SKUs: ' . $e->getMessage()
+            ], 500);
+        }
     }
-    
+
+        
     public function import(Request $request)
     {
         $request->validate([
@@ -748,6 +864,10 @@ class ProductController extends Controller
         ]);
 
         try {
+            // 1. Get user location and build table name
+            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $tableName = "products_{$userLocation}";
+
             $file = $request->file('csv_file');
             $csvContent = file_get_contents($file->getRealPath());
             $lines = array_filter(
@@ -764,12 +884,13 @@ class ProductController extends Controller
             $insertData = [];
             $updateData = [];
 
-            $existingSkus = DB::table('products')
+            // 2. Check existing SKUs from location-specific table
+            $existingSkus = DB::table($tableName)
                 ->pluck('sku')
                 ->map(fn($sku) => strtoupper($sku))
                 ->toArray();
 
-            $seenCsvSkus = []; // track duplicates within CSV
+            $seenCsvSkus = [];
 
             foreach ($dataLines as $lineNumber => $line) {
                 $rowNumber = $lineNumber + 2;
@@ -783,7 +904,6 @@ class ProductController extends Controller
                 [$sku, $description, $casePack, $srp, $allocationPerCase, $cashBankCardScheme, $po15Scheme, $freebieSku] =
                     array_map('trim', $columns);
 
-                // Field validations
                 if (!$sku) {
                     $errors[] = "Row {$rowNumber}: SKU is required";
                     continue;
@@ -848,7 +968,8 @@ class ProductController extends Controller
             $allData = array_merge($insertData, $updateData);
 
             if (!empty($allData)) {
-                DB::table('products')->upsert($allData, ['sku'], [
+                // 3. Insert/Update in the location-specific table
+                DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
                     'case_pack',
                     'srp',
@@ -877,6 +998,7 @@ class ProductController extends Controller
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
+
 
     // Download CSV template
     public function downloadTemplate()
@@ -908,6 +1030,18 @@ class ProductController extends Controller
         ]);
 
         try {
+            // 1. Determine location-specific products table
+            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $tableName = "products_{$userLocation}";
+
+            // Optional: check if table exists before proceeding
+            if (!Schema::connection('mysql')->hasTable($tableName)) {
+                return response()->json([
+                    'valid' => false,
+                    'errors' => ["Table '{$tableName}' does not exist."]
+                ]);
+            }
+
             $file = $request->file('csv_file');
             $csvContent = file_get_contents($file->getRealPath());
             $lines = array_filter(explode("\n", $csvContent), 'strlen');
@@ -937,7 +1071,7 @@ class ProductController extends Controller
                 $description = trim($columns[1]);
 
                 if (empty($sku) || empty($description)) {
-                    $errors[] = "Row {$rowNumber}: sku and Description are required";
+                    $errors[] = "Row {$rowNumber}: SKU and Description are required";
                     continue;
                 }
 
@@ -945,16 +1079,17 @@ class ProductController extends Controller
                 $validRows++;
             }
 
-            // Check for existing skus in batch
+            // 2. Check for existing SKUs in the location-specific table
             if (!empty($skusToCheck)) {
                 $existingSkus = DB::connection('mysql')
-                    ->table('products')
+                    ->table($tableName)
                     ->whereIn('sku', $skusToCheck)
                     ->pluck('sku')
+                    ->map(fn($sku) => strtoupper($sku))
                     ->toArray();
 
                 foreach ($existingSkus as $existingSku) {
-                    $errors[] = "sku '{$existingSku}' already exists in database";
+                    $errors[] = "SKU '{$existingSku}' already exists in {$tableName} database.";
                 }
             }
 
@@ -965,11 +1100,12 @@ class ProductController extends Controller
                 'total_rows' => count($dataLines)
             ]);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'valid' => false,
                 'errors' => ['Error processing file: ' . $e->getMessage()]
             ]);
         }
     }
+
 }

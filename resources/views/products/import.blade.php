@@ -169,9 +169,7 @@
 														id="dropContent"
 														class="space-y-4"
 												>
-														<div
-																class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 transition-colors duration-300 group-hover:bg-blue-100"
-														>
+														<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 transition-colors duration-300 group-hover:bg-blue-100">
 																<svg
 																		xmlns="http://www.w3.org/2000/svg"
 																		class="h-8 w-8 text-gray-400 group-hover:text-blue-500"
@@ -340,24 +338,28 @@
 																								<span><strong>Column 2:</strong> Product Description</span>
 																						</li>
 																						<li class="flex items-center space-x-2">
+																								<span class="h-2 w-2 rounded-full bg-green-500"></span>
+																								<span><strong>Column 3:</strong> Store Allocation</span>
+																						</li>
+																						<li class="flex items-center space-x-2">
 																								<span class="h-2 w-2 rounded-full bg-purple-500"></span>
-																								<span><strong>Column 3:</strong> Case Pack</span>
+																								<span><strong>Column 4:</strong> Case Pack</span>
 																						</li>
 																						<li class="flex items-center space-x-2">
 																								<span class="h-2 w-2 rounded-full bg-orange-500"></span>
-																								<span><strong>Column 4:</strong> SRP</span>
+																								<span><strong>Column 5:</strong> SRP</span>
 																						</li>
 																						<li class="flex items-center space-x-2">
 																								<span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-																								<span><strong>Column 5:</strong> Cash / Bank Card Scheme</span>
+																								<span><strong>Column 6:</strong> Cash / Bank Card Scheme</span>
 																						</li>
 																						<li class="flex items-center space-x-2">
 																								<span class="h-2 w-2 rounded-full bg-pink-500"></span>
-																								<span><strong>Column 6:</strong> PO15 Scheme</span>
+																								<span><strong>Column 7:</strong> PO15 Scheme</span>
 																						</li>
 																						<li class="flex items-center space-x-2">
 																								<span class="h-2 w-2 rounded-full bg-pink-500"></span>
-																								<span><strong>Column 7:</strong> Freebie SKU</span>
+																								<span><strong>Column 8:</strong> Freebie SKU</span>
 																						</li>
 																				</ul>
 																		</div>
@@ -369,6 +371,7 @@
 																										<tr>
 																												<th class="border border-gray-300 px-2 py-1 text-left">SKU</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">Description</th>
+																												<th class="border border-gray-300 px-2 py-1 text-left">Store Allocation</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">Case Pack</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">SRP</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">C/BC Scheme</th>
@@ -380,6 +383,7 @@
 																										<tr class="hover:bg-gray-50">
 																												<td class="border border-gray-300 px-2 py-1">102806178</td>
 																												<td class="border border-gray-300 px-2 py-1">Bearbrand Pwdr Mlk</td>
+																												<td class="border border-gray-300 px-2 py-1">500</td>
 																												<td class="border border-gray-300 px-2 py-1">24</td>
 																												<td class="border border-gray-300 px-2 py-1">15.50</td>
 																												<td class="border border-gray-300 px-2 py-1">15+1</td>
@@ -389,6 +393,7 @@
 																										<tr class="hover:bg-gray-50">
 																												<td class="border border-gray-300 px-2 py-1">8404794</td>
 																												<td class="border border-gray-300 px-2 py-1">Lucky Me Xtra Hot</td>
+																												<td class="border border-gray-300 px-2 py-1">600</td>
 																												<td class="border border-gray-300 px-2 py-1">72</td>
 																												<td class="border border-gray-300 px-2 py-1">11.50</td>
 																												<td class="border border-gray-300 px-2 py-1">10+1</td>
@@ -519,6 +524,8 @@
 																</th>
 																<th class="border-b px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
 																		Description</th>
+																<th class="border-b px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+																		Store Allocation</th>
 																<th class="border-b px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
 																		Case Pack</th>
 																<th class="border-b px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">SRP
@@ -680,7 +687,7 @@
 												return;
 										}
 
-										const expectedColumns = 7;
+										const expectedColumns = 8;
 										const validRows = [];
 										const seenSkus = new Set(); // Track SKUs within this file
 
@@ -692,11 +699,12 @@
 														validRows.push({
 																sku: cols[0] || '',
 																description: cols[1] || '',
-																case_pack: cols[2] || '',
-																srp: cols[3] || '',
-																cash_bank_card_scheme: cols[4] || '',
-																po15_scheme: cols[5] || '',
-																freebie_sku: cols[6] || '',
+																allocation_per_case: cols[2] || '',
+																case_pack: cols[3] || '',
+																srp: cols[4] || '',
+																cash_bank_card_scheme: cols[5] || '',
+																po15_scheme: cols[6] || '',
+																freebie_sku: cols[7] || '',
 																action: 'invalid'
 														});
 														return;
@@ -705,6 +713,7 @@
 												const [
 														sku,
 														description,
+														allocation_per_case,
 														case_pack,
 														srp,
 														cbc_scheme,
@@ -720,6 +729,7 @@
 
 												if (!sku || !/^\d+$/.test(sku)) isValid = false;
 												if (!description) isValid = false;
+												if (!allocation_per_case || isNaN(allocation_per_case)) isValid = false;
 												if (!case_pack || isNaN(case_pack)) isValid = false;
 												if (!srp || isNaN(srp.replace(/[₱,]/g, ''))) isValid = false;
 												if (!cbc_scheme || !/^\d+\+\d+$/.test(cbc_scheme)) isValid = false;
@@ -741,6 +751,7 @@
 												validRows.push({
 														sku,
 														description,
+														allocation_per_case,
 														case_pack,
 														srp,
 														cash_bank_card_scheme: cbc_scheme,
@@ -852,6 +863,7 @@
 										tr.innerHTML = `
                     <td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
@@ -906,7 +918,7 @@
 						document.getElementById('downloadTemplate').addEventListener('click', (e) => {
 								e.preventDefault();
 								const csvContent =
-										'SKU,Product Description,Case Pack,SRP,Cash Bank Card Scheme,PO15 Scheme,Freebie SKU\n102806178,Bearbrand Pwdr Mlk 128-192/33G,192,11.20,15+1,15+2,9413022\n8404794,Lucky Me Pc Xtra Hot Chi72/60G,72,11.50,10+1,8+1,8404794';
+										'SKU,Product Description,Store Allocation,Case Pack,SRP,Cash Bank Card Scheme,PO15 Scheme,Freebie SKU\n102806178,Bearbrand Pwdr Mlk 128-192/33G,500,192,11.20,15+1,15+2,9413022\n8404794,Lucky Me Pc Xtra Hot Chi72/60G,600,72,11.50,10+1,8+1,8404794';
 								const blob = new Blob([csvContent], {
 										type: 'text/csv'
 								});

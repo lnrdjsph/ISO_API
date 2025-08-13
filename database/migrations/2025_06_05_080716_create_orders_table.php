@@ -10,6 +10,7 @@ class CreateOrdersTable extends Migration
     {
         Schema::connection('mysql')->create('orders', function (Blueprint $table) {
             $table->increments('id');
+             $table->string('sof_id')->nullable();
             $table->string('requesting_store');
             $table->string('requested_by');
             $table->string('mbc_card_no')->nullable(); // ✅ Added

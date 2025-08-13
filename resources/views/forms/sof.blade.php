@@ -68,6 +68,7 @@
 												<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 														<div class="relative mb-6 w-full">
 																<input
+																		id="sof_id"
 																		value="{{ old('sof_id', $nextSofId) }}"
 																		type="text"
 																		name="sof_id"
@@ -85,6 +86,7 @@
 
 														<div class="relative mb-6 w-full">
 																<input
+																		id="requesting_store"
 																		value="{{ old('requesting_store', 'Test Store') }}"
 																		type="text"
 																		name="requesting_store"
@@ -102,6 +104,7 @@
 
 														<div class="relative mb-6 w-full">
 																<input
+																		id="requested_by"
 																		value="{{ old('requested_by', auth()->user()->name ?? 'Personnel Sample') }}"
 																		type="text"
 																		name="requested_by"
@@ -298,6 +301,7 @@
 																<input
 																		type="date"
 																		name="payment_date"
+																		value="{{ old('payment_date', $currentDateTime) }}"
 																		x-data="{ value: '{{ old('payment_date') }}' }"
 																		x-model="value"
 																		class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
@@ -318,6 +322,24 @@
 												<h2 class="mb-4 text-lg font-semibold">Dispatch Details</h2>
 
 												<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+
+														<!-- Delivery/Pick-up Date -->
+														<div class="relative">
+																<input
+																		type="date"
+																		name="delivery_date"
+																		id="delivery_date"
+																		value="{{ old('delivery_date') }}"
+																		class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+																/>
+																<label
+																		for="delivery_date"
+																		class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"
+																>
+																		Delivery/Pick-up Date
+																</label>
+														</div>
 														<!-- Mode of Dispatching -->
 														<div class="relative">
 																<select
@@ -349,29 +371,10 @@
 																		Mode of Dispatching
 																</label>
 														</div>
-
-														<!-- Delivery/Pick-up Date -->
-														<div class="relative">
-																<input
-																		type="date"
-																		name="delivery_date"
-																		id="delivery_date"
-																		value="{{ old('delivery_date') }}"
-																		class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-																/>
-																<label
-																		for="delivery_date"
-																		class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"
-																>
-																		Delivery/Pick-up Date
-																</label>
-														</div>
 												</div>
 
 												<!-- Delivery Details (Initially Hidden) -->
-												<div
-														class="delivery-group mt-4 hidden max-h-0 overflow-hidden opacity-0 transition-all duration-200 ease-in-out"
-												>
+												<div class="delivery-group mt-4 hidden max-h-0 overflow-hidden opacity-0 transition-all duration-200 ease-in-out">
 														<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 																<div class="relative">
 																		<input
@@ -379,9 +382,12 @@
 																				type="text"
 																				name="address"
 																				id="address"
+																				autocomplete="street-address"
 																				class="delivery-field peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
 																		/>
+
 																		<label
+																				value="{{ old('address') }}"
 																				for="address"
 																				class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"
 																		>
@@ -458,9 +464,7 @@
 																>
 																		<!-- Remove Button (Top-Right Trash Icon) -->
 																		<div class="mb-4 flex items-center space-x-3">
-																				<div
-																						class="item-number flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-sm font-semibold text-white"
-																				>
+																				<div class="item-number flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-sm font-semibold text-white">
 																						1
 																				</div>
 																				<h3 class="text-lg font-medium text-gray-900">Item No. 1</h3>
@@ -508,9 +512,7 @@
 																		<div class="order-content grid grid-cols-1 gap-6 md:grid-cols-3">
 
 																				<!-- LEFT SIDE: Editable Inputs -->
-																				<div
-																						class="editable-side max-h-[2000px] space-y-4 opacity-100 transition-all duration-300 ease-in-out md:col-span-2"
-																				>
+																				<div class="editable-side max-h-[2000px] space-y-4 opacity-100 transition-all duration-300 ease-in-out md:col-span-2">
 																						<!-- SKU + Description -->
 																						<div class="product-row grid grid-cols-1 gap-4 md:grid-cols-2">
 																								<!-- Unified Search Input -->
@@ -529,9 +531,7 @@
 																												name="orders[{{ $i }}][display]"
 																										>
 
-																										<ul
-																												class="search-results absolute z-10 mt-1 hidden max-h-60 overflow-y-auto rounded border border-gray-200 bg-white shadow"
-																										></ul>
+																										<ul class="search-results absolute z-10 mt-1 hidden max-h-60 overflow-y-auto rounded border border-gray-200 bg-white shadow"></ul>
 
 																										<!-- Hidden Fields -->
 																										<input
@@ -620,9 +620,7 @@
 																												autocomplete="off"
 																												value="{{ old("orders.$i.freebie_sku") && old("orders.$i.freebie_description") ? old("orders.$i.freebie_sku") . ' - ' . old("orders.$i.freebie_description") : '' }}"
 																										/>
-																										<ul
-																												class="search-results absolute z-10 mt-1 hidden max-h-60 overflow-y-auto rounded border border-gray-200 bg-white shadow"
-																										></ul>
+																										<ul class="search-results absolute z-10 mt-1 hidden max-h-60 overflow-y-auto rounded border border-gray-200 bg-white shadow"></ul>
 
 																										<input
 																												type="hidden"
@@ -684,7 +682,7 @@
 																												name="orders[{{ $i }}][freebies_per_cs]"
 																												value="{{ old("orders.$i.freebies_per_cs") }}"
 																												class="computed-freebies w-full rounded border border-gray-300 bg-gray-50 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-																												style="text-align: left;"
+																												style="text-align: left; cursor: not-allowed;"
 																												placeholder="0"
 																												readonly
 																										/>
@@ -740,9 +738,7 @@
 																				</div>
 
 																				<!-- RIGHT SIDE: Readonly Invoice Style -->
-																				<div
-																						class="readonly-side flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 transition-all duration-300 md:col-span-1"
-																				>
+																				<div class="readonly-side flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 transition-all duration-300 md:col-span-1">
 																						<div class="space-y-2">
 
 																								<!-- Price -->
@@ -1418,6 +1414,12 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 												},
 												success: function(data) {
 														input.removeClass('animate-pulse');
+														resultList.removeClass('glow-effect');
+														// Trigger reflow to restart animation
+														void resultList[0].offsetWidth;
+
+														// Add glow class
+														resultList.addClass('glow-effect');
 														resultList.empty();
 
 														const cleanedQuery = query.replace(/[^a-z0-9]/gi, ' ').toLowerCase().trim();
@@ -1479,20 +1481,41 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const searchInput = container.find('.product-search, .freebie-search');
 						const isFreebie = searchInput.hasClass('freebie-search');
 
+						function highlightInput(input) {
+								input.addClass('bg-indigo-50');
+
+						}
+
 						if (isFreebie) {
-								// 🧃 Freebie selection
 								row.find('.freebie-search').val(`${sku} - ${description}`);
+								highlightInput(row.find('.freebie-search'));
+
 								row.find('.freebie-sku-hidden').val(sku);
+								highlightInput(row.find('.freebie-sku-hidden'));
+
 								row.find('.freebie-desc-hidden').val(description);
+								highlightInput(row.find('.freebie-desc-hidden'));
+
 								row.find('.freebie-price-per-pc').val(pricePerPc).trigger('input');
+								highlightInput(row.find('.freebie-price-per-pc'));
+
 								row.find('.freebie-qty-per-pc').val(casePack).trigger('input');
+								highlightInput(row.find('.freebie-qty-per-pc'));
 						} else {
-								// 🛒 Product selection
 								row.find('.product-search').val(`${sku} - ${description}`);
+								highlightInput(row.find('.product-search'));
+
 								row.find('.sku-hidden').val(sku);
+								highlightInput(row.find('.sku-hidden'));
+
 								row.find('.desc-hidden').val(description);
+								highlightInput(row.find('.desc-hidden'));
+
 								row.find('.price-per-pc').val(pricePerPc);
+								highlightInput(row.find('.price-per-pc'));
+
 								row.find('.qty-per-pc').val(casePack);
+								highlightInput(row.find('.qty-per-pc'));
 
 								const paymentMode = $('[name="mode_payment"]').val();
 
@@ -1504,24 +1527,23 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 
 								row.find('.scheme-input').val(scheme);
+								highlightInput(row.find('.scheme-input'));
 
-								// 🎁 Freebie auto-fill (loopback)
-								// 🎁 Freebie auto-fill (loopback) via triggering search
+								// Freebie auto-fill loopback
 								if (freebieSku) {
 										const freebieInput = row.find('.freebie-search');
 										const resultList = freebieInput.siblings('.search-results');
 
-										freebieInput.val(freebieSku); // set freebie SKU
-										resultList.empty().removeClass('hidden'); // show result list immediately
+										freebieInput.val(freebieSku);
+										resultList.empty().removeClass('hidden');
 
-										// manually trigger keyup event to reuse search logic
 										freebieInput.trigger('keyup');
 								}
-
 						}
 
 						container.find('.search-results').empty().addClass('hidden');
 				});
+
 
 
 
@@ -1670,7 +1692,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const modeDispatching = document.getElementById("mode_dispatching");
 						const deliveryGroup = document.querySelector(".delivery-group");
 						const dispatchSelect = document.querySelector(".dispatch-controller");
-						const deliveryFields = document.querySelectorAll(".delivery-field");
+						const orderItemForm = document.querySelector('.order-item-form');
+						const headerOffset = 80; // adjust if sticky header present
+						let alertShown = false;
 
 						function toggleDeliveryGroup() {
 								const value = modeDispatching.value.trim().toLowerCase();
@@ -1692,29 +1716,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								const selectedValue = dispatchSelect.value;
 								const shouldRequire = selectedValue === "Delivery Direct to Customer";
 
+								const deliveryFields = document.querySelectorAll(".delivery-field");
 								deliveryFields.forEach(input => {
 										input.classList.toggle("required-input", shouldRequire);
 								});
+
+								checkForm(); // recheck when requirements change
 						}
-
-						// Initial runs
-						toggleDeliveryGroup();
-						updateRequiredFields();
-
-						// Event listeners
-						modeDispatching.addEventListener("change", () => {
-								toggleDeliveryGroup();
-								updateRequiredFields();
-						});
-
-						dispatchSelect.addEventListener("change", updateRequiredFields);
-				});
-
-				document.addEventListener('DOMContentLoaded', function() {
-						const requiredInputs = document.querySelectorAll('.order-form .required-input');
-						const orderItemForm = document.querySelector('.order-item-form');
-						const headerOffset = 80; // adjust if sticky header present
-						let alertShown = false;
 
 						function scrollToElement(element, offset = 80) {
 								const top = element.getBoundingClientRect().top + window.pageYOffset - offset;
@@ -1725,7 +1733,16 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						}
 
 						function allRequiredFilled() {
-								return Array.from(requiredInputs).every(input => input.value.trim() !== '');
+								const requiredInputs = document.querySelectorAll('.order-form .required-input');
+								return Array.from(requiredInputs).every(input => {
+										if (input.tagName.toLowerCase() === 'select') {
+												return input.value && input.value.trim() !== '';
+										}
+										if (input.type === 'date') {
+												return input.value && input.value.trim() !== '';
+										}
+										return input.value.trim() !== '';
+								});
 						}
 
 						function checkForm() {
@@ -1734,7 +1751,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 										if (!alertShown) {
 												alertShown = true;
-
 												setTimeout(() => {
 														Swal.fire({
 																icon: 'success',
@@ -1752,13 +1768,46 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 						}
 
-						// Initial check
+						// Initial runs
+						toggleDeliveryGroup();
+						updateRequiredFields();
 						checkForm();
 
-						requiredInputs.forEach(input => {
-								input.addEventListener('input', checkForm);
+						// Event listeners
+						modeDispatching.addEventListener("change", () => {
+								toggleDeliveryGroup();
+								updateRequiredFields();
 						});
+
+						dispatchSelect.addEventListener("change", updateRequiredFields);
+
+						// Check form only when a required field loses focus
+						document.addEventListener('blur', function(e) {
+								if (e.target.classList.contains('required-input')) {
+										checkForm();
+								}
+						}, true); // use capture phase to catch blur events
 				});
 		</script>
+		<style>
+				@keyframes glow {
+
+						0%,
+						100% {
+								box-shadow: 0 0 5px 2px rgba(59, 130, 246, 0);
+								/* transparent */
+						}
+
+						50% {
+								box-shadow: 0 0 10px 4px rgba(59, 130, 246, 0.8);
+								/* blue glow */
+						}
+				}
+
+				.glow-effect {
+						animation: glow 1.5s ease-in-out infinite alternate;
+						border-radius: 0.375rem;
+				}
+		</style>
 
 @endsection

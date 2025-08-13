@@ -285,9 +285,7 @@
 												<!-- Action Buttons -->
 												<div class="flex flex-shrink-0 items-center gap-3">
 														<!-- Filter -->
-														<button
-																class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800"
-														>
+														<button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
 																<svg
 																		class="mr-2 h-5 w-5"
 																		fill="none"
@@ -458,7 +456,8 @@
 																						@endif
 																				</a>
 																		</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Allocation / Case</th>
+																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">WMS Inventory</th>
+																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Store Inventory</th>
 																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Case Pack</th>
 																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">SRP</th>
 																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">C/BC Scheme</th>
@@ -467,7 +466,7 @@
 																</tr>
 														</thead>
 														<tbody class="divide-y divide-gray-100/60">
-																@foreach ($products as $product)
+																@forelse ($products as $product)
 																		<tr
 																				class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-gray-100/60"
 																				data-product-id="{{ $product->id }}"
@@ -477,6 +476,7 @@
 																								type="checkbox"
 																								class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
 																								value="{{ $product->id }}"
+																								id="product-{{ $product->id }}"
 																						>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
@@ -494,50 +494,55 @@
 																						</div>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
+																						@php
+																								$allocation = $product->allocation_per_case ?? null; // null means still loading
+																								$badgeClass = $allocation === 0 ? 'bg-red-100/60 text-red-800 border-red-200/60' : 'bg-purple-100/60 text-purple-800 border-purple-200/60';
+																						@endphp
+
 																						<span
-																								class="allocation-badge inline-flex items-center justify-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
+																								class="allocation-badge {{ $badgeClass }} inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium"
 																								data-sku="{{ $product->sku }}"
 																						>
-																								<div
-																										class="h-4 w-4 animate-spin rounded-full border-2 border-t-2 border-purple-800 border-t-transparent"
-																								></div>
+																								@if (is_null($allocation))
+																										<div class="h-4 w-4 animate-spin rounded-full border-2 border-t-2 border-purple-800 border-t-transparent"></div>
+																								@elseif ($allocation === 0)
+																										No Stock
+																								@else
+																										{{ $allocation }}
+																								@endif
 																						</span>
 																				</td>
 
 																				<td class="whitespace-nowrap px-6 py-4">
-																						<span
-																								class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
-																						>
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ $product->allocation_per_case ?? '-' }}
+																						</span>
+																				</td>
+
+																				<td class="whitespace-nowrap px-6 py-4">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								{{ $product->case_pack ?? '-' }}
 																						</span>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
-																						<span
-																								class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
-																						>
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								₱{{ number_format($product->srp ?? 0, 2) }}
 																						</span>
 																				</td>
 
 																				<td class="whitespace-nowrap px-6 py-4">
-																						<span
-																								class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
-																						>
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								{{ $product->cash_bank_card_scheme ?? '-' }}
 																						</span>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
-																						<span
-																								class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
-																						>
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								{{ $product->po15_scheme ?? '-' }}
 																						</span>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
 																						<div class="relative inline-block w-full">
-																								<div
-																										class="peer inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800"
-																								>
+																								<div class="peer inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																										{{ $product->freebie_sku ?? '-' }}
 																								</div>
 																								<div
@@ -548,7 +553,22 @@
 																						</div>
 																				</td>
 																		</tr>
-																@endforeach
+																@empty
+																		<tr>
+																				<td
+																						colspan="10"
+																						class="px-6 py-8 text-center text-gray-500"
+																				>
+																						No products found.
+																						<a
+																								href="{{ route('products.create') }}"
+																								class="font-medium text-blue-600 hover:underline"
+																						>
+																								Click here to add a new product
+																						</a>
+																				</td>
+																		</tr>
+																@endforelse
 														</tbody>
 												</table>
 										</div>

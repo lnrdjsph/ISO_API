@@ -19,8 +19,9 @@ class AdminUserSeeder extends Seeder
             ['email' => 'leonard.tomalon@metroretail.ph'],
             [
                 'name' => 'Biboy',
-                'password' => Hash::make('BIBOY'), // use bcrypt
+                'password' => Hash::make('BIBOY'),
                 'role' => 'admin',
+                'user_location' => 'f2', 
             ]
         );
 
@@ -28,8 +29,9 @@ class AdminUserSeeder extends Seeder
             ['email' =>  'gene.catarina@metroretail.ph'],
             [
                 'name' => 'Gene',
-                'password' => Hash::make('GENE'), // use bcrypt
+                'password' => Hash::make('GENE'),
                 'role' => 'admin',
+                'user_location' => 'h8', 
             ]
         );
     }
