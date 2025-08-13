@@ -560,31 +560,37 @@
 																						class="px-6 py-8 text-center text-gray-500"
 																				>
 																						No products found.
-																						<div class="mt-4 inline-flex items-center justify-center space-x-4">
+																						<div class="mt-4 inline-flex items-center justify-center">
 																								<select
 																										id="no-products-action"
-																										class="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
+																										onchange="if(this.value) window.location.href=this.value"
+																										class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+																										style="border:none; outline:none; width:auto;"
 																								>
 																										<option
 																												value=""
 																												selected
 																												disabled
-																										>Choose action</option>
+																										>Click here to . . .</option>
 																										<option value="{{ route('products.create') }}">Add New Product</option>
 																										<option value="{{ route('products.import.show') }}">Import Products</option>
 																								</select>
-
-																								<a
-																										href="{{ route('products.create') }}"
-																										class="font-medium text-blue-600 hover:underline"
-																										id="add-product-link"
-																								>
-																										Click here to add a new product
-																								</a>
 																						</div>
 																				</td>
 																		</tr>
 
+																		<style>
+																				#no-products-action {
+																						-webkit-appearance: none;
+																						-moz-appearance: none;
+																						appearance: none;
+																						background: transparent;
+																						border: none;
+																						cursor: pointer;
+																						padding-right: 1em;
+																						/* optional, space for text */
+																				}
+																		</style>
 																		<script>
 																				document.getElementById('no-products-action').addEventListener('change', function() {
 																						const url = this.value;

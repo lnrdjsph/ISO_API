@@ -66,7 +66,8 @@ class ProductController extends Controller
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'freebie_sku'
-                );
+                )
+                ->whereNull('archived_at');
 
             if ($search) {
                 $productsQuery->where(function ($q) use ($search) {
