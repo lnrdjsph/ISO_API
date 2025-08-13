@@ -187,8 +187,11 @@ class FormsController extends Controller
         $query = strtolower($request->query('query'));
         $keywords = preg_split('/\s+/', $query, -1, PREG_SPLIT_NO_EMPTY);
 
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
         $results = DB::connection('mysql')
-            ->table('products')
+            ->table($tableName)
             ->select(
                 'sku',
                 'description',
@@ -207,7 +210,6 @@ class FormsController extends Controller
                     });
                 }
             })
-
             ->whereNull('archived_at')
             ->get();
 
