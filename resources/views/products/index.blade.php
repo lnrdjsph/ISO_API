@@ -560,14 +560,39 @@
 																						class="px-6 py-8 text-center text-gray-500"
 																				>
 																						No products found.
-																						<a
-																								href="{{ route('products.create') }}"
-																								class="font-medium text-blue-600 hover:underline"
-																						>
-																								Click here to add a new product
-																						</a>
+																						<div class="mt-4 inline-flex items-center justify-center space-x-4">
+																								<select
+																										id="no-products-action"
+																										class="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
+																								>
+																										<option
+																												value=""
+																												selected
+																												disabled
+																										>Choose action</option>
+																										<option value="{{ route('products.create') }}">Add New Product</option>
+																										<option value="{{ route('products.import.show') }}">Import Products</option>
+																								</select>
+
+																								<a
+																										href="{{ route('products.create') }}"
+																										class="font-medium text-blue-600 hover:underline"
+																										id="add-product-link"
+																								>
+																										Click here to add a new product
+																								</a>
+																						</div>
 																				</td>
 																		</tr>
+
+																		<script>
+																				document.getElementById('no-products-action').addEventListener('change', function() {
+																						const url = this.value;
+																						if (url) {
+																								window.location.href = url;
+																						}
+																				});
+																		</script>
 																@endforelse
 														</tbody>
 												</table>

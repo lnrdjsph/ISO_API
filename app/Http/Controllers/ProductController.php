@@ -446,14 +446,16 @@ class ProductController extends Controller
 
 
 
-    // Handle AJAX product search
     public function search(Request $request)
     {
         $query = strtolower($request->query('query'));
 
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
         $results = DB::connection('mysql')
-            ->table('products')
-            ->select('sku as sku', 'description as description')
+            ->table($tableName)
+            ->select('sku', 'description')
             ->where(function ($q) use ($query) {
                 $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
                 ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
@@ -463,6 +465,7 @@ class ProductController extends Controller
 
         return response()->json($results);
     }
+
 
 
 
@@ -531,21 +534,17 @@ class ProductController extends Controller
 
 
 
-   /**
-     * Bulk update with enhanced security
-     */
-
     public function bulkUpdate(BulkUpdateProductsRequest $request)
     {
         try {
             $productIds = $request->input('product_ids');
-            
+            $userLocation = strtolower(auth()->user()->user_location);
+            $tableName = 'products_' . $userLocation;
+
             // Build update array with only fields that have values
             $updateData = collect($request->validated())
                 ->except(['product_ids'])
-                ->filter(function ($value) {
-                    return !is_null($value) && $value !== '';
-                })
+                ->filter(fn($value) => !is_null($value) && $value !== '')
                 ->toArray();
 
             if (empty($updateData)) {
@@ -556,12 +555,11 @@ class ProductController extends Controller
             }
 
             DB::beginTransaction();
-            
-            // Use the model method if you're using Eloquent
-            $updatedCount = Product::bulkUpdateFields($productIds, $updateData);
-            
-            // Or use raw query as shown earlier
-            // $updatedCount = DB::table('products')->whereIn('id', $productIds)->update($updateData);
+
+            // Use query builder to update in dynamic table
+            $updatedCount = DB::table($tableName)
+                ->whereIn('id', $productIds)
+                ->update($updateData);
 
             $this->logBulkActivity('bulk_update', $productIds, $updateData);
 
@@ -576,7 +574,7 @@ class ProductController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while updating products: ' . $e->getMessage()
@@ -596,11 +594,31 @@ class ProductController extends Controller
             ], 403);
         }
 
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
+        // Custom validation because 'exists' rule doesn't support dynamic tables well
+        $productIds = $request->input('product_ids', []);
+
         $validator = Validator::make($request->all(), [
-            'product_ids' => 'required|array|min:1|max:' . config('app.max_bulk_operation_size', 100),
-            'product_ids.*' => 'exists:products,id',
-            'archive_reason' => 'nullable|string|max:500', // Optional reason for archiving
+            'product_ids' => ['required', 'array', 'min:1', 'max:' . config('app.max_bulk_operation_size', 100)],
+            'archive_reason' => 'nullable|string|max:500',
         ]);
+
+        $validator->after(function ($validator) use ($productIds, $tableName) {
+            if (!empty($productIds)) {
+                $existingIds = DB::connection('mysql')->table($tableName)
+                    ->whereIn('id', $productIds)
+                    ->pluck('id')
+                    ->toArray();
+
+                $missing = array_diff($productIds, $existingIds);
+
+                if (!empty($missing)) {
+                    $validator->errors()->add('product_ids', 'Some product IDs do not exist or do not belong to your location.');
+                }
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -611,13 +629,11 @@ class ProductController extends Controller
         }
 
         try {
-            $productIds = $request->input('product_ids');
-            $archiveReason = $request->input('archive_reason');
-
             DB::beginTransaction();
 
-            // Check if products are not already archived
-            $nonArchivedCount = Product::whereIn('id', $productIds)
+            // Check products not already archived in the location table
+            $nonArchivedCount = DB::connection('mysql')->table($tableName)
+                ->whereIn('id', $productIds)
                 ->whereNull('archived_at')
                 ->count();
 
@@ -628,22 +644,22 @@ class ProductController extends Controller
                 ], 400);
             }
 
-            $archivedCount = Product::whereIn('id', $productIds)
+            $archivedCount = DB::connection('mysql')->table($tableName)
+                ->whereIn('id', $productIds)
                 ->whereNull('archived_at')
                 ->update([
                     'archived_at' => now(),
                     'archived_by' => auth()->id(),
-                    'archive_reason' => $archiveReason,
+                    'archive_reason' => $request->input('archive_reason'),
                     'updated_at' => now()
                 ]);
 
-            // Log the bulk archive activity
+            // Log and fire event (adjust Product model usage if needed)
             $this->logBulkActivity('bulk_archive', $productIds, [
-                'reason' => $archiveReason
+                'reason' => $request->input('archive_reason')
             ]);
 
-            // Fire event
-            event(new ProductsBulkArchived($productIds, auth()->user(), $archiveReason));
+            event(new ProductsBulkArchived($productIds, auth()->user(), $request->input('archive_reason')));
 
             DB::commit();
 
@@ -652,22 +668,22 @@ class ProductController extends Controller
                 'message' => "Successfully archived {$archivedCount} products",
                 'archived_count' => $archivedCount
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Bulk archive failed', [
                 'user_id' => auth()->id(),
-                'product_ids' => $productIds ?? [],
+                'product_ids' => $productIds,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while archiving products. Please try again.'
             ], 500);
         }
     }
+
 
     public function bulkRestore(Request $request)
     {
@@ -757,7 +773,6 @@ class ProductController extends Controller
         return view('products.scheme');
     }
 
-    // Store new product
     public function store(Request $request)
     {
         $skus                 = $request->input('sku');
@@ -765,18 +780,21 @@ class ProductController extends Controller
         $casePacks            = $request->input('case_pack');
         $srps                 = $request->input('srp');
         $allocationPerCases   = $request->input('allocation_per_case');
-        $cashBankCardSchemes  = $request->input('cbc_scheme');
+        $cashBankCardSchemes  = $request->input('cash_bank_card_scheme'); // fix input name here
         $po15Schemes          = $request->input('po15_scheme');
         $freebieSkus          = $request->input('freebie_sku');
 
         // Validate arrays presence
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
         $request->validate([
             'sku' => 'required|array',
             'sku.*' => [
                 'required',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($tableName) {
                     $exists = DB::connection('mysql')
-                        ->table('products')
+                        ->table($tableName)
                         ->where('sku', strtoupper($value))
                         ->exists();
                     if ($exists) {
@@ -810,22 +828,24 @@ class ProductController extends Controller
         $insertData = [];
         foreach ($skus as $index => $sku) {
             $insertData[] = [
-                'sku'                     => strtoupper($sku),
-                'description'             => $descriptions[$index] ?? null,
-                'case_pack'               => $casePacks[$index] !== null && $casePacks[$index] !== '' ? $casePacks[$index] : 0,
-                'srp'                     => $srps[$index] ?? null,
-                'allocation_per_case'     => $allocationPerCases[$index] ?? null,
-                'cash_bank_card_scheme'   => $cashBankCardSchemes[$index] ?? null,
-                'po15_scheme'             => $po15Schemes[$index] ?? null,
-                'freebie_sku'             => $freebieSkus[$index] ?? null,
-                'created_at'              => now(),
+                'sku'                   => strtoupper($sku),
+                'description'           => $descriptions[$index] ?? null,
+                'case_pack'             => $casePacks[$index] ?? 0,
+                'srp'                   => $srps[$index] ?? null,
+                'allocation_per_case'   => $allocationPerCases[$index] ?? null,
+                'cash_bank_card_scheme' => $cashBankCardSchemes[$index] ?? null,
+                'po15_scheme'           => $po15Schemes[$index] ?? null,
+                'freebie_sku'           => $freebieSkus[$index] ?? null,
+                'created_at'            => now(),
+                'updated_at'            => now(),
             ];
         }
 
-        DB::connection('mysql')->table('products')->insert($insertData);
+        DB::connection('mysql')->table($tableName)->insert($insertData);
 
         return redirect()->back()->with('success', 'Products added successfully.');
     }
+
 
 
     public function getSkus()
