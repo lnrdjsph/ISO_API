@@ -43,24 +43,18 @@ class UpdateAllProductAllocations extends Command
                     $sku = $product->sku;
 
                     try {
-                        // Fetch allocation
+                        // Fetch allocation from Oracle
                         $allocation = DB::connection('oracle_wms')->selectOne("
                             SELECT SUM(ci.unit_qty) AS total_unit_qty
-                            FROM (
-                                SELECT facility_id, container_id
-                                FROM rwms.container
-                                WHERE container_status NOT IN ('S','D','A')
-                            ) c
-                            JOIN (
-                                SELECT facility_id, container_id, unit_qty
-                                FROM rwms.container_item
-                                WHERE item_id = ?
-                            ) ci
+                            FROM rwms.container c
+                            JOIN rwms.container_item ci
                             ON c.facility_id = ci.facility_id
                             AND c.container_id = ci.container_id
+                            WHERE ci.item_id = ?
+                            AND c.container_status NOT IN ('S','D','A')
                         ", [$sku]);
 
-                        $totalQty = $allocation->total_unit_qty ?? 0;
+                        $totalQty = $allocation->TOTAL_UNIT_QTY ?? 0; // Oracle returns uppercase keys
 
                         // Fetch distinct case_pack
                         $casePackRows = DB::connection('oracle_wms')->select("
@@ -72,10 +66,10 @@ class UpdateAllProductAllocations extends Command
                             ORDER BY unit_qty DESC
                         ", [$sku]);
 
-                        $casePackArray = array_map(fn($r) => $r->unit_qty, $casePackRows);
+                        $casePackArray = array_map(fn($r) => $r->UNIT_QTY, $casePackRows);
                         $casePackStr = implode(' | ', $casePackArray);
 
-                        // Update table
+                        // Update MySQL table
                         DB::connection('mysql')->table($tableName)
                             ->where('sku', $sku)
                             ->update([

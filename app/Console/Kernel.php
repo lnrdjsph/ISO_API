@@ -16,7 +16,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Schedule the product allocation update to run every hour
-        $schedule->command('products:update-allocations')->hourly();
+        $schedule->command('products:update-allocations')->everyMinute();
+        // $schedule->command('products:update-allocations')->hourly();
     }
 
     /**
