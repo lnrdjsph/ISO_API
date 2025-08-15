@@ -94,8 +94,6 @@ Route::prefix('/users')->name('users.')->group(function () {
 });
 
 
-// Default welcome route
-Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
 // unauthorized route
 Route::view('/403', 'errors.403');
