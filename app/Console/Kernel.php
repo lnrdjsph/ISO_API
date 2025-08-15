@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Schedule the product allocation update to run every hour
+        $schedule->command('products:update-allocations')->hourly();
     }
 
     /**
@@ -25,8 +26,10 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
+        // Load all commands from the Commands folder
         $this->load(__DIR__.'/Commands');
 
+        // Include console route commands
         require base_path('routes/console.php');
     }
 }

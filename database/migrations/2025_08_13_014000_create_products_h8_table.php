@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use PhpParser\Node\NullableType;
 
 return new class extends Migration {
     public function up()
@@ -13,8 +14,9 @@ return new class extends Migration {
             $table->string('description');
 
             // New columns
-            $table->integer('case_pack'); // Number of items per case
+            $table->string('case_pack'); // Number of items per case
             $table->decimal('srp', 10, 2); // Suggested Retail Price
+            $table->integer('wms_allocation_per_case')->nullable(); // Inventory allocation
             $table->integer('allocation_per_case'); // Inventory allocation
             $table->string('cash_bank_card_scheme', 10); // Discount or pricing scheme
             $table->string('po15_scheme', 10); // PO15-related scheme
