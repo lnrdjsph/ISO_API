@@ -60,6 +60,7 @@ class ProductController extends Controller
                     'id',
                     'sku',
                     'description',
+                    'wms_allocation_per_case',
                     'allocation_per_case',
                     'case_pack',
                     'srp',
@@ -263,48 +264,61 @@ class ProductController extends Controller
     // }
 
 
-    public function getAllocation(Request $request)
-    {
-        $sku = $request->input('sku');
-        if (!$sku) {
-            return response()->json(['error' => 'SKU is required'], 400);
-        }
+    // public function getAllocation(Request $request)
+    // {
+    //     $sku = $request->input('sku');
+    //     if (!$sku) {
+    //         return response()->json(['error' => 'SKU is required'], 400);
+    //     }
 
-        // Extend PHP execution time for slow Oracle queries
-        set_time_limit(300); // seconds
+    //     set_time_limit(300); // allow slow queries
 
-        try {
-            $allocation = DB::connection('oracle_wms')->selectOne("
-                SELECT SUM(ci.unit_qty) AS total_unit_qty
-                FROM (
-                    SELECT facility_id, container_id
-                    FROM rwms.container
-                    WHERE container_status NOT IN ('S','D','A')
-                ) c
-                JOIN (
-                    SELECT facility_id, container_id, unit_qty
-                    FROM rwms.container_item
-                    WHERE item_id = ?
-                ) ci
-                ON c.facility_id = ci.facility_id
-                AND c.container_id = ci.container_id
-            ", [$sku]);
+    //     try {
+    //         // 🔹 Allocation (sum of unit_qty across active containers)
+    //         $allocation = DB::connection('oracle_wms')->selectOne("
+    //             SELECT SUM(ci.unit_qty) AS total_unit_qty
+    //             FROM (
+    //                 SELECT facility_id, container_id
+    //                 FROM rwms.container
+    //                 WHERE container_status NOT IN ('S','D','A')
+    //             ) c
+    //             JOIN (
+    //                 SELECT facility_id, container_id, unit_qty
+    //                 FROM rwms.container_item
+    //                 WHERE item_id = ?
+    //             ) ci
+    //             ON c.facility_id = ci.facility_id
+    //             AND c.container_id = ci.container_id
+    //         ", [$sku]);
 
-            $totalQty = $allocation->total_unit_qty ?? 0;
+    //         $totalQty = $allocation->total_unit_qty ?? 0;
 
-            return response()->json([
-                'sku' => $sku,
-                'allocation_per_case' => $totalQty,
-            ]);
-        } catch (\Throwable $e) {
-            // If Oracle is slow or fails, respond with an error
-            return response()->json([
-                'sku' => $sku,
-                'error' => 'Failed to fetch allocation',
-                'details' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //         // 🔹 Case pack (all distinct unit_qty where container_qty = 1 and distro_nbr > 9)
+    //         $casePackRows = DB::connection('oracle_wms')->select("
+    //             SELECT DISTINCT unit_qty
+    //             FROM rwms.container_item
+    //             WHERE item_id = ?
+    //             AND container_qty = 1
+    //             AND LENGTH(distro_nbr) > 9
+    //             ORDER BY unit_qty DESC
+    //         ", [$sku]);
+
+    //         // Convert to plain array of values
+    //         $casePackArray = array_map(fn($row) => $row->unit_qty, $casePackRows);
+
+    //         return response()->json([
+    //             'sku' => $sku,
+    //             'allocation_per_case' => $totalQty,
+    //             'case_pack' => $casePackArray, // array of all distinct unit_qty
+    //         ]);
+    //     } catch (\Throwable $e) {
+    //         return response()->json([
+    //             'sku' => $sku,
+    //             'error' => 'Failed to fetch allocation',
+    //             'details' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
 
 

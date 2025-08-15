@@ -494,24 +494,11 @@
 																						</div>
 																				</td>
 																				<td class="whitespace-nowrap px-6 py-4">
-																						@php
-																								$allocation = $product->allocation_per_case ?? null; // null means still loading
-																								$badgeClass = $allocation === 0 ? 'bg-red-100/60 text-red-800 border-red-200/60' : 'bg-purple-100/60 text-purple-800 border-purple-200/60';
-																						@endphp
-
-																						<span
-																								class="allocation-badge {{ $badgeClass }} inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium"
-																								data-sku="{{ $product->sku }}"
-																						>
-																								@if (is_null($allocation))
-																										<div class="h-4 w-4 animate-spin rounded-full border-2 border-t-2 border-purple-800 border-t-transparent"></div>
-																								@elseif ($allocation === 0)
-																										No Stock
-																								@else
-																										{{ $allocation }}
-																								@endif
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ $product->wms_allocation_per_case ?? '-' }}
 																						</span>
 																				</td>
+
 
 																				<td class="whitespace-nowrap px-6 py-4">
 																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
@@ -524,6 +511,8 @@
 																								{{ $product->case_pack ?? '-' }}
 																						</span>
 																				</td>
+
+
 																				<td class="whitespace-nowrap px-6 py-4">
 																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								₱{{ number_format($product->srp ?? 0, 2) }}
@@ -818,37 +807,55 @@
 
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 		<script>
-				document.addEventListener('DOMContentLoaded', () => {
-						const allocationUrl = "{{ route('products.allocation') }}";
+				// document.addEventListener('DOMContentLoaded', () => {
+				// 																// Clear allocation cache
+				// 																Object.keys(sessionStorage).forEach(key => {
+				// 																																if (key.startsWith('allocation_')) {
+				// 																																																sessionStorage.removeItem(key);
+				// 																																}
+				// 																});
 
-						document.querySelectorAll('.allocation-badge').forEach(el => {
-								const sku = el.dataset.sku;
+				// 																const allocationUrl = "{{ route('products.allocation') }}";
 
-								// Check if cached value exists in sessionStorage
-								const cached = sessionStorage.getItem(`allocation_${sku}`);
-								if (cached !== null) {
-										el.textContent = cached;
-										return; // skip fetch if cached
-								}
+				// 																document.querySelectorAll('.allocation-badge').forEach(el => {
+				// 																																const sku = el.dataset.sku;
 
-								fetch(`${allocationUrl}?sku=${encodeURIComponent(sku)}`)
-										.then(res => res.json())
-										.then(data => {
-												if (!data.error) {
-														const value = data.allocation_per_case ?? '-';
-														el.textContent = value;
-														// Cache in sessionStorage
-														sessionStorage.setItem(`allocation_${sku}`, value);
-												} else {
-														el.textContent = '-';
-														console.error('Allocation error:', data.error);
-												}
-										})
-										.catch(() => {
-												el.textContent = '-';
-										});
-						});
-				});
+				// 																																fetch(`${allocationUrl}?sku=${encodeURIComponent(sku)}`)
+				// 																																																.then(res => res.json())
+				// 																																																.then(data => {
+				// 																																																																if (!data.error) {
+				// 																																																																																// Update allocation
+				// 																																																																																el.textContent = data.allocation_per_case ?? '-';
+
+				// 																																																																																// Update case pack: product case pack first, then API values
+				// 																																																																																const casePackEl = document.querySelector(`.case-pack-badge[data-sku="${sku}"]`);
+				// 																																																																																if (casePackEl) {
+				// 																																																																																																const bladeCasePack = casePackEl.dataset.casepack ?? '-';
+				// 																																																																																																const apiCasePack = data.case_pack;
+
+				// 																																																																																																let displayValue = bladeCasePack; // always start with product case pack
+
+				// 																																																																																																if (Array.isArray(apiCasePack)) {
+				// 																																																																																																																displayValue += ', ' + apiCasePack.join(', ');
+				// 																																																																																																} else if (apiCasePack) {
+				// 																																																																																																																displayValue += ', ' + apiCasePack;
+				// 																																																																																																}
+
+				// 																																																																																																casePackEl.textContent = displayValue;
+				// 																																																																																}
+				// 																																																																} else {
+				// 																																																																																el.textContent = '-';
+				// 																																																																																console.error('Allocation error:', data.error);
+				// 																																																																}
+				// 																																																})
+				// 																																																.catch(() => {
+				// 																																																																el.textContent = '-';
+				// 																																																});
+				// 																});
+				// });
+
+
+
 
 
 				$(document).ready(function() {
