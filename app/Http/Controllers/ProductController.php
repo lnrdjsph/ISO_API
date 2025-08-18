@@ -899,8 +899,7 @@ class ProductController extends Controller
         ]);
 
         try {
-            // 1. Get user location and build table name
-            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $userLocation = strtolower(auth()->user()->user_location);
             $tableName = "products_{$userLocation}";
 
             $file = $request->file('csv_file');
@@ -919,7 +918,6 @@ class ProductController extends Controller
             $insertData = [];
             $updateData = [];
 
-            // 2. Check existing SKUs from location-specific table
             $existingSkus = DB::table($tableName)
                 ->pluck('sku')
                 ->map(fn($sku) => strtoupper($sku))
@@ -936,11 +934,12 @@ class ProductController extends Controller
                     continue;
                 }
 
-                [$sku, $description, $casePack, $srp, $allocationPerCase, $cashBankCardScheme, $po15Scheme, $freebieSku] =
+                // ✅ Match frontend column order
+                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $freebieSku] =
                     array_map('trim', $columns);
 
-                if (!$sku) {
-                    $errors[] = "Row {$rowNumber}: SKU is required";
+                if (!$sku || !preg_match('/^\d+$/', $sku)) {
+                    $errors[] = "Row {$rowNumber}: SKU must be numeric";
                     continue;
                 }
                 if (in_array(strtoupper($sku), $seenCsvSkus)) {
@@ -953,18 +952,22 @@ class ProductController extends Controller
                     $errors[] = "Row {$rowNumber}: Product Description is required";
                     continue;
                 }
-                if (!is_numeric($casePack) || $casePack <= 0) {
-                    $errors[] = "Row {$rowNumber}: Case Pack must be a positive number";
-                    continue;
-                }
-                if (!is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be a positive number";
-                    continue;
-                }
                 if (!is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
                     $errors[] = "Row {$rowNumber}: Allocation Per Case must be a positive number";
                     continue;
                 }
+                if (!is_numeric($casePack) || $casePack <= 0) {
+                    $errors[] = "Row {$rowNumber}: Case Pack must be a positive number";
+                    continue;
+                }
+
+                // ✅ Strip ₱ and , before checking SRP
+                $srp = str_replace(['₱', ','], '', $srpRaw);
+                if (!is_numeric($srp) || $srp <= 0) {
+                    $errors[] = "Row {$rowNumber}: SRP must be a positive number";
+                    continue;
+                }
+
                 if (!preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
                     $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format";
                     continue;
@@ -973,8 +976,9 @@ class ProductController extends Controller
                     $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format";
                     continue;
                 }
-                if (!$freebieSku) {
-                    $errors[] = "Row {$rowNumber}: Freebie SKU is required";
+
+                if (!$freebieSku || !preg_match('/^\d+(\/\d+)*$/', $freebieSku)) {
+                    $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/'";
                     continue;
                 }
 
@@ -983,9 +987,9 @@ class ProductController extends Controller
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
+                    'allocation_per_case' => intval($allocationPerCase),
                     'case_pack' => intval($casePack),
                     'srp' => floatval($srp),
-                    'allocation_per_case' => intval($allocationPerCase),
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
                     'freebie_sku' => $freebieSku,
@@ -1003,12 +1007,11 @@ class ProductController extends Controller
             $allData = array_merge($insertData, $updateData);
 
             if (!empty($allData)) {
-                // 3. Insert/Update in the location-specific table
                 DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
+                    'allocation_per_case',
                     'case_pack',
                     'srp',
-                    'allocation_per_case',
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'freebie_sku',
@@ -1016,12 +1019,9 @@ class ProductController extends Controller
                 ]);
             }
 
-            $insertedCount = count($insertData);
-            $updatedCount = count($updateData);
+            $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
 
-            $summary = "Import complete: {$insertedCount} inserted, {$updatedCount} updated.";
-
-            if (($insertedCount + $updatedCount) > 0 && empty($errors)) {
+            if ((count($insertData) + count($updateData)) > 0 && empty($errors)) {
                 return redirect()->back()->with('import_success', $summary);
             } elseif (!empty($errors)) {
                 return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);

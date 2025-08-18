@@ -54,7 +54,7 @@ class UpdateAllProductAllocations extends Command
                             AND c.container_status NOT IN ('S','D','A')
                         ", [$sku]);
 
-                        $totalQty = $allocation->TOTAL_UNIT_QTY ?? 0; // Oracle returns uppercase keys
+                        $totalQty = $allocation->total_unit_qty ?? 0; // Oracle returns uppercase keys
 
                         // Fetch distinct case_pack
                         $casePackRows = DB::connection('oracle_wms')->select("
@@ -66,7 +66,7 @@ class UpdateAllProductAllocations extends Command
                             ORDER BY unit_qty DESC
                         ", [$sku]);
 
-                        $casePackArray = array_map(fn($r) => $r->UNIT_QTY, $casePackRows);
+                        $casePackArray = array_map(fn($r) => $r->unit_qty, $casePackRows);
                         $casePackStr = implode(' | ', $casePackArray);
 
                         // Update MySQL table

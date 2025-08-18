@@ -84,10 +84,22 @@
 																</label>
 														</div>
 
+														@php
+																$locationMap = [
+																    'f2' => 'F2 - Metro Wholesalemart Colon',
+																    'h8' => 'H8 - Super Metro Antipolo',
+																    'm1' => 'M1 - Metro Department Store',
+																    'l3' => 'L3 - Metro Supermarket',
+																    // add all your other codes here
+																];
+
+																$userLocation = auth()->user()->user_location ?? null;
+																$mappedLocation = $locationMap[$userLocation] ?? 'Personnel Sample';
+														@endphp
 														<div class="relative mb-6 w-full">
 																<input
 																		id="requesting_store"
-																		value="{{ old('requesting_store', 'Test Store') }}"
+																		value="{{ old('requested_by', $mappedLocation) }}"
 																		type="text"
 																		name="requesting_store"
 																		readonly
