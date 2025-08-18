@@ -861,34 +861,34 @@
 										tr.classList.add('hover:bg-gray-50');
 
 										tr.innerHTML = `
-											<td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
-											<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
-											<td class="px-4 py-3 text-xs">
-											<span 
-											title="${action === 'update' 
-											? 'This SKU already exists in the database and will be updated' 
-											: action === 'insert' 
-											? 'This SKU is new and will be inserted' 
-											: action === 'duplicate'
-											? 'This SKU is duplicated in the uploaded CSV and will be skipped'
-											: 'This row has invalid data and will be skipped'}"
-											class="inline-block px-2 py-1 font-semibold rounded-full 
-											${action === 'update' ? 'bg-indigo-100 text-indigo-800' : 
-											action === 'insert' ? 'bg-green-100 text-green-800' :
-											action === 'duplicate' ? 'bg-orange-100 text-orange-800' :
-											'bg-red-100 text-red-800'}">
-											${action.toUpperCase()}
-											</span>
-											</td>
+																																												<td class="px-4 py-3 text-sm text-gray-900 font-medium">${escapeHtml(row.sku)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.description)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.allocation_per_case)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.case_pack)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.srp)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.cash_bank_card_scheme)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.po15_scheme)}</td>
+																																												<td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(row.freebie_sku)}</td>
+																																												<td class="px-4 py-3 text-xs">
+																																												<span 
+																																												title="${action === 'update' 
+																																												? 'This SKU already exists in the database and will be updated' 
+																																												: action === 'insert' 
+																																												? 'This SKU is new and will be inserted' 
+																																												: action === 'duplicate'
+																																												? 'This SKU is duplicated in the uploaded CSV and will be skipped'
+																																												: 'This row has invalid data and will be skipped'}"
+																																												class="inline-block px-2 py-1 font-semibold rounded-full 
+																																												${action === 'update' ? 'bg-indigo-100 text-indigo-800' : 
+																																												action === 'insert' ? 'bg-green-100 text-green-800' :
+																																												action === 'duplicate' ? 'bg-orange-100 text-orange-800' :
+																																												'bg-red-100 text-red-800'}">
+																																												${action.toUpperCase()}
+																																												</span>
+																																												</td>
 
 
-											`;
+																																												`;
 										previewTableBody.appendChild(tr);
 								});
 								previewOffset += PREVIEW_LIMIT;
@@ -948,19 +948,22 @@
             `;
 						});
 
-						// Helper function to escape HTML
+						// Helper function to escape HTML safely
 						function escapeHtml(text) {
+								if (text == null) return ""; // handle null/undefined
+								text = String(text); // force into a string
+
 								const map = {
-										'&': '&amp;',
-										'<': '&lt;',
-										'>': '&gt;',
-										'"': '&quot;',
-										"'": '&#039;'
+										"&": "&amp;",
+										"<": "&lt;",
+										">": "&gt;",
+										'"': "&quot;",
+										"'": "&#039;"
 								};
-								return text.replace(/[&<>"']/g, function(m) {
-										return map[m];
-								});
+
+								return text.replace(/[&<>"']/g, m => map[m]);
 						}
+
 				});
 		</script>
 
