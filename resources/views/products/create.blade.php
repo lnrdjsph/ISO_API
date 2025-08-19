@@ -292,7 +292,7 @@
 																</div>
 
 																<!-- Second Row: Additional Fields -->
-																<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+																<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
 																		<div>
 																				<label
 																						for="case_pack_0"
@@ -360,6 +360,20 @@
 																						name="po15_scheme[]"
 																						id="po15_scheme_0"
 																						placeholder="e.g. 5+1"
+																						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
+																				>
+																		</div>
+
+																		<div>
+																				<label
+																						for="discount_scheme_0"
+																						class="block text-sm font-medium text-gray-700"
+																				>Discount Scheme</label>
+																				<input
+																						type="text"
+																						name="discount_scheme[]"
+																						id="discount_scheme_0"
+																						placeholder="e.g. 10%"
 																						class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
 																				>
 																		</div>
@@ -666,7 +680,7 @@
                             </div>
 
                             <!-- Second Row: Additional Fields -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                                 <div>
                                     <label for="case_pack_0" class="block text-sm font-medium text-gray-700">Case Pack</label>
                                     <input type="number" name="case_pack[]" id="case_pack_0" placeholder="e.g. 24"
@@ -697,6 +711,11 @@
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                                 </div>
 
+<div>
+																<label for="discount_scheme_0" class="block text-sm font-medium text-gray-700">Discount Scheme</label>
+																<input type="text" name="discount_scheme[]" id="discount_scheme_0" placeholder="e.g. 10%"
+																																class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+</div>
                                 <div>
                                     <label for="freebie_sku_0" class="block text-sm font-medium text-gray-700">Freebie SKU</label>
                                     <input type="text" name="freebie_sku[]" id="freebie_sku_0" placeholder="e.g. 102806178"
