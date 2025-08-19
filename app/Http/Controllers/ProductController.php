@@ -66,6 +66,7 @@ class ProductController extends Controller
                     'srp',
                     'cash_bank_card_scheme',
                     'po15_scheme',
+                    'discount_scheme',
                     'freebie_sku'
                 )
                 ->whereNull('archived_at');
@@ -795,8 +796,10 @@ class ProductController extends Controller
         $casePacks            = $request->input('case_pack');
         $srps                 = $request->input('srp');
         $allocationPerCases   = $request->input('allocation_per_case');
-        $cashBankCardSchemes  = $request->input('cash_bank_card_scheme'); // fix input name here
+        $casePacks            = $request->input('case_pack'); // fix input name here
+        $cashBankCardSchemes  = $request->input('cbc_scheme'); // fix input name here
         $po15Schemes          = $request->input('po15_scheme');
+        $discountSchemes     = $request->input('discount_scheme'); // fix input name here
         $freebieSkus          = $request->input('freebie_sku');
 
         // Validate arrays presence
@@ -829,11 +832,14 @@ class ProductController extends Controller
             'allocation_per_case' => 'nullable|array',
             'allocation_per_case.*' => 'nullable|numeric',
 
-            'cash_bank_card_scheme' => 'nullable|array',
-            'cash_bank_card_scheme.*' => 'nullable|string',
+            'cbc_scheme' => 'nullable|array',
+            'cbc_scheme.*' => 'nullable|string',
 
             'po15_scheme' => 'nullable|array',
             'po15_scheme.*' => 'nullable|string',
+
+            'discount_scheme' => 'nullable|array',
+            'discount_scheme.*' => 'nullable|string',
 
             'freebie_sku' => 'nullable|array',
             'freebie_sku.*' => 'nullable|string',
@@ -850,6 +856,7 @@ class ProductController extends Controller
                 'allocation_per_case'   => $allocationPerCases[$index] ?? null,
                 'cash_bank_card_scheme' => $cashBankCardSchemes[$index] ?? null,
                 'po15_scheme'           => $po15Schemes[$index] ?? null,
+                'discount_scheme'       => $discountSchemes[$index] ?? null,
                 'freebie_sku'           => $freebieSkus[$index] ?? null,
                 'created_at'            => now(),
                 'updated_at'            => now(),
@@ -929,13 +936,13 @@ class ProductController extends Controller
                 $rowNumber = $lineNumber + 2;
                 $columns = str_getcsv(trim($line));
 
-                if (count($columns) < 8) {
+                if (count($columns) < 9) { // updated column count
                     $errors[] = "Row {$rowNumber}: Missing required columns.";
                     continue;
                 }
 
                 // ✅ Match frontend column order
-                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $freebieSku] =
+                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSku] =
                     array_map('trim', $columns);
 
                 if (!$sku || !preg_match('/^\d+$/', $sku)) {
@@ -961,23 +968,30 @@ class ProductController extends Controller
                     continue;
                 }
 
-                // ✅ Strip ₱ and , before checking SRP
-                $srp = str_replace(['₱', ','], '', $srpRaw);
-                if (!is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be a positive number";
+                // ✅ Keep only numbers and decimal point
+                $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
+
+                if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
+                    $errors[] = "Row {$rowNumber}: SRP must be in valid currency format";
                     continue;
                 }
 
-                if (!preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
+                if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
                     $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format";
                     continue;
                 }
-                if (!preg_match('/^\d+\+\d+$/', $po15Scheme)) {
+
+                if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
                     $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format";
                     continue;
                 }
 
-                if (!$freebieSku || !preg_match('/^\d+(\/\d+)*$/', $freebieSku)) {
+                if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
+                    $errors[] = "Row {$rowNumber}: Discount Scheme must be numeric with optional %";
+                    continue;
+                }
+
+                if ($freebieSku && !preg_match('/^\d+(\/\d+)*$/', $freebieSku)) {
                     $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/'";
                     continue;
                 }
@@ -992,6 +1006,7 @@ class ProductController extends Controller
                     'srp' => floatval($srp),
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
+                    'discount_scheme' => $discountScheme,
                     'freebie_sku' => $freebieSku,
                     'updated_at' => now(),
                     'created_at' => now(),
@@ -1014,6 +1029,7 @@ class ProductController extends Controller
                     'srp',
                     'cash_bank_card_scheme',
                     'po15_scheme',
+                    'discount_scheme',
                     'freebie_sku',
                     'updated_at'
                 ]);
@@ -1033,6 +1049,7 @@ class ProductController extends Controller
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
+
 
 
     // Download CSV template

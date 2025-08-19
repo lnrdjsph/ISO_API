@@ -13,6 +13,7 @@ class UpdateAllProductAllocations extends Command
 
     public function handle()
     {
+        $startTime = microtime(true); // start timer
         $date = now()->format('Y-m-d');
         $hour = now()->format('H');
 
@@ -105,6 +106,13 @@ class UpdateAllProductAllocations extends Command
 
         oci_close($conn);
         $this->log($logFile, "=== All products updated in all hardcoded products tables ===");
+        $endTime = microtime(true);
+        $duration = round($endTime - $startTime, 2);
+
+        $minutes = floor($duration / 60);
+        $seconds = $duration % 60;
+
+        $this->log($logFile, "Process completed in {$minutes}m {$seconds}s.");
     }
 
     private function log(string $file, string $message)

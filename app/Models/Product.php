@@ -17,6 +17,7 @@ class Product extends Model
         'allocation_per_case',
         'cash_bank_card_scheme',
         'po15_scheme',
+        'discount_scheme',
         'freebie_sku',
         'freebie_description',
         'archived_at',

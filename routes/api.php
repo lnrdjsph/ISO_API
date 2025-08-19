@@ -9,6 +9,7 @@ use App\Http\Controllers\Icard\UserPointsController;
 use App\Http\Controllers\Icard\TransactionHistoryController;
 use App\Http\Controllers\RMSCommerceSynchronizationController;
 use App\Http\Controllers\MRCTenderController;
+use App\Http\Controllers\ECRController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -36,6 +37,7 @@ Route::prefix('iso-api')->group(function () {
    
 });
 
+Route::post('/payment-data', [ECRController::class, 'getPaymentData']);
 
 use App\Http\Controllers\OracleRmsController;
 
