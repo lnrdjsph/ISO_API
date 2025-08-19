@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\File;
 class UpdateAllProductAllocations extends Command
 {
     protected $signature = 'products:update-allocations';
-    protected $description = 'Update WMS allocation and case pack for hardcoded products tables using oci8';
+    protected $description = 'Update WMS allocation and case pack for hardcoded products tables using Laravel DB Oracle connection';
 
     public function handle()
     {
-        $startTime = microtime(true); // start timer
+        $startTime = microtime(true);
         $date = now()->format('Y-m-d');
         $hour = now()->format('H');
 
@@ -26,20 +26,13 @@ class UpdateAllProductAllocations extends Command
 
         $this->log($logFile, "=== Starting allocation update ===");
 
-        // Oracle connection using your current .env variables
-        $oracleUser = env('ORACLE_WMS_USERNAME');
-        $oraclePass = env('ORACLE_WMS_PASSWORD');
-        $oracleHost = env('ORACLE_WMS_HOST');
-        $oraclePort = env('ORACLE_WMS_PORT', 1521);
-        $oracleDb   = env('ORACLE_WMS_DATABASE');
+        $oracleConnection = 'oracle_wms';
 
-        // Build TNS string
-        $oracleTns = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={$oracleHost})(PORT={$oraclePort}))(CONNECT_DATA=(SERVICE_NAME={$oracleDb})))";
-
-        $conn = oci_connect($oracleUser, $oraclePass, $oracleTns);
-        if (!$conn) {
-            $e = oci_error();
-            $this->log($logFile, "Oracle connection failed: " . $e['message']);
+        // Test Oracle connection
+        try {
+            DB::connection($oracleConnection)->getPdo();
+        } catch (\Throwable $e) {
+            $this->log($logFile, "Oracle connection failed: " . $e->getMessage());
             return;
         }
 
@@ -54,38 +47,29 @@ class UpdateAllProductAllocations extends Command
 
                 try {
                     // Allocation query
-                    $sqlAlloc = "
+                    $allocResult = DB::connection($oracleConnection)->selectOne("
                         SELECT SUM(ci.unit_qty) AS total_unit_qty
                         FROM rwms.container c
                         JOIN rwms.container_item ci
-                        ON c.facility_id = ci.facility_id
-                        AND c.container_id = ci.container_id
+                            ON c.facility_id = ci.facility_id
+                           AND c.container_id = ci.container_id
                         WHERE ci.item_id = :sku
-                        AND c.container_status NOT IN ('S','D','A')
-                    ";
-                    $stid = oci_parse($conn, $sqlAlloc);
-                    oci_bind_by_name($stid, ':sku', $sku);
-                    oci_execute($stid);
-                    $row = oci_fetch_assoc($stid);
-                    $totalQty = $row['TOTAL_UNIT_QTY'] ?? 0;
+                          AND c.container_status NOT IN ('S','D','A')
+                    ", ['sku' => $sku]);
+
+                    $totalQty = $allocResult->TOTAL_UNIT_QTY ?? 0;
 
                     // Case pack query
-                    $sqlCase = "
+                    $casePackRows = DB::connection($oracleConnection)->select("
                         SELECT DISTINCT unit_qty
                         FROM rwms.container_item
                         WHERE item_id = :sku
-                        AND container_qty = 1
-                        AND LENGTH(distro_nbr) > 9
+                          AND container_qty = 1
+                          AND LENGTH(distro_nbr) > 9
                         ORDER BY unit_qty DESC
-                    ";
-                    $stid2 = oci_parse($conn, $sqlCase);
-                    oci_bind_by_name($stid2, ':sku', $sku);
-                    oci_execute($stid2);
+                    ", ['sku' => $sku]);
 
-                    $casePackArray = [];
-                    while ($r = oci_fetch_assoc($stid2)) {
-                        $casePackArray[] = $r['UNIT_QTY'];
-                    }
+                    $casePackArray = array_map(fn($r) => $r->UNIT_QTY, $casePackRows);
                     $casePackStr = implode(' | ', $casePackArray);
 
                     // Update MySQL
@@ -104,11 +88,10 @@ class UpdateAllProductAllocations extends Command
             }
         }
 
-        oci_close($conn);
         $this->log($logFile, "=== All products updated in all hardcoded products tables ===");
+
         $endTime = microtime(true);
         $duration = round($endTime - $startTime, 2);
-
         $minutes = floor($duration / 60);
         $seconds = $duration % 60;
 
