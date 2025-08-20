@@ -899,170 +899,149 @@ class ProductController extends Controller
     }
 
         
-    public function import(Request $request)
-    {
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:2048'
-        ]);
+public function import(Request $request)
+{
+    $request->validate([
+        'csv_file' => 'required|file|mimes:csv,txt|max:2048'
+    ]);
 
-        try {
-            $userLocation = strtolower(auth()->user()->user_location);
-            $tableName = "products_{$userLocation}";
+    try {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = "products_{$userLocation}";
 
-            $file = $request->file('csv_file');
-            $csvContent = file_get_contents($file->getRealPath());
+        $file = $request->file('csv_file');
+        $csvContent = file_get_contents($file->getRealPath());
 
-            // Split CSV lines and remove empty rows
-            $lines = array_filter(
-                preg_split('/\r\n|\r|\n/', trim($csvContent)),
-                fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
-            );
+        // Split CSV lines and remove empty rows
+        $lines = array_filter(
+            preg_split('/\r\n|\r|\n/', trim($csvContent)),
+            fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
+        );
 
-            if (count($lines) < 2) {
-                return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
-            }
-
-            $dataLines = array_slice($lines, 1);
-            $errors = [];
-            $insertData = [];
-            $updateData = [];
-
-            // Get existing SKUs from DB
-            $existingSkus = DB::table($tableName)
-                ->pluck('sku')
-                ->map(fn($sku) => strtoupper($sku))
-                ->toArray();
-
-            $seenCsvSkus = [];
-
-            foreach ($dataLines as $lineNumber => $line) {
-                $rowNumber = $lineNumber + 2;
-
-                // Parse CSV line respecting quotes
-                $columns = str_getcsv(trim($line));
-
-                if (count($columns) < 9) {
-                    $errors[] = "Row {$rowNumber}: Missing required columns.";
-                    continue;
-                }
-
-                // Clean each cell: letters, numbers, dot, slash, plus, percent, space, parentheses
-                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
-                    array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% ()]#', '', trim($col)), $columns);
-
-                // Validate SKU
-                if (!$sku || !preg_match('/^\d+$/', $sku)) {
-                    $errors[] = "Row {$rowNumber}: SKU must be numeric";
-                    continue;
-                }
-
-                if (in_array(strtoupper($sku), $seenCsvSkus)) {
-                    $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
-                    continue;
-                }
-                $seenCsvSkus[] = strtoupper($sku);
-
-                // Validate description
-                if (!$description) {
-                    $errors[] = "Row {$rowNumber}: Product Description is required";
-                    continue;
-                }
-
-                // Validate allocations
-                if (!is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
-                    $errors[] = "Row {$rowNumber}: Store Allocation must be a positive number";
-                    continue;
-                }
-
-                if ($casePack !== '' && (!is_numeric($casePack) || $casePack <= 0)) {
-                    $errors[] = "Row {$rowNumber}: Case Pack must be positive if provided";
-                    continue;
-                }
-
-                // Clean SRP
-                $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-                if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be a valid number";
-                    continue;
-                }
-
-                // Validate schemes
-                if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
-                    $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format";
-                    continue;
-                }
-
-                if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
-                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format";
-                    continue;
-                }
-
-                if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
-                    $errors[] = "Row {$rowNumber}: Discount Scheme must be numeric with optional %";
-                    continue;
-                }
-
-                // Validate freebie SKU
-                $freebieSku = str_replace(' ', '', $freebieSkuRaw); // remove spaces inside freebie SKUs
-                if ($freebieSku && !preg_match('/^\d+(\/\d+)*$/', $freebieSku)) {
-                    $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/'";
-                    continue;
-                }
-
-                // Prepare record
-                $formattedSku = strtoupper($sku);
-                $record = [
-                    'sku' => $formattedSku,
-                    'description' => $description,
-                    'allocation_per_case' => intval($allocationPerCase),
-                    'case_pack' => $casePack !== '' ? intval($casePack) : null,
-                    'srp' => floatval($srp),
-                    'cash_bank_card_scheme' => $cashBankCardScheme,
-                    'po15_scheme' => $po15Scheme,
-                    'discount_scheme' => $discountScheme,
-                    'freebie_sku' => $freebieSku,
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ];
-
-                if (in_array($formattedSku, $existingSkus)) {
-                    $updateData[] = $record;
-                } else {
-                    $insertData[] = $record;
-                }
-            }
-
-            // Upsert all valid data
-            $allData = array_merge($insertData, $updateData);
-            if (!empty($allData)) {
-                DB::table($tableName)->upsert($allData, ['sku'], [
-                    'description',
-                    'allocation_per_case',
-                    'case_pack',
-                    'srp',
-                    'cash_bank_card_scheme',
-                    'po15_scheme',
-                    'discount_scheme',
-                    'freebie_sku',
-                    'updated_at'
-                ]);
-            }
-
-            // Summary message
-            $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
-
-            if ((count($insertData) + count($updateData)) > 0 && empty($errors)) {
-                return redirect()->back()->with('import_success', $summary);
-            } elseif (!empty($errors)) {
-                return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
-            } else {
-                return redirect()->back()->with('import_errors', array_merge(['No products were imported.'], $errors));
-            }
-
-        } catch (\Exception $e) {
-            return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
+        if (count($lines) < 2) {
+            return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
         }
+
+        $dataLines = array_slice($lines, 1);
+        $errors = [];
+        $insertData = [];
+        $updateData = [];
+
+        // Get existing SKUs and their case_pack from DB
+        $existingProducts = DB::table($tableName)
+            ->select('sku', 'case_pack')
+            ->get()
+            ->keyBy(fn($row) => strtoupper($row->sku));
+
+        $seenCsvSkus = [];
+
+        foreach ($dataLines as $lineNumber => $line) {
+            $rowNumber = $lineNumber + 2;
+            $columns = str_getcsv(trim($line));
+
+            if (count($columns) < 9) {
+                $errors[] = "Row {$rowNumber}: Missing required columns.";
+                continue;
+            }
+
+            [$sku, $description, $allocationPerCase, $casePackRaw, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
+                array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
+
+            // Validate SKU
+            if (!$sku || !preg_match('/^\d+$/', $sku)) {
+                $errors[] = "Row {$rowNumber}: SKU must be numeric";
+                continue;
+            }
+            if (in_array(strtoupper($sku), $seenCsvSkus)) {
+                $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
+                continue;
+            }
+            $seenCsvSkus[] = strtoupper($sku);
+
+            // Validate other fields
+            if (!$description || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
+                $errors[] = "Row {$rowNumber}: Invalid description or allocation";
+                continue;
+            }
+            if ($casePackRaw !== '') {
+                $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)), fn($v) => is_numeric($v) && $v > 0);
+                if (empty($casePackNumbers) && $casePackRaw !== '') {
+                    $errors[] = "Row {$rowNumber}: Invalid Case Pack values";
+                    continue;
+                }
+            } else {
+                $casePackNumbers = [];
+            }
+
+            // Merge Case Pack with existing DB value if present
+            $formattedSku = strtoupper($sku);
+            if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
+                $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
+                $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
+                $casePack = implode(' | ', $allNumbers);
+            } else {
+                $casePack = implode(' | ', $casePackNumbers);
+            }
+
+            // Clean SRP
+            $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
+            if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
+                $errors[] = "Row {$rowNumber}: SRP must be a valid number";
+                continue;
+            }
+
+            // Validate schemes
+            if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) $errors[] = "Row {$rowNumber}: Invalid CBC";
+            if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) $errors[] = "Row {$rowNumber}: Invalid PO15";
+            if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) $errors[] = "Row {$rowNumber}: Invalid Discount";
+            $freebieSku = trim($freebieSkuRaw);
+            if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) $errors[] = "Row {$rowNumber}: Invalid Freebie SKU";
+
+            // Prepare record
+            $record = [
+                'sku' => $formattedSku,
+                'description' => $description,
+                'allocation_per_case' => intval($allocationPerCase),
+                'case_pack' => $casePack !== '' ? $casePack : null,
+                'srp' => floatval($srp),
+                'cash_bank_card_scheme' => $cashBankCardScheme,
+                'po15_scheme' => $po15Scheme,
+                'discount_scheme' => $discountScheme,
+                'freebie_sku' => $freebieSku,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ];
+
+            if (isset($existingProducts[$formattedSku])) {
+                $updateData[] = $record;
+            } else {
+                $insertData[] = $record;
+            }
+        }
+
+        // Upsert all valid data
+        $allData = array_merge($insertData, $updateData);
+        if (!empty($allData)) {
+            DB::table($tableName)->upsert($allData, ['sku'], [
+                'description',
+                'allocation_per_case',
+                'case_pack',
+                'srp',
+                'cash_bank_card_scheme',
+                'po15_scheme',
+                'discount_scheme',
+                'freebie_sku',
+                'updated_at'
+            ]);
+        }
+
+        $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
+        return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
     }
+}
 
 
 

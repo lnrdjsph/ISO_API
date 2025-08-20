@@ -492,7 +492,7 @@
 				</nav>
 
 				<!-- Main Content -->
-				<div class="min-h-screen w-full md:flex-1">
+				<div class="min-h-screen w-full overflow-hidden md:flex-1">
 						{{-- <!-- Top bar with hamburger menu -->
         <div class="bg-white border-b px-6 py-4 md:hidden">
             <button id="toggleSidebar" class="p-2 rounded hover:bg-gray-100">
@@ -503,7 +503,7 @@
         </div> --}}
 
 						<!-- Content area -->
-						<main>
+						<main class="overflow-hidden">
 								@yield('content')
 						</main>
 				</div>
