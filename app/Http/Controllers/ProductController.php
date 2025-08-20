@@ -927,7 +927,7 @@ public function import(Request $request)
         $insertData = [];
         $updateData = [];
 
-        // Get existing SKUs and their case_pack from DB
+        // Get existing SKUs and case_pack
         $existingProducts = DB::table($tableName)
             ->select('sku', 'case_pack')
             ->get()
@@ -947,34 +947,60 @@ public function import(Request $request)
             [$sku, $description, $allocationPerCase, $casePackRaw, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
                 array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
 
-            // Validate SKU
-            if (!$sku || !preg_match('/^\d+$/', $sku)) {
-                $errors[] = "Row {$rowNumber}: SKU must be numeric";
+            $formattedSku = strtoupper($sku);
+
+            // SKU Validation
+            if (!$sku) {
+                $errors[] = "Row {$rowNumber}: SKU is required.";
                 continue;
             }
-            if (in_array(strtoupper($sku), $seenCsvSkus)) {
+            if (!preg_match('/^\d+$/', $sku)) {
+                $errors[] = "Row {$rowNumber}: SKU must be numeric.";
+                continue;
+            }
+            if (in_array($formattedSku, $seenCsvSkus)) {
                 $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
                 continue;
             }
-            $seenCsvSkus[] = strtoupper($sku);
+            $seenCsvSkus[] = $formattedSku;
 
-            // Validate other fields
-            if (!$description || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
-                $errors[] = "Row {$rowNumber}: Invalid description or allocation";
+            // Description Validation
+            if (!$description) {
+                $errors[] = "Row {$rowNumber}: Product Description is required.";
                 continue;
             }
-            if ($casePackRaw !== '') {
-                $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)), fn($v) => is_numeric($v) && $v > 0);
-                if (empty($casePackNumbers) && $casePackRaw !== '') {
-                    $errors[] = "Row {$rowNumber}: Case Pack must be numeric values";
-                    continue;
-                }
-            } else {
-                $casePackNumbers = [];
+
+            // Allocation Validation
+            if ($allocationPerCase === '') {
+                $errors[] = "Row {$rowNumber}: Store Allocation is required.";
+                continue;
+            }
+            if (!is_numeric($allocationPerCase)) {
+                $errors[] = "Row {$rowNumber}: Store Allocation must be numeric.";
+                continue;
+            }
+            if ($allocationPerCase <= 0) {
+                $errors[] = "Row {$rowNumber}: Store Allocation must be greater than 0.";
+                continue;
             }
 
-            // Merge Case Pack with existing DB value if present
-            $formattedSku = strtoupper($sku);
+            // Case Pack Validation
+            $casePackNumbers = [];
+            if ($casePackRaw !== '') {
+                $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
+                foreach ($casePackNumbers as $num) {
+                    if (!is_numeric($num)) {
+                        $errors[] = "Row {$rowNumber}: Case Pack value '{$num}' must be numeric.";
+                        continue 2;
+                    }
+                    if ($num <= 0) {
+                        $errors[] = "Row {$rowNumber}: Case Pack value '{$num}' must be greater than 0.";
+                        continue 2;
+                    }
+                }
+            }
+
+            // Merge Case Pack with DB
             if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
                 $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
                 $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
@@ -983,21 +1009,47 @@ public function import(Request $request)
                 $casePack = implode(' | ', $casePackNumbers);
             }
 
-            // Clean SRP
+            // SRP Validation
             $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-            if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
-                $errors[] = "Row {$rowNumber}: SRP must be a valid number";
+            if ($srpRaw === '') {
+                $errors[] = "Row {$rowNumber}: SRP is required.";
+                continue;
+            }
+            if ($srp === '' || !is_numeric($srp)) {
+                $errors[] = "Row {$rowNumber}: SRP must be numeric.";
+                continue;
+            }
+            if ($srp <= 0) {
+                $errors[] = "Row {$rowNumber}: SRP must be greater than 0.";
                 continue;
             }
 
-            // Validate schemes
-            if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) $errors[] = "Row {$rowNumber}: Invalid CBC";
-            if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) $errors[] = "Row {$rowNumber}: Invalid PO15";
-            if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) $errors[] = "Row {$rowNumber}: Invalid Discount";
-            $freebieSku = trim($freebieSkuRaw);
-            if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) $errors[] = "Row {$rowNumber}: Invalid Freebie SKU";
+            // CBC Scheme Validation
+            if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
+                $errors[] = "Row {$rowNumber}: CBC Scheme must be in 'number+number' format.";
+                continue;
+            }
 
-            // Prepare record
+            // PO15 Scheme Validation
+            if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
+                $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format.";
+                continue;
+            }
+
+            // Discount Validation
+            if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
+                $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
+                continue;
+            }
+
+            // Freebie SKU Validation
+            $freebieSku = trim($freebieSkuRaw);
+            if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
+                $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/', '|', or spaces.";
+                continue;
+            }
+
+            // Build Record
             $record = [
                 'sku' => $formattedSku,
                 'description' => $description,
@@ -1042,6 +1094,7 @@ public function import(Request $request)
         return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
     }
 }
+
 
 
 
