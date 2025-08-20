@@ -13,7 +13,7 @@ class UpdateAllProductAllocations extends Command
 
     public function handle()
     {
-        $startTime = microtime(true); // start timer
+        $startTime = microtime(true);
         $date = now()->format('Y-m-d');
         $hour = now()->format('H');
 
@@ -34,86 +34,141 @@ class UpdateAllProductAllocations extends Command
         $oracleDb   = env('ORACLE_WMS_DATABASE');
 
         // Build TNS string
-        $oracleTns = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST={$oracleHost})(PORT={$oraclePort}))(CONNECT_DATA=(SERVICE_NAME={$oracleDb})))";
-
+        $oracleTns = "{$oracleHost}:{$oraclePort}/{$oracleDb}";
         $conn = oci_connect($oracleUser, $oraclePass, $oracleTns);
         if (!$conn) {
             $e = oci_error();
             $this->log($logFile, "Oracle connection failed: " . $e['message']);
-            return;
+            return Command::FAILURE;
         }
 
+        $this->log($logFile, "Oracle connection established successfully");
+
         $productTables = ['products_f2','products_h8'];
+        $totalProcessed = 0;
 
         foreach ($productTables as $tableName) {
             $this->log($logFile, "Processing table: {$tableName}");
-            $products = DB::connection('mysql')->table($tableName)->select('sku')->get();
+            
+            $tableStartTime = microtime(true);
+            $tableProcessed = 0;
 
-            foreach ($products as $product) {
-                $sku = $product->sku;
+            try {
+                $chunkSize = 500;
+                DB::connection('mysql')->table($tableName)
+                    ->select('sku')
+                    ->orderBy('sku')
+                    ->chunk($chunkSize, function($products) use ($conn, $tableName, $logFile, &$tableProcessed) {
 
-                try {
-                    // Allocation query
-                    $sqlAlloc = "
-                        SELECT SUM(ci.unit_qty) AS total_qty
-                        FROM rwms.container c
-                        JOIN rwms.container_item ci
-                        ON c.facility_id = ci.facility_id
-                        AND c.container_id = ci.container_id
-                        WHERE ci.item_id = :sku
-                        AND c.container_status NOT IN ('S','D','A')
-                    ";
-                    $stid = oci_parse($conn, $sqlAlloc);
-                    oci_bind_by_name($stid, ':sku', $sku);
-                    oci_execute($stid);
-                    $row = oci_fetch_assoc($stid);
-                    $totalQty = isset($row['TOTAL_QTY']) ? (int)$row['TOTAL_QTY'] : 0;
+                        $skuChunk = $products->pluck('sku')->toArray();
+                        if (empty($skuChunk)) return;
 
-                    // Case pack query
-                    $sqlCase = "
-                        SELECT DISTINCT unit_qty AS case_pack
-                        FROM rwms.container_item
-                        WHERE item_id = :sku
-                        AND container_qty = 1
-                        AND LENGTH(distro_nbr) > 9
-                        ORDER BY unit_qty DESC
-                    ";
-                    $stid2 = oci_parse($conn, $sqlCase);
-                    oci_bind_by_name($stid2, ':sku', $sku);
-                    oci_execute($stid2);
+                        $this->log($logFile, "Processing chunk of " . count($skuChunk) . " SKUs");
 
-                    $casePackArray = [];
-                    while ($r = oci_fetch_assoc($stid2)) {
-                        if (isset($r['CASE_PACK'])) {
-                            $casePackArray[] = $r['CASE_PACK'];
+                        $inClause = "'" . implode("','", $skuChunk) . "'";
+
+                        // Fetch allocation and unit_qty separately to avoid LISTAGG overflow
+                        $sql = "
+                            SELECT 
+                                ci.item_id,
+                                SUM(CASE WHEN c.container_status NOT IN ('S','D','A') THEN ci.unit_qty ELSE 0 END) AS total_qty,
+                                ci.unit_qty AS single_qty
+                            FROM rwms.container_item ci
+                            JOIN rwms.container c
+                                ON ci.facility_id = c.facility_id
+                                AND ci.container_id = c.container_id
+                            WHERE ci.item_id IN ({$inClause})
+                            GROUP BY ci.item_id, ci.unit_qty
+                        ";
+
+                        $stid = oci_parse($conn, $sql);
+                        if (!$stid) {
+                            $e = oci_error($conn);
+                            $this->log($logFile, "Oracle parse failed: " . $e['message']);
+                            return;
                         }
-                    }
-                    $casePackStr = implode(' | ', $casePackArray);
-                    // Update MySQL
-                    DB::connection('mysql')->table($tableName)
-                        ->where('sku', $sku)
-                        ->update([
-                            'wms_allocation_per_case' => $totalQty,
-                            'case_pack' => $casePackStr,
-                            'updated_at' => now(),
-                        ]);
 
-                    $this->log($logFile, "Updated SKU: {$sku} | Allocation: {$totalQty} | CasePack: {$casePackStr}");
-                } catch (\Throwable $e) {
-                    $this->log($logFile, "Failed SKU: {$sku} | Error: " . $e->getMessage());
-                }
+                        if (!oci_execute($stid)) {
+                            $e = oci_error($stid);
+                            $this->log($logFile, "Oracle execute failed: " . $e['message']);
+                            return;
+                        }
+
+                        $updates = [];
+                        $casePackMap = [];
+
+                        while ($row = oci_fetch_assoc($stid)) {
+                            $sku = $row['ITEM_ID'];
+                            $totalQty = isset($row['TOTAL_QTY']) ? (int)$row['TOTAL_QTY'] : 0;
+                            $unitQty = isset($row['SINGLE_QTY']) ? $row['SINGLE_QTY'] : null;
+
+                            $updates[$sku]['wms_allocation_per_case'] = $totalQty;
+                            $updates[$sku]['updated_at'] = now();
+
+                            if ($unitQty) {
+                                if (!isset($casePackMap[$sku])) $casePackMap[$sku] = [];
+                                $casePackMap[$sku][] = $unitQty;
+                            }
+                        }
+
+                        oci_free_statement($stid);
+
+                        // Build case_pack string in PHP
+                        foreach ($casePackMap as $sku => $arr) {
+                            $updates[$sku]['case_pack'] = implode(' | ', array_unique($arr));
+                        }
+
+                        // Log summary instead of individual SKUs
+                        $updatedCount = count($updates);
+                        $this->log($logFile, "Prepared updates for {$updatedCount} SKUs in this chunk");
+
+                        // Batch update MySQL with error handling
+                        $batchErrors = 0;
+                        foreach (array_chunk($updates, 100) as $batchIndex => $batch) {
+                            try {
+                                foreach ($batch as $sku => $data) {
+                                    DB::connection('mysql')->table($tableName)
+                                        ->where('sku', $sku)
+                                        ->update($data);
+                                }
+                            } catch (\Exception $e) {
+                                $batchErrors++;
+                                $this->log($logFile, "Batch update error for batch {$batchIndex}: " . $e->getMessage());
+                            }
+                        }
+
+                        $tableProcessed += $updatedCount;
+                        
+                        if ($batchErrors > 0) {
+                            $this->log($logFile, "Chunk completed with {$batchErrors} batch errors");
+                        }
+                    });
+
+                $tableEndTime = microtime(true);
+                $tableDuration = $tableEndTime - $tableStartTime;
+                $tableMinutes = floor($tableDuration / 60);
+                $tableSeconds = round($tableDuration - ($tableMinutes * 60), 2);
+
+                $this->log($logFile, "Table {$tableName} completed: {$tableProcessed} SKUs processed in {$tableMinutes}m {$tableSeconds}s");
+                $totalProcessed += $tableProcessed;
+
+            } catch (\Exception $e) {
+                $this->log($logFile, "Error processing table {$tableName}: " . $e->getMessage());
             }
         }
 
         oci_close($conn);
         $this->log($logFile, "=== All products updated in all hardcoded products tables ===");
+        $this->log($logFile, "Total SKUs processed: {$totalProcessed}");
+        
         $endTime = microtime(true);
-        $duration = round($endTime - $startTime, 2);
-
+        $duration = $endTime - $startTime;
         $minutes = floor($duration / 60);
-        $seconds = $duration % 60;
+        $seconds = round($duration - ($minutes * 60), 2);
 
         $this->log($logFile, "Process completed in {$minutes}m {$seconds}s.");
+        
+        return Command::SUCCESS;
     }
 
     private function log(string $file, string $message)
