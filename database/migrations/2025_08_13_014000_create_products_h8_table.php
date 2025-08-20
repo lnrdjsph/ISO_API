@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->string('description');
 
             // New columns
-            $table->string('case_pack'); // Number of items per case
+            $table->string('case_pack')->nullable(); // Number of items per case
             $table->decimal('srp', 10, 2); // Suggested Retail Price
             $table->integer('wms_allocation_per_case')->nullable(); // Inventory allocation
             $table->integer('allocation_per_case')->nullable(); // Inventory allocation

@@ -219,6 +219,44 @@
 																		@endif
 																</div>
 														</li>
+
+														<li class="rounded">
+																<div class="{{ request()->routeIs('others.*') ? 'bg-gray-100' : '' }} rounded">
+																		@if (request()->routeIs('others.*'))
+																				<h3 class="px-4 py-1 text-xs uppercase tracking-wider text-gray-500">Others</h3>
+																				<ul class="mt-1 rounded transition-all duration-300">
+																						<li class="relative">
+																								<a
+																										href="{{ route('inventory.form') }}"
+																										class="{{ request()->routeIs('inventory.form')
+																										    ? 'before:content-[\'\'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:rounded-full before:bg-blue-600 text-blue-800 font-medium'
+																										    : '' }} relative block rounded py-2 pl-6 transition-all duration-300 hover:text-indigo-500"
+																								>
+																										Inventory Upload
+																								</a>
+																						</li>
+																						@if (request()->routeIs('inventory.export'))
+																								<li class="relative">
+																										<a
+																												href="{{ url()->current() }}"
+																												class="relative block rounded py-2 pl-6 font-medium text-blue-800 transition-all duration-300 before:absolute before:left-2 before:top-1/2 before:h-2 before:w-2 before:-translate-y-1/2 before:rounded-full before:bg-blue-600 before:content-[''] hover:text-indigo-500"
+																										>
+																												Inventory Export
+																										</a>
+																								</li>
+																						@endif
+																				</ul>
+																		@else
+																				<a
+																						href="{{ route('inventory.form') }}"
+																						class="block rounded px-4 py-2 hover:bg-gray-100"
+																				>
+																						Others
+																				</a>
+																		@endif
+																</div>
+														</li>
+
 												@endif
 										@endauth
 
