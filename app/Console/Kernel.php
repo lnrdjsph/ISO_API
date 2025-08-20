@@ -15,11 +15,15 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Schedule the product allocation update to run every hour
-        $schedule->command('products:update-allocations')->everyMinute();
-        // $schedule->command('products:update-allocations')->hourly();
-        $schedule->command('products:update-allocations')->everyThirtyMinutes();
+        $schedule->command('products:update-allocations')
+            ->twiceDaily(6, 12)
+            ->timezone('Asia/Manila'); // force Philippine timezone
+            
+        $schedule->command('products:update-allocations')
+            ->cron('35 13 * * *')      // 1:35 PM
+            ->timezone('Asia/Manila');
     }
+
 
     /**
      * Register the commands for the application.
