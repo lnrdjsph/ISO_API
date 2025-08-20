@@ -147,8 +147,8 @@
 								</div>
 
 								<!-- Search and Actions Bar -->
-								<div class="mb-8 overflow-hidden">
-										<div class="flex flex-nowrap items-start justify-between gap-4 overflow-x-auto">
+								<div class="mb-8">
+										<div class="flex flex-nowrap items-start justify-between gap-4">
 
 												<form
 														method="GET"
@@ -507,7 +507,7 @@
 																				</td>
 
 
-																				<td class="whitespace-nowrap px-6 py-4">
+																				<td class="px-6 py-4">
 																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
 																								{{ $product->allocation_per_case ?? '-' }}
 																						</span>
