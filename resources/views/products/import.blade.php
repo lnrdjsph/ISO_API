@@ -766,7 +766,7 @@
 												if (!sku || !/^\d+$/.test(sku)) isValid = false;
 												if (!description) isValid = false;
 												if (!allocation_per_case || isNaN(allocation_per_case)) isValid = false;
-												if (case_pack || isNaN(case_pack)) isValid = false;
+												if (case_pack !== '' && isNaN(case_pack)) isValid = false;
 												if (!srp || isNaN(srp.replace(/[₱,]/g, ''))) isValid = false;
 												if (cbc_scheme && !/^\d+\+\d+$/.test(cbc_scheme)) isValid = false;
 												if (po15_scheme && !/^\d+\+\d+$/.test(po15_scheme)) isValid = false;
