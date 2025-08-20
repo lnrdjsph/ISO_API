@@ -966,7 +966,7 @@ public function import(Request $request)
             if ($casePackRaw !== '') {
                 $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)), fn($v) => is_numeric($v) && $v > 0);
                 if (empty($casePackNumbers) && $casePackRaw !== '') {
-                    $errors[] = "Row {$rowNumber}: Invalid Case Pack values";
+                    $errors[] = "Row {$rowNumber}: Case Pack must be numeric values";
                     continue;
                 }
             } else {
