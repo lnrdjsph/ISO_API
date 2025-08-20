@@ -94,6 +94,15 @@ Route::prefix('/users')->name('users.')->group(function () {
 });
 
 
+use App\Http\Controllers\InventoryExportController;
+Route::prefix('others')->group(function () {
+    Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
+        ->name('inventory.form');
+
+    Route::post('/inventory-export', [InventoryExportController::class, 'export'])
+        ->name('inventory.export');
+});
+
 
 // unauthorized route
 Route::view('/403', 'errors.403');

@@ -911,6 +911,8 @@ class ProductController extends Controller
 
             $file = $request->file('csv_file');
             $csvContent = file_get_contents($file->getRealPath());
+
+            // Split CSV lines and remove empty rows
             $lines = array_filter(
                 preg_split('/\r\n|\r|\n/', trim($csvContent)),
                 fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
@@ -925,6 +927,7 @@ class ProductController extends Controller
             $insertData = [];
             $updateData = [];
 
+            // Get existing SKUs from DB
             $existingSkus = DB::table($tableName)
                 ->pluck('sku')
                 ->map(fn($sku) => strtoupper($sku))
@@ -934,48 +937,56 @@ class ProductController extends Controller
 
             foreach ($dataLines as $lineNumber => $line) {
                 $rowNumber = $lineNumber + 2;
+
+                // Parse CSV line respecting quotes
                 $columns = str_getcsv(trim($line));
 
-                if (count($columns) < 9) { // updated column count
+                if (count($columns) < 9) {
                     $errors[] = "Row {$rowNumber}: Missing required columns.";
                     continue;
                 }
 
-                // ✅ Match frontend column order
-                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSku] =
-                    array_map('trim', $columns);
+                // Clean each cell: letters, numbers, dot, slash, plus, percent, space, parentheses
+                [$sku, $description, $allocationPerCase, $casePack, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
+                    array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% ()]#', '', trim($col)), $columns);
 
+                // Validate SKU
                 if (!$sku || !preg_match('/^\d+$/', $sku)) {
                     $errors[] = "Row {$rowNumber}: SKU must be numeric";
                     continue;
                 }
+
                 if (in_array(strtoupper($sku), $seenCsvSkus)) {
                     $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
                     continue;
                 }
                 $seenCsvSkus[] = strtoupper($sku);
 
+                // Validate description
                 if (!$description) {
                     $errors[] = "Row {$rowNumber}: Product Description is required";
                     continue;
                 }
+
+                // Validate allocations
                 if (!is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
-                    $errors[] = "Row {$rowNumber}: Allocation Per Case must be a positive number";
-                    continue;
-                }
-                if (!is_numeric($casePack) || $casePack <= 0) {
-                    $errors[] = "Row {$rowNumber}: Case Pack must be a positive number";
+                    $errors[] = "Row {$rowNumber}: Store Allocation must be a positive number";
                     continue;
                 }
 
-                // ✅ Keep only numbers and decimal point
+                if ($casePack !== '' && (!is_numeric($casePack) || $casePack <= 0)) {
+                    $errors[] = "Row {$rowNumber}: Case Pack must be positive if provided";
+                    continue;
+                }
+
+                // Clean SRP
                 $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-
                 if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be in valid currency format";
+                    $errors[] = "Row {$rowNumber}: SRP must be a valid number";
                     continue;
                 }
 
+                // Validate schemes
                 if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
                     $errors[] = "Row {$rowNumber}: Cash/Bank/Card Scheme must be in 'number+number' format";
                     continue;
@@ -991,18 +1002,20 @@ class ProductController extends Controller
                     continue;
                 }
 
+                // Validate freebie SKU
+                $freebieSku = str_replace(' ', '', $freebieSkuRaw); // remove spaces inside freebie SKUs
                 if ($freebieSku && !preg_match('/^\d+(\/\d+)*$/', $freebieSku)) {
                     $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/'";
                     continue;
                 }
 
+                // Prepare record
                 $formattedSku = strtoupper($sku);
-
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
                     'allocation_per_case' => intval($allocationPerCase),
-                    'case_pack' => intval($casePack),
+                    'case_pack' => $casePack !== '' ? intval($casePack) : null,
                     'srp' => floatval($srp),
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
@@ -1019,8 +1032,8 @@ class ProductController extends Controller
                 }
             }
 
+            // Upsert all valid data
             $allData = array_merge($insertData, $updateData);
-
             if (!empty($allData)) {
                 DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
@@ -1035,6 +1048,7 @@ class ProductController extends Controller
                 ]);
             }
 
+            // Summary message
             $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
 
             if ((count($insertData) + count($updateData)) > 0 && empty($errors)) {
@@ -1049,6 +1063,7 @@ class ProductController extends Controller
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
+
 
 
 
