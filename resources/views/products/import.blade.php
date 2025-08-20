@@ -696,7 +696,7 @@
 												insideQuotes = !insideQuotes; // toggle quote state
 										} else if (char === ',' && !insideQuotes) {
 												// end of cell
-												cols.push(current.replace(/[^a-zA-Z0-9./+%|()\s-]/g, '')); // clean cell
+												cols.push(current.trim().replace(/[^a-zA-Z0-9./+%|()\s-]/g, '')); // keep empty cells
 												current = '';
 										} else {
 												current += char;
@@ -704,10 +704,14 @@
 								}
 
 								// push last cell
-								cols.push(current.replace(/[^a-zA-Z0-9./+%|()\s-]/g, ''));
+								cols.push(current.trim().replace(/[^a-zA-Z0-9./+%|()\s-]/g, ''));
+
+								// Ensure CSV line always returns 9 columns (fill empty if missing)
+								while (cols.length < 9) cols.push('');
 
 								return cols;
 						}
+
 						// Process CSV file
 						function processFile(file) {
 								const reader = new FileReader();
@@ -771,7 +775,7 @@
 												if (!srp || isNaN(srp.replace(/[₱,]/g, ''))) isValid = false;
 												if (cbc_scheme && !/^\d+\+\d+$/.test(cbc_scheme)) isValid = false;
 												if (po15_scheme && !/^\d+\+\d+$/.test(po15_scheme)) isValid = false;
-												if (discount_scheme && !/^\d+%?$/.test(discount_scheme)) isValid = false; // ✅ Validate discount_scheme
+												if (discount_scheme && discount_scheme !== '' && !/^\d+%?$/.test(discount_scheme)) isValid = false; // ✅ Validate discount_scheme
 												if (freebie_sku && !/^\d+(\s*[\/|]\s*\d+)*$/.test(freebie_sku)) isValid = false;
 
 												let action;
@@ -798,6 +802,7 @@
 														freebie_sku,
 														action
 												});
+												console.log(`Row ${rowNum}:`, validRows[validRows.length - 1]);
 										});
 
 										if (validRows.length === 0) {
@@ -813,7 +818,7 @@
 										}
 
 										csvData = validRows;
-
+										console.log('Processed CSV data:', csvData);
 										setTimeout(() => {
 												uploadProgress.classList.add('hidden');
 												fileInfo.classList.remove('hidden');
@@ -948,12 +953,12 @@
 										const tr = document.createElement('tr');
 										tr.id = 'loadMoreRow';
 										tr.innerHTML = `
-																																																																																																																																																																																																																																																																																																<td colspan="9" class="px-6 py-4 text-sm text-center">
-																																																																																																																																																																																																																																																																																																																																<button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
-																																																																																																																																																																																																																																																																																																																																																																Load more (${csvData.length - previewOffset} more records)
-																																																																																																																																																																																																																																																																																																																																</button>
-																																																																																																																																																																																																																																																																																																</td>
-																																																																																																																																																																																																																																																																`;
+<td colspan="9" class="px-6 py-4 text-sm text-center">
+<button id="loadMoreBtn" class="text-blue-600 hover:underline font-semibold">
+Load more (${csvData.length - previewOffset} more records)
+</button>
+</td>
+`;
 										previewTableBody.appendChild(tr);
 										document
 												.getElementById('loadMoreBtn')
