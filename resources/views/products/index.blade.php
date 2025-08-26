@@ -148,29 +148,13 @@
 																<button
 																		type="submit"
 																		id="updateButton"
-																		class="mt-2 flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+																		class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
 																>
-																		<svg
+																		<div
 																				id="spinner"
-																				class="hidden h-5 w-5 animate-spin text-white"
-																				xmlns="http://www.w3.org/2000/svg"
-																				fill="none"
-																				viewBox="0 0 24 24"
-																		>
-																				<circle
-																						class="opacity-25"
-																						cx="12"
-																						cy="12"
-																						r="10"
-																						stroke="currentColor"
-																						stroke-width="4"
-																				></circle>
-																				<path
-																						class="opacity-75"
-																						fill="currentColor"
-																						d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-																				></path>
-																		</svg>
+																				class="me-5 hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
+																		></div>
+
 																		<span
 																				id="buttonText"
 																				class="text-sm"
@@ -181,51 +165,64 @@
 																		class="mt-3 hidden text-center text-sm text-gray-600"
 																></p>
 														</form>
-														{{-- </div> --}}
+
+														<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 														<script>
 																document.getElementById('updateAllocationsForm').addEventListener('submit', function(e) {
-																		e.preventDefault();
+																		e.preventDefault(); // prevent default form submit
 
-																		const button = document.getElementById('updateButton');
-																		const spinner = document.getElementById('spinner');
-																		const buttonText = document.getElementById('buttonText');
-																		const statusMessage = document.getElementById('statusMessage');
+																		Swal.fire({
+																				title: 'Warning',
+																				text: 'This process may take a long time. Are you sure you want to proceed?',
+																				icon: 'warning',
+																				showCancelButton: true,
+																				confirmButtonText: 'Yes, proceed',
+																				cancelButtonText: 'Cancel'
+																		}).then((result) => {
+																				if (!result.isConfirmed) return;
 
-																		// Show spinner and disable button
-																		spinner.classList.remove('hidden');
-																		button.disabled = true;
-																		buttonText.textContent = 'Updating...';
-																		statusMessage.classList.add('hidden');
+																				const button = document.getElementById('updateButton');
+																				const spinner = document.getElementById('spinner');
+																				const buttonText = document.getElementById('buttonText');
+																				const statusMessage = document.getElementById('statusMessage');
 
-																		fetch(this.action, {
-																						method: 'POST',
-																						headers: {
-																								'X-CSRF-TOKEN': '{{ csrf_token() }}',
-																								'Accept': 'application/json'
-																						},
-																				})
-																				.then(res => res.json())
-																				.then(data => {
-																						spinner.classList.add('hidden');
-																						button.disabled = false;
-																						buttonText.textContent = 'Update Allocations';
-																						statusMessage.textContent = data.message;
-																						statusMessage.classList.remove('hidden');
-																						statusMessage.classList.remove('text-red-500');
-																						statusMessage.classList.add('text-green-600');
-																				})
-																				.catch(err => {
-																						spinner.classList.add('hidden');
-																						button.disabled = false;
-																						buttonText.textContent = 'Update Allocations';
-																						statusMessage.textContent = 'Error running allocations.';
-																						statusMessage.classList.remove('hidden');
-																						statusMessage.classList.remove('text-green-600');
-																						statusMessage.classList.add('text-red-500');
-																				});
+																				// Show spinner and disable button
+																				spinner.classList.remove('hidden');
+																				button.disabled = true;
+																				buttonText.textContent = 'Updating...';
+																				statusMessage.classList.add('hidden');
+
+																				fetch(this.action, {
+																								method: 'POST',
+																								headers: {
+																										'X-CSRF-TOKEN': '{{ csrf_token() }}',
+																										'Accept': 'application/json'
+																								},
+																						})
+																						.then(res => res.json())
+																						.then(data => {
+																								spinner.classList.add('hidden');
+																								button.disabled = false;
+																								buttonText.textContent = 'Update Allocations';
+																								statusMessage.textContent = data.message;
+																								statusMessage.classList.remove('hidden');
+																								statusMessage.classList.remove('text-red-500');
+																								statusMessage.classList.add('text-green-600');
+																						})
+																						.catch(err => {
+																								spinner.classList.add('hidden');
+																								button.disabled = false;
+																								buttonText.textContent = 'Update Allocations';
+																								statusMessage.textContent = 'Error running allocations.';
+																								statusMessage.classList.remove('hidden');
+																								statusMessage.classList.remove('text-green-600');
+																								statusMessage.classList.add('text-red-500');
+																						});
+																		});
 																});
 														</script>
+
 
 												</div>
 										</div>

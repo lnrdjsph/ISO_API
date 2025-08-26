@@ -58,6 +58,7 @@ class FormsController extends Controller
             'mbc_card_no' => 'required|digits:16',
             'customer_name' => 'required|string',
             'contact_number' => 'required|string|regex:/^[0-9]{11,12}$/',
+            
 
             // Order items
             'orders' => 'required|array',
@@ -71,7 +72,7 @@ class FormsController extends Controller
                 'price' => 'required|numeric',
                 'qty_per_cs' => 'nullable|integer',
                 'qty_per_pc' => 'required|integer',
-                'scheme' => 'required|string',
+                'scheme' => 'nullable|string',
                 'total_qty' => 'required|integer',
                 'freebies_per_cs' => 'nullable|integer',
                 'amount' => 'required|numeric',
@@ -83,6 +84,9 @@ class FormsController extends Controller
                 'freebie_price_per_pc' => 'nullable|numeric',
                 'freebie_price' => 'nullable|numeric',
                 'freebie_qty_per_pc' => 'nullable|integer',
+
+                'sale_type' => 'nullable|string',
+                'discount' => 'nullable|string'
                 
             ])->validate();
         }
@@ -125,11 +129,14 @@ class FormsController extends Controller
 
         // Save each item
         foreach ($validated['orders'] as $item) {
+            // Determine scheme based on sale_type
+            $scheme = ($item['sale_type'] ?? '') === 'Discount' ? 'Discount' : ($item['scheme'] ?? null);
+
             // Save main item
             $order->items()->create([
                 'sku' => $item['sku'] ?? null,
                 'item_description' => $item['item_description'] ?? null,
-                'scheme' => $item['scheme'] ?? null,
+                'scheme' => $scheme,
                 'price_per_pc' => $item['price_per_pc'] ?? 0,
                 'price' => $item['price'] ?? 0,
                 'qty_per_pc' => $item['qty_per_pc'] ?? 0,
@@ -137,12 +144,14 @@ class FormsController extends Controller
                 'freebies_per_cs' => 0,
                 'total_qty' => $item['qty_per_cs'] ?? 0,
                 'amount' => $item['amount'] ?? 0,
+                'discount' => $item['discount'] ?? 0,
                 'remarks' => $item['remarks'] ?? null,
                 'store_order_no' => $item['store_order_no'] ?? null,
                 'item_type' => 'MAIN',
             ]);
 
-            if (!empty($item['freebies_per_cs'])) {
+
+            if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
                 $order->items()->create([
                     'sku' => $item['freebie_sku'] ?? $item['sku'] ?? null,
                     'item_description' => $item['freebie_description'] ?? $item['item_description'] ?? null,
@@ -166,12 +175,12 @@ class FormsController extends Controller
                         $item['qty_per_pc'] * 
                         $item['freebies_per_cs']
                     ),
-
                     'remarks' => $item['remarks'] ?? null,
                     'store_order_no' => $item['store_order_no'] ?? null,
                     'item_type' => 'FREEBIE',
                 ]);
             }
+
 
 
         }
