@@ -20,7 +20,7 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Manila'); // force Philippine timezone
             
         $schedule->command('products:update-allocations')
-            ->cron('35 13 * * *')      // 1:35 PM
+            ->cron('0 10 * * *')      // 1:35 PM
             ->timezone('Asia/Manila');
     }
 

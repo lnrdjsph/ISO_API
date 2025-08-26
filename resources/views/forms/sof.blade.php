@@ -23,7 +23,7 @@
 																stroke-linecap="round"
 																stroke-linejoin="round"
 																stroke-width="2"
-																d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"
+																d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 														/>
 												</svg>
 										</div>
@@ -1248,6 +1248,26 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						});
 				});
 
+				document.addEventListener("DOMContentLoaded", () => {
+						const fields = document.querySelectorAll("input, select, textarea");
+
+						function toggleHighlight(el) {
+								if (el.value && (el.value.trim() !== "" || el.value === "0")) {
+										el.classList.add("bg-indigo-50");
+								} else {
+										el.classList.remove("bg-indigo-50");
+								}
+						}
+
+						fields.forEach(el => {
+								// Initial check
+								toggleHighlight(el);
+
+								// Listen for changes
+								el.addEventListener("input", () => toggleHighlight(el));
+								el.addEventListener("change", () => toggleHighlight(el));
+						});
+				});
 
 
 
@@ -1493,53 +1513,37 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const searchInput = container.find('.product-search, .freebie-search');
 						const isFreebie = searchInput.hasClass('freebie-search');
 
-						function highlightInput(input) {
-								input.addClass('bg-indigo-50');
-
+						function setAndHighlight(input, value) {
+								input.val(value);
+								if (value !== null && value !== '' && Number(value) !== 0) {
+										input.addClass('bg-indigo-50');
+								} else {
+										input.removeClass('bg-indigo-50');
+								}
 						}
 
 						if (isFreebie) {
-								row.find('.freebie-search').val(`${sku} - ${description}`);
-								highlightInput(row.find('.freebie-search'));
+								setAndHighlight(row.find('.freebie-search'), sku && description ? `${sku} - ${description}` : '');
+								setAndHighlight(row.find('.freebie-sku-hidden'), sku);
+								setAndHighlight(row.find('.freebie-desc-hidden'), description);
+								setAndHighlight(row.find('.freebie-price-per-pc').trigger('input'), pricePerPc);
+								setAndHighlight(row.find('.freebie-qty-per-pc').trigger('input'), casePack);
 
-								row.find('.freebie-sku-hidden').val(sku);
-								highlightInput(row.find('.freebie-sku-hidden'));
-
-								row.find('.freebie-desc-hidden').val(description);
-								highlightInput(row.find('.freebie-desc-hidden'));
-
-								row.find('.freebie-price-per-pc').val(pricePerPc).trigger('input');
-								highlightInput(row.find('.freebie-price-per-pc'));
-
-								row.find('.freebie-qty-per-pc').val(casePack).trigger('input');
-								highlightInput(row.find('.freebie-qty-per-pc'));
 						} else {
-								row.find('.product-search').val(`${sku} - ${description}`);
-								highlightInput(row.find('.product-search'));
-
-								row.find('.sku-hidden').val(sku);
-								highlightInput(row.find('.sku-hidden'));
-
-								row.find('.desc-hidden').val(description);
-								highlightInput(row.find('.desc-hidden'));
-
-								row.find('.price-per-pc').val(pricePerPc);
-								highlightInput(row.find('.price-per-pc'));
-
-								row.find('.qty-per-pc').val(casePack);
-								highlightInput(row.find('.qty-per-pc'));
+								setAndHighlight(row.find('.product-search'), sku && description ? `${sku} - ${description}` : '');
+								setAndHighlight(row.find('.sku-hidden'), sku);
+								setAndHighlight(row.find('.desc-hidden'), description);
+								setAndHighlight(row.find('.price-per-pc'), pricePerPc);
+								setAndHighlight(row.find('.qty-per-pc'), casePack);
 
 								const paymentMode = $('[name="mode_payment"]').val();
-
 								let scheme = '';
 								if (paymentMode === 'PO15%') {
 										scheme = po15Scheme || '';
 								} else if (paymentMode === 'Cash / Bank Card') {
 										scheme = cashBankCardScheme || '';
 								}
-
-								row.find('.scheme-input').val(scheme);
-								highlightInput(row.find('.scheme-input'));
+								setAndHighlight(row.find('.scheme-input'), scheme);
 
 								// Freebie auto-fill loopback
 								if (freebieSku) {
@@ -1548,7 +1552,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 										freebieInput.val(freebieSku);
 										resultList.empty().removeClass('hidden');
-
 										freebieInput.trigger('keyup');
 								}
 						}
