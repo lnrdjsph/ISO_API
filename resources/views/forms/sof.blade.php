@@ -428,8 +428,9 @@
 
 								</div>
 
-								<div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg">
-
+								<div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg">
+										{{-- <div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
+										{{-- test --}}
 										<div class="bg-white pt-4">
 												<div class="flex items-center justify-between">
 														<div class="flex items-center space-x-3">
@@ -526,13 +527,71 @@
 																				<!-- LEFT SIDE: Editable Inputs -->
 																				<div class="editable-side max-h-[2000px] space-y-4 opacity-100 transition-all duration-300 ease-in-out md:col-span-2">
 																						<!-- SKU + Description -->
-																						<div class="product-row grid grid-cols-1 gap-4 md:grid-cols-2">
+																						<div class="product-row grid grid-cols-1 gap-4 md:grid-cols-3">
+
+
+																								<!-- Sale Type Dropdown -->
+																								<div class="col-span-1">
+																										<label class="mb-1 block text-sm font-medium">Sale Type</label>
+																										<select
+																												name="orders[{{ $i }}][sale_type]"
+																												class="sale-type w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																										>
+																												@php
+																														$selectedSaleType = old("orders.$i.sale_type", $order['sale_type'] ?? '');
+																												@endphp
+
+																												<option
+																														value="Freebie"
+																														{{ $selectedSaleType === 'Freebie' ? 'selected' : '' }}
+																												>Freebie</option>
+																												<option
+																														value="Discount"
+																														{{ $selectedSaleType === 'Discount' ? 'selected' : '' }}
+																												>Discount</option>
+																										</select>
+																								</div>
+
+
+
 																								<!-- Unified Search Input -->
 																								<div
-																										class="relative w-full"
+																										class="relative col-span-2 w-full"
 																										x-data="{ value: '{{ old("orders.$i.sku") && old("orders.$i.item_description") ? old("orders.$i.sku") . ' - ' . old("orders.$i.item_description") : '' }}' }"
 																								>
-																										<label class="mb-1 block text-sm font-medium">Main Product</label>
+																										<label class="mb-1 flex items-center gap-1 text-sm font-medium">
+																												Main Product
+
+																												<div class="group relative">
+																														<svg
+																																xmlns="http://www.w3.org/2000/svg"
+																																class="h-4 w-4 cursor-pointer text-gray-400"
+																																fill="none"
+																																viewBox="0 0 24 24"
+																																stroke="currentColor"
+																														>
+																																<circle
+																																		cx="12"
+																																		cy="12"
+																																		r="10"
+																																		stroke-width="2"
+																																/>
+																																<path
+																																		stroke-linecap="round"
+																																		stroke-linejoin="round"
+																																		stroke-width="2"
+																																		d="M12 16h.01M12 8v4"
+																																/>
+																														</svg>
+
+																														<span
+																																class="absolute left-full top-1/2 ml-2 hidden w-64 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
+																														>
+																																Start typing SKU or product description. A dropdown will appear with matching registered products to select from.
+																														</span>
+																												</div>
+																										</label>
+
 																										<input
 																												type="text"
 																												x-model="value"
@@ -560,34 +619,15 @@
 																										>
 																								</div>
 
-																								<!-- QTY/CS -->
-																								<div x-data="{ qty: '{{ old("orders.$i.qty_per_cs") }}' }">
-																										<label class="mb-1 block text-sm font-medium">QTY/CS</label>
-																										<input
-																												type="number"
-																												x-model="qty"
-																												:class="qty === '' ? 'bg-yellow-50' : 'bg-white'"
-																												name="orders[{{ $i }}][qty_per_cs]"
-																												class="qty-cs w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-																												placeholder="0"
-																												style="text-align: left;"
-																										>
-																								</div>
+
 
 																						</div>
 
-																						<!-- Other Inputs -->
-																						<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-																								<div>
-																										<label class="mb-1 block text-sm font-medium">Scheme</label>
-																										<input
-																												type="text"
-																												name="orders[{{ $i }}][scheme]"
-																												value="{{ old("orders.$i.scheme") }}"
-																												class="scheme-input w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-																												placeholder="0"
-																										/>
-																								</div>
+
+																						<div
+																								class="main-item grid grid-cols-1 gap-4 md:grid-cols-4"
+																								data-index="{{ $i }}"
+																						>
 
 																								<!-- Price/PCS -->
 																								<div>
@@ -604,26 +644,108 @@
 																								</div>
 
 																								<!-- QTY/PCS -->
-																								<div>
+																								<div class="relative">
 																										<label class="mb-1 block text-sm font-medium">QTY/PC</label>
 																										<input
-																												type="number"
+																												type="text"
 																												name="orders[{{ $i }}][qty_per_pc]"
 																												value="{{ old("orders.$i.qty_per_pc") }}"
-																												class="qty-pcs qty-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												class="qty-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												style="text-align: left;"
 																												placeholder="0"
 																										/>
+																										<ul class="glow-effect qty-results absolute z-10 mt-1 flex hidden flex-wrap gap-2 rounded border border-gray-200 bg-white p-2 shadow"></ul>
+
+																								</div>
+
+																								<!-- QTY/CS -->
+																								<div x-data="{ qty: '{{ old("orders.$i.qty_per_cs") }}' }">
+																										<label class="mb-1 block text-sm font-medium">QTY/CS</label>
+																										<input
+																												type="number"
+																												x-model="qty"
+																												:class="qty === '' ? 'bg-yellow-50' : 'bg-white'"
+																												name="orders[{{ $i }}][qty_per_cs]"
+																												class="qty-cs w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												placeholder="0"
+																												style="text-align: left;"
+																										>
+																								</div>
+																								<!-- Discount Field -->
+																								<div
+																										class="discount-field"
+																										data-index="{{ $i }}"
+																								>
+																										<label class="mb-1 flex items-center gap-1 text-sm font-medium">
+																												Discount
+
+																												<div class="group relative">
+																														<svg
+																																xmlns="http://www.w3.org/2000/svg"
+																																class="h-4 w-4 cursor-pointer text-gray-400"
+																																fill="none"
+																																viewBox="0 0 24 24"
+																																stroke="currentColor"
+																														>
+																																<circle
+																																		cx="12"
+																																		cy="12"
+																																		r="10"
+																																		stroke-width="2"
+																																/>
+																																<path
+																																		stroke-linecap="round"
+																																		stroke-linejoin="round"
+																																		stroke-width="2"
+																																		d="M12 16h.01M12 8v4"
+																																/>
+																														</svg>
+
+																														<span
+																																class="absolute left-full top-1/2 ml-2 hidden w-64 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
+																														>
+																																Enter discount amount or percentage
+																														</span>
+																												</div>
+																										</label>
+																										<input
+																												type="text"
+																												name="orders[{{ $i }}][discount]"
+																												value="{{ old("orders.$i.discount") }}"
+																												class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												placeholder="0"
+																												min="0"
+																												max="100"
+																												step="0.01"
+																										>
 																								</div>
 																						</div>
 
+
+																						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+
+
+																						</div>
 																						<!-- Freebie Section (Hidden by Default) -->
 																						<div
-																								class="freebie-grid mt-4 grid grid-cols-1 gap-4 md:grid-cols-2"
+																								class="freebie-grid mt-4 grid hidden grid-cols-1 gap-4 md:grid-cols-3"
 																								data-index="{{ $i }}"
 																						>
+
+																								{{-- Scheme --}}
+																								<div>
+																										<label class="mb-1 block text-sm font-medium">Scheme</label>
+																										<input
+																												type="text"
+																												name="orders[{{ $i }}][scheme]"
+																												value="{{ old("orders.$i.scheme") }}"
+																												class="scheme-input w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												placeholder="0"
+																										/>
+																								</div>
 																								<!-- Freebie Product -->
-																								<div class="relative w-full">
+																								<div class="relative col-span-2 w-full">
 																										<label class="mb-1 block text-sm font-medium">Freebie Product</label>
 																										<input
 																												type="text"
@@ -677,13 +799,14 @@
 																								<div>
 																										<label class="mb-1 block text-sm font-medium">Freebie QTY/PC</label>
 																										<input
-																												type="number"
+																												type="text"
 																												name="orders[{{ $i }}][freebie_qty_per_pc]"
 																												value="{{ old("orders.$i.freebie_qty_per_pc") }}"
 																												class="qty-pcs freebie-qty-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												style="text-align: left;"
 																												placeholder="0"
 																										/>
+																										<ul class="glow-effect qty-results absolute z-10 mt-1 flex hidden flex-wrap gap-2 rounded border border-gray-200 bg-white p-2 shadow"></ul>
 																								</div>
 
 																								<!-- Freebie QTY/CS-->
@@ -701,6 +824,9 @@
 																								</div>
 																						</div>
 
+
+
+
 																						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 
 																								<!-- Remarks Dropdown -->
@@ -716,7 +842,6 @@
 																												<option
 																														value=""
 																														disabled
-																														hidden
 																														{{ $selectedRemarks === '' ? 'selected' : '' }}
 																												>Select remarks</option>
 																												<option
@@ -784,16 +909,16 @@
 																								</div>
 
 																								{{-- 
-                                    <!-- Freebies/CS -->
-                                    <div class="flex justify-between items-start">
-                                        <label class="block text-sm text-green-600">Freebies</label>
-                                        <div class="text-right text-black font-medium">
-                                            <span class="freebies-cs-display block text-green-600">0</span>
-                                            <input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
-                                                value="{{ old("orders.$i.freebies_per_cs") }}"  
-                                                class="computed-freebies" />
-                                        </div>
-                                    </div> --}}
+																								<!-- Freebies/CS -->
+																								<div class="flex justify-between items-start">
+																										<label class="block text-sm text-green-600">Freebies</label>
+																										<div class="text-right text-black font-medium">
+																												<span class="freebies-cs-display block text-green-600">0</span>
+																												<input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
+																														value="{{ old("orders.$i.freebies_per_cs") }}"  
+																														class="computed-freebies" />
+																										</div>
+																								</div> --}}
 
 																								<!-- Freebie Amount -->
 																								<div class="flex items-start justify-between">
@@ -1184,31 +1309,43 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 				});
 
 
-				// function attachSchemeTypeListener(row) {
-				//     const select = row.querySelector('.scheme-type');
-				//     const freebieSection = row.querySelector('.freebie-grid');
-				//     const skuHidden = freebieSection?.querySelector('.freebie-sku-hidden');
-				//     const descHidden = freebieSection?.querySelector('.freebie-desc-hidden');
-				//     const searchInput = freebieSection?.querySelector('.freebie-search');
-				//     const priceInput = freebieSection?.querySelector('input[name$="[freebie_price_per_pc]"]');
+				document.addEventListener('DOMContentLoaded', () => {
+						document.querySelectorAll('.sale-type').forEach(select => {
+								select.addEventListener('change', function() {
+										const index = this.name.match(/orders\[(\d+)\]/)[1];
 
-				//     if (select) {
-				//         select.addEventListener('change', function () {
-				//             if (this.value === 'DIFF_FREEBIE') {
-				//                 freebieSection?.classList.remove('hidden');
-				//             } else {
-				//                 freebieSection?.classList.add('hidden');
-				//                 if (skuHidden) skuHidden.value = '';
-				//                 if (descHidden) descHidden.value = '';
-				//                 if (searchInput) searchInput.value = '';
-				//                 if (priceInput) priceInput.value = '';
-				//             }
-				//         });
+										const freebieSection = document.querySelector(`.freebie-grid[data-index="${index}"]`);
+										const mainItemSection = document.querySelector(`.main-item[data-index="${index}"]`);
+										const discountField = document.querySelector(`.discount-field[data-index="${index}"]`);
 
-				//         // Trigger initial state
-				//         select.dispatchEvent(new Event('change'));
-				//     }
-				// }
+										if (this.value === 'Freebie') {
+												freebieSection.classList.remove('hidden');
+												discountField.classList.add('hidden');
+												discountField.querySelector('input').value = '';
+												mainItemSection.classList.remove('md:grid-cols-4');
+												mainItemSection.classList.add('md:grid-cols-3');
+
+										} else if (this.value === 'Discount') {
+												discountField.classList.remove('hidden');
+												freebieSection.classList.add('hidden');
+												freebieSection.querySelectorAll('input').forEach(i => i.value = '');
+												mainItemSection.classList.remove('md:grid-cols-3');
+												mainItemSection.classList.add('md:grid-cols-4');
+										} else {
+												// Hide both if empty or reset
+												freebieSection.classList.add('hidden');
+												discountField.classList.add('hidden');
+												freebieSection.querySelectorAll('input').forEach(i => i.value = '');
+												discountField.querySelector('input').value = '';
+										}
+								});
+
+								// fire once on load
+								select.dispatchEvent(new Event('change'));
+						});
+				});
+
+
 				document.addEventListener('DOMContentLoaded', function() {
 						document.querySelectorAll('.order-row').forEach(row => calculateRowTotals(row));
 				});
@@ -1272,10 +1409,16 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 
 				function calculateRowTotals(row) {
+						// === Inputs ===
+						const saleTypeInput = row.querySelector('select[name*="[sale_type]"]');
+						const saleType = saleTypeInput?.value || 'Freebie'; // Match HTML options: 'Freebie' or 'Discount'
+
+						const discountInput = row.querySelector('input[name*="[discount]"]');
+						const discountValue = parseFloat(discountInput?.value) || 0;
+
 						const schemeInput = row.querySelector('input[name*="[scheme]"]');
-						const qtyPcsInput = row.querySelector('.qty-pcs');
+						const qtyPcsInput = row.querySelector('.qty-per-pc');
 						const qtyCsInput = row.querySelector('.qty-cs');
-						const totalQtyInput = row.querySelector('.total-qty');
 						const pricePerPcInput = row.querySelector('input[name*="[price_per_pc]"]');
 
 						const totalQtyDisplay = row.querySelector('.total-qty-display');
@@ -1285,9 +1428,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const breakdownPrice = row.querySelector('.breakdown-price');
 						const breakdownAmount = row.querySelector('.breakdown-amount');
 						const breakdownTotalQty = row.querySelector('.breakdown-total-qty');
+						const breakdownFreebieAmount = row.querySelector('.breakdown-freebie-amount');
 
 						const freebieAmountDisplay = row.querySelector('.freebie-amount-display');
-						const breakdownFreebieAmount = row.querySelector('.breakdown-freebie-amount');
 
 						const freebiePriceInput = row.querySelector('input[name*="[freebie_price_per_pc]"]');
 						const freebieQtyPcInput = row.querySelector('input[name*="[freebie_qty_per_pc]"]');
@@ -1300,7 +1443,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const priceHidden = row.querySelector('.computed-price');
 						const amountHidden = row.querySelector('.computed-amount');
 
-						// Extract values
+						// === Extract Values ===
 						const schemeValue = schemeInput?.value || "1+0";
 						const pricePerPc = parseFloat(pricePerPcInput?.value) || 0;
 						const qtyPcs = parseInt(qtyPcsInput?.value) || 0;
@@ -1308,51 +1451,173 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 						const freebiePricePc = parseFloat(freebiePriceInput?.value) || 0;
 						const freebieQtyPc = parseInt(freebieQtyPcInput?.value) || 0;
-						const freebiesPerCs = parseInt(freebieQtyCsInput?.value) || 0;
 
 						const safeFixed = (num) => isNaN(num) ? '0.00' : num.toFixed(2);
 
-						// Scheme breakdown
+						// === Scheme Breakdown ===
 						let [base, free] = schemeValue.replace(/[^0-9+]/g, '').split('+').map(n => parseInt(n) || 0);
 						if (base === 0) base = 1;
 						const fullSets = Math.floor(qtyCs / base);
 						const freebies = fullSets * free;
-						const totalCases = qtyCs + freebies;
 
-						const pricePerCase = pricePerPc * qtyPcs;
-						const totalAmount = pricePerCase * qtyCs;
+						// === Base Calculations ===
+						let pricePerCase = pricePerPc * qtyPcs;
+						let originalPricePerCase = pricePerCase; // Keep original for breakdown
+						let totalAmount = 0;
+						let freebieAmount = 0;
+						let totalCases = qtyCs;
+						let actualFreebies = 0;
 
-						// ✅ Always calculate freebie amount using freebie fields
-						const freebieAmount = freebiePricePc * freebieQtyPc * freebiesPerCs;
+						// === Sale Type Specific Calculations ===
+						if (saleType === 'Freebie') {
+								// Freebie logic: Add free cases to total quantity
+								actualFreebies = freebies;
+								totalCases = qtyCs + actualFreebies;
+								totalAmount = pricePerCase * qtyCs; // Only pay for ordered cases
 
-						// Update hidden fields
+								// Calculate freebie amount (value of free items)
+								if (actualFreebies > 0) {
+										freebieAmount = freebiePricePc * freebieQtyPc * actualFreebies;
+								}
+
+						} else if (saleType === 'Discount') {
+								// Discount logic: Reduce price per case, no freebies
+								actualFreebies = 0;
+								totalCases = qtyCs; // No additional cases
+
+								if (discountValue > 0) {
+										const discountText = discountInput?.value || '';
+										if (discountText.includes('%')) {
+												// Percentage discount - remove % and apply as percentage
+												const percentValue = parseFloat(discountText.replace('%', '')) || 0;
+												pricePerCase = originalPricePerCase * (1 - percentValue / 100);
+										} else {
+												// Fixed amount discount
+												pricePerCase = Math.max(0, originalPricePerCase - discountValue);
+										}
+								}
+								totalAmount = pricePerCase * qtyCs;
+								freebieAmount = 0; // No freebie value for discounts
+						}
+
+						// === Update Hidden Fields ===
 						if (totalQtyHidden) totalQtyHidden.value = totalCases;
-						if (freebiesHidden) freebiesHidden.value = freebies;
+						if (freebiesHidden) freebiesHidden.value = actualFreebies;
 						if (priceHidden) priceHidden.value = safeFixed(pricePerCase);
 						if (amountHidden) amountHidden.value = safeFixed(totalAmount);
 						if (freebieAmountHidden) freebieAmountHidden.value = safeFixed(freebieAmount);
 						if (freebiePriceInputField) freebiePriceInputField.value = safeFixed(freebiePricePc * freebieQtyPc);
 
-						// UI display
-						if (totalQtyInput) totalQtyInput.value = totalCases;
+						// Update freebies per cs field in freebie section
+						if (freebieQtyCsInput) freebieQtyCsInput.value = actualFreebies;
+
+						// === UI Display Updates ===
 						if (totalQtyDisplay) totalQtyDisplay.textContent = totalCases;
 						if (priceDisplay) priceDisplay.textContent = `₱${safeFixed(pricePerCase)}`;
 						if (amountDisplay) amountDisplay.textContent = `₱${safeFixed(totalAmount)}`;
-						if (freebieAmountDisplay) freebieAmountDisplay.textContent = `₱${safeFixed(freebieAmount)}`;
 
-						// Breakdown
-						if (breakdownPrice)
-								breakdownPrice.textContent = `₱${safeFixed(pricePerPc)} × ${qtyPcs}pcs`;
+						// === Breakdown Updates ===
+						if (breakdownPrice) {
+								if (saleType === 'Discount' && discountValue > 0) {
+										const discountText = discountInput?.value || '';
+										const isPercentage = discountText.includes('%');
+										const discountAmount = originalPricePerCase - pricePerCase;
 
-						if (breakdownAmount)
-								breakdownAmount.textContent = `${qtyCs}cs × ₱${safeFixed(pricePerCase)}`;
+										if (isPercentage) {
+												const percentValue = parseFloat(discountText.replace('%', '')) || 0;
+												breakdownPrice.textContent = `₱${safeFixed(originalPricePerCase)} - ${percentValue}% = ₱${safeFixed(pricePerCase)}`;
+										} else {
+												breakdownPrice.textContent = `₱${safeFixed(originalPricePerCase)} - ₱${safeFixed(discountValue)} = ₱${safeFixed(pricePerCase)}`;
+										}
+								} else {
+										breakdownPrice.textContent = `₱${safeFixed(pricePerPc)} × ${qtyPcs}pcs`;
+								}
+						}
 
-						if (breakdownTotalQty)
-								breakdownTotalQty.textContent = `${qtyCs}cs + ${freebies}cs`;
+						if (breakdownAmount) {
+								if (saleType === 'Discount' && discountValue > 0) {
+										const discountText = discountInput?.value || '';
+										const isPercentage = discountText.includes('%');
+										const discountLabel = isPercentage ?
+												`${parseFloat(discountText.replace('%', ''))}% discount` :
+												`₱${discountValue} discount`;
+										breakdownAmount.textContent = `${qtyCs}cs × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)} (After ${discountLabel})`;
+								} else {
+										breakdownAmount.textContent = `${qtyCs}cs × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)}`;
+								}
+						}
 
-						if (breakdownFreebieAmount)
-								breakdownFreebieAmount.textContent = `₱${safeFixed(freebiePricePc)} × ${freebieQtyPc}pcs × ${freebiesPerCs}cs`;
+						if (breakdownTotalQty) {
+								if (saleType === 'Freebie' && actualFreebies > 0) {
+										breakdownTotalQty.textContent = `${qtyCs}cs + ${actualFreebies}cs (free)`;
+								} else {
+										breakdownTotalQty.textContent = `${qtyCs}cs`;
+								}
+						}
+
+						// === Freebie Amount Display ===
+						if (freebieAmountDisplay) {
+								if (saleType === 'Freebie' && freebieAmount > 0) {
+										freebieAmountDisplay.textContent = `₱${safeFixed(freebieAmount)}`;
+										freebieAmountDisplay.style.display = '';
+								} else {
+										freebieAmountDisplay.textContent = '';
+										freebieAmountDisplay.style.display = 'none';
+								}
+						}
+
+						if (breakdownFreebieAmount) {
+								if (saleType === 'Freebie' && actualFreebies > 0 && freebieAmount > 0) {
+										breakdownFreebieAmount.textContent = `₱${safeFixed(freebiePricePc)} × ${freebieQtyPc}pcs × ${actualFreebies}cs (free items value)`;
+								} else if (saleType === 'Discount' && discountValue > 0) {
+										const discountText = discountInput?.value || '';
+										const isPercentage = discountText.includes('%');
+										const totalSavings = (originalPricePerCase - pricePerCase) * qtyCs;
+
+										if (isPercentage) {
+												const percentValue = parseFloat(discountText.replace('%', '')) || 0;
+												breakdownFreebieAmount.textContent = `Total savings (${percentValue}%): ₱${safeFixed(totalSavings)}`;
+										} else {
+												breakdownFreebieAmount.textContent = `Total savings (₱${discountValue}/case): ₱${safeFixed(totalSavings)}`;
+										}
+								} else {
+										breakdownFreebieAmount.textContent = '';
+								}
+						}
+
+						// === Toggle Freebie Section Visibility ===
+						const freebieGrid = row.querySelector('.freebie-grid');
+						if (freebieGrid) {
+								if (saleType === 'Freebie') {
+										freebieGrid.classList.remove('hidden');
+								} else {
+										freebieGrid.classList.add('hidden');
+								}
+						}
+
+						// === Show/Hide Freebie Amount Row ===
+						const freebieAmountRow = freebieAmountDisplay?.closest('.flex');
+						if (freebieAmountRow) {
+								if (saleType === 'Freebie' && freebieAmount > 0) {
+										freebieAmountRow.style.display = '';
+								} else if (saleType === 'Discount') {
+										freebieAmountRow.style.display = 'none';
+								}
+						}
+
+						console.log('Calculation Results:', {
+								saleType,
+								qtyCs,
+								actualFreebies,
+								totalCases,
+								originalPricePerCase: safeFixed(originalPricePerCase),
+								pricePerCase: safeFixed(pricePerCase),
+								totalAmount: safeFixed(totalAmount),
+								freebieAmount: safeFixed(freebieAmount),
+								discountValue
+						});
 				}
+
 
 
 
@@ -1514,13 +1779,22 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const isFreebie = searchInput.hasClass('freebie-search');
 
 						function setAndHighlight(input, value) {
+								// Set value
 								input.val(value);
+
+								// Highlight if value is not empty or zero
 								if (value !== null && value !== '' && Number(value) !== 0) {
 										input.addClass('bg-indigo-50');
 								} else {
 										input.removeClass('bg-indigo-50');
 								}
+
+								// Trigger input to show suggestions if applicable
+								if (input.hasClass('qty-per-pc') || input.hasClass('freebie-qty-per-pc')) {
+										input.trigger('input');
+								}
 						}
+
 
 						if (isFreebie) {
 								setAndHighlight(row.find('.freebie-search'), sku && description ? `${sku} - ${description}` : '');
@@ -1535,7 +1809,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								setAndHighlight(row.find('.desc-hidden'), description);
 								setAndHighlight(row.find('.price-per-pc'), pricePerPc);
 								setAndHighlight(row.find('.qty-per-pc'), casePack);
-
+								const qtyInput = row.find('.qty-per-pc');
+								qtyInput.trigger('input'); // will call showResults()
 								const paymentMode = $('[name="mode_payment"]').val();
 								let scheme = '';
 								if (paymentMode === 'PO15%') {
@@ -1560,15 +1835,62 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 				});
 
 
+				$(document).ready(function() {
+						function showResults(input) {
+								const val = input.val();
+								const resultList = input.siblings('.qty-results');
 
+								// Clear and show list if needed
+								resultList.empty();
 
-
-				// ✅ Hide dropdown on outside click
-				$(document).on('click', function(e) {
-						if (!$(e.target).closest('.product-search, .freebie-search, .search-results').length) {
-								$('.search-results').empty().addClass('hidden');
+								if (val.includes('|')) {
+										const parts = val.split('|').map(p => p.trim()).filter(p => p !== "");
+										parts.forEach(p => {
+												resultList.append(`
+<li class="px-3 py-1 border rounded-lg cursor-pointer hover:bg-gray-100 transition whitespace-nowrap"
+    data-value="${p}">
+    ${p}
+</li>
+                `);
+										});
+										resultList.removeClass('hidden');
+								} else {
+										resultList.addClass('hidden');
+								}
 						}
+
+						// Handle input, focus, and blur for both types
+						$(document).on('input blur focus', '.qty-per-pc, .freebie-qty-per-pc', function() {
+								showResults($(this));
+						});
+
+						// Initialize on page load
+						$('.qty-per-pc, .freebie-qty-per-pc').each(function() {
+								showResults($(this));
+						});
+
+						// Click to select a suggestion
+						$(document).on('click', '.qty-results li', function() {
+								const value = $(this).data('value');
+								const input = $(this).closest('div').find('input.qty-per-pc, input.freebie-qty-per-pc');
+								input.val(value);
+								$(this).parent().addClass('hidden').empty();
+						});
+
+						// Allow only numbers, spaces, and |
+						$(document).on('input', '.qty-per-pc, .freebie-qty-per-pc', function() {
+								let val = $(this).val();
+								val = val.replace(/[^0-9| ]/g, '');
+								$(this).val(val);
+						});
 				});
+
+
+
+
+
+
+
 
 				// function updateDateTimeLocalInput() {
 				//     const now = new Date();
@@ -1778,7 +2100,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 												}, 200);
 										}
 								} else {
-										orderItemForm.classList.add('hidden');
+										// test
+										orderItemForm.classList.add('');
+										// orderItemForm.classList.add('hidden');
 										alertShown = false; // reset so alert can be shown again
 								}
 						}

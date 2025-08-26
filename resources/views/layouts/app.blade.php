@@ -175,7 +175,8 @@
 								color: #1D4ED8;
 								/* icon stroke color */
 								border-radius: 0.8rem;
-								/* padding: rem 0; */
+								/* padding: 0 1rem; */
+								width: 12.5rem;
 
 						}
 
@@ -306,13 +307,13 @@
 
 				<aside
 						id="sidebar"
-						class="sidebar-expanded fixed z-30 hidden bg-white shadow-xl md:block"
+						class="sidebar-expanded fixed z-30 flex hidden flex-col bg-white shadow-xl md:block"
 				>
 
 
 
 						<!-- Logo Section -->
-						<div class="flex items-center justify-center border-b border-gray-200 p-4">
+						<div class="fixed flex w-auto flex-col items-center justify-center border-b border-gray-200 p-4">
 								<div class="flex items-center space-x-3">
 										<img
 												src="{{ asset('images/MarengEms_Logo.png') }}"
@@ -323,7 +324,7 @@
 								</div>
 						</div>
 
-						<nav class="flex flex-col px-3 pb-4">
+						<nav class="fixed top-16 flex flex-col px-3 pb-4">
 								<div class="nav-content">
 										<ul class="space-y-1 pt-4">
 												<!-- Dashboard Group -->
@@ -828,7 +829,7 @@
 										</ul>
 								</div>
 
-								<div class="nav-bottom">
+								<div class="nav-bottom fixed bottom-4">
 										<!-- Toggle Button -->
 										<div class="pb-4">
 												<button

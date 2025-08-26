@@ -8,16 +8,16 @@
 										<div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
 												<svg
 														xmlns="http://www.w3.org/2000/svg"
-														class="h-8 w-8 text-white"
 														fill="none"
 														viewBox="0 0 24 24"
-														stroke="currentColor"
+														stroke="white"
+														stroke-width="2"
+														class="h-7 w-7 flex-shrink-0"
 												>
 														<path
 																stroke-linecap="round"
 																stroke-linejoin="round"
-																stroke-width="2"
-																d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"
+																d="M3 3h7v7H3V3zM14 3h7v7h-7V3zM14 14h7v7h-7v-7zM3 14h7v7H3v-7z"
 														/>
 												</svg>
 										</div>
