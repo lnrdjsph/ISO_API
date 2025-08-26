@@ -47,19 +47,19 @@
 																		<th class="rounded-tl-3xl py-4 pl-14 text-left">
 																				<div class="h-4 w-12 rounded bg-gray-500"></div>
 																		</th>
-																		<th class="px-6 py-4 text-left">
+																		<th class="px-3 py-3 text-left">
 																				<div class="h-4 w-24 rounded bg-gray-500"></div>
 																		</th>
-																		<th class="px-6 py-4 text-left">
+																		<th class="px-3 py-3 text-left">
 																				<div class="h-4 w-20 rounded bg-gray-500"></div>
 																		</th>
-																		<th class="px-6 py-4 text-left">
+																		<th class="px-3 py-3 text-left">
 																				<div class="h-4 w-16 rounded bg-gray-500"></div>
 																		</th>
-																		<th class="px-6 py-4 text-left">
+																		<th class="px-3 py-3 text-left">
 																				<div class="h-4 w-16 rounded bg-gray-500"></div>
 																		</th>
-																		<th class="rounded-tr-3xl px-6 py-4 text-left">
+																		<th class="rounded-tr-3xl px-3 py-3 text-left">
 																				<div class="h-4 w-12 rounded bg-gray-500"></div>
 																		</th>
 																</tr>
@@ -116,10 +116,10 @@
 								<div class="mb-8">
 										<div class="flex items-center justify-between">
 												<div class="flex items-center space-x-4">
-														<div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
+														<div class="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
 																<svg
 																		xmlns="http://www.w3.org/2000/svg"
-																		class="h-8 w-8 text-white"
+																		class="h-4 w-4 text-white"
 																		fill="none"
 																		viewBox="0 0 24 24"
 																		stroke="currentColor"
@@ -133,32 +133,159 @@
 																</svg>
 														</div>
 														<div>
-																<h1 class="text-3xl font-bold text-gray-900">Product List</h1>
-																<p class="mt-1 text-gray-600">Manage and explore your product inventory</p>
+																<h1 class="text-lg font-bold text-gray-900">Product List</h1>
+																<p class="text-sm text-gray-600">Manage and explore your product inventory</p>
 														</div>
 												</div>
 												<div class="flex items-center space-x-4">
-														<div class="rounded-2xl border border-white/20 bg-white/70 px-4 py-2 shadow-lg backdrop-blur-sm">
-																<span class="text-sm text-gray-600">Total Products: </span>
-																<span class="font-semibold text-gray-800">{{ $products->total() }}</span>
-														</div>
+														{{-- <div class="mx-auto w-full max-w-md rounded-lg bg-white p-6 shadow-md"> --}}
+														<form
+																id="updateAllocationsForm"
+																action="{{ route('update.allocations') }}"
+																method="POST"
+														>
+																@csrf
+																<button
+																		type="submit"
+																		id="updateButton"
+																		class="mt-2 flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+																>
+																		<svg
+																				id="spinner"
+																				class="hidden h-5 w-5 animate-spin text-white"
+																				xmlns="http://www.w3.org/2000/svg"
+																				fill="none"
+																				viewBox="0 0 24 24"
+																		>
+																				<circle
+																						class="opacity-25"
+																						cx="12"
+																						cy="12"
+																						r="10"
+																						stroke="currentColor"
+																						stroke-width="4"
+																				></circle>
+																				<path
+																						class="opacity-75"
+																						fill="currentColor"
+																						d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+																				></path>
+																		</svg>
+																		<span
+																				id="buttonText"
+																				class="text-sm"
+																		>Update Allocations</span>
+																</button>
+																<p
+																		id="statusMessage"
+																		class="mt-3 hidden text-center text-sm text-gray-600"
+																></p>
+														</form>
+														{{-- </div> --}}
+
+														<script>
+																document.getElementById('updateAllocationsForm').addEventListener('submit', function(e) {
+																		e.preventDefault();
+
+																		const button = document.getElementById('updateButton');
+																		const spinner = document.getElementById('spinner');
+																		const buttonText = document.getElementById('buttonText');
+																		const statusMessage = document.getElementById('statusMessage');
+
+																		// Show spinner and disable button
+																		spinner.classList.remove('hidden');
+																		button.disabled = true;
+																		buttonText.textContent = 'Updating...';
+																		statusMessage.classList.add('hidden');
+
+																		fetch(this.action, {
+																						method: 'POST',
+																						headers: {
+																								'X-CSRF-TOKEN': '{{ csrf_token() }}',
+																								'Accept': 'application/json'
+																						},
+																				})
+																				.then(res => res.json())
+																				.then(data => {
+																						spinner.classList.add('hidden');
+																						button.disabled = false;
+																						buttonText.textContent = 'Update Allocations';
+																						statusMessage.textContent = data.message;
+																						statusMessage.classList.remove('hidden');
+																						statusMessage.classList.remove('text-red-500');
+																						statusMessage.classList.add('text-green-600');
+																				})
+																				.catch(err => {
+																						spinner.classList.add('hidden');
+																						button.disabled = false;
+																						buttonText.textContent = 'Update Allocations';
+																						statusMessage.textContent = 'Error running allocations.';
+																						statusMessage.classList.remove('hidden');
+																						statusMessage.classList.remove('text-green-600');
+																						statusMessage.classList.add('text-red-500');
+																				});
+																});
+														</script>
+
 												</div>
 										</div>
 								</div>
+						</div>
 
-								<!-- Search and Actions Bar -->
-								<div class="mb-8">
-										<div class="flex flex-nowrap items-start justify-between gap-4">
+						<!-- Search and Actions Bar -->
+						<div class="mb-4">
+								<div class="flex flex-nowrap items-start justify-between gap-4">
 
-												<form
-														method="GET"
-														action="{{ route('products.index') }}"
-														class="w-full max-w-lg"
-												>
-														<div class="relative">
-																<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+										<form
+												method="GET"
+												action="{{ route('products.index') }}"
+												class="w-full max-w-lg"
+										>
+												<div class="relative">
+														<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+																<svg
+																		class="h-5 w-5 text-gray-400"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																>
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+																		/>
+																</svg>
+														</div>
+														<input
+																type="text"
+																name="query"
+																id="product-search"
+																value="{{ request('query') }}"
+																autocomplete="off"
+																class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-4 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+																placeholder="Search by SKU or product description..."
+														/>
+														<ul
+																id="product-list"
+																class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"
+														></ul>
+
+												</div>
+										</form>
+
+										<!-- Bulk Actions Bar -->
+										<div
+												id="bulk-actions-bar"
+												class="hidden"
+										>
+												<div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 p-1">
+														<div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
+
+																<!-- Count -->
+																<div class="flex items-center gap-2">
 																		<svg
-																				class="h-5 w-5 text-gray-400"
+																				class="h-5 w-5"
 																				fill="none"
 																				stroke="currentColor"
 																				viewBox="0 0 24 24"
@@ -167,60 +294,19 @@
 																						stroke-linecap="round"
 																						stroke-linejoin="round"
 																						stroke-width="2"
-																						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+																						d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 																				/>
 																		</svg>
+																		<span
+																				id="selected-count"
+																				class="font-semibold"
+																		>0</span>
+																		<span>items selected</span>
 																</div>
-																<input
-																		type="text"
-																		name="query"
-																		id="product-search"
-																		value="{{ request('query') }}"
-																		autocomplete="off"
-																		class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-3 pl-12 pr-4 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-																		placeholder="Search by SKU or product description..."
-																/>
-																<ul
-																		id="product-list"
-																		class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"
-																></ul>
 
-														</div>
-												</form>
-
-												<!-- Bulk Actions Bar -->
-												<div
-														id="bulk-actions-bar"
-														class="hidden"
-												>
-														<div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 p-1">
-																<div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
-
-																		<!-- Count -->
-																		<div class="flex items-center gap-2">
-																				<svg
-																						class="h-5 w-5"
-																						fill="none"
-																						stroke="currentColor"
-																						viewBox="0 0 24 24"
-																				>
-																						<path
-																								stroke-linecap="round"
-																								stroke-linejoin="round"
-																								stroke-width="2"
-																								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-																						/>
-																				</svg>
-																				<span
-																						id="selected-count"
-																						class="font-semibold"
-																				>0</span>
-																				<span>items selected</span>
-																		</div>
-
-																		<!-- Buttons -->
-																		<div class="flex items-center gap-3">
-																				{{-- <button
+																<!-- Buttons -->
+																<div class="flex items-center gap-3">
+																		{{-- <button
 																						id="bulk-edit-btn"
 																						class="flex items-center rounded-xl px-3 font-medium hover:underline"
 																				>
@@ -240,381 +326,415 @@
 																						Bulk Edit
 																				</button> --}}
 
-																				<button
-																						id="bulk-archive-btn"
-																						class="flex items-center rounded-xl px-3 font-medium hover:underline"
+																		<button
+																				id="bulk-archive-btn"
+																				class="flex items-center rounded-xl px-3 font-medium hover:underline"
+																		>
+																				<svg
+																						class="mr-1 h-4 w-4"
+																						fill="none"
+																						stroke="currentColor"
+																						viewBox="0 0 24 24"
 																				>
-																						<svg
-																								class="mr-1 h-4 w-4"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-																								/>
-																						</svg>
-																						Archive
-																				</button>
+																						<path
+																								stroke-linecap="round"
+																								stroke-linejoin="round"
+																								stroke-width="2"
+																								d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+																						/>
+																				</svg>
+																				Archive
+																		</button>
 
-																				<button
-																						id="clear-selection-btn"
-																						class="flex items-center rounded-xl px-2 hover:underline"
+																		<button
+																				id="clear-selection-btn"
+																				class="flex items-center rounded-xl px-2 hover:underline"
+																		>
+																				<svg
+																						class="h-4 w-4"
+																						fill="none"
+																						stroke="currentColor"
+																						viewBox="0 0 24 24"
 																				>
-																						<svg
-																								class="h-4 w-4"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M6 18L18 6M6 6l12 12"
-																								/>
-																						</svg>
-																				</button>
-																		</div>
+																						<path
+																								stroke-linecap="round"
+																								stroke-linejoin="round"
+																								stroke-width="2"
+																								d="M6 18L18 6M6 6l12 12"
+																						/>
+																				</svg>
+																		</button>
 																</div>
 														</div>
 												</div>
-												<!-- Action Buttons -->
-												<div class="flex flex-shrink-0 items-center gap-3">
-														<!-- Filter -->
-														<button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
-																<svg
-																		class="mr-2 h-5 w-5"
-																		fill="none"
-																		stroke="currentColor"
-																		viewBox="0 0 24 24"
-																>
-																		<path
-																				stroke-linecap="round"
-																				stroke-linejoin="round"
-																				stroke-width="2"
-																				d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-																		/>
-																</svg>
-																Filter
-														</button>
-
-														<!-- Export -->
-														<a
-																href="{{ route('products.export', request()->query()) }}"
-																class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800"
-														>
-																<svg
-																		class="mr-2 h-5 w-5"
-																		fill="none"
-																		stroke="currentColor"
-																		viewBox="0 0 24 24"
-																>
-																		<path
-																				stroke-linecap="round"
-																				stroke-linejoin="round"
-																				stroke-width="2"
-																				d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-																		/>
-																</svg>
-																Export
-														</a>
-
-														<!-- Add Product -->
-														<a
-																href="{{ route('products.create') }}"
-																class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
-														>
-																<svg
-																		class="mr-2 h-5 w-5"
-																		fill="none"
-																		stroke="currentColor"
-																		viewBox="0 0 24 24"
-																>
-																		<path
-																				stroke-linecap="round"
-																				stroke-linejoin="round"
-																				stroke-width="2"
-																				d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-																		/>
-																</svg>
-																Add Product
-														</a>
-												</div>
-
 										</div>
+										<!-- Action Buttons -->
+										<div class="flex flex-shrink-0 items-center gap-3">
+												<!-- Filter -->
+												<button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
+														<svg
+																class="mr-2 h-5 w-5"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+														>
+																<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+																/>
+														</svg>
+														Filter
+												</button>
+
+												<!-- Export -->
+												<a
+														href="{{ route('products.export', request()->query()) }}"
+														class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800"
+												>
+														<svg
+																class="mr-2 h-5 w-5"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+														>
+																<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+																/>
+														</svg>
+														Export
+												</a>
+
+												<!-- Add Product -->
+												<a
+														href="{{ route('products.create') }}"
+														class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+												>
+														<svg
+																class="mr-2 h-5 w-5"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+														>
+																<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+																/>
+														</svg>
+														Add Product
+												</a>
+										</div>
+
+								</div>
+						</div>
+
+						<!-- Modern Product Table -->
+						<div class="overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
+								<div class="max-w-full overflow-x-auto">
+										<table class="table-sm w-full table-auto">
+												@php
+														$currentSort = request('sort', 'sku');
+														$currentDirection = request('direction', 'asc');
+
+														if (!function_exists('sortRoute')) {
+														    function sortRoute($column)
+														    {
+														        $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
+
+														        return route(
+														            'products.index',
+														            array_merge(request()->except(['page', 'direction', 'sort']), [
+														                'sort' => $column,
+														                'direction' => request('sort') === $column ? $direction : 'asc',
+														            ]),
+														        );
+														    }
+														}
+												@endphp
+												<thead>
+														<tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+																<th class="text-blue w-16 rounded-tl-3xl py-2 pl-6 text-left text-sm font-bold uppercase">
+																		<div class="flex items-center">
+																				<input
+																						type="checkbox"
+																						id="select-all"
+																						class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+																				>
+																		</div>
+																</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+																		<a
+																				href="{{ sortRoute('sku') }}"
+																				class="group flex items-center space-x-2"
+																		>
+																				<span>SKU</span>
+																				@if ($currentSort === 'sku')
+																						<svg
+																								class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																								></path>
+																						</svg>
+																				@else
+																						<svg
+																								class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																								></path>
+																						</svg>
+																				@endif
+																		</a>
+																</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+																		<a
+																				href="{{ sortRoute('description') }}"
+																				class="group flex items-center space-x-2"
+																		>
+																				<span>Product description</span>
+																				@if ($currentSort === 'description')
+																						<svg
+																								class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																								></path>
+																						</svg>
+																				@else
+																						<svg
+																								class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																								></path>
+																						</svg>
+																				@endif
+																		</a>
+																</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">WMS Inventory</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Store Inventory</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Case Pack</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">SRP</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">C/BC Scheme</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">PO15 Scheme</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Discount Scheme</th>
+																<th class="text-blue rounded-tr-3xl px-3 py-3 text-left text-xs font-bold uppercase">Freebie SKU</th>
+														</tr>
+												</thead>
+												<tbody class="divide-y divide-gray-100/60">
+														@forelse ($products as $product)
+																<tr
+																		class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-indigo-100/60"
+																		data-product-id="{{ $product->id }}"
+																>
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<input
+																						type="checkbox"
+																						class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+																						value="{{ $product->id }}"
+																						id="product-{{ $product->id }}"
+																				>
+																		</td>
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<div class="flex items-center">
+																						<span class="rounded-lg bg-gray-100/60 px-3 py-1 font-mono text-xs font-semibold text-gray-800">
+																								{{ $product->sku }}
+																						</span>
+																				</div>
+																		</td>
+																		<td class="max-w-xs px-3 py-3">
+																				<div class="relative inline-block w-full">
+																						<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
+																								{{ $product->description }}
+																						</div>
+																						<div
+																								class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																						>
+																								{{ $product->description }}
+																						</div>
+																				</div>
+																		</td>
+
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ $product->wms_allocation_per_case ?? '-' }}
+																				</span>
+																		</td>
+
+
+																		<td class="px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ $product->allocation_per_case ?? '-' }}
+																				</span>
+																		</td>
+
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ $product->case_pack ?? '-' }}
+																				</span>
+																		</td>
+
+
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						₱{{ number_format($product->srp ?? 0, 2) }}
+																				</span>
+																		</td>
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
+																				</span>
+																		</td>
+
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
+																				</span>
+																		</td>
+
+																		<td class="whitespace-nowrap px-3 py-3">
+																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																						{{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
+																				</span>
+																		</td>
+																		<td class="max-w-xs px-3 py-3">
+																				<div class="relative inline-block w-full">
+																						<div class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ !empty($product->freebie_sku) ? $product->freebie_sku : '-' }}
+																						</div>
+																						<div
+																								class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max max-w-xs -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																						>
+																								{{ !empty($product->freebie_description) ? $product->freebie_description : 'No description found' }}
+																						</div>
+																				</div>
+																		</td>
+
+																</tr>
+														@empty
+																<tr>
+																		<td
+																				colspan="10"
+																				class="px-6 py-8 text-center text-gray-500"
+																		>
+																				No products found.
+																				<div class="mt-4 inline-flex items-center justify-center">
+																						<select
+																								id="no-products-action"
+																								onchange="if(this.value) window.location.href=this.value"
+																								class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
+																								style="border:none; outline:none; width:auto;"
+																						>
+																								<option
+																										value=""
+																										selected
+																										disabled
+																								>Click here to . . .</option>
+																								<option value="{{ route('products.create') }}">Add New Product</option>
+																								<option value="{{ route('products.import.show') }}">Import Products</option>
+																						</select>
+																				</div>
+																		</td>
+																</tr>
+
+																<style>
+																		#no-products-action {
+																				-webkit-appearance: none;
+																				-moz-appearance: none;
+																				appearance: none;
+																				background: transparent;
+																				border: none;
+																				cursor: pointer;
+																				padding-right: 1em;
+																				/* optional, space for text */
+																		}
+																</style>
+																<script>
+																		document.getElementById('no-products-action').addEventListener('change', function() {
+																				const url = this.value;
+																				if (url) {
+																						window.location.href = url;
+																				}
+																		});
+																</script>
+														@endforelse
+												</tbody>
+										</table>
 								</div>
 
-								<!-- Modern Product Table -->
-								<div class="overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
-										<div class="max-w-full overflow-x-auto">
-												<table class="w-full table-auto">
-														@php
-																$currentSort = request('sort', 'sku');
-																$currentDirection = request('direction', 'asc');
+								<!-- Enhanced Pagination -->
+								<div class="flex items-center justify-between rounded-b-3xl bg-white px-3 py-3 backdrop-blur-sm">
 
-																if (!function_exists('sortRoute')) {
-																    function sortRoute($column)
-																    {
-																        $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
-
-																        return route(
-																            'products.index',
-																            array_merge(request()->except(['page', 'direction', 'sort']), [
-																                'sort' => $column,
-																                'direction' => request('sort') === $column ? $direction : 'asc',
-																            ]),
-																        );
-																    }
-																}
-														@endphp
-														<thead>
-																<tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-																		<th class="text-blue w-16 rounded-tl-3xl py-4 pl-6 text-left text-sm font-bold uppercase">
-																				<div class="flex items-center">
-																						<input
-																								type="checkbox"
-																								id="select-all"
-																								class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
-																						>
-																				</div>
-																		</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">
-																				<a
-																						href="{{ sortRoute('sku') }}"
-																						class="group flex items-center space-x-2"
-																				>
-																						<span>SKU</span>
-																						@if ($currentSort === 'sku')
-																								<svg
-																										class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
-																										fill="none"
-																										stroke="currentColor"
-																										viewBox="0 0 24 24"
-																								>
-																										<path
-																												stroke-linecap="round"
-																												stroke-linejoin="round"
-																												stroke-width="2"
-																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																										></path>
-																								</svg>
-																						@else
-																								<svg
-																										class="h-4 w-4 opacity-60 group-hover:text-blue-400"
-																										fill="none"
-																										stroke="currentColor"
-																										viewBox="0 0 24 24"
-																								>
-																										<path
-																												stroke-linecap="round"
-																												stroke-linejoin="round"
-																												stroke-width="2"
-																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																										></path>
-																								</svg>
-																						@endif
-																				</a>
-																		</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">
-																				<a
-																						href="{{ sortRoute('description') }}"
-																						class="group flex items-center space-x-2"
-																				>
-																						<span>Product description</span>
-																						@if ($currentSort === 'description')
-																								<svg
-																										class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
-																										fill="none"
-																										stroke="currentColor"
-																										viewBox="0 0 24 24"
-																								>
-																										<path
-																												stroke-linecap="round"
-																												stroke-linejoin="round"
-																												stroke-width="2"
-																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																										></path>
-																								</svg>
-																						@else
-																								<svg
-																										class="h-4 w-4 opacity-60 group-hover:text-blue-400"
-																										fill="none"
-																										stroke="currentColor"
-																										viewBox="0 0 24 24"
-																								>
-																										<path
-																												stroke-linecap="round"
-																												stroke-linejoin="round"
-																												stroke-width="2"
-																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																										></path>
-																								</svg>
-																						@endif
-																				</a>
-																		</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">WMS Inventory</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Store Inventory</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Case Pack</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">SRP</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">C/BC Scheme</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">PO15 Scheme</th>
-																		<th class="text-blue px-6 py-4 text-left text-sm font-bold uppercase">Discount Scheme</th>
-																		<th class="text-blue rounded-tr-3xl px-6 py-4 text-left text-sm font-bold uppercase">Freebie SKU</th>
-																</tr>
-														</thead>
-														<tbody class="divide-y divide-gray-100/60">
-																@forelse ($products as $product)
-																		<tr
-																				class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-gray-100/60"
-																				data-product-id="{{ $product->id }}"
+										<!-- Rows per page -->
+										<form
+												method="GET"
+												action="{{ route('products.index') }}"
+												class="flex items-center space-x-2"
+										>
+												<div class="flex items-center overflow-hidden rounded-lg">
+														<span class="px-3 text-sm text-gray-600">
+																Rows
+														</span>
+														<select
+																name="per_page"
+																id="perPage"
+																class="border-0 px-10 py-1 text-sm ring-0"
+																onchange="this.form.submit()"
+														>
+																@foreach ([10, 25, 50, 100] as $size)
+																		<option
+																				value="{{ $size }}"
+																				{{ request('per_page', 10) == $size ? 'selected' : '' }}
 																		>
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<input
-																								type="checkbox"
-																								class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
-																								value="{{ $product->id }}"
-																								id="product-{{ $product->id }}"
-																						>
-																				</td>
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<div class="flex items-center">
-																								<span class="rounded-lg bg-gray-100/60 px-3 py-1 font-mono text-sm font-semibold text-gray-800">
-																										{{ $product->sku }}
-																								</span>
-																						</div>
-																				</td>
-																				<td class="max-w-xs px-6 py-4">
-																						<div class="relative inline-block w-full">
-																								<div class="peer max-w-full overflow-hidden truncate text-sm font-semibold text-gray-800">
-																										{{ $product->description }}
-																								</div>
-																								<div
-																										class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
-																								>
-																										{{ $product->description }}
-																								</div>
-																						</div>
-																				</td>
-
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ $product->wms_allocation_per_case ?? '-' }}
-																						</span>
-																				</td>
+																				{{ $size }}
+																		</option>
+																@endforeach
+														</select>
+												</div>
+										</form>
 
 
-																				<td class="px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ $product->allocation_per_case ?? '-' }}
-																						</span>
-																				</td>
-
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ $product->case_pack ?? '-' }}
-																						</span>
-																				</td>
-
-
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								₱{{ number_format($product->srp ?? 0, 2) }}
-																						</span>
-																				</td>
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
-																						</span>
-																				</td>
-
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
-																						</span>
-																				</td>
-
-																				<td class="whitespace-nowrap px-6 py-4">
-																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
-																						</span>
-																				</td>
-																				<td class="max-w-xs px-6 py-4">
-																						<div class="relative inline-block w-full">
-																								<div class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																										{{ !empty($product->freebie_sku) ? $product->freebie_sku : '-' }}
-																								</div>
-																								<div
-																										class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max max-w-xs -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
-																								>
-																										{{ !empty($product->freebie_description) ? $product->freebie_description : 'No description found' }}
-																								</div>
-																						</div>
-																				</td>
-
-																		</tr>
-																@empty
-																		<tr>
-																				<td
-																						colspan="10"
-																						class="px-6 py-8 text-center text-gray-500"
-																				>
-																						No products found.
-																						<div class="mt-4 inline-flex items-center justify-center">
-																								<select
-																										id="no-products-action"
-																										onchange="if(this.value) window.location.href=this.value"
-																										class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
-																										style="border:none; outline:none; width:auto;"
-																								>
-																										<option
-																												value=""
-																												selected
-																												disabled
-																										>Click here to . . .</option>
-																										<option value="{{ route('products.create') }}">Add New Product</option>
-																										<option value="{{ route('products.import.show') }}">Import Products</option>
-																								</select>
-																						</div>
-																				</td>
-																		</tr>
-
-																		<style>
-																				#no-products-action {
-																						-webkit-appearance: none;
-																						-moz-appearance: none;
-																						appearance: none;
-																						background: transparent;
-																						border: none;
-																						cursor: pointer;
-																						padding-right: 1em;
-																						/* optional, space for text */
-																				}
-																		</style>
-																		<script>
-																				document.getElementById('no-products-action').addEventListener('change', function() {
-																						const url = this.value;
-																						if (url) {
-																								window.location.href = url;
-																						}
-																				});
-																		</script>
-																@endforelse
-														</tbody>
-												</table>
-										</div>
-
-										<!-- Enhanced Pagination -->
-										<div class="rounded-b-3xl bg-white px-6 py-4 backdrop-blur-sm">
-												{{ $products->withPath(route('products.index'))->onEachSide(1)->links() }}
+										<!-- Laravel pagination -->
+										<div>
+												{{ $products->withPath(route('products.index'))->appends(['per_page' => request('per_page')])->onEachSide(1)->links() }}
 										</div>
 								</div>
 
 						</div>
+
 				</div>
+		</div>
 		</div>
 
 		<!-- Bulk Edit Modal -->
@@ -1044,7 +1164,7 @@
 										type === 'error' ? 'bg-red-500' : 'bg-blue-500';
 
 								const notification = $(`
-                                    <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
+                                    <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-3 py-3 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
                                         <div class="flex items-center">
                                             <span class="mr-3">${message}</span>
                                             <button class="ml-auto text-white hover:text-gray-200" onclick="$(this).closest('div').remove()">
@@ -1095,7 +1215,7 @@
 								list
 										.removeClass('hidden')
 										.html(`
-                                            <li class="px-6 py-4 text-gray-600 flex items-center">
+                                            <li class="px-3 py-3 text-gray-600 flex items-center">
                                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1125,7 +1245,7 @@
 
 														if (filtered.length === 0) {
 																list.append(`
-                                                                    <li class="px-6 py-4 text-gray-500 flex items-center justify-center">
+                                                                    <li class="px-3 py-3 text-gray-500 flex items-center justify-center">
                                                                         <div class="text-center">
                                                                             <p class="text-sm">No products found</p>
                                                                             <p class="text-xs text-gray-400 mt-1">Try adjusting your search terms</p>
@@ -1136,7 +1256,7 @@
 																filtered.forEach((item, index) => {
 																		const listItem = $('<li>')
 																				.addClass(
-																						'px-6 py-4 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0 opacity-0 translate-y-2'
+																						'px-3 py-3 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0 opacity-0 translate-y-2'
 																				)
 																				.attr('data-sku', item.sku)
 																				.attr('data-description', item.description)
@@ -1171,7 +1291,7 @@
 												error: function() {
 														searchInput.removeClass('animate-pulse');
 														list.html(`
-                            <li class="px-6 py-4 text-red-600 flex items-center">
+                            <li class="px-3 py-3 text-red-600 flex items-center">
                                 Search failed. Please try again.
                             </li>
                         `);

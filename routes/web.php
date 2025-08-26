@@ -95,7 +95,7 @@ Route::prefix('/users')->name('users.')->group(function () {
 
 
 use App\Http\Controllers\InventoryExportController;
-Route::prefix('others')->group(function () {
+Route::prefix('others')->name('others.')->group(function () {
     Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
         ->name('inventory.form');
 
@@ -103,6 +103,9 @@ Route::prefix('others')->group(function () {
         ->name('inventory.export');
 });
 
+// manually trigger wms allocations
+Route::post('/update-allocations', [ProductController::class, 'wmsUpdate'])
+    ->name('update.allocations');
 
 // unauthorized route
 Route::view('/403', 'errors.403');

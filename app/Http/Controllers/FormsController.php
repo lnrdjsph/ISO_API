@@ -57,7 +57,7 @@ class FormsController extends Controller
             'requested_by' => 'required|string',
             'mbc_card_no' => 'required|digits:16',
             'customer_name' => 'required|string',
-            'contact_number' => 'required|string|regex:/^[0-9]{11}$/',
+            'contact_number' => 'required|string|regex:/^[0-9]{11,12}$/',
 
             // Order items
             'orders' => 'required|array',
@@ -76,7 +76,7 @@ class FormsController extends Controller
                 'freebies_per_cs' => 'nullable|integer',
                 'amount' => 'required|numeric',
                 'remarks' => 'required|string',
-                'store_order_no' => 'required|string',
+                'store_order_no' => 'nullable|numeric',
 
                 'freebie_sku' => 'nullable|string',
                 'freebie_description' => 'nullable|string',

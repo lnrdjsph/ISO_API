@@ -221,7 +221,7 @@
 														];
 												@endphp
 												@forelse($users as $user)
-														<tr class="odd:white transition-colors even:bg-gray-50 hover:bg-indigo-50">
+														<tr class="hover:bg-indigo-50">
 																<td class="px-4 py-4">{{ $user->name }}</td>
 																<td class="px-4 py-4">{{ $user->email }}</td>
 																<td class="px-4 py-4 capitalize">{{ $user->role }}</td>

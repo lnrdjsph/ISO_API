@@ -324,49 +324,32 @@
 																</svg>
 														</div>
 														<div class="flex-1">
-																<div class="grid gap-4 md:grid-cols-2">
+																<div class="grid gap-4 md:grid-cols-[2fr_3fr]">
+
+																		<!-- CSV Columns & Rules -->
 																		<div>
-																				<h2 class="text-md mb-2 font-semibold text-gray-600">CSV Format Requirements</h2>
-																				<p class="text-md mb-2 text-gray-600">Your CSV file should have exactly 7 columns in this order:</p>
-																				<ul class="space-y-1 text-sm text-gray-700">
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-blue-500"></span>
-																								<span><strong>Column 1:</strong> SKU</span>
+																				<h2 class="mb-2 text-sm font-semibold text-gray-600">CSV Format Requirements</h2>
+																				<p class="mb-3 text-sm text-gray-600">Your CSV must have exactly <strong>9 columns</strong> in this order:</p>
+																				<ol class="list-[upper-alpha] space-y-1 pl-5 text-xs text-gray-700">
+																						<li><strong>SKU</strong> → Required. Numbers only (e.g. <code>102806178</code>).</li>
+																						<li><strong>Description</strong> → Required. Product name/details.</li>
+																						<li><strong>Store Allocation</strong> → Required. Must be numeric.</li>
+																						<li><strong>Case Pack</strong> → Optional. Whole numbers only (e.g. <code>24</code>).</li>
+																						<li><strong>SRP</strong> → Required. Valid price (₱ allowed, e.g. <code>₱15.50</code>).</li>
+																						<li><strong>C/BC Scheme</strong> → Optional. Use “Buy X, Get Y” format (e.g. <code>15+1</code>).</li>
+																						<li><strong>PO15 Scheme</strong> → Optional. Same “X+Y” format (e.g. <code>10+2</code>).</li>
+																						<li><strong>Discount Scheme</strong> → Optional.
+																								<ul class="list-disc pl-10">
+																										<li>Plain number → deducts fixed amount (e.g. <code>10</code> = ₱10 off).</li>
+																										<li>With % → deducts percentage (e.g. <code>10%</code> = 10% off).</li>
+																								</ul>
 																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-green-500"></span>
-																								<span><strong>Column 2:</strong> Product Description</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-green-500"></span>
-																								<span><strong>Column 3:</strong> Store Allocation</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-purple-500"></span>
-																								<span><strong>Column 4:</strong> Case Pack</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-orange-500"></span>
-																								<span><strong>Column 4:</strong> SRP</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-																								<span><strong>Column 5:</strong> Cash / Bank Card Scheme</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-pink-500"></span>
-																								<span><strong>Column 6:</strong> PO15 Scheme</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-pink-500"></span>
-																								<span><strong>Column 7:</strong> Discount Scheme</span>
-																						</li>
-																						<li class="flex items-center space-x-2">
-																								<span class="h-2 w-2 rounded-full bg-pink-500"></span>
-																								<span><strong>Column 8:</strong> Freebie SKU</span>
-																						</li>
-																				</ul>
+																						<li><strong>Freebie SKU</strong> → Optional. Digits only, multiple allowed via <code>|</code> or <code>/</code> (e.g. <code>9413022 | 8404794</code>).</li>
+																				</ol>
+
 																		</div>
+
+																		<!-- Example Table -->
 																		<div class="bg-white p-3">
 																				<p class="mb-2 text-xs font-semibold text-gray-500">EXAMPLE FORMAT:</p>
 																				<div class="overflow-x-auto">
@@ -380,41 +363,43 @@
 																												<th class="border border-gray-300 px-2 py-1 text-left">SRP</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">C/BC Scheme</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">PO15 Scheme</th>
-																												<th class="border border-gray-300 px-2 py-1 text-left">Discount Scheme</th>
+																												<th class="border border-gray-300 px-2 py-1 text-left">Discount</th>
 																												<th class="border border-gray-300 px-2 py-1 text-left">Freebie SKU</th>
 																										</tr>
 																								</thead>
 																								<tbody>
 																										<tr class="hover:bg-gray-50">
-																												<td class="border border-gray-300 px-2 py-1">102806178</td>
-																												<td class="border border-gray-300 px-2 py-1">Bearbrand Pwdr Mlk</td>
-																												<td class="border border-gray-300 px-2 py-1">500</td>
-																												<td class="border border-gray-300 px-2 py-1">24</td>
-																												<td class="border border-gray-300 px-2 py-1">15.50</td>
-																												<td class="border border-gray-300 px-2 py-1">15+1</td>
-																												<td class="border border-gray-300 px-2 py-1">15+2</td>
-																												<td class="border border-gray-300 px-2 py-1">10%</td>
-																												<td class="border border-gray-300 px-2 py-1">9413022 | 8404794</td>
+																												<td class="border px-2 py-1">102806178</td>
+																												<td class="border px-2 py-1">Bearbrand Pwdr Mlk</td>
+																												<td class="border px-2 py-1">500</td>
+																												<td class="border px-2 py-1">24</td>
+																												<td class="border px-2 py-1">15.50</td>
+																												<td class="border px-2 py-1">15+1</td>
+																												<td class="border px-2 py-1">15+2</td>
+																												<td class="border px-2 py-1">10%</td>
+																												<td class="border px-2 py-1">9413022 | 8404794</td>
 																										</tr>
 																										<tr class="hover:bg-gray-50">
-																												<td class="border border-gray-300 px-2 py-1">8404794</td>
-																												<td class="border border-gray-300 px-2 py-1">Lucky Me Xtra Hot</td>
-																												<td class="border border-gray-300 px-2 py-1">600</td>
-																												<td class="border border-gray-300 px-2 py-1">72</td>
-																												<td class="border border-gray-300 px-2 py-1">11.50</td>
-																												<td class="border border-gray-300 px-2 py-1">10+1</td>
-																												<td class="border border-gray-300 px-2 py-1">8+1</td>
-																												<td class="border border-gray-300 px-2 py-1">66</td>
-																												<td class="border border-gray-300 px-2 py-1">8404794</td>
+																												<td class="border px-2 py-1">8404794</td>
+																												<td class="border px-2 py-1">Lucky Me Xtra Hot</td>
+																												<td class="border px-2 py-1">600</td>
+																												<td class="border px-2 py-1">72</td>
+																												<td class="border px-2 py-1">11.50</td>
+																												<td class="border px-2 py-1">10+1</td>
+																												<td class="border px-2 py-1">8+1</td>
+																												<td class="border px-2 py-1">66</td>
+																												<td class="border px-2 py-1">8404794</td>
 																										</tr>
 																								</tbody>
 																						</table>
 																				</div>
 																		</div>
+
 																</div>
 														</div>
 												</div>
 										</div>
+
 
 										{{-- Action Buttons --}}
 										<div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">

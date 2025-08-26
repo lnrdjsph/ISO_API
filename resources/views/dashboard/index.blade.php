@@ -39,16 +39,16 @@
 												<h2 class="text-2xl font-semibold text-gray-800">Orders</h2>
 												<div class="rounded-full bg-blue-100 p-2 text-blue-600">
 														<svg
-																class="h-5 w-5"
+																class="h-5 w-5 flex-shrink-0"
 																fill="none"
 																stroke="currentColor"
-																stroke-width="2"
 																viewBox="0 0 24 24"
 														>
 																<path
 																		stroke-linecap="round"
 																		stroke-linejoin="round"
-																		d="M9 17v-6h13V5H6l-2 2v12a2 2 0 002 2h13v-6H9z"
+																		stroke-width="2"
+																		d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"
 																/>
 														</svg>
 												</div>
@@ -75,16 +75,16 @@
 												<h2 class="text-2xl font-semibold text-gray-800">Forms</h2>
 												<div class="rounded-full bg-indigo-100 p-2 text-indigo-600">
 														<svg
-																class="h-5 w-5"
+																class="h-5 w-5 flex-shrink-0"
 																fill="none"
 																stroke="currentColor"
-																stroke-width="2"
 																viewBox="0 0 24 24"
 														>
 																<path
 																		stroke-linecap="round"
 																		stroke-linejoin="round"
-																		d="M5.121 17.804A7.975 7.975 0 0112 15a7.975 7.975 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+																		stroke-width="2"
+																		d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 																/>
 														</svg>
 												</div>
@@ -108,16 +108,16 @@
 												<h2 class="text-2xl font-semibold text-gray-800">Products</h2>
 												<div class="rounded-full bg-green-100 p-2 text-green-600">
 														<svg
-																class="h-5 w-5"
+																class="h-5 w-5 flex-shrink-0"
 																fill="none"
 																stroke="currentColor"
-																stroke-width="2"
 																viewBox="0 0 24 24"
 														>
 																<path
 																		stroke-linecap="round"
 																		stroke-linejoin="round"
-																		d="M20 13V7a2 2 0 00-2-2h-4M4 13V7a2 2 0 012-2h4m4 0v6M4 17v2a2 2 0 002 2h4m8-4v2a2 2 0 01-2 2h-4m-4 0v-4"
+																		stroke-width="2"
+																		d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
 																/>
 														</svg>
 												</div>

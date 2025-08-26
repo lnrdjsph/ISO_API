@@ -17,6 +17,7 @@ use App\Jobs\FetchAllocationJob;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 
 
 
@@ -81,9 +82,10 @@ class ProductController extends Controller
                     $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
                 }
             }
+            $perPage = $request->get('per_page', 10); // default 10 if not provided
 
             $products = $productsQuery->orderBy($sort, $direction)
-                ->paginate(10)
+                ->paginate($perPage)
                 ->appends($request->query());
 
             $freebieSkus = collect($products->items())->pluck('freebie_sku')->filter()->unique()->toArray();
@@ -1205,6 +1207,25 @@ public function import(Request $request)
                 'errors' => ['Error processing file: ' . $e->getMessage()]
             ]);
         }
+    }
+
+    public function wmsUpdate(Request $request)
+    {
+        // Optionally: add authorization check here
+
+        // Increase maximum execution time to 30 minutes
+        set_time_limit(1800);
+
+        // Run the Artisan command
+        Artisan::call('products:update-allocations');
+
+        $output = Artisan::output();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Allocations updated successfully.',
+            'output' => $output
+        ]);
     }
 
 }
