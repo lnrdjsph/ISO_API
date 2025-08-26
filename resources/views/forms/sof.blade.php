@@ -428,8 +428,8 @@
 
 								</div>
 
-								<div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg">
-										{{-- <div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
+								{{-- <div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
+								<div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg">
 										{{-- test --}}
 										<div class="bg-white pt-4">
 												<div class="flex items-center justify-between">
@@ -2101,8 +2101,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										}
 								} else {
 										// test
-										orderItemForm.classList.add('');
-										// orderItemForm.classList.add('hidden');
+										// orderItemForm.classList.add('');
+										orderItemForm.classList.add('hidden');
 										alertShown = false; // reset so alert can be shown again
 								}
 						}
