@@ -23,6 +23,7 @@ class OrderItem extends Model
         'qty_per_cs',
         'freebies_per_cs',
         'total_qty',
+        'discount',
         'amount',
         'remarks',
         'store_order_no',

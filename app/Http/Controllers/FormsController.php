@@ -65,34 +65,54 @@ class FormsController extends Controller
         ]);
 
         foreach ($request->input('orders', []) as $index => $order) {
-            $validated['orders'][$index] = validator($order, [
-                'sku' => 'required|string',
-                'item_description' => 'required|string',
-                'price_per_pc' => 'required|numeric',
-                'price' => 'required|numeric',
-                'qty_per_cs' => 'nullable|integer',
-                'qty_per_pc' => 'required|integer',
-                'scheme' => 'nullable|string',
-                'total_qty' => 'required|integer',
-                'freebies_per_cs' => 'nullable|integer',
-                'amount' => 'required|numeric',
-                'remarks' => 'required|string',
-                'store_order_no' => 'nullable|numeric',
+            $validated['orders'][$index] = validator(
+                $order,
+                [
+                    'sku' => 'required|string',
+                    'item_description' => 'required|string',
+                    'price_per_pc' => 'required|numeric',
+                    'price' => 'required|numeric',
+                    'qty_per_cs' => 'required|integer',
+                    'qty_per_pc' => 'required|integer',
+                    'scheme' => 'nullable|string',
+                    'total_qty' => 'required|integer',
+                    'freebies_per_cs' => 'nullable|integer',
+                    'amount' => 'required|numeric',
+                    'remarks' => 'required|string',
+                    'store_order_no' => 'nullable|numeric',
 
-                'freebie_sku' => 'nullable|string',
-                'freebie_description' => 'nullable|string',
-                'freebie_price_per_pc' => 'nullable|numeric',
-                'freebie_price' => 'nullable|numeric',
-                'freebie_qty_per_pc' => 'nullable|integer',
+                    'freebie_sku' => 'nullable|string',
+                    'freebie_description' => 'nullable|string',
+                    'freebie_price_per_pc' => 'nullable|numeric',
+                    'freebie_price' => 'nullable|numeric',
+                    'freebie_qty_per_pc' => 'nullable|integer',
 
-                'sale_type' => 'nullable|string',
-                'discount' => 'nullable|string'
-                
-            ])->validate();
+                    'sale_type' => 'nullable|string',
+                    'discount' => 'nullable|string',
+                ],
+                [
+                    'sku.required' => "SKU is required for item no. " . ($index + 1),
+                    'item_description.required' => "Item description is required for item no. " . ($index + 1),
+                    'price_per_pc.required' => "Price/PC is required for item no. " . ($index + 1),
+                    'price_per_pc.numeric' => "Price/PC must be a number for item no. " . ($index + 1),
+                    'price.required' => "Price is required for item no. " . ($index + 1),
+                    'price.numeric' => "Price must be a number for item no. " . ($index + 1),
+                    'qty_per_cs.required' => "QTY/CS is required for item no. " . ($index + 1),
+                    'qty_per_cs.integer' => "QTY/CS must be a whole number for item no. " . ($index + 1),
+                    'qty_per_pc.required' => "QTY/PC is required for item no. " . ($index + 1),
+                    'qty_per_pc.integer' => "QTY/PC must be a whole number for item no. " . ($index + 1),
+                    'total_qty.required' => "Total quantity is required for item no. " . ($index + 1),
+                    'total_qty.integer' => "Total quantity must be a whole number for item no. " . ($index + 1),
+                    'amount.required' => "Amount is required for item no. " . ($index + 1),
+                    'amount.numeric' => "Amount must be a number for item no. " . ($index + 1),
+                    'remarks.required' => "Remarks are required for item no. " . ($index + 1),
+                ]
+            )->validate();
         }
-                // Save main order info
 
-                    // === Generate SOF ID ===
+        // Save main order info
+
+        // === Generate SOF ID ===
         $today = now()->format('Ymd');
         $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
             ->orderBy('sof_id', 'desc')
@@ -143,8 +163,8 @@ class FormsController extends Controller
                 'qty_per_cs' => $item['qty_per_cs'] ?? 0,
                 'freebies_per_cs' => 0,
                 'total_qty' => $item['qty_per_cs'] ?? 0,
-                'amount' => $item['amount'] ?? 0,
                 'discount' => $item['discount'] ?? 0,
+                'amount' => $item['amount'] ?? 0,
                 'remarks' => $item['remarks'] ?? null,
                 'store_order_no' => $item['store_order_no'] ?? null,
                 'item_type' => 'MAIN',

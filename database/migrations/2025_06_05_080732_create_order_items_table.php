@@ -20,6 +20,7 @@ class CreateOrderItemsTable extends Migration
             $table->integer('qty_per_pc')->default(0);
             $table->integer('qty_per_cs')->default(0);
             $table->string('freebies_per_cs')->default(0); // ❗ Change to integer for consistency
+            $table->string('discount')->default(0);
             $table->integer('total_qty')->default(0);
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('remarks')->nullable();

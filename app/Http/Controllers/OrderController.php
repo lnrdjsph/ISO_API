@@ -129,7 +129,7 @@ class OrderController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'id' => 'required|exists:orders,id',
+            // 'id' => 'required|exists:orders,id',
             // Customer Info
             'mbc_card_no' => 'nullable|string|max:255',
             'customer_name' => 'nullable|string|max:255',
@@ -156,6 +156,7 @@ class OrderController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.qty_per_pc' => 'required|integer|min:0',
             'items.*.total_qty' => 'required|integer|min:0',
+            'items.*.discount' => 'required|string',
             'items.*.amount' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string|max:255',
             'items.*.store_order_no' => 'nullable|string|max:255',
@@ -204,6 +205,7 @@ class OrderController extends Controller
                     'price' => $itemData['price'],
                     'qty_per_pc' => $itemData['qty_per_pc'],
                     'total_qty' => $itemData['total_qty'],
+                    'discount' => $itemData['discount'],
                     'amount' => $calculatedAmount,
                     'remarks' => $itemData['remarks'],
                     'store_order_no' => $itemData['store_order_no'],
@@ -235,5 +237,19 @@ class OrderController extends Controller
         $order->save();
 
         return redirect()->route('orders.index')->with('success', 'Order archived successfully.');
+    }
+
+
+    public function restore(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'pending';
+        $order->save();
+
+        return redirect()->route('orders.index')->with('success', 'Order restored successfully.');
     }
 }

@@ -227,7 +227,7 @@
 																		name="contact_number"
 																		value="{{ old('contact_number') }}"
 																		type="tel"
-																		pattern="[0-9]{11}"
+																		pattern="[0-9]{11,12}"
 																		maxlength="12"
 																		required
 																		class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
@@ -600,6 +600,7 @@
 																												placeholder="Enter SKU or Description"
 																												autocomplete="off"
 																												name="orders[{{ $i }}][display]"
+																												value="{{ old("orders.$i.display") }}"
 																										>
 
 																										<ul class="search-results absolute z-10 mt-1 hidden max-h-60 overflow-y-auto rounded border border-gray-200 bg-white shadow"></ul>
@@ -1045,24 +1046,24 @@
 
 										<!-- Totals and Signatures -->
 										{{-- <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-6 md:space-y-0">
-                <div class="text-xl font-bold text-indigo-600">₱ 0.00</div>
-                <div class="space-y-4 text-sm text-gray-600">
-                <div>
-                    <p><strong>EMMA M. BARING 02/17/25</strong></p>
-                    <p>MS. MARINETH PAITON</p>
-                </div>
-                <div class="flex space-x-12">
-                    <div>
-                    <p>Prepared by:</p>
-                    <p class="text-xs">(printed name, signature & date)</p>
-                    </div>
-                    <div>
-                    <p>Approved by:</p>
-                    <p class="text-xs">(printed name, signature & date)</p>
-                    </div>
-                </div>
-                </div>
-            </div> --}}
+												<div class="text-xl font-bold text-indigo-600">₱ 0.00</div>
+												<div class="space-y-4 text-sm text-gray-600">
+												<div>
+														<p><strong>EMMA M. BARING 02/17/25</strong></p>
+														<p>MS. MARINETH PAITON</p>
+												</div>
+												<div class="flex space-x-12">
+														<div>
+														<p>Prepared by:</p>
+														<p class="text-xs">(printed name, signature & date)</p>
+														</div>
+														<div>
+														<p>Approved by:</p>
+														<p class="text-xs">(printed name, signature & date)</p>
+														</div>
+												</div>
+												</div>
+										</div> --}}
 
 										<!-- Submit Button -->
 										<button
@@ -1191,7 +1192,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								updateCounter();
 								updateRowNumbers();
 								attachCollapseListener(newRow);
-								attachSchemeTypeListener(newRow);
+								// attachSchemeTypeListener(newRow);
 						});
 
 						document.addEventListener('click', function(e) {
@@ -1305,7 +1306,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 				document.querySelectorAll('.order-row').forEach(row => {
 						attachCollapseListener(row);
-						// attachSchemeTypeListener(row); 
+						// attachSchemeTypeListener(row);
 				});
 
 
@@ -1386,7 +1387,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 				});
 
 				document.addEventListener("DOMContentLoaded", () => {
-						const fields = document.querySelectorAll("input, select, textarea");
+						const orderForm = document.querySelector(".order-form");
+						if (!orderForm) return;
+
+						const fields = orderForm.querySelectorAll("input, select, textarea");
 
 						function toggleHighlight(el) {
 								if (el.value && (el.value.trim() !== "" || el.value === "0")) {
@@ -1405,6 +1409,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								el.addEventListener("change", () => toggleHighlight(el));
 						});
 				});
+
 
 
 
@@ -1778,39 +1783,33 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const searchInput = container.find('.product-search, .freebie-search');
 						const isFreebie = searchInput.hasClass('freebie-search');
 
-						function setAndHighlight(input, value) {
-								// Set value
+						function setValue(input, value) {
+								// Just set value
 								input.val(value);
 
-								// Highlight if value is not empty or zero
-								if (value !== null && value !== '' && Number(value) !== 0) {
-										input.addClass('bg-indigo-50');
-								} else {
-										input.removeClass('bg-indigo-50');
-								}
-
-								// Trigger input to show suggestions if applicable
+								// Trigger input for qty fields to update suggestions/calculations
 								if (input.hasClass('qty-per-pc') || input.hasClass('freebie-qty-per-pc')) {
 										input.trigger('input');
 								}
 						}
 
-
 						if (isFreebie) {
-								setAndHighlight(row.find('.freebie-search'), sku && description ? `${sku} - ${description}` : '');
-								setAndHighlight(row.find('.freebie-sku-hidden'), sku);
-								setAndHighlight(row.find('.freebie-desc-hidden'), description);
-								setAndHighlight(row.find('.freebie-price-per-pc').trigger('input'), pricePerPc);
-								setAndHighlight(row.find('.freebie-qty-per-pc').trigger('input'), casePack);
+								setValue(row.find('.freebie-search'), sku && description ? `${sku} - ${description}` : '');
+								setValue(row.find('.freebie-sku-hidden'), sku);
+								setValue(row.find('.freebie-desc-hidden'), description);
+								setValue(row.find('.freebie-price-per-pc'), pricePerPc);
+								setValue(row.find('.freebie-qty-per-pc'), casePack);
 
 						} else {
-								setAndHighlight(row.find('.product-search'), sku && description ? `${sku} - ${description}` : '');
-								setAndHighlight(row.find('.sku-hidden'), sku);
-								setAndHighlight(row.find('.desc-hidden'), description);
-								setAndHighlight(row.find('.price-per-pc'), pricePerPc);
-								setAndHighlight(row.find('.qty-per-pc'), casePack);
+								setValue(row.find('.product-search'), sku && description ? `${sku} - ${description}` : '');
+								setValue(row.find('.sku-hidden'), sku);
+								setValue(row.find('.desc-hidden'), description);
+								setValue(row.find('.price-per-pc'), pricePerPc);
+								setValue(row.find('.qty-per-pc'), casePack);
+
 								const qtyInput = row.find('.qty-per-pc');
 								qtyInput.trigger('input'); // will call showResults()
+
 								const paymentMode = $('[name="mode_payment"]').val();
 								let scheme = '';
 								if (paymentMode === 'PO15%') {
@@ -1818,7 +1817,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								} else if (paymentMode === 'Cash / Bank Card') {
 										scheme = cashBankCardScheme || '';
 								}
-								setAndHighlight(row.find('.scheme-input'), scheme);
+								setValue(row.find('.scheme-input'), scheme);
 
 								// Freebie auto-fill loopback
 								if (freebieSku) {
@@ -1833,6 +1832,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 						container.find('.search-results').empty().addClass('hidden');
 				});
+
 
 
 				$(document).ready(function() {
@@ -2086,26 +2086,37 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								if (allRequiredFilled()) {
 										orderItemForm.classList.remove('hidden');
 
-										if (!alertShown) {
-												alertShown = true;
-												setTimeout(() => {
-														Swal.fire({
-																icon: 'success',
-																title: 'Info Complete',
-																text: 'Proceed to add order items.',
-																confirmButtonColor: '#3085d6'
-														}).then(() => {
-																setTimeout(() => scrollToElement(orderItemForm, headerOffset), 200);
-														});
-												}, 200);
-										}
+										// Smooth scroll directly (no Swal)
+										setTimeout(() => scrollToElement(orderItemForm, headerOffset), 200);
 								} else {
-										// test
-										// orderItemForm.classList.add('');
 										orderItemForm.classList.add('hidden');
-										alertShown = false; // reset so alert can be shown again
 								}
 						}
+
+						// function checkForm() {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																if (allRequiredFilled()) {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																orderItemForm.classList.remove('hidden');
+
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																if (!alertShown) {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																alertShown = true;
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																setTimeout(() => {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																Swal.fire({
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																icon: 'success',
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																title: 'Info Complete',
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																text: 'Proceed to add order items.',
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																confirmButtonColor: '#3085d6'
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}).then(() => {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																setTimeout(() => scrollToElement(orderItemForm, headerOffset), 200);
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																});
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}, 200);
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																} else {
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																// test
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																// orderItemForm.classList.add('');
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																orderItemForm.classList.add('hidden');
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																alertShown = false; // reset so alert can be shown again
+						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}
+						// }
 
 						// Initial runs
 						toggleDeliveryGroup();
@@ -2127,6 +2138,267 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 						}, true); // use capture phase to catch blur events
 				});
+
+				// Add this function to your existing JavaScript code
+
+				function setupInputHighlighting() {
+						// Store all monitored elements for continuous checking
+						let monitoredElements = new Set();
+
+						// Function to check and update highlight for a specific input/select
+						function updateInputHighlight(element) {
+								const hasValue = element.value && element.value.trim() !== '';
+
+								if (hasValue) {
+										// Add indigo background highlight
+										element.classList.add('bg-indigo-50', 'border-indigo-300');
+										element.classList.remove('bg-white', 'bg-yellow-50');
+								} else {
+										// Remove indigo highlight and restore original classes
+										element.classList.remove('bg-indigo-50', 'border-indigo-300');
+
+										// Restore original background based on element type or data attributes
+										if (element.hasAttribute('x-model') && element.getAttribute('x-model').includes('qty')) {
+												// For Alpine.js controlled inputs that should be yellow when empty
+												element.classList.add('bg-yellow-50');
+										} else {
+												element.classList.add('bg-white');
+										}
+								}
+						}
+
+						// Function to check all monitored elements
+						function checkAllElements() {
+								monitoredElements.forEach(element => {
+										// Make sure element is still in the DOM
+										if (document.contains(element)) {
+												updateInputHighlight(element);
+										} else {
+												// Remove from monitoring if element is no longer in DOM
+												monitoredElements.delete(element);
+										}
+								});
+						}
+
+						// Function to setup event listeners for a container
+						function setupContainerListeners(container) {
+								// Select all inputs and selects within the container
+								const elements = container.querySelectorAll('input[type="text"], input[type="number"], select, input[name*="display"], input[class*="search"]');
+
+								elements.forEach(element => {
+										// Skip hidden inputs and readonly inputs
+										if (element.type === 'hidden' || element.hasAttribute('readonly')) {
+												return;
+										}
+
+										// Add to monitored elements set
+										monitoredElements.add(element);
+
+										// Initial highlight check
+										updateInputHighlight(element);
+
+										// Add comprehensive event listeners
+										const events = ['input', 'change', 'blur', 'keyup', 'paste', 'focus'];
+										events.forEach(eventType => {
+												element.addEventListener(eventType, () => {
+														// Small delay to ensure programmatic changes are captured
+														setTimeout(() => updateInputHighlight(element), 10);
+												});
+										});
+
+										// Use MutationObserver to watch for programmatic value changes
+										const observer = new MutationObserver(() => {
+												updateInputHighlight(element);
+										});
+
+										observer.observe(element, {
+												attributes: true,
+												attributeFilter: ['value', 'data-selected']
+										});
+
+										// Store observer reference for cleanup if needed
+										element._highlightObserver = observer;
+								});
+						}
+
+						// Continuous monitoring with interval
+						setInterval(checkAllElements, 500); // Check every 500ms
+
+						// Also check on any click or focus events in the document
+						document.addEventListener('click', () => {
+								setTimeout(checkAllElements, 50);
+						});
+
+						document.addEventListener('focusin', () => {
+								setTimeout(checkAllElements, 50);
+						});
+
+						// Setup listeners for existing rows
+						document.querySelectorAll('.order-row').forEach(row => {
+								setupContainerListeners(row);
+						});
+
+						// Setup listeners for dynamically added rows
+						const observer = new MutationObserver(mutations => {
+								mutations.forEach(mutation => {
+										mutation.addedNodes.forEach(node => {
+												if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('order-row')) {
+														setupContainerListeners(node);
+												}
+										});
+								});
+								// Also check all elements after DOM changes
+								setTimeout(checkAllElements, 100);
+						});
+
+						// Observe the order-items container for new rows
+						const orderItemsContainer = document.getElementById('order-items');
+						if (orderItemsContainer) {
+								observer.observe(orderItemsContainer, {
+										childList: true,
+										subtree: true
+								});
+						}
+
+						// Watch for form changes that might affect values
+						const form = document.querySelector('form');
+						if (form) {
+								form.addEventListener('input', () => {
+										setTimeout(checkAllElements, 50);
+								});
+
+								form.addEventListener('change', () => {
+										setTimeout(checkAllElements, 50);
+								});
+						}
+
+						// Expose function globally for manual triggering
+						window.checkInputHighlights = checkAllElements;
+				}
+
+				// Updated version of your existing DOMContentLoaded listener
+				document.addEventListener('DOMContentLoaded', function() {
+						const addButton = document.getElementById('add-row-btn');
+						const productCounter = document.getElementById('product-counter');
+
+						// Initialize input highlighting
+						setupInputHighlighting();
+
+						addButton.addEventListener('click', function() {
+								const container = document.getElementById('order-items');
+								const newRow = container.children[0].cloneNode(true);
+
+								// Reset input values and update input names
+								newRow.querySelectorAll('input').forEach(input => {
+										input.value = '';
+										input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+										input.removeAttribute('data-selected');
+
+										// Reset background classes for new row
+										input.classList.remove('bg-indigo-50', 'border-indigo-300');
+										if (input.hasAttribute('x-model') && input.getAttribute('x-model').includes('qty')) {
+												input.classList.add('bg-yellow-50');
+										} else if (!input.hasAttribute('readonly') && input.type !== 'hidden') {
+												input.classList.add('bg-white');
+										}
+								});
+
+								// Reset select elements
+								newRow.querySelectorAll('select').forEach(select => {
+										select.selectedIndex = 0;
+										select.classList.remove('bg-indigo-50', 'border-indigo-300');
+										select.classList.add('bg-white');
+								});
+
+								// Reset output display spans
+								newRow.querySelector('.price-display').textContent = '0.00';
+								newRow.querySelector('.amount-display').textContent = '0.00';
+								newRow.querySelector('.total-qty-display').textContent = '0';
+
+								// Reset summary table
+								const summaryTableBody = newRow.querySelector('.summary-body');
+								if (summaryTableBody) {
+										summaryTableBody.innerHTML = '';
+								}
+								newRow.querySelector('.breakdown-price').textContent = '';
+								newRow.querySelector('.breakdown-amount').textContent = '';
+
+								// Hide any open dropdowns
+								newRow.querySelectorAll('.sku-results, .desc-results, .search-results').forEach(ul => {
+										ul.innerHTML = '';
+										ul.classList.add('hidden');
+								});
+
+								// Apply initial hidden state for animation
+								newRow.classList.add('overflow-hidden', 'transition-all', 'duration-300', 'ease-in-out');
+								newRow.classList.remove('max-h-[1000px]', 'opacity-100', 'py-4', 'mb-6');
+								newRow.classList.add('max-h-0', 'opacity-0', 'py-0', 'mb-0');
+
+								container.appendChild(newRow);
+
+								// Force reflow to properly trigger animation
+								void newRow.offsetWidth;
+
+								// Trigger the visible state
+								newRow.classList.replace('max-h-0', 'max-h-[1000px]');
+								newRow.classList.replace('opacity-0', 'opacity-100');
+								newRow.classList.replace('py-0', 'py-4');
+								newRow.classList.replace('mb-0', 'mb-6');
+
+								rowIndex = document.querySelectorAll('.order-row').length;
+
+								updateRemoveButtonsState();
+								updateCounter();
+								updateRowNumbers();
+								attachCollapseListener(newRow);
+
+								// Setup highlighting for the new row
+								setTimeout(() => {
+										setupContainerListeners(newRow);
+										// Force a check after the row is fully set up
+										setTimeout(() => {
+												if (window.checkInputHighlights) {
+														window.checkInputHighlights();
+												}
+										}, 200);
+								}, 100);
+						});
+
+						document.addEventListener('click', function(e) {
+								if (e.target.closest('.remove-row')) {
+										const allRows = document.querySelectorAll('.order-row');
+										if (allRows.length > 1) {
+												const row = e.target.closest('.order-row');
+
+												// Animate to hidden state
+												row.classList.replace('max-h-[1000px]', 'max-h-0');
+												row.classList.replace('opacity-100', 'opacity-0');
+												row.classList.replace('py-4', 'py-0');
+												row.classList.replace('mb-6', 'mb-0');
+
+												// Remove after transition
+												row.addEventListener('transitionend', () => {
+														row.remove();
+														updateRemoveButtonsState();
+														updateCounter();
+														updateRowNumbers();
+												}, {
+														once: true
+												});
+										}
+								}
+						});
+
+						updateRemoveButtonsState();
+						updateCounter();
+						updateRowNumbers();
+				});
+
+				// Helper function to manually trigger highlight update (useful for product selection dropdowns)
+				function triggerHighlightUpdate(element) {
+						const event = new CustomEvent('product-selected');
+						element.dispatchEvent(event);
+				}
 		</script>
 		<style>
 				@keyframes glow {
