@@ -176,7 +176,7 @@
 								/* icon stroke color */
 								border-radius: 0.8rem;
 								/* padding: 0 1rem; */
-								width: 12.5rem;
+								/* max-width: 12.5rem; */
 
 						}
 
