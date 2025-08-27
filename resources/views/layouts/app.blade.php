@@ -47,16 +47,17 @@
 
 						/* Sidebar width states with strict containment */
 						.sidebar-expanded {
-								width: 14rem;
-								min-width: 14rem;
-								max-width: 14rem;
+								width: 13rem;
+								max-width: 13rem;
+								min-width: 13rem;
 						}
 
 						.sidebar-collapsed {
 								width: 4.5rem;
-								min-width: 4.5rem;
 								max-width: 4.5rem;
+								min-width: 4.5rem;
 						}
+
 
 						/* Sidebar container with strict overflow control */
 						#sidebar {
@@ -70,7 +71,8 @@
 
 						/* Animate text fade + slide */
 						.nav-text,
-						.logo-text {
+						.logo-text,
+						.nav-item {
 								transition: opacity 0.25s ease, transform 0.25s ease;
 								opacity: 1;
 								transform: translateX(0);
@@ -99,6 +101,7 @@
 								overflow: hidden;
 								white-space: nowrap;
 						}
+
 
 						/* Show tooltips when collapsed */
 						.tooltip {
@@ -175,9 +178,13 @@
 								color: #1D4ED8;
 								/* icon stroke color */
 								border-radius: 0.8rem;
-								/* padding: 0 1rem; */
-								/* max-width: 12.5rem; */
+								/* padding: 0px; */
+								width: 11.5rem;
+						}
 
+						.sidebar-collapsed .group.active {
+								width: auto;
+								/* or width: 4.5rem to match collapsed sidebar */
 						}
 
 						/* Make SVG inherit the color */
@@ -307,7 +314,7 @@
 
 				<aside
 						id="sidebar"
-						class="sidebar-expanded fixed z-30 flex hidden flex-col bg-white shadow-xl md:block"
+						class="sidebar-expanded fixed z-30 flex hidden flex-col bg-white shadow-xl"
 				>
 
 

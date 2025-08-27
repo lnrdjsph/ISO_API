@@ -64,7 +64,7 @@
 												</thead>
 												<tbody class="divide-y divide-gray-100 bg-white">
 														@forelse($orders as $order)
-																<tr>
+																<tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->channel_order }}</td>

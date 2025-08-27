@@ -331,6 +331,10 @@
 														<tr>
 																<th
 																		rowspan="2"
+																		class="border px-2 py-1 text-center"
+																>No.</th>
+																<th
+																		rowspan="2"
 																		class="border px-2 py-1 text-left"
 																>SKU</th>
 																<th
@@ -357,6 +361,10 @@
 																		rowspan="2"
 																		class="border px-2 py-1 text-center"
 																>Total Qty</th>
+																<th
+																		rowspan="2"
+																		class="border px-2 py-1 text-center"
+																>Discount</th>
 																<th
 																		rowspan="2"
 																		class="border px-2 py-1 text-center"
@@ -395,6 +403,10 @@
 																				name="items[{{ $loop->index }}][id]"
 																				value="{{ $item->id }}"
 																		>
+																		{{-- Number column --}}
+																		<td class="border p-2 text-center font-medium">
+																				{{ $loop->iteration }}
+																		</td>
 																		<td
 																				class="relative border p-2"
 																				contenteditable="true"
@@ -517,6 +529,16 @@
 																				name="items[{{ $loop->index }}][total_qty]"
 																				value="{{ $item->total_qty }}"
 																		>
+																		<td
+																				class="border p-2 text-center"
+																				contenteditable="true"
+																				data-field="discount"
+																		>{{ $item->discount == 0 ? '-' : $item->discount }}</td>
+																		<input
+																				type="hidden"
+																				name="items[{{ $loop->index }}][discount]"
+																				value="{{ $item->discount }}"
+																		>
 
 																		<td
 																				class="border p-2 text-center"
@@ -575,7 +597,6 @@
 										>
 												<div class="mb-4 flex items-center justify-between">
 														<h2 class="text-xs font-semibold uppercase tracking-widest text-gray-700">Grand Total</h2>
-														{{-- <span class="text-sm text-gray-500">{{ new Date() . toLocaleDateString() }}</span> --}}
 												</div>
 
 												<div class="mb-4 items-center justify-between border-t border-gray-200 pt-4">
@@ -585,11 +606,29 @@
 												</div>
 										</div>
 
-
-										<!-- Spacer to push button to bottom -->
+										<!-- Spacer -->
 										<div class="flex-grow"></div>
 
-										<!-- Changes counter above button -->
+
+
+										<!-- Success / Error alerts (moved here) -->
+										@if (session('success'))
+												<div class="mb-4 rounded-lg border border-green-400 bg-green-100 px-4 py-3 text-sm text-green-700">
+														✅ {{ session('success') }}
+												</div>
+										@endif
+
+										@if ($errors->any())
+												<div class="mb-4 rounded-lg border border-red-400 bg-red-100 px-4 py-3 text-sm text-red-700">
+														<strong>⚠ Whoops!</strong> There were some problems:
+														<ul class="mt-2 list-disc pl-5">
+																@foreach ($errors->all() as $error)
+																		<li>{{ $error }}</li>
+																@endforeach
+														</ul>
+												</div>
+										@endif
+										<!-- Changes counter -->
 										<div
 												id="changesCounter"
 												class="mb-3 hidden text-center text-sm text-gray-600"
@@ -599,8 +638,7 @@
 														class="font-semibold"
 												>0</span> field(s) modified
 										</div>
-
-										<!-- Submit button fixed at bottom -->
+										<!-- Submit button -->
 										<button
 												type="submit"
 												id="submitButton"
@@ -609,15 +647,30 @@
 										>
 												<span id="submitButtonText">No Changes to Save</span>
 										</button>
-										<button
-												type="button"
-												id="archiveButton"
-												class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-gray-700 px-6 py-3 font-medium text-white shadow-sm hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2"
-										>
-												Archive
-										</button>
+
+										@if ($order->order_status === 'archived')
+												<!-- Restore button -->
+												<button
+														type="button"
+														id="restoreButton"
+														class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-green-700 px-6 py-3 font-medium text-white shadow-sm hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-800 focus:ring-offset-2"
+												>
+														Restore
+												</button>
+										@else
+												<!-- Archive button -->
+												<button
+														type="button"
+														id="archiveButton"
+														class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-gray-700 px-6 py-3 font-medium text-white shadow-sm hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2"
+												>
+														Archive
+												</button>
+										@endif
 
 								</aside>
+
+
 
 						</div>
 				</div>
@@ -657,6 +710,7 @@
 																'td[data-field="qty_per_cs"]',
 																'td[data-field="freebies_per_cs"]',
 																'td[data-field="scheme"]',
+																'td[data-field="discount"]'
 														].join(","),
 														(e) => {
 																const row = e.target.closest("tr");
@@ -712,6 +766,7 @@
 																		totalQty: row.querySelector('[data-field="total_qty"]'),
 																		price: row.querySelector('[data-field="price"]'),
 																		amount: row.querySelector('[data-field="amount"]'),
+																		discount: row.querySelector('[data-field="discount"]'),
 																};
 
 																const inputs = {
@@ -722,6 +777,7 @@
 																		totalQty: row.querySelector(`input[name="items[${index}][total_qty]"]`),
 																		price: row.querySelector(`input[name="items[${index}][price]"]`),
 																		amount: row.querySelector(`input[name="items[${index}][amount]"]`),
+																		discount: row.querySelector(`input[name="items[${index}][discount]"]`),
 																};
 
 																const values = this.extractValues(cells);
@@ -782,6 +838,7 @@
 																				totalQty: r.querySelector('[data-field="total_qty"]'),
 																				price: r.querySelector('[data-field="price"]'),
 																				amount: r.querySelector('[data-field="amount"]'),
+																				discount: r.querySelector('[data-field="discount"]'),
 																		};
 
 																		const inputs = {
@@ -792,6 +849,7 @@
 																				totalQty: r.querySelector(`input[name="items[${idx}][total_qty]"]`),
 																				price: r.querySelector(`input[name="items[${idx}][price]"]`),
 																				amount: r.querySelector(`input[name="items[${idx}][amount]"]`),
+																				discount: r.querySelector(`input[name="items[${idx}][discount]"]`),
 																		};
 
 																		const values = this.extractValues(cells);
@@ -824,6 +882,7 @@
 														qtyPerPc: this.parseInteger(cells.qtyPerPc?.textContent),
 														qtyPerCs: this.parseInteger(cells.qtyPerCs?.textContent),
 														freebiesPerCs: this.parseInteger(cells.freebiesPerCs?.textContent),
+														discount: cells.discount?.textContent.trim() || "",
 												};
 										}
 
@@ -851,20 +910,28 @@
 												const fullSets = Math.floor(values.qtyPerCs / base);
 												const calculatedFreebies = fullSets * free;
 
-												// If freebiesPerCs is blank or '-', do NOT override with calculation
 												let finalFreebies = 0;
 												if (values.freebiesPerCs > 0) {
 														finalFreebies = values.freebiesPerCs;
-												} else if (values.freebiesPerCs === 0) {
-														finalFreebies = 0;
-												} else {
-														// freebiesPerCs is blank or '-', so do not apply freebies calculation
-														finalFreebies = 0;
 												}
 
 												const totalCases = values.qtyPerCs + finalFreebies;
-												const pricePerCase = values.pricePerPc * values.qtyPerPc;
-												const totalAmount = pricePerCase * values.qtyPerCs;
+												let pricePerCase = values.pricePerPc * values.qtyPerPc;
+
+												// === APPLY DISCOUNT ON UNIT PRICE ===
+												if (values.discount) {
+														if (values.discount.includes("%")) {
+																const percent = parseFloat(values.discount.replace("%", "").trim()) || 0;
+																pricePerCase -= pricePerCase * (percent / 100);
+														} else {
+																const flat = parseFloat(values.discount.replace(/[^\d.-]/g, "")) || 0;
+																pricePerCase -= flat; // flat discount per case
+														}
+												}
+
+												if (pricePerCase < 0) pricePerCase = 0; // safeguard
+
+												let totalAmount = pricePerCase * values.qtyPerCs;
 
 												return {
 														totalQty: totalCases,
@@ -873,38 +940,9 @@
 														freebies: finalFreebies,
 												};
 										}
-										performCalculations(values, schemeValue) {
-												let [base, free] = schemeValue
-														.replace(/[^0-9+]/g, "")
-														.split("+")
-														.map((n) => parseInt(n) || 0);
-												if (base === 0) base = 1;
 
-												const fullSets = Math.floor(values.qtyPerCs / base);
-												const calculatedFreebies = fullSets * free;
 
-												// If freebiesPerCs is blank or '-', do NOT override with calculation
-												let finalFreebies = 0;
-												if (values.freebiesPerCs > 0) {
-														finalFreebies = values.freebiesPerCs;
-												} else if (values.freebiesPerCs === 0) {
-														finalFreebies = 0;
-												} else {
-														// freebiesPerCs is blank or '-', so do not apply freebies calculation
-														finalFreebies = 0;
-												}
 
-												const totalCases = values.qtyPerCs + finalFreebies;
-												const pricePerCase = values.pricePerPc * values.qtyPerPc;
-												const totalAmount = pricePerCase * values.qtyPerCs;
-
-												return {
-														totalQty: totalCases,
-														price: pricePerCase,
-														amount: totalAmount,
-														freebies: finalFreebies,
-												};
-										}
 
 										updateRowDisplay(cells, inputs, calc) {
 												const safeFixed = (num) => (isNaN(num) ? "0.00" : num.toFixed(2));
@@ -927,6 +965,7 @@
 												if (inputs.totalQty) inputs.totalQty.value = calc.totalQty;
 												if (inputs.price) inputs.price.value = safeFixed(calc.price);
 												if (inputs.amount) inputs.amount.value = safeFixed(calc.amount);
+												if (inputs.discount) inputs.discount.value = cells.discount?.textContent.trim() || "";
 										}
 
 										updateFreebieRow(row, freebieQty) {
@@ -1327,45 +1366,89 @@
 								}, 100);
 						});
 
-						document.getElementById('archiveButton').addEventListener('click', function() {
-								Swal.fire({
-										title: 'Are you sure?',
-										text: "This order will be archived!",
-										icon: 'warning',
-										showCancelButton: true,
-										confirmButtonColor: '#3085d6',
-										cancelButtonColor: '#aaa',
-										confirmButtonText: 'Yes, archive it!',
-								}).then((result) => {
-										if (result.isConfirmed) {
-												// Submit the form dynamically
-												const form = document.createElement('form');
-												form.method = 'POST';
-												form.action = '{{ route('orders.archive') }}';
-												form.style.display = 'none';
+						document.addEventListener('DOMContentLoaded', function() {
+								const archiveBtn = document.getElementById('archiveButton');
+								const restoreBtn = document.getElementById('restoreButton');
 
-												// CSRF token
-												const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-												const inputCsrf = document.createElement('input');
-												inputCsrf.type = 'hidden';
-												inputCsrf.name = '_token';
-												inputCsrf.value = csrfToken;
-												form.appendChild(inputCsrf);
+								if (archiveBtn) {
+										archiveBtn.addEventListener('click', function() {
+												Swal.fire({
+														title: 'Are you sure?',
+														text: "This order will be archived!",
+														icon: 'warning',
+														showCancelButton: true,
+														confirmButtonColor: '#3085d6',
+														cancelButtonColor: '#aaa',
+														confirmButtonText: 'Yes, archive it!',
+												}).then((result) => {
+														if (result.isConfirmed) {
+																const form = document.createElement('form');
+																form.method = 'POST';
+																form.action = '{{ route('orders.archive') }}';
+																form.style.display = 'none';
 
-												// Get order id from existing input
-												const existingIdInput = document.querySelector('input[name="id"]');
-												const orderId = existingIdInput ? existingIdInput.value : '';
+																const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+																const inputCsrf = document.createElement('input');
+																inputCsrf.type = 'hidden';
+																inputCsrf.name = '_token';
+																inputCsrf.value = csrfToken;
+																form.appendChild(inputCsrf);
 
-												const orderIdInput = document.createElement('input');
-												orderIdInput.type = 'hidden';
-												orderIdInput.name = 'id';
-												orderIdInput.value = orderId;
-												form.appendChild(orderIdInput);
+																const existingIdInput = document.querySelector('input[name="id"]');
+																const orderId = existingIdInput ? existingIdInput.value : '';
 
-												document.body.appendChild(form);
-												form.submit();
-										}
-								});
+																const orderIdInput = document.createElement('input');
+																orderIdInput.type = 'hidden';
+																orderIdInput.name = 'id';
+																orderIdInput.value = orderId;
+																form.appendChild(orderIdInput);
+
+																document.body.appendChild(form);
+																form.submit();
+														}
+												});
+										});
+								}
+
+								if (restoreBtn) {
+										restoreBtn.addEventListener('click', function() {
+												Swal.fire({
+														title: 'Are you sure?',
+														text: "This order will be restored!",
+														icon: 'info',
+														showCancelButton: true,
+														confirmButtonColor: '#3085d6',
+														cancelButtonColor: '#aaa',
+														confirmButtonText: 'Yes, restore it!',
+												}).then((result) => {
+														if (result.isConfirmed) {
+																const form = document.createElement('form');
+																form.method = 'POST';
+																form.action = '{{ route('orders.restore') }}';
+																form.style.display = 'none';
+
+																const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+																const inputCsrf = document.createElement('input');
+																inputCsrf.type = 'hidden';
+																inputCsrf.name = '_token';
+																inputCsrf.value = csrfToken;
+																form.appendChild(inputCsrf);
+
+																const existingIdInput = document.querySelector('input[name="id"]');
+																const orderId = existingIdInput ? existingIdInput.value : '';
+
+																const orderIdInput = document.createElement('input');
+																orderIdInput.type = 'hidden';
+																orderIdInput.name = 'id';
+																orderIdInput.value = orderId;
+																form.appendChild(orderIdInput);
+
+																document.body.appendChild(form);
+																form.submit();
+														}
+												});
+										});
+								}
 						});
 				</script>
 
