@@ -250,7 +250,7 @@
 												<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 														<div class="relative">
 																<input
-																		list="payment-centers"
+																		type="text"
 																		name="payment_center"
 																		id="payment_center"
 																		placeholder=" "
@@ -266,17 +266,23 @@
 																		Payment Center
 																</label>
 
-																<datalist id="payment-centers">
-																		<option value="S10-MAASIN">
-																		<option value="S17-TACLOBAN">
-																		<option value="S19-METRO BAY-BAY">
-																		<option value="F18-ALANG-ALANG">
-																		<option value="F19-HILONGOS">
-																		<option value="S8-TOLEDO">
-																		<option value="H9-CARCAR">
-																		<option value="H10-BOGO">
-																</datalist>
+																<ul
+																		id="payment-list"
+																		class="search-results absolute z-10 mt-1 hidden max-h-60 w-full overflow-y-auto rounded border border-gray-200 bg-white shadow"
+																>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">S10-MAASIN</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">S17-TACLOBAN</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">S19-METRO BAY-BAY</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">F18-ALANG-ALANG</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">F19-HILONGOS</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">S8-TOLEDO</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">H9-CARCAR</li>
+																		<li class="cursor-pointer p-2 hover:bg-gray-100">H10-BOGO</li>
+																</ul>
 														</div>
+
+
+
 
 														<!-- Mode of Payment -->
 														<div class="relative">
@@ -540,15 +546,20 @@
 																												@php
 																														$selectedSaleType = old("orders.$i.sale_type", $order['sale_type'] ?? '');
 																												@endphp
-
+																												<option
+																														value=""
+																														{{ empty($selectedSaleType) ? 'selected' : '' }}
+																														disabled
+																												>Select Sale Type</option>
 																												<option
 																														value="Freebie"
-																														{{ $selectedSaleType === 'Freebie' ? 'selected' : '' }}
+																														{{ $selectedSaleType === 'Freebie' || empty($selectedSaleType) ? 'selected' : '' }}
 																												>Freebie</option>
 																												<option
 																														value="Discount"
 																														{{ $selectedSaleType === 'Discount' ? 'selected' : '' }}
 																												>Discount</option>
+
 																										</select>
 																								</div>
 
@@ -585,12 +596,17 @@
 																														</svg>
 
 																														<span
-																																class="absolute left-full top-1/2 ml-2 hidden w-64 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
+																																class="absolute left-full top-1/2 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
 																														>
-																																Start typing SKU or product description. A dropdown will appear with matching registered products to select from.
+																																<b>How to select a product:</b><br><br>
+																																• Start typing the <b>SKU</b> (e.g., <code>12345</code>) or <b>description</b> (e.g., <code>Coke 1.5L</code>).<br>
+																																• A dropdown list will appear with matching registered products.<br>
+																																• Click on a product from the list to select it.<br><br>
+																																<i>Tip:</i> For faster results, type at least <b>3 characters</b>.
 																														</span>
 																												</div>
 																										</label>
+
 
 																										<input
 																												type="text"
@@ -670,6 +686,7 @@
 																												class="qty-cs w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												placeholder="0"
 																												style="text-align: left;"
+																												value="{{ old("orders.$i.qty_per_cs") }}"
 																										>
 																								</div>
 																								<!-- Discount Field -->
@@ -703,16 +720,24 @@
 																														</svg>
 
 																														<span
-																																class="absolute left-full top-1/2 ml-2 hidden w-64 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
+																																class="absolute left-full top-1/2 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block"
 																														>
-																																Enter discount amount or percentage
+																																<b>How to apply discount:</b><br><br>
+																																• Enter a number <b>without %</b> → Deducts that <u>exact amount</u>.<br>
+																																&nbsp;&nbsp;Example: <code>100</code> = ₱100 off<br><br>
+																																• Enter a number <b>with %</b> → Deducts that <u>percentage of the item price</u>.<br>
+																																&nbsp;&nbsp;Example: <code>10%</code> = 10% off the price<br><br>
+																																<i>Tip:</i> Use whole numbers only (no symbols except %).
 																														</span>
 																												</div>
 																										</label>
+
 																										<input
 																												type="text"
 																												name="orders[{{ $i }}][discount]"
 																												value="{{ old("orders.$i.discount") }}"
+																												x-model="discount"
+																												:class="discount === '' ? 'bg-yellow-50' : 'bg-white'"
 																												class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												placeholder="0"
 																												min="0"
@@ -730,7 +755,7 @@
 																						</div>
 																						<!-- Freebie Section (Hidden by Default) -->
 																						<div
-																								class="freebie-grid mt-4 grid hidden grid-cols-1 gap-4 md:grid-cols-3"
+																								class="freebie-grid grid hidden grid-cols-1 gap-4 md:grid-cols-3"
 																								data-index="{{ $i }}"
 																						>
 
@@ -817,7 +842,7 @@
 																												type="text"
 																												name="orders[{{ $i }}][freebies_per_cs]"
 																												value="{{ old("orders.$i.freebies_per_cs") }}"
-																												class="computed-freebies w-full rounded border border-gray-300 bg-gray-50 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												class="computed-freebies w-full rounded border border-gray-300 bg-green-50 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												style="text-align: left; cursor: not-allowed;"
 																												placeholder="0"
 																												readonly
@@ -865,7 +890,7 @@
 																												name="orders[{{ $i }}][store_order_no]"
 																												value="{{ old("orders.$i.store_order_no") }}"
 																												class="w-full appearance-none rounded border border-gray-300 p-2 [-moz-appearance:textfield] focus:border-gray-300 focus:outline-none focus:ring-gray-900 [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
-																												placeholder="Please Input Store Order No."
+																												placeholder="Enter Store Order No."
 																												inputmode="numeric"
 																												pattern="\d*"
 																												min="0"
@@ -1130,102 +1155,175 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
       Processing…
     `;
 				});
+				if (!window.orderScriptInitialized) {
+						window.orderScriptInitialized = true;
+						let rowIndex = 1;
 
-				let rowIndex = 1;
+						document.addEventListener('DOMContentLoaded', function() {
+								const addButton = document.getElementById('add-row-btn');
+								const productCounter = document.getElementById('product-counter');
 
-				document.addEventListener('DOMContentLoaded', function() {
-						const addButton = document.getElementById('add-row-btn');
-						const productCounter = document.getElementById('product-counter');
+								// Only add event listener once
+								if (addButton && !addButton.hasAttribute('data-listener-attached')) {
+										addButton.setAttribute('data-listener-attached', 'true');
 
-						addButton.addEventListener('click', function() {
-								const container = document.getElementById('order-items');
-								const newRow = container.children[0].cloneNode(true);
+										addButton.addEventListener('click', function() {
+												const container = document.getElementById('order-items');
+												const newRow = container.children[0].cloneNode(true);
+												console.log('Adding new order row (with highlight reset)');
+												// Reset input values and update input names
+												newRow.querySelectorAll('input').forEach(input => {
+														input.value = '';
+														input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+														input.removeAttribute('data-selected');
+												});
 
-								// Reset input values and update input names
-								// Reset input fields and update names
-								newRow.querySelectorAll('input').forEach(input => {
-										input.value = '';
-										input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
-										input.removeAttribute('data-selected');
-								});
+												// IMPORTANT: Update data-index attributes for new row
+												newRow.querySelectorAll('[data-index]').forEach(element => {
+														element.setAttribute('data-index', rowIndex);
+												});
 
-								// Reset output display spans
-								newRow.querySelector('.price-display').textContent = '0.00';
-								newRow.querySelector('.amount-display').textContent = '0.00';
-								newRow.querySelector('.total-qty-display').textContent = '0';
-								// newRow.querySelector('.freebies-cs-display').textContent = '0';
+												// Reset selects and update names
+												newRow.querySelectorAll('select').forEach(select => {
+														select.value = '';
+														select.name = select.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+												});
 
-								// Reset summary table
-								const summaryTableBody = newRow.querySelector('.summary-body');
-								if (summaryTableBody) {
-										summaryTableBody.innerHTML = '';
+												// Reset output display spans
+												newRow.querySelector('.price-display').textContent = '0.00';
+												newRow.querySelector('.amount-display').textContent = '0.00';
+												newRow.querySelector('.total-qty-display').textContent = '0';
+
+												// Reset summary table
+												const summaryTableBody = newRow.querySelector('.summary-body');
+												if (summaryTableBody) {
+														summaryTableBody.innerHTML = '';
+												}
+												newRow.querySelector('.breakdown-price').textContent = '';
+												newRow.querySelector('.breakdown-amount').textContent = '';
+
+												// Hide any open dropdowns
+												newRow.querySelectorAll('.sku-results, .desc-results').forEach(ul => {
+														ul.innerHTML = '';
+														ul.classList.add('hidden');
+												});
+
+												// Reset sections to hidden state
+												const freebieSection = newRow.querySelector('.freebie-grid');
+												const discountField = newRow.querySelector('.discount-field');
+												if (freebieSection) freebieSection.classList.add('hidden');
+												if (discountField) discountField.classList.add('hidden');
+
+												// Apply initial hidden state for animation
+												newRow.classList.add('overflow-hidden', 'transition-all', 'duration-300', 'ease-in-out');
+												newRow.classList.remove('max-h-[1000px]', 'opacity-100', 'py-4', 'mb-6');
+												newRow.classList.add('max-h-0', 'opacity-0', 'py-0', 'mb-0');
+
+												container.appendChild(newRow);
+
+												// Force reflow to properly trigger animation
+												void newRow.offsetWidth;
+
+												// Trigger the visible state
+												newRow.classList.replace('max-h-0', 'max-h-[1000px]');
+												newRow.classList.replace('opacity-0', 'opacity-100');
+												newRow.classList.replace('py-0', 'py-4');
+												newRow.classList.replace('mb-0', 'mb-6');
+
+												rowIndex = document.querySelectorAll('.order-row').length;
+
+												updateRemoveButtonsState();
+												updateCounter();
+												updateRowNumbers();
+												attachCollapseListener(newRow);
+
+												// IMPORTANT: Attach sale type listener to new row
+												attachSaleTypeListener(newRow);
+										});
 								}
-								newRow.querySelector('.breakdown-price').textContent = '';
-								newRow.querySelector('.breakdown-amount').textContent = '';
 
-								// Hide any open dropdowns
-								newRow.querySelectorAll('.sku-results, .desc-results').forEach(ul => {
-										ul.innerHTML = '';
-										ul.classList.add('hidden');
+								// Remove row functionality
+								document.addEventListener('click', function(e) {
+										if (e.target.closest('.remove-row')) {
+												const allRows = document.querySelectorAll('.order-row');
+												if (allRows.length > 1) {
+														const row = e.target.closest('.order-row');
+
+														// Animate to hidden state
+														row.classList.replace('max-h-[1000px]', 'max-h-0');
+														row.classList.replace('opacity-100', 'opacity-0');
+														row.classList.replace('py-4', 'py-0');
+														row.classList.replace('mb-6', 'mb-0');
+
+														// Remove after transition
+														row.addEventListener('transitionend', () => {
+																row.remove();
+																updateRemoveButtonsState();
+																updateCounter();
+																updateRowNumbers();
+														}, {
+																once: true
+														});
+												}
+										}
 								});
 
+								// Initialize existing rows
+								document.querySelectorAll('.order-row').forEach(row => {
+										attachCollapseListener(row);
+										attachSaleTypeListener(row);
+										calculateRowTotals(row);
+								});
 
-								// Apply initial hidden state for animation
-								newRow.classList.add('overflow-hidden', 'transition-all', 'duration-300', 'ease-in-out');
-								newRow.classList.remove('max-h-[1000px]', 'opacity-100', 'py-4', 'mb-6');
-								newRow.classList.add('max-h-0', 'opacity-0', 'py-0', 'mb-0');
-
-								container.appendChild(newRow);
-
-								// Force reflow to properly trigger animation
-								void newRow.offsetWidth;
-
-								// Trigger the visible state
-								newRow.classList.replace('max-h-0', 'max-h-[1000px]');
-								newRow.classList.replace('opacity-0', 'opacity-100');
-								newRow.classList.replace('py-0', 'py-4');
-								newRow.classList.replace('mb-0', 'mb-6');
-
-								rowIndex = document.querySelectorAll('.order-row').length;
-
+								// Initialize remove buttons state and counter
 								updateRemoveButtonsState();
 								updateCounter();
 								updateRowNumbers();
-								attachCollapseListener(newRow);
-								// attachSchemeTypeListener(newRow);
-						});
 
-						document.addEventListener('click', function(e) {
-								if (e.target.closest('.remove-row')) {
-										const allRows = document.querySelectorAll('.order-row');
-										if (allRows.length > 1) {
-												const row = e.target.closest('.order-row');
-
-												// Animate to hidden state
-												row.classList.replace('max-h-[1000px]', 'max-h-0');
-												row.classList.replace('opacity-100', 'opacity-0');
-												row.classList.replace('py-4', 'py-0');
-												row.classList.replace('mb-6', 'mb-0');
-
-												// Remove after transition
-												row.addEventListener('transitionend', () => {
-														row.remove();
-														updateRemoveButtonsState();
-														updateCounter();
-														updateRowNumbers();
-												}, {
-														once: true
+								// Mode payment change listener
+								document.querySelectorAll('.mode-payment').forEach(select => {
+										select.addEventListener('change', function() {
+												document.querySelectorAll('.order-row').forEach(row => {
+														calculateRowTotals(row);
+														const selectedSKU = row.querySelector('.sku-hidden')?.value;
+														if (selectedSKU) {
+																const matchedProduct = document.querySelector(`.product-item[data-sku="${selectedSKU}"]`);
+																if (matchedProduct) {
+																		matchedProduct.click();
+																}
+														}
 												});
+										});
+								});
+
+								// Form field highlighting
+								const orderForm = document.querySelector(".order-form");
+								if (orderForm) {
+										const fields = orderForm.querySelectorAll("input, select, textarea");
+
+										function toggleHighlight(el) {
+												if (el.value && (el.value.trim() !== "" || el.value === "0")) {
+														el.classList.add("bg-indigo-50");
+												} else {
+														el.classList.remove("bg-indigo-50");
+												}
 										}
+
+										fields.forEach(el => {
+												toggleHighlight(el);
+												el.addEventListener("input", () => toggleHighlight(el));
+												el.addEventListener("change", () => toggleHighlight(el));
+										});
 								}
 						});
-
-
-
-						updateRemoveButtonsState();
-						updateCounter();
-						updateRowNumbers();
-
+				}
+				// Event listeners for calculations
+				['input', 'change'].forEach(eventType => {
+						document.addEventListener(eventType, function(e) {
+								if (!e.target.closest('.order-row')) return;
+								const row = e.target.closest('.order-row');
+								calculateRowTotals(row);
+						});
 				});
 
 				// Disable delete if only one row
@@ -1240,7 +1338,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 						});
 				}
-
 
 				// Update product counter badge
 				function updateCounter() {
@@ -1302,114 +1399,50 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						});
 				}
 
+				// Individual row sale type listener
+				function attachSaleTypeListener(row) {
+						const select = row.querySelector('.sale-type');
+						if (!select) return;
 
+						select.addEventListener('change', function() {
+								const indexMatch = this.name.match(/orders\[(\d+)\]/);
+								if (!indexMatch) return;
+								const index = indexMatch[1];
 
-				document.querySelectorAll('.order-row').forEach(row => {
-						attachCollapseListener(row);
-						// attachSchemeTypeListener(row);
-				});
+								// Use row-scoped selectors instead of global document selectors
+								const freebieSection = row.querySelector('.freebie-grid');
+								const mainItemSection = row.querySelector('.main-item');
+								const discountField = row.querySelector('.discount-field');
 
+								if (!freebieSection || !mainItemSection || !discountField) return;
 
-				document.addEventListener('DOMContentLoaded', () => {
-						document.querySelectorAll('.sale-type').forEach(select => {
-								select.addEventListener('change', function() {
-										const index = this.name.match(/orders\[(\d+)\]/)[1];
+								if (this.value === 'Freebie') {
+										freebieSection.classList.remove('hidden');
+										discountField.classList.add('hidden');
+										const discountInput = discountField.querySelector('input');
+										if (discountInput) discountInput.value = '';
+										mainItemSection.classList.remove('md:grid-cols-4');
+										mainItemSection.classList.add('md:grid-cols-3');
 
-										const freebieSection = document.querySelector(`.freebie-grid[data-index="${index}"]`);
-										const mainItemSection = document.querySelector(`.main-item[data-index="${index}"]`);
-										const discountField = document.querySelector(`.discount-field[data-index="${index}"]`);
-
-										if (this.value === 'Freebie') {
-												freebieSection.classList.remove('hidden');
-												discountField.classList.add('hidden');
-												discountField.querySelector('input').value = '';
-												mainItemSection.classList.remove('md:grid-cols-4');
-												mainItemSection.classList.add('md:grid-cols-3');
-
-										} else if (this.value === 'Discount') {
-												discountField.classList.remove('hidden');
-												freebieSection.classList.add('hidden');
-												freebieSection.querySelectorAll('input').forEach(i => i.value = '');
-												mainItemSection.classList.remove('md:grid-cols-3');
-												mainItemSection.classList.add('md:grid-cols-4');
-										} else {
-												// Hide both if empty or reset
-												freebieSection.classList.add('hidden');
-												discountField.classList.add('hidden');
-												freebieSection.querySelectorAll('input').forEach(i => i.value = '');
-												discountField.querySelector('input').value = '';
-										}
-								});
-
-								// fire once on load
-								select.dispatchEvent(new Event('change'));
-						});
-				});
-
-
-				document.addEventListener('DOMContentLoaded', function() {
-						document.querySelectorAll('.order-row').forEach(row => calculateRowTotals(row));
-				});
-
-				// Listen to input events on QTY and Price fields
-				document.addEventListener('DOMContentLoaded', function() {
-						const allRows = document.querySelectorAll('.order-row');
-						allRows.forEach(row => calculateRowTotals(row));
-				});
-
-				['input', 'change'].forEach(eventType => {
-						document.addEventListener(eventType, function(e) {
-								if (!e.target.closest('.order-row')) return;
-
-								const row = e.target.closest('.order-row');
-								calculateRowTotals(row);
-						});
-				});
-
-				document.addEventListener('DOMContentLoaded', function() {
-						// Recalculate when payment mode changes
-						document.querySelectorAll('.mode-payment').forEach(select => {
-								select.addEventListener('change', function() {
-										document.querySelectorAll('.order-row').forEach(row => {
-												calculateRowTotals(row);
-
-												// Simulate .product-item logic if SKU is already selected
-												const selectedSKU = row.querySelector('.sku-hidden')?.value;
-												if (selectedSKU) {
-														const matchedProduct = document.querySelector(`.product-item[data-sku="${selectedSKU}"]`);
-														if (matchedProduct) {
-																matchedProduct.click(); // trigger the product selection logic
-														}
-												}
-										});
-								});
-						});
-				});
-
-				document.addEventListener("DOMContentLoaded", () => {
-						const orderForm = document.querySelector(".order-form");
-						if (!orderForm) return;
-
-						const fields = orderForm.querySelectorAll("input, select, textarea");
-
-						function toggleHighlight(el) {
-								if (el.value && (el.value.trim() !== "" || el.value === "0")) {
-										el.classList.add("bg-indigo-50");
+								} else if (this.value === 'Discount') {
+										discountField.classList.remove('hidden');
+										freebieSection.classList.add('hidden');
+										freebieSection.querySelectorAll('input').forEach(i => i.value = '');
+										mainItemSection.classList.remove('md:grid-cols-3');
+										mainItemSection.classList.add('md:grid-cols-4');
 								} else {
-										el.classList.remove("bg-indigo-50");
+										// Hide both if empty or reset
+										freebieSection.classList.add('hidden');
+										discountField.classList.add('hidden');
+										freebieSection.querySelectorAll('input').forEach(i => i.value = '');
+										const discountInput = discountField.querySelector('input');
+										if (discountInput) discountInput.value = '';
 								}
-						}
-
-						fields.forEach(el => {
-								// Initial check
-								toggleHighlight(el);
-
-								// Listen for changes
-								el.addEventListener("input", () => toggleHighlight(el));
-								el.addEventListener("change", () => toggleHighlight(el));
 						});
-				});
 
+						// Fire once on attach
+						select.dispatchEvent(new Event('change'));
+				}
 
 
 
@@ -2070,7 +2103,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						}
 
 						function allRequiredFilled() {
-								const requiredInputs = document.querySelectorAll('.order-form .required-input');
+								const requiredInputs = document.querySelectorAll('.order-form .required-input, .required-input');
 								return Array.from(requiredInputs).every(input => {
 										if (input.tagName.toLowerCase() === 'select') {
 												return input.value && input.value.trim() !== '';
@@ -2093,29 +2126,73 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 						}
 
-						// function checkForm() {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																if (allRequiredFilled()) {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																orderItemForm.classList.remove('hidden');
+						(function() {
+								const input = document.getElementById('payment_center');
+								const list = document.getElementById('payment-list');
+								const options = Array.from(list.querySelectorAll('li'));
 
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																if (!alertShown) {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																alertShown = true;
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																setTimeout(() => {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																Swal.fire({
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																icon: 'success',
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																title: 'Info Complete',
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																text: 'Proceed to add order items.',
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																confirmButtonColor: '#3085d6'
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}).then(() => {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																setTimeout(() => scrollToElement(orderItemForm, headerOffset), 200);
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																});
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}, 200);
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																} else {
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																// test
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																// orderItemForm.classList.add('');
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																orderItemForm.classList.add('hidden');
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																alertShown = false; // reset so alert can be shown again
-						// 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																}
+								// Show dropdown on focus
+								input.addEventListener('focus', () => list.classList.remove('hidden'));
+
+								// Hide dropdown after blur
+								input.addEventListener('blur', () => setTimeout(() => list.classList.add('hidden'), 100));
+
+								// Filter options as user types
+								input.addEventListener('input', () => {
+										const value = input.value.toLowerCase();
+										let hasMatch = false;
+
+										options.forEach(option => {
+												const match = option.textContent.toLowerCase().includes(value);
+												option.style.display = match ? 'block' : 'none';
+												if (match) hasMatch = true;
+										});
+
+										if (hasMatch) list.classList.remove('hidden');
+										else list.classList.add('hidden');
+								});
+
+								// Click option to set input value and trigger input event
+								options.forEach(option => {
+										option.addEventListener('click', () => {
+												input.value = option.textContent;
+												list.classList.add('hidden');
+
+												// Trigger input event manually
+												const event = new Event('input', {
+														bubbles: true
+												});
+												input.dispatchEvent(event);
+
+												input.focus(); // optional: keep focus on input
+										});
+								});
+						})();
+
+
+						// function checkForm() {
+						// if (allRequiredFilled()) {
+						// orderItemForm.classList.remove('hidden');
+
+						// if (!alertShown) {
+						// alertShown = true;
+						// setTimeout(() => {
+						// Swal.fire({
+						// icon: 'success',
+						// title: 'Info Complete',
+						// text: 'Proceed to add order items.',
+						// confirmButtonColor: '#3085d6'
+						// }).then(() => {
+						// setTimeout(() => scrollToElement(orderItemForm, headerOffset), 200);
+						// });
+						// }, 200);
+						// }
+						// } else {
+						// // test
+						// // orderItemForm.classList.add('');
+						// orderItemForm.classList.add('hidden');
+						// alertShown = false; // reset so alert can be shown again
+						// }
 						// }
 
 						// Initial runs
@@ -2158,7 +2235,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										element.classList.remove('bg-indigo-50', 'border-indigo-300');
 
 										// Restore original background based on element type or data attributes
-										if (element.hasAttribute('x-model') && element.getAttribute('x-model').includes('qty')) {
+										if (
+												element.hasAttribute('x-model') &&
+												(
+														element.getAttribute('x-model').includes('qty') ||
+														element.getAttribute('x-model').includes('discount')
+												)
+										) {
 												// For Alpine.js controlled inputs that should be yellow when empty
 												element.classList.add('bg-yellow-50');
 										} else {
@@ -2287,7 +2370,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						addButton.addEventListener('click', function() {
 								const container = document.getElementById('order-items');
 								const newRow = container.children[0].cloneNode(true);
-
+								console.log('Adding new order row (with highlight reset)');
 								// Reset input values and update input names
 								newRow.querySelectorAll('input').forEach(input => {
 										input.value = '';
@@ -2296,7 +2379,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 										// Reset background classes for new row
 										input.classList.remove('bg-indigo-50', 'border-indigo-300');
-										if (input.hasAttribute('x-model') && input.getAttribute('x-model').includes('qty')) {
+										if (
+												input.hasAttribute('x-model') &&
+												(
+														input.getAttribute('x-model').includes('qty') ||
+														input.getAttribute('x-model').includes('discount')
+												)
+										) {
 												input.classList.add('bg-yellow-50');
 										} else if (!input.hasAttribute('readonly') && input.type !== 'hidden') {
 												input.classList.add('bg-white');
@@ -2400,6 +2489,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						element.dispatchEvent(event);
 				}
 		</script>
+
 		<style>
 				@keyframes glow {
 

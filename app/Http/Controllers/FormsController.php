@@ -167,7 +167,7 @@ class FormsController extends Controller
                 'amount' => $item['amount'] ?? 0,
                 'remarks' => $item['remarks'] ?? null,
                 'store_order_no' => $item['store_order_no'] ?? null,
-                'item_type' => 'MAIN',
+                'item_type' => (!empty($item['discount']) && $item['discount'] > 0) ? 'DISCOUNT' : 'MAIN',
             ]);
 
 
@@ -182,19 +182,7 @@ class FormsController extends Controller
                     'qty_per_cs' => 0,
                     'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
                     'total_qty' => $item['freebies_per_cs'] ?? 0,
-                    'amount' => (
-                        !empty($item['freebie_price_per_pc']) &&
-                        !empty($item['freebie_qty_per_pc']) &&
-                        !empty($item['freebies_per_cs'])
-                    ) ? (
-                        $item['freebie_price_per_pc'] * 
-                        $item['freebie_qty_per_pc'] * 
-                        $item['freebies_per_cs']
-                    ) : (
-                        $item['price_per_pc'] * 
-                        $item['qty_per_pc'] * 
-                        $item['freebies_per_cs']
-                    ),
+                    'amount' => 0,
                     'remarks' => $item['remarks'] ?? null,
                     'store_order_no' => $item['store_order_no'] ?? null,
                     'item_type' => 'FREEBIE',
