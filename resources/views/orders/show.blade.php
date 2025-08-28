@@ -354,13 +354,10 @@
 																		class="border px-2 py-1 text-center"
 																>Price</th>
 																<th
-																		colspan="3"
+																		colspan="4"
 																		class="border px-2 py-1 text-center"
 																>Order in Cases</th>
-																<th
-																		rowspan="2"
-																		class="border px-2 py-1 text-center"
-																>Total Qty</th>
+
 																<th
 																		rowspan="2"
 																		class="border px-2 py-1 text-center"
@@ -382,6 +379,7 @@
 																<th class="border p-1 text-center">QTY/PC</th>
 																<th class="border p-1 text-center">QTY/CS</th>
 																<th class="border p-1 text-center">Freebies</th>
+																<th class="border p-1 text-center">Total QTY</th>
 														</tr>
 												</thead>
 
@@ -389,8 +387,10 @@
 														@forelse ($order->items as $item)
 																<tr
 																		data-index="{{ $loop->index }}"
-																		class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }} transition hover:bg-gray-50"
+																		class="@if ($item->item_type === 'FREEBIE') bg-green-100 @else bg-white @endif transition hover:bg-indigo-50"
 																>
+
+
 																		{{-- hidden input for item_type --}}
 																		<input
 																				type="hidden"
@@ -499,11 +499,12 @@
 																		>
 																		<td
 																				class="border p-2 text-center"
-																				@if ($item->item_type !== 'FREEBIE') contenteditable="true" @endif
+																				@if ($item->item_type === 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
 																				data-field="qty_per_cs"
 																		>
-																				{{ $item->qty_per_cs == 0 ? '-' : $item->qty_per_cs }}
+																				{{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '-' : $item->qty_per_cs) : 'N/A' }}
 																		</td>
+
 
 																		<input
 																				type="hidden"
@@ -514,16 +515,20 @@
 
 																		<td
 																				class="border p-2 text-center"
-																				@if ($item->item_type === 'FREEBIE') contenteditable="true" @endif
+																				@if ($item->item_type === 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
 																				data-field="freebies_per_cs"
 																		>
-																				{{ $item->freebies_per_cs == 0 ? '-' : $item->freebies_per_cs }}
+																				@if ($item->item_type === 'DISCOUNT')
+																						N/A
+																				@else
+																						{!! $item->freebies_per_cs == 0 ? '<span class="text-green-400">▼</span>' : $item->freebies_per_cs !!}
+																				@endif
 																		</td>
 
 
 																		<td
 																				class="border p-2 text-center"
-																				contenteditable="true"
+																				contenteditable="false"
 																				data-field="total_qty"
 																		>{{ $item->total_qty }}</td>
 																		<input
@@ -535,7 +540,8 @@
 																				class="border p-2 text-center"
 																				@if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
 																				data-field="discount"
-																		>{{ $item->discount == 0 ? '-' : $item->discount }}</td>
+																		>{{ $item->item_type === 'DISCOUNT' ? ($item->discount ? $item->discount : '') : 'N/A' }}
+																		</td>
 																		<input
 																				type="hidden"
 																				name="items[{{ $loop->index }}][discount]"
