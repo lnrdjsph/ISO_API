@@ -213,7 +213,7 @@
 																		name="payment_date"
 																		value="{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('Y-m-d') : '' }}"
 																		class="payment-date relative w-full cursor-pointer appearance-none border-none bg-transparent p-0 font-medium text-gray-900 focus:ring-0"
-																		style="padding-right: 50%;"
+																		style="padding-right: 25%;"
 																>
 														</div>
 
@@ -222,7 +222,7 @@
 										</div>
 
 										<div class="grid grid-cols-1 md:grid-cols-2">
-												<div class="space-y-4">
+												<div class="space-y-4 pe-16">
 														<h3 class="text-md mb-2 font-semibold text-gray-700">Delivery Info</h3>
 
 														<!-- Mode of Dispatching -->
@@ -271,7 +271,7 @@
 																		name="delivery_date"
 																		value="{{ $order->delivery_date ? \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') : '' }}"
 																		class="delivery-date w-full cursor-pointer appearance-none border-none bg-transparent p-0 font-medium text-gray-900 focus:ring-0"
-																		style="padding-right: 50%;"
+																		style="padding-right: 25%;"
 																>
 														</div>
 
@@ -453,7 +453,7 @@
 
 																		<td
 																				class="border p-2 text-center"
-																				@if ($item->scheme === 'Freebie') contenteditable="false" @else contenteditable="true" @endif
+																				@if (in_array($item->scheme, ['Freebie', 'Discount'])) contenteditable="false" @else contenteditable="true" @endif
 																				data-field="scheme"
 																		>
 																				{{ $item->scheme }}
@@ -463,6 +463,7 @@
 																				name="items[{{ $loop->index }}][scheme]"
 																				value="{{ $item->scheme }}"
 																		>
+
 
 																		<td
 																				class="border p-2 text-center"
@@ -496,28 +497,29 @@
 																				name="items[{{ $loop->index }}][qty_per_pc]"
 																				value="{{ $item->qty_per_pc }}"
 																		>
-
 																		<td
 																				class="border p-2 text-center"
-																				contenteditable="true"
+																				@if ($item->item_type !== 'FREEBIE') contenteditable="true" @endif
 																				data-field="qty_per_cs"
 																		>
 																				{{ $item->qty_per_cs == 0 ? '-' : $item->qty_per_cs }}
 																		</td>
+
 																		<input
 																				type="hidden"
 																				name="items[{{ $loop->index }}][qty_per_cs]"
 																				value="{{ $item->qty_per_cs }}"
 																		>
 
-																		{{-- With this: --}}
+
 																		<td
 																				class="border p-2 text-center"
-																				contenteditable="true"
+																				@if ($item->item_type === 'FREEBIE') contenteditable="true" @endif
 																				data-field="freebies_per_cs"
 																		>
 																				{{ $item->freebies_per_cs == 0 ? '-' : $item->freebies_per_cs }}
 																		</td>
+
 
 																		<td
 																				class="border p-2 text-center"
@@ -531,7 +533,7 @@
 																		>
 																		<td
 																				class="border p-2 text-center"
-																				contenteditable="true"
+																				@if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
 																				data-field="discount"
 																		>{{ $item->discount == 0 ? '-' : $item->discount }}</td>
 																		<input
@@ -600,7 +602,7 @@
 												</div>
 
 												<div class="mb-4 items-center justify-between border-t border-gray-200 pt-4">
-														<p class="text-right text-lg font-extrabold text-green-600">
+														<p class="text-center text-lg font-extrabold text-green-600">
 																₱<span id="totalAmount">0.00</span>
 														</p>
 												</div>
