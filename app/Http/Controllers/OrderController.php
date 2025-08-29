@@ -13,21 +13,48 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = Order::query();
+        $query = Order::query()->with('items');
 
-        // Optional: eager load items if needed
-        $query->with('items');
-
-        // Search by customer name or order id
+        // Search
         if ($search = $request->input('search')) {
-            $query->where('customer_name', 'like', "%{$search}%")
-                ->orWhere('id', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                ->orWhere('sof_id', 'like', "%{$search}%");
+            });
         }
 
-        $orders = $query->orderByDesc('created_at')->paginate(10);
+        // Channel filter
+        if ($channel = $request->input('channel')) {
+            $query->where('channel_order', $channel);
+        }
 
-        return view('orders.orders', compact('orders'));
+        // Status filter
+        if ($status = $request->input('status')) {
+            $query->where('order_status', $status);
+        }
+
+        // Date range filter
+        if ($startDate = $request->input('start_date')) {
+            $query->whereDate('time_order', '>=', $startDate);
+        }
+        if ($endDate = $request->input('end_date')) {
+            $query->whereDate('time_order', '<=', $endDate);
+        }
+
+        // ✅ Rows per page (default 10)
+        $perPage = $request->input('per_page', 10);
+
+        $orders = $query->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+        $statuses = Order::select('order_status')->distinct()->pluck('order_status');
+
+        return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage'));
     }
+
+
 
 
     

@@ -434,8 +434,8 @@
 
 								</div>
 
-								{{-- <div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
-								<div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg">
+								<div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg">
+										{{-- <div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
 										{{-- test --}}
 										<div class="bg-white pt-4">
 												<div class="flex items-center justify-between">
@@ -1006,13 +1006,13 @@
 																										class="border px-2 py-1 text-center"
 																								>Price</th>
 																								<th
-																										colspan="3"
+																										colspan="4"
 																										class="border px-2 py-1 text-center"
 																								>Order in Cases</th>
 																								<th
 																										rowspan="2"
 																										class="border px-2 py-1 text-center"
-																								>Total Qty</th>
+																								>discount</th>
 																								<th
 																										rowspan="2"
 																										class="border px-2 py-1 text-center"
@@ -1030,6 +1030,7 @@
 																								<th class="border px-2 py-1 text-center">QTY/PC</th>
 																								<th class="border px-2 py-1 text-center">QTY/CS</th>
 																								<th class="border px-2 py-1 text-center">Freebies</th>
+																								<th class="border px-2 py-1 text-center">Total QTY</th>
 																						</tr>
 																				</thead>
 																				<tbody
@@ -1994,6 +1995,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										const qtyCs = format(getInputValue('input[name*="[qty_per_cs]"]', container));
 										const freebies = format(getInputValue('input[name*="[freebies_per_cs]"]', container));
 										const totalQty = format(getInputValue('input[name*="[total_qty]"]', container));
+										const discount = format(getInputValue('input[name*="[discount]"]', container));
 										const amount = format(getInputValue('input[name*="[amount]"]', container));
 										const remarksSelect = container.querySelector('select[name*="[remarks]"]');
 										const remarksVal = (remarksSelect && remarksSelect.options[remarksSelect.selectedIndex].disabled) ? '' :
@@ -2001,6 +2003,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										const remarks = format(remarksVal);
 										const soNumber = format(getInputValue('input[name*="[store_order_no]"]', container));
 
+										const saleTypeSelect = container.querySelector('select[name*="[sale_type]"]');
+										const saleTypeVal = (saleTypeSelect && saleTypeSelect.options[saleTypeSelect.selectedIndex].disabled) ? '' :
+												saleTypeSelect?.value || '';
+										const saleType = format(saleTypeVal);
 										// Freebie Fields (always different freebie now)
 										const freebieSku = format(getInputValue('input[name*="[freebie_sku]"]', container));
 										const freebieDesc = format(getInputValue('input[name*="[freebie_description]"]', container));
@@ -2014,6 +2020,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 										// Main Product Row
 										const productRow = document.createElement('tr');
+										const discountDisplay = (saleType.toUpperCase() === 'DISCOUNT') ? discount : '-';
 										productRow.innerHTML = `
                 <td class="border px-2 py-1">${sku}</td>
                 <td class="border px-2 py-1">${desc}</td>
@@ -2024,30 +2031,35 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 <td class="border px-2 py-1 text-center">${qtyCs}</td>
                 <td class="border px-2 py-1 text-center">-</td>
                 <td class="border px-2 py-1 text-center">${qtyCs}</td>
+                <td class="border px-2 py-1 text-center">${discountDisplay}</td>
                 <td class="border px-2 py-1 text-center">${amount}</td>
                 <td class="border px-2 py-1">${remarks}</td>
                 <td class="border px-2 py-1">${soNumber}</td>
             `;
 										summaryBody.appendChild(productRow);
 
-										// Freebie Row
-										const freebieRow = document.createElement('tr');
-										freebieRow.classList.add('bg-green-50');
-										freebieRow.innerHTML = `
-                <td class="border px-2 py-1">${freebieSku}</td>
-                <td class="border px-2 py-1">${freebieDesc}</td>
-                <td class="border px-2 py-1 text-center">Freebie</td>
-                <td class="border px-2 py-1 text-center">${freebiePrice}</td>
-                <td class="border px-2 py-1 text-center">${freebiePriceTotal}</td>
-                <td class="border px-2 py-1 text-center">${freebieQtyPc}</td>
-                <td class="border px-2 py-1 text-center">-</td>
-                <td class="border px-2 py-1 text-center">${freebieQty}</td>
-                <td class="border px-2 py-1 text-center">${freebieQty}</td>
-                <td class="border px-2 py-1 text-center">${freebieAmount}</td>
-                <td class="border px-2 py-1">${remarks}</td>
-                <td class="border px-2 py-1">${soNumber}</td>
-            `;
-										summaryBody.appendChild(freebieRow);
+										// Freebie Row (only if sale type is NOT DISCOUNT)
+										if (saleType.toUpperCase() !== 'DISCOUNT') {
+												const freebieRow = document.createElement('tr');
+												freebieRow.classList.add('bg-green-50');
+												freebieRow.innerHTML = `
+        <td class="border px-2 py-1">${freebieSku}</td>
+        <td class="border px-2 py-1">${freebieDesc}</td>
+        <td class="border px-2 py-1 text-center">Freebie</td>
+        <td class="border px-2 py-1 text-center">${freebiePrice}</td>
+        <td class="border px-2 py-1 text-center">${freebiePriceTotal}</td>
+        <td class="border px-2 py-1 text-center">${freebieQtyPc}</td>
+        <td class="border px-2 py-1 text-center">-</td>
+        <td class="border px-2 py-1 text-center">${freebieQty}</td>
+        <td class="border px-2 py-1 text-center">${freebieQty}</td>
+																																																																<td class="border px-2 py-1 text-center">-</td>
+        <td class="border px-2 py-1 text-center">0.00</td>
+        <td class="border px-2 py-1">${remarks}</td>
+        <td class="border px-2 py-1">${soNumber}</td>
+    `;
+												summaryBody.appendChild(freebieRow);
+										}
+
 								});
 						}
 
@@ -2128,6 +2140,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										orderItemForm.classList.add('hidden');
 								}
 						}
+						// test
 
 						(function() {
 								const input = document.getElementById('payment_center');
