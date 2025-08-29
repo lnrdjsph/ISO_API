@@ -217,7 +217,8 @@ class FormsController extends Controller
                 'allocation_per_case',
                 'cash_bank_card_scheme',
                 'po15_scheme',
-                'freebie_sku'
+                'freebie_sku',
+                'discount_scheme'
             )
             ->where(function ($q) use ($keywords) {
                 foreach ($keywords as $word) {
