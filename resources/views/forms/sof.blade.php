@@ -738,7 +738,7 @@
 																												value="{{ old("orders.$i.discount") }}"
 																												x-model="discount"
 																												:class="discount === '' ? 'bg-yellow-50' : 'bg-white'"
-																												class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+																												class="discount w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
 																												placeholder="0"
 																												min="0"
 																												max="100"
@@ -1780,6 +1780,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                                     data-cash_bank_card_scheme="${product.cash_bank_card_scheme}"
                                     data-po15_scheme="${product.po15_scheme}"
                                     data-freebie_sku="${product.freebie_sku}"
+                                    data-discount_scheme="${product.discount_scheme}"
  
                                     >
                                     <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
@@ -1811,6 +1812,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const cashBankCardScheme = selected.data('cash_bank_card_scheme') || '';
 						const po15Scheme = selected.data('po15_scheme') || '';
 						const freebieSku = selected.data('freebie_sku') || '';
+						const discount = selected.data('discount_scheme') || '';
 
 						const container = selected.closest('.relative');
 						const searchInput = container.find('.product-search, .freebie-search');
@@ -1839,6 +1841,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								setValue(row.find('.desc-hidden'), description);
 								setValue(row.find('.price-per-pc'), pricePerPc);
 								setValue(row.find('.qty-per-pc'), casePack);
+								setValue(row.find('.discount'), discount);
 
 								const qtyInput = row.find('.qty-per-pc');
 								qtyInput.trigger('input'); // will call showResults()
