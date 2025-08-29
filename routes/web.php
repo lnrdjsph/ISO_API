@@ -27,7 +27,8 @@ Route::middleware(['auth'])->group(function () {
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();
-        return redirect('/login');
+
+        return redirect(env('FORTIFY_LOGOUT_REDIRECT', '/login'));
     })->name('logout');
 });
 
