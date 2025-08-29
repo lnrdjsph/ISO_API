@@ -12,41 +12,46 @@ class RouteServiceProvider extends ServiceProvider
 {
     /**
      * The path to the "home" route for your application.
+     * This is where users will be redirected after authentication.
      *
-     * Typically, users are redirected here after authentication.
+     * Controlled by .env FORTIFY_REDIRECT else defaults to "/".
      *
      * @var string
      */
-    public const HOME = '/';
+    public static string $HOME;
 
     /**
-     * Define your route model bindings, pattern filters, and other route configuration.
-     *
-     * @return void
+     * Define route model bindings, pattern filters, and other route configuration.
      */
-    public function boot()
+    public function boot(): void
     {
+        // Read redirect target from .env
+        self::$HOME = env('FORTIFY_REDIRECT', '/');
+
         $this->configureRateLimiting();
 
         $this->routes(function () {
+            // API routes
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
+            // Web routes (prefix taken from .env APP_URL base if needed)
             Route::middleware('web')
+                ->prefix(trim(parse_url(env('APP_URL', ''), PHP_URL_PATH) ?? '', '/'))
                 ->group(base_path('routes/web.php'));
         });
     }
 
     /**
      * Configure the rate limiters for the application.
-     *
-     * @return void
      */
-    protected function configureRateLimiting()
+    protected function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(60)->by(
+                $request->user()?->id ?: $request->ip()
+            );
         });
     }
 }
