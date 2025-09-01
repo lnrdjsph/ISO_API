@@ -103,7 +103,7 @@ class UserController extends Controller
        
 
 
-        public function getUserData(Request $request)
+    public function getUserData(Request $request)
     {
         $cardNo = trim($request->input('card_no'));
 
