@@ -37,7 +37,7 @@
 														</div>
 												</div>
 												<div class="flex items-center space-x-4">
-														<div class="mx-auto w-full max-w-md rounded-lg bg-white p-6 shadow-md">
+														<div class="mx-auto w-full max-w-md rounded-lg">
 																<form
 																		id="updateAllocationsForm"
 																		action="{{ route('update.allocations') }}"

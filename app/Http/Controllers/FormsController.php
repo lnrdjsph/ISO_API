@@ -39,8 +39,7 @@ class FormsController extends Controller
 
 
 
-    public function sof_submit(Request $request)
-    {
+    public function sof_submit(Request $request){
         $validated = $request->validate([
             'channel_order' => 'required|string',
             'time_order' => 'required',
@@ -193,7 +192,7 @@ class FormsController extends Controller
 
         }
 
-
+        $this->deductAllocationStock($order->id);
 
         return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
     }
@@ -240,4 +239,40 @@ class FormsController extends Controller
         // Logic for rendering ROF form
         return view('forms.rof');
     }
+
+
+    public function deductAllocationStock($orderId)
+    {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
+        // Get order with items
+        $order = Order::with('items')->findOrFail($orderId);
+
+        foreach ($order->items as $item) {
+            // Find product by SKU in location-specific table
+            $product = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', strtoupper($item->sku))
+                ->first();
+
+            if ($product) {
+                // Deduct grand total qty directly (no case conversion)
+                $newAllocation = max(0, ($product->allocation_per_case ?? 0) - $item->total_qty);
+
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newAllocation,
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
+
+        return true;
+    }
+
+
+
 }
