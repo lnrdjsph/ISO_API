@@ -40,6 +40,69 @@ class UpdateAllProductAllocations extends Command
 
         $totalProcessed = 0;
 
+        // ✅ Step 1: Fetch all SKUs across all product tables
+        $allSkus = [];
+        foreach ($productTables as $tableName) {
+            $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
+            $allSkus = array_merge($allSkus, $skus);
+        }
+        $allSkus = array_unique($allSkus);
+
+        $this->log($logFile, "Fetched total unique SKUs: " . count($allSkus));
+
+        if (empty($allSkus)) {
+            $this->log($logFile, "No SKUs found. Exiting.");
+            return Command::SUCCESS;
+        }
+
+        $inClause = "'" . implode("','", $allSkus) . "'";
+
+        // ✅ Step 2: Query Oracle inventory once
+        $this->log($logFile, "Running Oracle inventory query for ALL SKUs...");
+        $inventoryMap = [];
+        try {
+            $inventoryRows = DB::connection('oracle_wms')->select("
+                SELECT ci.item_id,
+                    SUM(CASE WHEN c.container_status NOT IN ('S','D','A') 
+                                THEN ci.unit_qty ELSE 0 END) AS total_qty
+                FROM rwms.container_item ci
+                JOIN rwms.container c
+                ON ci.facility_id = c.facility_id
+                AND ci.container_id = c.container_id
+                WHERE ci.item_id IN ({$inClause})
+                GROUP BY ci.item_id
+            ");
+            foreach ($inventoryRows as $row) {
+                $inventoryMap[$row->item_id] = (int) $row->total_qty;
+            }
+            $this->log($logFile, "Inventory query returned " . count($inventoryRows) . " rows.");
+        } catch (\Exception $e) {
+            $this->log($logFile, "Oracle inventory query failed: " . $e->getMessage());
+        }
+
+        // ✅ Step 3: Query Oracle case pack once
+        $this->log($logFile, "Running Oracle case pack query for ALL SKUs...");
+        $caseMap = [];
+        try {
+            $caseRows = DB::connection('oracle_wms')->select("
+                SELECT item_id, unit_qty
+                FROM (
+                    SELECT ci.item_id, ci.unit_qty,
+                        ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+                    FROM rwms.container_item ci
+                    WHERE ci.item_id IN ({$inClause})
+                )
+                WHERE rn <= 5
+            ");
+            foreach ($caseRows as $row) {
+                $caseMap[$row->item_id][] = $row->unit_qty;
+            }
+            $this->log($logFile, "Case pack query returned " . count($caseRows) . " rows.");
+        } catch (\Exception $e) {
+            $this->log($logFile, "Oracle case pack query failed: " . $e->getMessage());
+        }
+
+        // ✅ Step 4: Process each store table using cached maps
         foreach ($productTables as $tableName) {
             $this->log($logFile, "---- Processing table: {$tableName} ----");
 
@@ -47,122 +110,56 @@ class UpdateAllProductAllocations extends Command
             $tableProcessed = 0;
             $tableSkipped   = 0;
 
-            try {
-                // 1. Fetch SKUs
-                $this->log($logFile, "Fetching SKUs from {$tableName}...");
-                $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
-                $this->log($logFile, "Fetched " . count($skus) . " SKUs.");
+            $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
 
-                if (empty($skus)) {
-                    $this->log($logFile, "No SKUs found in {$tableName}, skipping.");
-                    continue;
+            foreach ($skus as $sku) {
+                $data = ['updated_at' => now()];
+
+                if (isset($inventoryMap[$sku])) {
+                    $data['wms_allocation_per_case'] = $inventoryMap[$sku];
                 }
 
-                $inClause = "'" . implode("','", $skus) . "'";
-
-                // 2. Inventory Query
-                $this->log($logFile, "Running Oracle inventory query...");
-                $inventoryRows = [];
-                try {
-                    $inventoryRows = DB::connection('oracle_wms')->select("
-                        SELECT ci.item_id,
-                            SUM(CASE WHEN c.container_status NOT IN ('S','D','A') 
-                                        THEN ci.unit_qty ELSE 0 END) AS total_qty
-                        FROM rwms.container_item ci
-                        JOIN rwms.container c
-                        ON ci.facility_id = c.facility_id
-                        AND ci.container_id = c.container_id
-                        WHERE ci.item_id IN ({$inClause})
-                        GROUP BY ci.item_id
-                    ");
-                    $this->log($logFile, "Inventory query returned " . count($inventoryRows) . " rows.");
-                } catch (\Exception $e) {
-                    $this->log($logFile, "Oracle inventory query failed: " . $e->getMessage());
+                if (isset($caseMap[$sku])) {
+                    $data['case_pack'] = implode(' | ', array_unique($caseMap[$sku]));
                 }
 
-                $inventoryMap = [];
-                foreach ($inventoryRows as $row) {
-                    $inventoryMap[$row->item_id] = (int) $row->total_qty;
-                }
+                if (count($data) > 1) {
+                    try {
+                        DB::connection('mysql')->table($tableName)
+                            ->where('sku', $sku)
+                            ->update($data);
 
-                // 3. Case Pack Query
-                $this->log($logFile, "Running Oracle case pack query...");
-                $caseRows = [];
-                try {
-                    $caseRows = DB::connection('oracle_wms')->select("
-                        SELECT item_id, unit_qty
-                        FROM (
-                            SELECT ci.item_id, ci.unit_qty,
-                                ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-                            FROM rwms.container_item ci
-                            WHERE ci.item_id IN ({$inClause})
-                        )
-                        WHERE rn <= 5
-                    ");
-                    $this->log($logFile, "Case pack query returned " . count($caseRows) . " rows.");
-                } catch (\Exception $e) {
-                    $this->log($logFile, "Oracle case pack query failed: " . $e->getMessage());
-                }
-
-                $caseMap = [];
-                foreach ($caseRows as $row) {
-                    $caseMap[$row->item_id][] = $row->unit_qty;
-                }
-
-                // 4. Apply updates per SKU
-                $this->log($logFile, "Updating SKUs in {$tableName}...");
-                foreach ($skus as $sku) {
-                    $data = ['updated_at' => now()];
-
-                    if (isset($inventoryMap[$sku])) {
-                        $data['wms_allocation_per_case'] = $inventoryMap[$sku];
+                        $tableProcessed++;
+                    } catch (\Exception $e) {
+                        $this->log($logFile, "Update failed for SKU {$sku}: " . $e->getMessage());
                     }
-
-                    if (isset($caseMap[$sku])) {
-                        $data['case_pack'] = implode(' | ', array_unique($caseMap[$sku]));
-                    }
-
-                    if (count($data) > 1) {
-                        try {
-                            DB::connection('mysql')->table($tableName)
-                                ->where('sku', $sku)
-                                ->update($data);
-
-                            $tableProcessed++;
-                            $this->log($logFile, "SKU {$sku} updated: " . json_encode($data));
-                        } catch (\Exception $e) {
-                            $this->log($logFile, "Update failed for SKU {$sku}: " . $e->getMessage());
-                        }
-                    } else {
-                        $tableSkipped++;
-                        $this->log($logFile, "SKU {$sku} skipped (no inventory/case pack).");
-                    }
+                } else {
+                    $tableSkipped++;
                 }
-
-                // 5. Finish table
-                $tableEndTime = microtime(true);
-                $duration = round($tableEndTime - $tableStartTime, 2);
-                $this->log($logFile, "Table {$tableName} completed: {$tableProcessed} updated, {$tableSkipped} skipped in {$duration}s");
-
-                $totalProcessed += $tableProcessed;
-            } catch (\Exception $e) {
-                $this->log($logFile, "Error processing table {$tableName}: " . $e->getMessage());
             }
+
+            $tableEndTime = microtime(true);
+            $duration = round($tableEndTime - $tableStartTime, 2);
+
+            $this->log($logFile, "Table {$tableName} completed: {$tableProcessed} updated, {$tableSkipped} skipped in {$duration}s");
+
+            $totalProcessed += $tableProcessed;
         }
 
-        $this->log($logFile, "=== All products updated ===");
-        $this->log($logFile, "Total SKUs processed: {$totalProcessed}");
-
+        // ✅ Final log
         $endTime = microtime(true);
         $duration = $endTime - $startTime;
 
         $minutes = floor($duration / 60);
         $seconds = round($duration % 60);
 
+        $this->log($logFile, "=== All products updated ===");
+        $this->log($logFile, "Total SKUs processed: {$totalProcessed}");
         $this->log($logFile, "Process completed in {$minutes}m {$seconds}s");
 
         return Command::SUCCESS;
     }
+
 
     private function log(string $file, string $message)
     {

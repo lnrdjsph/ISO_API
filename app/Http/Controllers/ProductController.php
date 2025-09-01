@@ -1211,24 +1211,20 @@ class ProductController extends Controller
 
     public function wmsUpdate(Request $request)
     {
-        set_time_limit(1800);
-
         $user = auth()->user();
         $location = $user && $user->user_location ? strtolower($user->user_location) : null;
 
-        // Pass location as option
-        Artisan::call('products:update-allocations', [
-            '--location' => $location
+        // Run in background
+        Artisan::queue('products:update-allocations', [
+            '--location' => $location,
         ]);
-
-        $output = Artisan::output();
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Allocations updated successfully.',
-            'output'  => $output,
+            'message' => 'Allocations update started. You will see results in logs.',
         ]);
     }
+
 
 
 }

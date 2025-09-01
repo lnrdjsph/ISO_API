@@ -60,7 +60,7 @@
 														<!-- Full Page Loader -->
 														<div
 																id="pageLoader"
-																class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50"
+																class="fixed inset-0 left-[-16px] z-50 flex hidden items-center justify-center bg-black/50"
 														>
 																<div class="flex flex-col items-center rounded-2xl bg-white px-8 py-6 shadow-lg">
 																		<!-- Spinner -->
