@@ -53,6 +53,8 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/sof', [FormsController::class, 'sof_submit'])->name('sof_submit');
         Route::get('/rof', [FormsController::class, 'rof'])->name('rof');
         Route::post('/rof', [FormsController::class, 'rof_submit'])->name('rof_submit');
+        Route::post('/card-info', [FormsController::class, 'getCardInfo'])->name('get_card_info');
+
     });
 
     // Products Routes

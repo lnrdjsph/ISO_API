@@ -228,7 +228,7 @@ class FormsController extends Controller
             DB::commit();
 
             return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['stock_error' => $e->getMessage()]);
@@ -311,6 +311,68 @@ class FormsController extends Controller
         return true;
     }
 
+
+public function getCardInfo(Request $request)
+{
+    $request->validate([
+        'card_no' => 'required|string',
+    ]);
+
+    try {
+        $cardNo = $request->input('card_no');
+
+        $user = DB::connection('oracle_mbc')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
+            ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
+            ->select('CRD.NAME_ON_CARD', 'CNTC.CNCT_LINE_TYP', 'CNTC.CNCT_VAL')
+            ->where('CRD.CARD_NO', $cardNo)
+            ->where('CRD.CARD_TYP', 'LLTY')
+            ->whereIn('CRD.PRODUCT_TYP', ['INST_CUST_CARD', 'INST_LOY'])
+            ->where('CRD.STATUS_CODE', '1')
+            ->get()
+            ->groupBy(function($item) {
+                return strtoupper($item->CARD_NO ?? '');
+            })
+            ->map(function ($items) {
+                $first = $items->first();
+                $mobile = null;
+
+                foreach ($items as $item) {
+                    $itemArr = array_change_key_case((array) $item, CASE_LOWER);
+                    if (($itemArr['cnct_line_typ'] ?? null) === 'MOBILE_1') {
+                        $mobile = $itemArr['cnct_val'] ?? null;
+                        break;
+                    }
+                }
+
+                $firstArr = array_change_key_case((array) $first, CASE_LOWER);
+
+                return [
+                    'name_on_card' => $firstArr['name_on_card'] ?? null,
+                    'mobile_1' => $mobile,
+                ];
+            })
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                "message" => "Card not found",
+                "status" => "404",
+            ], 404);
+        }
+
+        return response()->json([
+            "message" => "success",
+            "status" => "200",
+            "data" => $user
+        ]);
+
+    } catch (\Illuminate\Database\QueryException $ex) {
+        return response()->json([
+            "message" => "Database error: " . $ex->getMessage(),
+            "status" => "500",
+        ], 500);
+    }
+}
 
 
 }
