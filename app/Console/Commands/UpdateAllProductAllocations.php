@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\File;
 
 class UpdateAllProductAllocations extends Command
 {
-    protected $signature = 'products:update-allocations';
-    protected $description = 'Update WMS allocation and case pack separately for hardcoded products tables using oracle_wms config';
+    // ✅ Add location option
+    protected $signature = 'products:update-allocations {--location=}';
+    protected $description = 'Update WMS allocation and case pack using oracle_wms config';
 
     public function handle()
     {
@@ -27,7 +28,16 @@ class UpdateAllProductAllocations extends Command
 
         $this->log($logFile, "=== Starting allocation update ===");
 
-        $productTables = ['products_f2', 'products_h8'];
+        // ✅ Pick tables based on location option
+        $location = strtolower($this->option('location'));
+        if ($location) {
+            $productTables = ["products_{$location}"];
+        } else {
+            $productTables = ['products_f2', 'products_h8']; // fallback default
+        }
+
+        $this->log($logFile, "Tables to process: " . implode(', ', $productTables));
+
         $totalProcessed = 0;
 
         foreach ($productTables as $tableName) {
@@ -140,7 +150,6 @@ class UpdateAllProductAllocations extends Command
             }
         }
 
-
         $this->log($logFile, "=== All products updated ===");
         $this->log($logFile, "Total SKUs processed: {$totalProcessed}");
 
@@ -162,7 +171,6 @@ class UpdateAllProductAllocations extends Command
 
         // Live console output
         $this->info("[{$timestamp}] {$message}");
-        flush(); // Force output immediately
+        flush();
     }
-
 }

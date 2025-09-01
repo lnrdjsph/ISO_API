@@ -5,112 +5,11 @@
 @section('content')
 		<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8">
 				<div class="mx-auto max-w-full overflow-hidden px-4 sm:px-6 lg:px-8">
-						<!-- Loading Skeleton -->
-						<div
-								id="skeleton-loader"
-								class="animate-pulse"
-						>
-								<!-- Header Skeleton -->
-								<div class="mb-8">
-										<div class="flex items-center justify-between">
-												<div class="flex items-center space-x-4">
-														<div class="h-14 w-14 rounded-xl bg-gray-300 p-3"></div>
-														<div>
-																<div class="mb-2 h-8 w-48 rounded bg-gray-300"></div>
-																<div class="h-4 w-64 rounded bg-gray-200"></div>
-														</div>
-												</div>
-												<div class="h-10 w-32 rounded-2xl bg-gray-200 px-4 py-2"></div>
-										</div>
-								</div>
-
-								<!-- Search Bar Skeleton -->
-								<div class="mb-8">
-										<div class="flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
-												<div class="relative max-w-md flex-1">
-														<div class="h-12 rounded-2xl bg-gray-200"></div>
-												</div>
-												<div class="flex items-center space-x-3">
-														<div class="h-10 w-20 rounded-xl bg-gray-200"></div>
-														<div class="h-10 w-20 rounded-xl bg-gray-200"></div>
-														<div class="h-12 w-32 rounded-2xl bg-gray-300"></div>
-												</div>
-										</div>
-								</div>
-
-								<!-- Table Skeleton -->
-								<div class="overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
-										<div class="overflow-x-auto">
-												<table class="min-w-full">
-														<thead>
-																<tr class="bg-gray-700">
-																		<th class="rounded-tl-3xl py-4 pl-14 text-left">
-																				<div class="h-4 w-12 rounded bg-gray-500"></div>
-																		</th>
-																		<th class="px-3 py-3 text-left">
-																				<div class="h-4 w-24 rounded bg-gray-500"></div>
-																		</th>
-																		<th class="px-3 py-3 text-left">
-																				<div class="h-4 w-20 rounded bg-gray-500"></div>
-																		</th>
-																		<th class="px-3 py-3 text-left">
-																				<div class="h-4 w-16 rounded bg-gray-500"></div>
-																		</th>
-																		<th class="px-3 py-3 text-left">
-																				<div class="h-4 w-16 rounded bg-gray-500"></div>
-																		</th>
-																		<th class="rounded-tr-3xl px-3 py-3 text-left">
-																				<div class="h-4 w-12 rounded bg-gray-500"></div>
-																		</th>
-																</tr>
-														</thead>
-														<tbody class="divide-y divide-gray-100/60">
-																@for ($i = 0; $i < 10; $i++)
-																		<tr>
-																				<td class="px-6 py-5">
-																						<div class="flex items-center">
-																								<div class="mr-3 h-2 w-2 rounded-full bg-gray-300"></div>
-																								<div class="h-6 w-20 rounded-lg bg-gray-200"></div>
-																						</div>
-																				</td>
-																				<td class="px-6 py-5">
-																						<div class="h-4 w-32 rounded bg-gray-200"></div>
-																				</td>
-																				<td class="px-6 py-5">
-																						<div class="h-6 w-16 rounded-full bg-gray-200"></div>
-																				</td>
-																				<td class="px-6 py-5">
-																						<div class="h-6 w-20 rounded-full bg-gray-200"></div>
-																				</td>
-																				<td class="px-6 py-5">
-																						<div class="w-18 h-6 rounded-full bg-gray-200"></div>
-																				</td>
-																				<td class="px-6 py-5">
-																						<div class="h-6 w-12 rounded-full bg-gray-200"></div>
-																				</td>
-																		</tr>
-																@endfor
-														</tbody>
-												</table>
-										</div>
-										<!-- Pagination Skeleton -->
-										<div class="rounded-b-3xl bg-white px-6 py-2 backdrop-blur-sm">
-												<div class="flex items-center justify-between">
-														<div class="h-4 w-32 rounded bg-gray-200"></div>
-														<div class="flex space-x-2">
-																<div class="h-8 w-8 rounded bg-gray-200"></div>
-																<div class="h-8 w-8 rounded bg-gray-200"></div>
-																<div class="h-8 w-8 rounded bg-gray-200"></div>
-														</div>
-												</div>
-										</div>
-								</div>
-						</div>
 
 						<!-- Actual Content (Initially Hidden) -->
 						<div
 								id="actual-content"
-								class="hidden"
+								class=""
 						>
 								<!-- Header Section -->
 								<div class="mb-8">
@@ -138,33 +37,57 @@
 														</div>
 												</div>
 												<div class="flex items-center space-x-4">
-														{{-- <div class="mx-auto w-full max-w-md rounded-lg bg-white p-6 shadow-md"> --}}
-														<form
-																id="updateAllocationsForm"
-																action="{{ route('update.allocations') }}"
-																method="POST"
-														>
-																@csrf
-																<button
-																		type="submit"
-																		id="updateButton"
-																		class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+														<div class="mx-auto w-full max-w-md rounded-lg bg-white p-6 shadow-md">
+																<form
+																		id="updateAllocationsForm"
+																		action="{{ route('update.allocations') }}"
+																		method="POST"
 																>
-																		<div
-																				id="spinner"
-																				class="me-5 hidden h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
-																		></div>
+																		@csrf
+																		<button
+																				type="submit"
+																				id="updateButton"
+																				class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+																		>
+																				<span
+																						id="buttonText"
+																						class="text-sm"
+																				>Update Allocations</span>
+																		</button>
+																</form>
+														</div>
 
-																		<span
-																				id="buttonText"
-																				class="text-sm"
-																		>Update Allocations</span>
-																</button>
-																<p
-																		id="statusMessage"
-																		class="mt-3 hidden text-center text-sm text-gray-600"
-																></p>
-														</form>
+														<!-- Full Page Loader -->
+														<div
+																id="pageLoader"
+																class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50"
+														>
+																<div class="flex flex-col items-center rounded-2xl bg-white px-8 py-6 shadow-lg">
+																		<!-- Spinner -->
+																		<div class="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+
+																		<!-- Title -->
+																		<p class="mt-4 text-lg font-semibold text-gray-700">
+																				Updating the following fields:
+																		</p>
+
+																		<!-- List -->
+																		<ul class="mt-3 space-y-1 text-gray-600">
+																				<li class="flex items-center gap-2">
+																						<span class="h-2 w-2 rounded-full bg-blue-500"></span>
+																						WMS Inventor
+																				</li>
+																				<li class="flex items-center gap-2">
+																						<span class="h-2 w-2 rounded-full bg-blue-500"></span>
+																						Case Pack
+																				</li>
+																		</ul>
+
+																		<!-- Subtext -->
+																		<p class="mt-3 text-sm text-gray-500">Please wait, this may take a few minutes...</p>
+																</div>
+														</div>
+
 
 														<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -182,16 +105,9 @@
 																		}).then((result) => {
 																				if (!result.isConfirmed) return;
 
-																				const button = document.getElementById('updateButton');
-																				const spinner = document.getElementById('spinner');
-																				const buttonText = document.getElementById('buttonText');
-																				const statusMessage = document.getElementById('statusMessage');
-
-																				// Show spinner and disable button
-																				spinner.classList.remove('hidden');
-																				button.disabled = true;
-																				buttonText.textContent = 'Updating...';
-																				statusMessage.classList.add('hidden');
+																				// Show full page loader
+																				const loader = document.getElementById('pageLoader');
+																				loader.classList.remove('hidden');
 
 																				fetch(this.action, {
 																								method: 'POST',
@@ -202,22 +118,27 @@
 																						})
 																						.then(res => res.json())
 																						.then(data => {
-																								spinner.classList.add('hidden');
-																								button.disabled = false;
-																								buttonText.textContent = 'Update Allocations';
-																								statusMessage.textContent = data.message;
-																								statusMessage.classList.remove('hidden');
-																								statusMessage.classList.remove('text-red-500');
-																								statusMessage.classList.add('text-green-600');
+																								loader.classList.add('hidden');
+
+																								Swal.fire({
+																										title: 'Success',
+																										text: data.message,
+																										icon: 'success',
+																										confirmButtonText: 'OK'
+																								}).then(() => {
+																										// Reload only when user clicks OK
+																										window.location.reload();
+																								});
 																						})
 																						.catch(err => {
-																								spinner.classList.add('hidden');
-																								button.disabled = false;
-																								buttonText.textContent = 'Update Allocations';
-																								statusMessage.textContent = 'Error running allocations.';
-																								statusMessage.classList.remove('hidden');
-																								statusMessage.classList.remove('text-green-600');
-																								statusMessage.classList.add('text-red-500');
+																								loader.classList.add('hidden');
+
+																								Swal.fire({
+																										title: 'Error',
+																										text: 'Error running allocations.',
+																										icon: 'error',
+																										confirmButtonText: 'OK'
+																								});
 																						});
 																		});
 																});
@@ -941,20 +862,6 @@
 				$(document).ready(function() {
 						let selectedProducts = new Set();
 
-						// Simulate loading time and show actual content
-						setTimeout(function() {
-								$('#skeleton-loader').fadeOut(400, function() {
-										$('#actual-content').removeClass('hidden').hide().fadeIn(600);
-
-										// Animate table rows
-										$('tbody tr').each(function(index) {
-												const row = $(this);
-												setTimeout(function() {
-														row.removeClass('opacity-0').addClass('opacity-100');
-												}, index * 100);
-										});
-								});
-						}, 100);
 
 						// Checkbox functionality
 						function updateBulkActionsBar() {
