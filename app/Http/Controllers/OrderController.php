@@ -6,7 +6,9 @@ use App\Models\ISO_B2B\Order;
 use App\Models\ISO_B2B\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+
 
 class OrderController extends Controller
 {
@@ -260,6 +262,7 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($request->id);
+        $this->revertAllocationStock($order->id);
         $order->order_status = 'archived';
         $order->save();
 
@@ -275,8 +278,86 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'pending';
+        $this->deductAllocationStock($order->id);
         $order->save();
 
         return redirect()->route('orders.index')->with('success', 'Order restored successfully.');
     }
+
+
+
+    // public function handleCompletedOrProcessing($order)
+    // {
+    //     // Example: call your deductAllocations logic
+    //     $this->deductAllocations($order);
+
+    //     // or do logging
+    //     Log::info("Order {$order->id} status set to {$order->order_status}, allocations updated.");
+    // }
+
+    public function deductAllocationStock($orderId)
+    {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
+        // Get order with items
+        $order = Order::with('items')->findOrFail($orderId);
+
+        foreach ($order->items as $item) {
+            // Find product by SKU in location-specific table
+            $product = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', strtoupper($item->sku))
+                ->first();
+
+            if ($product) {
+                // Deduct grand total qty directly (no case conversion)
+                $newAllocation = max(0, ($product->allocation_per_case ?? 0) - $item->total_qty);
+
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newAllocation,
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
+
+        return true;
+    }
+
+
+
+    public function revertAllocationStock($orderId)
+    {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
+        // Get order with items
+        $order = Order::with('items')->findOrFail($orderId);
+
+        foreach ($order->items as $item) {
+            $product = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', strtoupper($item->sku))
+                ->first();
+
+            if ($product) {
+                // Add back the total_qty that was deducted
+                $newAllocation = ($product->allocation_per_case ?? 0) + $item->total_qty;
+
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newAllocation,
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
+
+        return true;
+    }
+
 }
