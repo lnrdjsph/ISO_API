@@ -36,6 +36,36 @@ class FormsController extends Controller
         return view('forms.sof', compact('orders', 'nextSofId'));
     }
 
+    public function checkAllocationStock(array $orders)
+    {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = 'products_' . $userLocation;
+
+        // Group orders by SKU
+        $skuTotals = [];
+        foreach ($orders as $item) {
+            $sku = strtoupper($item['sku']);
+            $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $item['total_qty'];
+        }
+
+        // Validate stock
+        foreach ($skuTotals as $sku => $requiredQty) {
+            $product = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', $sku)
+                ->first();
+
+            if (!$product) {
+                throw new \Exception("Product with SKU {$sku} not found in {$tableName}.");
+            }
+
+            if (($product->allocation_per_case ?? 0) < $requiredQty) {
+                throw new \Exception("Insufficient stock for SKU {$sku}. Required: {$requiredQty}, Available: {$product->allocation_per_case}");
+            }
+        }
+
+        return true; // all good
+    }
 
 
 
@@ -109,92 +139,100 @@ class FormsController extends Controller
             )->validate();
         }
 
-        // Save main order info
+        try{
+            // Save main order info
+            $this->checkAllocationStock($validated['orders']);
+            // === Generate SOF ID ===
+            $today = now()->format('Ymd');
+            $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
+                ->orderBy('sof_id', 'desc')
+                ->first();
 
-        // === Generate SOF ID ===
-        $today = now()->format('Ymd');
-        $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
-            ->orderBy('sof_id', 'desc')
-            ->first();
-
-        if ($latest) {
-            $lastNumber = (int) substr($latest->sof_id, -3);
-            $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-        } else {
-            $nextNumber = '001';
-        }
-
-        $nextSofId = "SOF{$today}-{$nextNumber}";
-
-        $order = Order::create([
-            'sof_id' => $nextSofId, // <-- add this
-            'channel_order' => $validated['channel_order'],
-            'time_order' => $validated['time_order'],
-            'payment_center' => $validated['payment_center'],
-            'mode_payment' => $validated['mode_payment'],
-            'payment_date' => $validated['payment_date'],
-            'mode_dispatching' => $validated['mode_dispatching'],
-            'delivery_date' => $validated['delivery_date'],
-            'address' => $validated['address'] ?? null,
-            'landmark' => $validated['landmark'] ?? null,
-
-            // Save customer + request info
-            'requesting_store' => $validated['requesting_store'],
-            'requested_by' => $validated['requested_by'],
-            'mbc_card_no' => $validated['mbc_card_no'],
-            'customer_name' => $validated['customer_name'],
-            'contact_number' => $validated['contact_number'],
-        ]);
-
-        // Save each item
-        foreach ($validated['orders'] as $item) {
-            // Determine scheme based on sale_type
-            $scheme = ($item['sale_type'] ?? '') === 'Discount' ? 'Discount' : ($item['scheme'] ?? null);
-
-            // Save main item
-            $order->items()->create([
-                'sku' => $item['sku'] ?? null,
-                'item_description' => $item['item_description'] ?? null,
-                'scheme' => $scheme,
-                'price_per_pc' => $item['price_per_pc'] ?? 0,
-                'price' => $item['price'] ?? 0,
-                'qty_per_pc' => $item['qty_per_pc'] ?? 0,
-                'qty_per_cs' => $item['qty_per_cs'] ?? 0,
-                'freebies_per_cs' => 0,
-                'total_qty' => $item['qty_per_cs'] ?? 0,
-                'discount' => $item['discount'] ?? 0,
-                'amount' => $item['amount'] ?? 0,
-                'remarks' => $item['remarks'] ?? null,
-                'store_order_no' => $item['store_order_no'] ?? null,
-                'item_type' => (!empty($item['discount']) && $item['discount'] > 0) ? 'DISCOUNT' : 'MAIN',
-            ]);
-
-
-            if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
-                $order->items()->create([
-                    'sku' => $item['freebie_sku'] ?? $item['sku'] ?? null,
-                    'item_description' => $item['freebie_description'] ?? $item['item_description'] ?? null,
-                    'scheme' => 'Freebie',
-                    'price_per_pc' => $item['freebie_price_per_pc'] ?? $item['price_per_pc'] ?? 0,
-                    'price' => $item['freebie_price'] ?? $item['price'] ?? 0,
-                    'qty_per_pc' => $item['freebie_qty_per_pc'] ?? $item['qty_per_pc'] ?? 0,
-                    'qty_per_cs' => 0,
-                    'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
-                    'total_qty' => $item['freebies_per_cs'] ?? 0,
-                    'amount' => 0,
-                    'remarks' => $item['remarks'] ?? null,
-                    'store_order_no' => $item['store_order_no'] ?? null,
-                    'item_type' => 'FREEBIE',
-                ]);
+            if ($latest) {
+                $lastNumber = (int) substr($latest->sof_id, -3);
+                $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            } else {
+                $nextNumber = '001';
             }
 
+            $nextSofId = "SOF{$today}-{$nextNumber}";
+
+            $order = Order::create([
+                'sof_id' => $nextSofId, // <-- add this
+                'channel_order' => $validated['channel_order'],
+                'time_order' => $validated['time_order'],
+                'payment_center' => $validated['payment_center'],
+                'mode_payment' => $validated['mode_payment'],
+                'payment_date' => $validated['payment_date'],
+                'mode_dispatching' => $validated['mode_dispatching'],
+                'delivery_date' => $validated['delivery_date'],
+                'address' => $validated['address'] ?? null,
+                'landmark' => $validated['landmark'] ?? null,
+
+                // Save customer + request info
+                'requesting_store' => $validated['requesting_store'],
+                'requested_by' => $validated['requested_by'],
+                'mbc_card_no' => $validated['mbc_card_no'],
+                'customer_name' => $validated['customer_name'],
+                'contact_number' => $validated['contact_number'],
+            ]);
+
+            // Save each item
+            foreach ($validated['orders'] as $item) {
+                // Determine scheme based on sale_type
+                $scheme = ($item['sale_type'] ?? '') === 'Discount' ? 'Discount' : ($item['scheme'] ?? null);
+
+                // Save main item
+                $order->items()->create([
+                    'sku' => $item['sku'] ?? null,
+                    'item_description' => $item['item_description'] ?? null,
+                    'scheme' => $scheme,
+                    'price_per_pc' => $item['price_per_pc'] ?? 0,
+                    'price' => $item['price'] ?? 0,
+                    'qty_per_pc' => $item['qty_per_pc'] ?? 0,
+                    'qty_per_cs' => $item['qty_per_cs'] ?? 0,
+                    'freebies_per_cs' => 0,
+                    'total_qty' => $item['qty_per_cs'] ?? 0,
+                    'discount' => $item['discount'] ?? 0,
+                    'amount' => $item['amount'] ?? 0,
+                    'remarks' => $item['remarks'] ?? null,
+                    'store_order_no' => $item['store_order_no'] ?? null,
+                    'item_type' => (!empty($item['discount']) && $item['discount'] > 0) ? 'DISCOUNT' : 'MAIN',
+                ]);
 
 
+                if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
+                    $order->items()->create([
+                        'sku' => $item['freebie_sku'] ?? $item['sku'] ?? null,
+                        'item_description' => $item['freebie_description'] ?? $item['item_description'] ?? null,
+                        'scheme' => 'Freebie',
+                        'price_per_pc' => $item['freebie_price_per_pc'] ?? $item['price_per_pc'] ?? 0,
+                        'price' => $item['freebie_price'] ?? $item['price'] ?? 0,
+                        'qty_per_pc' => $item['freebie_qty_per_pc'] ?? $item['qty_per_pc'] ?? 0,
+                        'qty_per_cs' => 0,
+                        'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
+                        'total_qty' => $item['freebies_per_cs'] ?? 0,
+                        'amount' => 0,
+                        'remarks' => $item['remarks'] ?? null,
+                        'store_order_no' => $item['store_order_no'] ?? null,
+                        'item_type' => 'FREEBIE',
+                    ]);
+                }
+
+
+
+            }
+
+            $this->deductAllocationStock($order->id);
+
+            DB::commit();
+
+            return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['stock_error' => $e->getMessage()]);
         }
-
-        $this->deductAllocationStock($order->id);
-
-        return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
     }
 
     
