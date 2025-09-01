@@ -108,6 +108,10 @@ Route::prefix('others')->name('others.')->group(function () {
 // manually trigger wms allocations
 Route::post('/update-allocations', [ProductController::class, 'wmsUpdate'])
     ->name('update.allocations');
+    
+// Check allocations status
+Route::get('/update-allocations/status', [ProductController::class, 'wmsStatus'])
+    ->name('update.allocations.status');
 
 // unauthorized route
 Route::view('/403', 'errors.403');

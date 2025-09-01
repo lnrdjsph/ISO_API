@@ -93,7 +93,7 @@
 
 														<script>
 																document.getElementById('updateAllocationsForm').addEventListener('submit', function(e) {
-																		e.preventDefault(); // prevent default form submit
+																		e.preventDefault();
 
 																		Swal.fire({
 																				title: 'Warning',
@@ -105,37 +105,61 @@
 																		}).then((result) => {
 																				if (!result.isConfirmed) return;
 
-																				// Show full page loader
 																				const loader = document.getElementById('pageLoader');
+																				const loaderMessage = loader.querySelector("p");
 																				loader.classList.remove('hidden');
+																				loaderMessage.textContent = "Starting allocations update...";
 
+																				// Step 1: Trigger update
 																				fetch(this.action, {
 																								method: 'POST',
 																								headers: {
 																										'X-CSRF-TOKEN': '{{ csrf_token() }}',
 																										'Accept': 'application/json'
-																								},
+																								}
 																						})
 																						.then(res => res.json())
 																						.then(data => {
-																								loader.classList.add('hidden');
+																								loaderMessage.textContent = "Allocations update started. Checking progress...";
 
-																								Swal.fire({
-																										title: 'Success',
-																										text: data.message,
-																										icon: 'success',
-																										confirmButtonText: 'OK'
-																								}).then(() => {
-																										// Reload only when user clicks OK
-																										window.location.reload();
-																								});
+																								// Step 2: Poll status
+																								const checkStatus = setInterval(() => {
+																										fetch("{{ route('update.allocations.status') }}") // <-- make sure you define this route
+																												.then(res => res.json())
+																												.then(statusData => {
+																														loaderMessage.textContent = statusData.message;
+
+																														if (statusData.status === 'done') {
+																																clearInterval(checkStatus);
+																																loader.classList.add('hidden');
+
+																																Swal.fire({
+																																		title: 'Completed',
+																																		text: 'Allocations update finished successfully.',
+																																		icon: 'success',
+																																		confirmButtonText: 'OK'
+																																}).then(() => {
+																																		window.location.reload();
+																																});
+																														}
+																												})
+																												.catch(err => {
+																														clearInterval(checkStatus);
+																														loader.classList.add('hidden');
+																														Swal.fire({
+																																title: 'Error',
+																																text: 'Failed to check status.',
+																																icon: 'error',
+																																confirmButtonText: 'OK'
+																														});
+																												});
+																								}, 3000); // check every 3 seconds
 																						})
 																						.catch(err => {
 																								loader.classList.add('hidden');
-
 																								Swal.fire({
 																										title: 'Error',
-																										text: 'Error running allocations.',
+																										text: 'Error starting allocations update.',
 																										icon: 'error',
 																										confirmButtonText: 'OK'
 																								});
@@ -143,6 +167,7 @@
 																		});
 																});
 														</script>
+
 
 
 												</div>
