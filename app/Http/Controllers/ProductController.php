@@ -1225,6 +1225,27 @@ class ProductController extends Controller
         ]);
     }
 
+    public function wmsStatus()
+    {
+        $date = now('Asia/Manila')->format('Y-m-d');
+        $hour = now('Asia/Manila')->format('H');
+
+        $logFile = storage_path("logs/wms_logs/{$date}/allocations_{$hour}.log");
+
+        if (!file_exists($logFile)) {
+            return response()->json([
+                'status' => 'pending',
+                'message' => 'Waiting to start...'
+            ]);
+        }
+
+        $lastLine = trim(collect(file($logFile))->last());
+
+        return response()->json([
+            'status'  => str_contains($lastLine, 'Process completed') ? 'done' : 'running',
+            'message' => $lastLine,
+        ]);
+    }
 
 
 }
