@@ -34,5 +34,23 @@ class AdminUserSeeder extends Seeder
                 'user_location' => 'h8', 
             ]
         );
+        User::updateOrCreate(
+            ['email' =>  'test.admin@metroretail.ph'],
+            [
+                'name' => 'Admin Tester',
+                'password' => Hash::make('test1'),
+                'role' => 'Personnel',
+                'user_location' => 'f2', 
+            ]
+        );
+        User::updateOrCreate(
+            ['email' =>  'test.user@metroretail.ph'],
+            [
+                'name' => 'Tester',
+                'password' => Hash::make('test2'),
+                'role' => 'Personnel',
+                'user_location' => 'h8', 
+            ]
+        );
     }
 }
