@@ -54,19 +54,62 @@
 												</div>
 										</div>
 										<ul class="space-y-2 text-sm text-gray-600">
-												<li><a
+												<li class="flex items-center gap-2">
+														<a
 																href="{{ route('orders.index') }}"
-																class="text-xl decoration-2 hover:text-blue-600 hover:underline"
-														>View Orders</a></li>
-												<li><a
+																class="pe-2 text-xl decoration-2 hover:text-blue-600 hover:underline"
+														>
+																View Sales Order List
+														</a>
+
+														<div class="flex gap-2">
+																@if ($pendingCount > 0)
+																		<div class="group relative">
+																				<span class="flex items-center rounded-full bg-yellow-500 px-3 py-0.5 text-xs font-semibold text-white shadow">
+																						{{ $pendingCount }}
+																				</span>
+																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																						Pending Orders
+																				</div>
+																		</div>
+																@endif
+
+																@if ($cancelledCount > 0)
+																		<div class="group relative">
+																				<span class="flex items-center rounded-full bg-red-500 px-3 py-0.5 text-xs font-semibold text-white shadow">
+																						{{ $cancelledCount }}
+																				</span>
+																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																						Cancelled Orders
+																				</div>
+																		</div>
+																@endif
+
+																@if ($completedCount > 0)
+																		<div class="group relative">
+																				<span class="flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white shadow">
+																						{{ $completedCount }}
+																				</span>
+																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																						Completed Orders
+																				</div>
+																		</div>
+																@endif
+														</div>
+												</li>
+
+
+
+												<li>
+														<a
 																href="#"
 																class="text-xl decoration-2 hover:text-blue-600 hover:underline"
-														>Create Order</a></li>
-												<li><a
-																href="#"
-																class="text-xl decoration-2 hover:text-blue-600 hover:underline"
-														>Archived Orders</a></li>
+														>
+																View Request Order List
+														</a>
+												</li>
 										</ul>
+
 								</div>
 
 								<!-- Forms Card -->
@@ -132,9 +175,9 @@
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
 														>Add New Product</a></li>
 												<li><a
-																href="#"
+																href="{{ route('products.import.show') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>Categories</a></li>
+														>Import Products (CSV)</a></li>
 										</ul>
 								</div>
 

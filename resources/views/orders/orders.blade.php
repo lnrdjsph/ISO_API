@@ -154,10 +154,11 @@
 																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td>
 																		<td class="whitespace-nowrap px-4 py-3">
 																				@php
-																						$status = ucfirst(strtolower($order->order_status ?? 'Pending'));
+																						$status = ucwords(strtolower($order->order_status ?? 'Pending'));
 																						$statusClass = match ($status) {
 																						    'Delivered' => 'bg-green-100 text-green-800',
 																						    'Archived' => 'bg-gray-200 text-gray-700',
+																						    'Cancelled' => 'bg-red-200 text-red-700',
 																						    default => 'bg-yellow-100 text-yellow-800',
 																						};
 																				@endphp

@@ -42,6 +42,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
         //orders.archive route
         Route::post('/archive', [OrderController::class, 'archive'])->name('archive');
+        Route::post('/cancel', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/restore', [OrderController::class, 'restore'])->name('restore');
 
     });

@@ -887,12 +887,12 @@
 								</ul>
 						</div>
 
-						<div class="nav-bottom fixed bottom-4">
+						<div class="nav-bottom fixed bottom-4 w-auto">
 								<!-- Toggle Button -->
 								<div class="pb-4">
 										<button
 												id="sidebarToggle"
-												class="toggle-btn relative flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+												class="toggle-btn relative flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
 										>
 												<svg
 														class="h-5 w-5 flex-shrink-0 transition-transform duration-300"

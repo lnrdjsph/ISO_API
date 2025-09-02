@@ -24265,7 +24265,7 @@ throw new Error("Module build failed (from ./node_modules/mini-css-extract-plugi
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _bootstrap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 
-console.log("Laravel app loaded");
+// console.log("Laravel app loaded");
 
 /***/ }),
 

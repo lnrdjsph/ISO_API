@@ -268,6 +268,19 @@ class OrderController extends Controller
 
         return redirect()->route('orders.index')->with('success', 'Order archived successfully.');
     }
+    public function cancel(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $this->revertAllocationStock($order->id);
+        $order->order_status = 'cancelled';
+        $order->save();
+
+        return redirect()->route('orders.index')->with('success', 'Order cancelled successfully.');
+    }
 
 
     public function restore(Request $request)
