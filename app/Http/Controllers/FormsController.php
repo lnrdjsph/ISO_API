@@ -355,7 +355,7 @@ public function getCardInfo(Request $request)
 
         if (!$user) {
             return response()->json([
-                "message" => "Card not found",
+                "message" => "We couldn't find a record for the MBC card number you entered.",
                 "status" => "404",
             ], 404);
         }

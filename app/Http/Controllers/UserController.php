@@ -166,7 +166,7 @@ class UserController extends Controller
             // 4. No matching record
             if ($users->isEmpty()) {
                 return response()->json([
-                    "message" => "Card not found or inactive in database.",
+                    "message" => "We couldn't find a record for the MBC card number you entered.",
                     "status" => "400",
                 ]);
             }

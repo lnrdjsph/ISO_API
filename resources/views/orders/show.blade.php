@@ -656,7 +656,7 @@
 												<span id="submitButtonText">No Changes to Save</span>
 										</button>
 
-										@if ($order->order_status === 'archived')
+										@if ($order->order_status === 'cancelled')
 												<!-- Restore button -->
 												<button
 														type="button"
@@ -666,13 +666,13 @@
 														Restore
 												</button>
 										@else
-												<!-- Archive button -->
+												<!-- Cancel button -->
 												<button
 														type="button"
-														id="archiveButton"
-														class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-gray-700 px-6 py-3 font-medium text-white shadow-sm hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2"
+														id="cancelButton"
+														class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-red-700 px-6 py-3 font-medium text-white shadow-sm hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-800 focus:ring-offset-2"
 												>
-														Archive
+														Cancel
 												</button>
 										@endif
 
@@ -1375,24 +1375,24 @@
 						});
 
 						document.addEventListener('DOMContentLoaded', function() {
-								const archiveBtn = document.getElementById('archiveButton');
+								const cancelBtn = document.getElementById('cancelButton');
 								const restoreBtn = document.getElementById('restoreButton');
 
-								if (archiveBtn) {
-										archiveBtn.addEventListener('click', function() {
+								if (cancelBtn) {
+										cancelBtn.addEventListener('click', function() {
 												Swal.fire({
 														title: 'Are you sure?',
-														text: "This order will be archived!",
+														text: "This order will be Cancelled!",
 														icon: 'warning',
 														showCancelButton: true,
 														confirmButtonColor: '#3085d6',
 														cancelButtonColor: '#aaa',
-														confirmButtonText: 'Yes, archive it!',
+														confirmButtonText: 'Yes, cancel it!',
 												}).then((result) => {
 														if (result.isConfirmed) {
 																const form = document.createElement('form');
 																form.method = 'POST';
-																form.action = '{{ route('orders.archive') }}';
+																form.action = '{{ route('orders.cancel') }}';
 																form.style.display = 'none';
 
 																const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

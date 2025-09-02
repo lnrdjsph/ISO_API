@@ -7,6 +7,24 @@
 				}
 		@endphp
 
+		@php
+				$storeLocations = [
+				    'f2' => 'F2 - Metro Wholesalemart Colon',
+				    's10' => 'S10 - Metro Maasin',
+				    's17' => 'S17 - Metro Tacloban',
+				    's19' => 'S19 - Metro Bay-Bay',
+				    'f18' => 'F18 - Metro Alang-Alang',
+				    'f19' => 'F19 - Metro Hilongos',
+				    's8' => 'S8 - Metro Toledo',
+				    'h8' => 'H8 - Super Metro Antipolo',
+				    'h9' => 'H9 - Super Metro Carcar',
+				    'h10' => 'H10 - Super Metro Bogo',
+				];
+		@endphp
+
+		@php
+				$roles = ['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'];
+		@endphp
 
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -137,24 +155,16 @@
 												class="rounded border border-gray-300 py-2 focus:border-indigo-500 focus:ring-indigo-500"
 										>
 												<option value="">All Roles</option>
-												{{-- super admin --}}
-												<option
-														value="super admin"
-														{{ request('role') == 'super admin' ? 'selected' : '' }}
-												>Super Admin</option>
-												<option
-														value="admin"
-														{{ request('role') == 'admin' ? 'selected' : '' }}
-												>Admin</option>
-												<option
-														value="manager"
-														{{ request('role') == 'manager' ? 'selected' : '' }}
-												>Manager</option>
-												<option
-														value="user"
-														{{ request('role') == 'user' ? 'selected' : '' }}
-												>User</option>
+												@foreach ($roles as $value => $label)
+														<option
+																value="{{ $value }}"
+																{{ request('role') == $value ? 'selected' : '' }}
+														>
+																{{ ucwords($label) }}
+														</option>
+												@endforeach
 										</select>
+
 
 										<!-- Store Filter -->
 										<select
@@ -162,15 +172,16 @@
 												class="rounded border border-gray-300 py-2 focus:border-indigo-500 focus:ring-indigo-500"
 										>
 												<option value="">All Stores</option>
-												<option
-														value="f2"
-														{{ request('user_location') == 'f2' ? 'selected' : '' }}
-												>F2 - Metro Wholesalemart Colon</option>
-												<option
-														value="h8"
-														{{ request('user_location') == 'h8' ? 'selected' : '' }}
-												>H8 - Super Metro Antipolo</option>
+												@foreach ($storeLocations as $code => $label)
+														<option
+																value="{{ $code }}"
+																{{ request('user_location') == $code ? 'selected' : '' }}
+														>
+																{{ $label }}
+														</option>
+												@endforeach
 										</select>
+
 
 										<!-- Buttons -->
 										<button
@@ -293,6 +304,7 @@
 												class="mb-1 block font-medium text-gray-700"
 										>Name</label>
 										<input
+												placeholder="Enter Full Name"
 												id="add_name"
 												name="name"
 												type="text"
@@ -306,6 +318,7 @@
 												class="mb-1 block font-medium text-gray-700"
 										>Email</label>
 										<input
+												placeholder="Enter Email Address"
 												id="add_email"
 												name="email"
 												type="email"
@@ -319,6 +332,7 @@
 												class="mb-1 block font-medium text-gray-700"
 										>Password</label>
 										<input
+												placeholder="Enter Password"
 												id="add_password"
 												name="password"
 												type="password"
@@ -332,6 +346,7 @@
 												class="mb-1 block font-medium text-gray-700"
 										>Confirm Password</label>
 										<input
+												placeholder="Confirm Password"
 												id="add_password_confirmation"
 												name="password_confirmation"
 												type="password"
@@ -339,6 +354,8 @@
 												class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
 										>
 								</div>
+
+
 								<div>
 										<label
 												for="add_role"
@@ -354,47 +371,46 @@
 														value=""
 														disabled
 														selected
-												>Select role</option>
-												<option value="super admin">Super Admin</option>
-												<option value="admin">Admin</option>
-												<option value="manager">Manager</option>
-												<option value="user">User</option>
+												>Select Role</option>
+												@foreach ($roles as $role)
+														<option value="{{ $role }}">{{ ucwords($role) }}</option>
+												@endforeach
 										</select>
 								</div>
-								<div>
-										<div>
-												<label
-														for="add_location"
-														class="mb-1 block font-medium text-gray-700"
-												>
-														User Location
-												</label>
-												<select
-														id="add_location"
-														name="user_location"
-														required
-														class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-												>
-														<option
-																value=""
-																disabled
-														>Select Store Location</option>
-														<option
-																value="f2"
-																{{ request('user_location') == 'f2' ? 'selected' : '' }}
-														>
-																F2 - Metro Wholesalemart Colon
-														</option>
-														<option
-																value="h8"
-																{{ request('user_location') == 'h8' ? 'selected' : '' }}
-														>
-																H8 - Super Metro Antipolo
-														</option>
-												</select>
-										</div>
 
+
+								<div>
+										<label
+												for="add_location"
+												class="mb-1 block font-medium text-gray-700"
+										>
+												User Location
+										</label>
+										<select
+												id="add_location"
+												name="user_location"
+												required
+												class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+										>
+												<option
+														value=""
+														disabled
+														{{ request('user_location') ? '' : 'selected' }}
+												>
+														Select Store Location
+												</option>
+
+												@foreach ($storeLocations as $code => $label)
+														<option
+																value="{{ $code }}"
+																{{ request('user_location') == $code ? 'selected' : '' }}
+														>
+																{{ $label }}
+														</option>
+												@endforeach
+										</select>
 								</div>
+
 								<div class="flex justify-end space-x-4 pt-4">
 										<button
 												type="button"
@@ -463,6 +479,8 @@
 												placeholder="••••••••"
 										>
 								</div>
+
+
 								<div>
 										<label
 												for="edit_role"
@@ -474,13 +492,17 @@
 												required
 												class="w-full rounded border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
 										>
-												<option value=""disabled>Select Role</option>
-												<option value="super admin">Super Admin</option>
-												<option value="admin">Admin</option>
-												<option value="manager">Manager</option>
-												<option value="user">User</option>
+												<option
+														value=""
+														disabled
+												>Select Role</option>
+												@foreach ($roles as $role)
+														<option value="{{ $role }}">{{ ucwords($role) }}</option>
+												@endforeach
 										</select>
 								</div>
+
+
 								<div>
 										<label
 												for="edit_location"
@@ -498,21 +520,17 @@
 														value=""
 														disabled
 												>Select Store Location</option>
-												<option
-														value="f2"
-														{{ request('user_location') == 'f2' ? 'selected' : '' }}
-												>
-														F2 - Metro Wholesalemart Colon
-												</option>
-												<option
-														value="h8"
-														{{ request('user_location') == 'h8' ? 'selected' : '' }}
-												>
-														H8 - Super Metro Antipolo
-												</option>
+												@foreach ($storeLocations as $code => $name)
+														<option
+																value="{{ $code }}"
+																{{ request('user_location') == $code ? 'selected' : '' }}
+														>
+																{{ $name }}
+														</option>
+												@endforeach
 										</select>
-
 								</div>
+
 								<div class="flex justify-end space-x-4 pt-4">
 										<button
 												type="button"
