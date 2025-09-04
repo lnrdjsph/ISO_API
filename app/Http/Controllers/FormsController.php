@@ -175,6 +175,7 @@ class FormsController extends Controller
                 'mbc_card_no' => $validated['mbc_card_no'],
                 'customer_name' => $validated['customer_name'],
                 'contact_number' => $validated['contact_number'],
+                'order_status' => 'new order',
             ]);
 
             // Save each item
@@ -183,22 +184,48 @@ class FormsController extends Controller
                 $scheme = ($item['sale_type'] ?? '') === 'Discount' ? 'Discount' : ($item['scheme'] ?? null);
 
                 // Save main item
-                $order->items()->create([
-                    'sku' => $item['sku'] ?? null,
-                    'item_description' => $item['item_description'] ?? null,
-                    'scheme' => $scheme,
-                    'price_per_pc' => $item['price_per_pc'] ?? 0,
-                    'price' => $item['price'] ?? 0,
-                    'qty_per_pc' => $item['qty_per_pc'] ?? 0,
-                    'qty_per_cs' => $item['qty_per_cs'] ?? 0,
-                    'freebies_per_cs' => 0,
-                    'total_qty' => $item['qty_per_cs'] ?? 0,
-                    'discount' => $item['discount'] ?? 0,
-                    'amount' => $item['amount'] ?? 0,
-                    'remarks' => $item['remarks'] ?? null,
-                    'store_order_no' => $item['store_order_no'] ?? null,
-                    'item_type' => (!empty($item['discount']) && $item['discount'] > 0) ? 'DISCOUNT' : 'MAIN',
-                ]);
+$pricePerPc = $item['price_per_pc'] ?? 0;
+$qtyPerPc   = $item['qty_per_pc'] ?? 0;
+$discount   = $item['discount'] ?? 0;
+$discountType = $item['discount_type'] ?? 'amount'; // 'percent' or 'amount'
+
+// Base price per case
+$rawPrice = $pricePerPc * $qtyPerPc;
+
+// Apply discount
+$finalPrice = $rawPrice;
+if ($discount > 0) {
+    if ($discountType === 'percent') {
+        $finalPrice = $rawPrice - ($rawPrice * ($discount / 100));
+    } else {
+        $finalPrice = $rawPrice - $discount;
+    }
+}
+
+// Prevent negative
+$finalPrice = max($finalPrice, 0);
+
+// Total amount
+$qtyPerCs = $item['qty_per_cs'] ?? 0;
+$totalAmount = $finalPrice * $qtyPerCs;
+
+$order->items()->create([
+    'sku' => $item['sku'] ?? null,
+    'item_description' => $item['item_description'] ?? null,
+    'scheme' => $scheme,
+    'price_per_pc' => $pricePerPc,
+    'price' => $finalPrice, // original case price
+    'qty_per_pc' => $qtyPerPc,
+    'qty_per_cs' => $qtyPerCs,
+    'freebies_per_cs' => 0,
+    'total_qty' => $qtyPerCs,
+    'discount' => $discount,
+    'amount' => $totalAmount, // discounted total
+    'remarks' => $item['remarks'] ?? null,
+    'store_order_no' => $item['store_order_no'] ?? null,
+    'item_type' => $discount > 0 ? 'DISCOUNT' : 'MAIN',
+]);
+
 
 
                 if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
@@ -212,7 +239,19 @@ class FormsController extends Controller
                         'qty_per_cs' => 0,
                         'freebies_per_cs' => $item['freebies_per_cs'] ?? 0,
                         'total_qty' => $item['freebies_per_cs'] ?? 0,
-                        'amount' => 0,
+                        'amount' => (
+                                    !empty($item['freebie_price_per_pc']) &&
+                                    !empty($item['freebie_qty_per_pc']) &&
+                                    !empty($item['freebies_per_cs'])
+                                ) ? (
+                                    $item['freebie_price_per_pc'] * 
+                                    $item['freebie_qty_per_pc'] * 
+                                    $item['freebies_per_cs']
+                                ) : (
+                                    $item['price_per_pc'] * 
+                                    $item['qty_per_pc'] * 
+                                    $item['freebies_per_cs']
+                                ),
                         'remarks' => $item['remarks'] ?? null,
                         'store_order_no' => $item['store_order_no'] ?? null,
                         'item_type' => 'FREEBIE',

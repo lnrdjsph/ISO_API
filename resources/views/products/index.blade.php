@@ -3,7 +3,7 @@
 @section('title', 'Product List')
 
 @section('content')
-		<div class="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="mx-auto max-w-full overflow-hidden px-4 sm:px-6 lg:px-8">
 
 						<!-- Actual Content (Initially Hidden) -->

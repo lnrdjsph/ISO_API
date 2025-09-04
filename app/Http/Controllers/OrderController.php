@@ -13,48 +13,112 @@ use Illuminate\Support\Facades\Validator;
 class OrderController extends Controller
 {
 
-    public function index(Request $request)
-    {
-        $query = Order::query()->with('items');
+public function index(Request $request)
+{
+    $user = auth()->user();
+    $query = Order::query()->with('items');
 
-        // Search
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('customer_name', 'like', "%{$search}%")
-                ->orWhere('sof_id', 'like', "%{$search}%");
-            });
+    // 🗺️ Define region -> stores mapping
+    $storeMapping = [
+        'lz' => ['h8'], // Luzon stores
+        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'], // Visayas stores
+    ];
+
+    // Default statuses list
+    $allowedStatuses = null;
+
+    // 👔 Manager role restrictions
+    if ($user->role === 'manager') {
+        $allowedStatuses = ['for approval', 'approved', 'rejected'];
+        $query->whereIn('order_status', $allowedStatuses);
+
+        // 🔒 Restrict managers by region stores
+        if ($user->location_code && isset($storeMapping[$user->location_code])) {
+            $query->whereIn('requesting_store', $storeMapping[$user->location_code]);
         }
-
-        // Channel filter
-        if ($channel = $request->input('channel')) {
-            $query->where('channel_order', $channel);
+    } else {
+        // Non-managers: single store restriction
+        if ($user->location_code) {
+            $query->where('requesting_store', $user->location_code);
         }
+    }
 
-        // Status filter
-        if ($status = $request->input('status')) {
+    // 🔎 Search (also search requesting_store)
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('customer_name', 'like', "%{$search}%")
+              ->orWhere('sof_id', 'like', "%{$search}%")
+              ->orWhere('requesting_store', 'like', "%{$search}%");
+        });
+    }
+
+    // 📦 Channel filter
+    if ($channel = $request->input('channel')) {
+        $query->where('channel_order', $channel);
+    }
+
+    // 🏬 Store filter (always based on requesting_store)
+    if ($storeCode = $request->input('store_code')) {
+        $query->where('requesting_store', $storeCode);
+    }
+
+    // ✅ Status filter
+    if ($status = $request->input('status')) {
+        if ($allowedStatuses) {
+            if (in_array($status, $allowedStatuses)) {
+                $query->where('order_status', $status);
+            }
+        } else {
             $query->where('order_status', $status);
         }
-
-        // Date range filter
-        if ($startDate = $request->input('start_date')) {
-            $query->whereDate('time_order', '>=', $startDate);
-        }
-        if ($endDate = $request->input('end_date')) {
-            $query->whereDate('time_order', '<=', $endDate);
-        }
-
-        // ✅ Rows per page (default 10)
-        $perPage = $request->input('per_page', 10);
-
-        $orders = $query->orderByDesc('created_at')
-            ->paginate($perPage)
-            ->withQueryString();
-
-        $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
-        $statuses = Order::select('order_status')->distinct()->pluck('order_status');
-
-        return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage'));
     }
+
+    // 📅 Date range filter
+    if ($startDate = $request->input('start_date')) {
+        $query->whereDate('time_order', '>=', $startDate);
+    }
+    if ($endDate = $request->input('end_date')) {
+        $query->whereDate('time_order', '<=', $endDate);
+    }
+
+    // ✅ Pagination
+    $perPage = $request->input('per_page', 10);
+
+    $orders = $query->orderByDesc('created_at')
+        ->paginate($perPage)
+        ->withQueryString();
+
+    // Dropdown data
+    $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+    $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
+
+    // All store names (exclude lz/vs keys)
+    $allStoreLocations = [
+        'f2'  => 'F2 - Metro Wholesalemart Colon',
+        's10' => 'S10 - Metro Maasin',
+        's17' => 'S17 - Metro Tacloban',
+        's19' => 'S19 - Metro Bay-Bay',
+        'f18' => 'F18 - Metro Alang-Alang',
+        'f19' => 'F19 - Metro Hilongos',
+        's8'  => 'S8 - Metro Toledo',
+        'h8'  => 'H8 - Super Metro Antipolo',
+        'h9'  => 'H9 - Super Metro Carcar',
+        'h10' => 'H10 - Super Metro Bogo',
+    ];
+
+    // 🎯 Manager sees only their region’s stores in dropdown
+    if ($user->role === 'manager' && isset($storeMapping[$user->location_code])) {
+        $storeLocations = array_intersect_key(
+            $allStoreLocations,
+            array_flip($storeMapping[$user->location_code])
+        );
+    } else {
+        $storeLocations = $allStoreLocations;
+    }
+
+    return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
+}
+
 
 
 
@@ -266,8 +330,11 @@ class OrderController extends Controller
         $order->order_status = 'archived';
         $order->save();
 
-        return redirect()->route('orders.index')->with('success', 'Order archived successfully.');
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order archived successfully.');
     }
+
     public function cancel(Request $request)
     {
         $request->validate([
@@ -279,9 +346,10 @@ class OrderController extends Controller
         $order->order_status = 'cancelled';
         $order->save();
 
-        return redirect()->route('orders.index')->with('success', 'Order cancelled successfully.');
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order cancelled successfully.');
     }
-
 
     public function restore(Request $request)
     {
@@ -290,12 +358,63 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($request->id);
-        $order->order_status = 'pending';
+        $order->order_status = 'new order';
         $this->deductAllocationStock($order->id);
         $order->save();
 
-        return redirect()->route('orders.index')->with('success', 'Order restored successfully.');
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order restored successfully.');
     }
+
+    public function forApproval(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'for approval';
+        $this->deductAllocationStock($order->id);
+        $order->save();
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order requested for approval successfully.');
+    }
+
+    public function approveOrder(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'approved';
+        $this->deductAllocationStock($order->id);
+        $order->save();
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order approved successfully.');
+    }
+
+    public function rejectOrder(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'rejected';
+        $this->deductAllocationStock($order->id);
+        $order->save();
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order rejected successfully.');
+    }
+
 
 
 
@@ -373,4 +492,57 @@ class OrderController extends Controller
         return true;
     }
 
+
+
+    // public function managementOrders(Request $request){
+    //     $allowedStatuses = ['for approval', 'approved', 'rejected'];
+
+    //     $query = Order::query()
+    //     ->with('items')
+    //     ->whereIn('order_status', $allowedStatuses); // ✅ limit statuses;
+
+    //     // Search
+    //     if ($search = $request->input('search')) {
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('customer_name', 'like', "%{$search}%")
+    //             ->orWhere('sof_id', 'like', "%{$search}%");
+    //         });
+    //     }
+
+    //     // Channel filter
+    //     if ($channel = $request->input('channel')) {
+    //         $query->where('channel_order', $channel);
+    //     }
+
+
+    //     // Status filter
+    //     if ($status = $request->input('status')) {
+    //         if (in_array($status, $allowedStatuses)) {
+    //             $query->where('order_status', $status);
+    //         }
+    //     }
+
+    //     // Date range filter
+    //     if ($startDate = $request->input('start_date')) {
+    //         $query->whereDate('time_order', '>=', $startDate);
+    //     }
+    //     if ($endDate = $request->input('end_date')) {
+    //         $query->whereDate('time_order', '<=', $endDate);
+    //     }
+
+    //     // ✅ Rows per page (default 10)
+    //     $perPage = $request->input('per_page', 10);
+
+    //     $orders = $query->orderByDesc('created_at')
+    //         ->paginate($perPage)
+    //         ->withQueryString();
+
+    //     $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+    //     $statuses = $allowedStatuses;
+
+    //     return view('orders.management_orders', compact('orders', 'channels', 'statuses', 'perPage'));
+
+    // }
+
+    
 }

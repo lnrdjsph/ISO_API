@@ -5,7 +5,7 @@
 				date_default_timezone_set('Asia/Manila');
 				$currentDateTime = now()->format('Y-m-d\TH:i');
 		@endphp
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 						<div class="mb-8">
 								<div class="flex items-center space-x-4">

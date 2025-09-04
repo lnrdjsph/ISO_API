@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
 						<!-- Header Section -->
@@ -32,21 +32,20 @@
 						<form
 								method="GET"
 								action="{{ route('orders.index') }}"
-								class="mb-6 flex flex-wrap items-center gap-4"
+								class="mb-4 flex flex-wrap items-center gap-2 text-xs"
 						>
-
 								<!-- Search -->
 								<div class="relative">
 										<input
 												type="text"
 												name="search"
 												value="{{ request('search') }}"
-												placeholder="Search orders..."
-												class="w-56 rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+												placeholder="Search..."
+												class="w-72 rounded-md border border-gray-300 py-1.5 pl-8 pr-3 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 										>
 										<svg
 												xmlns="http://www.w3.org/2000/svg"
-												class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+												class="absolute left-2 top-2 h-3.5 w-3.5 text-gray-400"
 												fill="none"
 												viewBox="0 0 24 24"
 												stroke="currentColor"
@@ -60,10 +59,26 @@
 										</svg>
 								</div>
 
+								<!-- Store -->
+								<select
+										name="store_code"
+										class="w-40 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+								>
+										<option value="">All Stores</option>
+										@foreach ($storeLocations as $code => $label)
+												<option
+														value="{{ $code }}"
+														{{ request('store_code') == $code ? 'selected' : '' }}
+												>
+														{{ $label }}
+												</option>
+										@endforeach
+								</select>
+
 								<!-- Channel -->
 								<select
 										name="channel"
-										class="w-44 rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+										class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 								>
 										<option value="">All Channels</option>
 										@foreach ($channels as $channel)
@@ -79,7 +94,7 @@
 								<!-- Status -->
 								<select
 										name="status"
-										class="w-44 rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+										class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 								>
 										<option value="">All Statuses</option>
 										@foreach ($statuses as $status)
@@ -97,20 +112,20 @@
 										type="date"
 										name="start_date"
 										value="{{ request('start_date') }}"
-										class="w-40 rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+										class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 								>
 								<span class="text-gray-500">to</span>
 								<input
 										type="date"
 										name="end_date"
 										value="{{ request('end_date') }}"
-										class="w-40 rounded-lg border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+										class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 								>
 
 								<!-- Apply -->
 								<button
 										type="submit"
-										class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white shadow-md transition hover:bg-indigo-700"
+										class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700"
 								>
 										Apply
 								</button>
@@ -118,11 +133,12 @@
 								<!-- Reset -->
 								<a
 										href="{{ route('orders.index') }}"
-										class="rounded-lg bg-gray-100 px-5 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:bg-gray-200"
+										class="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-gray-200"
 								>
 										Reset
 								</a>
 						</form>
+
 
 						<div class="space-y-6 rounded-xl bg-white shadow-lg">
 								<!-- Search Bar -->
@@ -135,9 +151,13 @@
 														<tr>
 																<th class="px-4 py-3 font-medium text-gray-700">Order #</th>
 																<th class="px-4 py-3 font-medium text-gray-700">Customer</th>
+																{{-- 👔 Only managers see this column --}}
+																@if (auth()->user()->role === 'manager')
+																		<th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
+																@endif
 																<th class="px-4 py-3 font-medium text-gray-700">Channel</th>
 																<th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
-																<th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th>
+																{{-- <th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th> --}}
 																<th class="px-4 py-3 font-medium text-gray-700">Status</th>
 																<th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
 														</tr>
@@ -147,19 +167,46 @@
 																<tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
+																		{{-- 👔 Only managers see store --}}
+																		@if (auth()->user()->role === 'manager')
+																				@php
+																						// All store names (exclude lz/vs keys)
+																						$allStoreLocations = [
+																						    'f2' => 'F2 - Metro Wholesalemart Colon',
+																						    's10' => 'S10 - Metro Maasin',
+																						    's17' => 'S17 - Metro Tacloban',
+																						    's19' => 'S19 - Metro Bay-Bay',
+																						    'f18' => 'F18 - Metro Alang-Alang',
+																						    'f19' => 'F19 - Metro Hilongos',
+																						    's8' => 'S8 - Metro Toledo',
+																						    'h8' => 'H8 - Super Metro Antipolo',
+																						    'h9' => 'H9 - Super Metro Carcar',
+																						    'h10' => 'H10 - Super Metro Bogo',
+																						];
+
+																						$storeName = $allStoreLocations[$order->requesting_store] ?? 'Unknown Store';
+																				@endphp
+
+																				<td class="whitespace-nowrap px-4 py-3">
+																						{{ $storeName }}
+																				</td>
+																		@endif
 																		<td class="whitespace-nowrap px-4 py-3">{{ $order->channel_order }}</td>
 																		<td class="whitespace-nowrap px-4 py-3">
 																				{{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
-																		<td class="whitespace-nowrap px-4 py-3">
-																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td>
+																		{{-- <td class="whitespace-nowrap px-4 py-3">
+																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td> --}}
 																		<td class="whitespace-nowrap px-4 py-3">
 																				@php
-																						$status = ucwords(strtolower($order->order_status ?? 'Pending'));
+																						$status = ucwords(strtolower($order->order_status ?? 'New Order'));
 																						$statusClass = match ($status) {
 																						    'Delivered' => 'bg-green-100 text-green-800',
-																						    'Archived' => 'bg-gray-200 text-gray-700',
-																						    'Cancelled' => 'bg-red-200 text-red-700',
-																						    default => 'bg-yellow-100 text-yellow-800',
+																						    'Archived' => 'bg-gray-200 text-gray-800',
+																						    'Cancelled' => 'bg-red-200 text-red-800',
+																						    'Pending' => 'bg-yellow-200 text-yellow-800',
+																						    'Rejected' => 'bg-orange-200 text-orange-800',
+																						    'For Approval' => 'bg-purple-100 text-purple-800',
+																						    default => 'bg-blue-100 text-blue-800',
 																						};
 																				@endphp
 

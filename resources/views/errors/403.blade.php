@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-		<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-red-100 px-4 sm:px-6 lg:px-8">
+		<div class="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-red-100 px-4 sm:px-6 lg:px-8">
 				<div class="w-full max-w-md">
 						<div class="rounded-2xl border border-gray-200 bg-white/80 p-8 text-center shadow-xl backdrop-blur-md">
 								<div class="mb-6">

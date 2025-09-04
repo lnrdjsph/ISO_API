@@ -312,7 +312,7 @@
 				class="fixed inset-0 z-20 hidden bg-black bg-opacity-50 md:hidden"
 		></div>
 
-		<div class="fixed left-0 right-0 top-0 z-40 flex h-8 items-center justify-between bg-gradient-to-r from-green-950 via-indigo-950 to-blue-950 px-4 shadow-sm">
+		<div class="fixed left-0 right-0 top-0 z-[10000] flex h-8 items-center justify-between bg-gradient-to-r from-green-950 via-indigo-950 to-blue-950 px-4 shadow-sm">
 				{{-- <div class="fixed left-0 right-0 top-0 z-40 flex h-8 items-center justify-between bg-gray-900 px-4 shadow-sm"> --}}
 				<!-- Left -->
 				<div class="flex items-center space-x-3">
@@ -349,7 +349,7 @@
 
 		<aside
 				id="sidebar"
-				class="sidebar-expanded fixed z-30 flex hidden flex-col bg-white shadow-xl"
+				class="sidebar-expanded fixed z-[9999] flex hidden flex-col bg-white shadow-xl"
 		>
 
 
@@ -1153,8 +1153,8 @@
 		</nav>
 
 		<!-- Main Content -->
-		<div class="main-container mt-4 min-h-screen flex-1">
-				<main class="w-full overflow-x-hidden">
+		<div class="main-container min-h-screen flex-1">
+				<main class="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12">
 						@yield('content')
 				</main>
 		</div>

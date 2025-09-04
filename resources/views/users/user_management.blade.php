@@ -9,6 +9,8 @@
 
 		@php
 				$storeLocations = [
+				    'lz' => 'LZ - Luzon',
+				    'vs' => 'VS - Visayas',
 				    'f2' => 'F2 - Metro Wholesalemart Colon',
 				    's10' => 'S10 - Metro Maasin',
 				    's17' => 'S17 - Metro Tacloban',
@@ -26,7 +28,7 @@
 				$roles = ['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'];
 		@endphp
 
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
 						<!-- Header Section -->
