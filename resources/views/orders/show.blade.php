@@ -894,16 +894,16 @@
 
 																<div class="space-y-2 text-sm text-gray-600">
 																		<div class="flex justify-between">
-																				<span>Main</span>
+																				<span>Total Payable Amount</span>
 																				<span class="font-semibold">₱<span id="mainTotal">0.00</span></span>
+																		</div>
+																		<div class="flex justify-between">
+																				<span>Total Freebies Amount</span>
+																				<span class="font-semibold">₱<span id="freebieTotal">0.00</span></span>
 																		</div>
 																		<div class="flex justify-between">
 																				<span>Discount Savings</span>
 																				<span class="font-semibold text-red-600">₱<span id="discountTotal">0.00</span></span>
-																		</div>
-																		<div class="flex justify-between">
-																				<span>Freebies</span>
-																				<span class="font-semibold">₱<span id="freebieTotal">0.00</span></span>
 																		</div>
 																</div>
 
@@ -1277,9 +1277,28 @@
 
 														const discountInput = $(row).find(`input[name="items[${index}][discount]"]`).val() || 0;
 														const totalQtyInput = $(row).find(`input[name="items[${index}][total_qty]"]`).val() || 0;
+														const priceInput = $(row).find(`input[name="items[${index}][price]"]`).val() || 0;
+														const pricePerPcInput = $(row).find(`input[name="items[${index}][price_per_pc]"]`).val() || 0;
+														const qtyPerPcInput = $(row).find(`input[name="items[${index}][qty_per_pc]"]`).val() || 0;
 
-														const discountValue = parseFloat(discountInput) || 0;
+														const price = parseFloat(priceInput) || 0; // discounted price per case
+														const pricePerPc = parseFloat(pricePerPcInput) || 0;
+														const qtyPerPc = parseFloat(qtyPerPcInput) || 0;
 														const totalQty = parseFloat(totalQtyInput) || 0;
+
+														// original price per case
+														const originalPrice = pricePerPc * qtyPerPc;
+
+														let discountValue = 0;
+														if (typeof discountInput === "string" && discountInput.includes("%")) {
+																// If discount is %, calculate original price from discounted
+																const percent = parseFloat(discountInput.replace("%", "")) || 0;
+																// Already discounted price = originalPrice * (1 - percent/100)
+																discountValue = originalPrice - price; // difference is discount amount
+														} else {
+																// flat discount
+																discountValue = originalPrice - price;
+														}
 
 														deducted += discountValue * totalQty;
 												});
