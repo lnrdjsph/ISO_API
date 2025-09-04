@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-		<div class="to-white-50 via-white-50 min-h-screen bg-gradient-to-br from-slate-50 py-8">
+		<div class="to-white-50 via-white-50 bg-gradient-to-br from-slate-50 py-8">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
 						<!-- Header -->

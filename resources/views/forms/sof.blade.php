@@ -11,7 +11,7 @@
 				$currentDateTime = now()->format('Y-m-d\TH:i');
 		@endphp
 
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
 						<!-- Header Section -->
@@ -1940,10 +1940,23 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								setValue(row.find('.desc-hidden'), description);
 								setValue(row.find('.price-per-pc'), pricePerPc);
 								setValue(row.find('.qty-per-pc'), casePack);
-								setValue(row.find('.discount'), discount);
+
+								// ✅ Check if row is NOT a freebie before applying discount
+								// ✅ Determine item type from hidden input
+								const itemType = row.find('input[name*="[item_type]"]').val();
+
+								// ✅ If not a FREEBIE, apply discount
+								if (itemType !== 'FREEBIE' && discount) {
+										setValue(row.find('.discount'), discount);
+										row.find('.discount').prop('readonly', false); // editable
+								} else {
+										setValue(row.find('.discount'), '');
+										row.find('.discount').prop('readonly', true); // lock freebies
+								}
+
 
 								const qtyInput = row.find('.qty-per-pc');
-								qtyInput.trigger('input'); // will call showResults()
+								qtyInput.trigger('input');
 
 								const paymentMode = $('[name="mode_payment"]').val();
 								let scheme = '';
@@ -1954,7 +1967,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 								setValue(row.find('.scheme-input'), scheme);
 
-								// Freebie auto-fill loopback
 								if (freebieSku) {
 										const freebieInput = row.find('.freebie-search');
 										const resultList = freebieInput.siblings('.search-results');
@@ -1964,6 +1976,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										freebieInput.trigger('keyup');
 								}
 						}
+
 
 						container.find('.search-results').empty().addClass('hidden');
 				});
@@ -2150,7 +2163,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         <td class="border px-2 py-1 text-center">-</td>
         <td class="border px-2 py-1 text-center">${freebieQty}</td>
         <td class="border px-2 py-1 text-center">${freebieQty}</td>
-																																																																																																																																<td class="border px-2 py-1 text-center">-</td>
+																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																<td class="border px-2 py-1 text-center">-</td>
         <td class="border px-2 py-1 text-center">0.00</td>
         <td class="border px-2 py-1">${remarks}</td>
         <td class="border px-2 py-1">${soNumber}</td>

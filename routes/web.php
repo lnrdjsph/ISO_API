@@ -36,6 +36,9 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
     // Orders Routes
     Route::prefix('orders')->name('orders.')->group(function () {
+        // Route::get('/management', [OrderController::class, 'managementOrders'])->name('management');
+        // Route::get('/management/{id}', [OrderController::class, 'managementOrdersShow'])->name('management.show');
+
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
         //orders.update route
@@ -44,6 +47,14 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/archive', [OrderController::class, 'archive'])->name('archive');
         Route::post('/cancel', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/restore', [OrderController::class, 'restore'])->name('restore');
+        Route::post('/for_approval', [OrderController::class, 'forApproval'])->name('for_approval');
+        Route::post('/approve', [OrderController::class, 'approveOrder'])->name('approve');
+        Route::post('/reject', [OrderController::class, 'rejectOrder'])->name('reject');
+
+
+
+        // Management Orders View
+
 
     });
 

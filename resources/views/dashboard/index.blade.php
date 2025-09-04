@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+		<div class="">
 				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 						<div class="mb-8">
 								<div class="flex items-center space-x-4">
@@ -31,7 +31,7 @@
 						</div>
 
 						<!-- Cards Grid -->
-						<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+						<div class="grid grid-cols-1 gap-6 sm:grid-cols-1 lg:grid-cols-2">
 
 								<!-- Orders Card -->
 								<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
@@ -55,49 +55,84 @@
 										</div>
 										<ul class="space-y-2 text-sm text-gray-600">
 												<li class="flex items-center gap-2">
-														<a
-																href="{{ route('orders.index') }}"
-																class="pe-2 text-xl decoration-2 hover:text-blue-600 hover:underline"
-														>
-																View Sales Order List
-														</a>
+														@if (auth()->user()->role === 'manager')
+																{{-- Manager View --}}
+																<a
+																		href="{{ route('orders.index') }}"
+																		class="pe-2 text-xl decoration-2 hover:text-blue-600 hover:underline"
+																>
+																		View Sales Orders for Approval
+																</a>
 
-														<div class="flex gap-2">
-																@if ($pendingCount > 0)
-																		<div class="group relative">
-																				<span class="flex items-center rounded-full bg-yellow-500 px-3 py-0.5 text-xs font-semibold text-white shadow">
-																						{{ $pendingCount }}
-																				</span>
-																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
-																						Pending Orders
+																<div class="flex gap-2">
+																		@if ($forApprovalCount > 0)
+																				<div class="group relative">
+																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-xs font-semibold text-white shadow">
+																								{{ $forApprovalCount }}
+																						</span>
+																						<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																								For Approval
+																						</div>
 																				</div>
-																		</div>
-																@endif
+																		@endif
 
-																@if ($cancelledCount > 0)
-																		<div class="group relative">
-																				<span class="flex items-center rounded-full bg-red-500 px-3 py-0.5 text-xs font-semibold text-white shadow">
-																						{{ $cancelledCount }}
-																				</span>
-																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
-																						Cancelled Orders
-																				</div>
-																		</div>
-																@endif
+																</div>
+														@else
+																{{-- Normal User View --}}
+																<a
+																		href="{{ route('orders.index') }}"
+																		class="pe-2 text-xl decoration-2 hover:text-blue-600 hover:underline"
+																>
+																		View Sales Order List
+																</a>
 
-																@if ($completedCount > 0)
-																		<div class="group relative">
-																				<span class="flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white shadow">
-																						{{ $completedCount }}
-																				</span>
-																				<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
-																						Completed Orders
+																<div class="flex gap-2">
+																		@if ($newOrderCount > 0)
+																				<div class="group relative">
+																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white shadow">
+																								{{ $newOrderCount }}
+																						</span>
+																						<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																								New Orders
+																						</div>
 																				</div>
-																		</div>
-																@endif
-														</div>
+																		@endif
+
+																		@if ($pendingCount > 0)
+																				<div class="group relative">
+																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-xs font-semibold text-white shadow">
+																								{{ $pendingCount }}
+																						</span>
+																						<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																								Pending Orders
+																						</div>
+																				</div>
+																		@endif
+
+																		@if ($cancelledCount > 0)
+																				<div class="group relative">
+																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white shadow">
+																								{{ $cancelledCount }}
+																						</span>
+																						<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																								Cancelled Orders
+																						</div>
+																				</div>
+																		@endif
+
+																		@if ($completedCount > 0)
+																				<div class="group relative">
+																						<span class="flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white shadow">
+																								{{ $completedCount }}
+																						</span>
+																						<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+																								Completed Orders
+																						</div>
+																				</div>
+																		@endif
+																</div>
+														@endif
 												</li>
-
 
 
 												<li>
@@ -106,6 +141,14 @@
 																class="text-xl decoration-2 hover:text-blue-600 hover:underline"
 														>
 																View Request Order List
+														</a>
+												</li>
+												<li>
+														<a
+																href="#"
+																class="text-xl decoration-2 hover:text-blue-600 hover:underline"
+														>
+																Generate Freebies Form
 														</a>
 												</li>
 										</ul>
@@ -145,7 +188,7 @@
 										</ul>
 								</div>
 
-								<!-- Products Card -->
+
 								<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
 										<div class="mb-3 flex items-center justify-between">
 												<h2 class="text-2xl font-semibold text-gray-800">Products</h2>
@@ -178,6 +221,43 @@
 																href="{{ route('products.import.show') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
 														>Import Products (CSV)</a></li>
+										</ul>
+								</div>
+
+								<!-- Products Card -->
+								<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
+										<div class="mb-3 flex items-center justify-between">
+												<h2 class="text-2xl font-semibold text-gray-800">Reports</h2>
+												<div class="rounded-full bg-green-100 p-2 text-green-600">
+														<svg
+																class="h-5 w-5 flex-shrink-0"
+																fill="none"
+																stroke="currentColor"
+																viewBox="0 0 24 24"
+														>
+																<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+																/>
+														</svg>
+												</div>
+										</div>
+										<ul class="space-y-2 text-sm text-gray-600">
+												<li><a
+																href="#"
+																class="text-xl decoration-2 hover:text-green-600 hover:underline"
+														>Sales</a></li>
+												<li><a
+																href="#"
+																class="text-xl decoration-2 hover:text-green-600 hover:underline"
+														>For Approval</a></li>
+												<li><a
+																href="#"
+																class="text-xl decoration-2 hover:text-green-600 hover:underline"
+														>Overview</a></li>
+
 										</ul>
 								</div>
 
