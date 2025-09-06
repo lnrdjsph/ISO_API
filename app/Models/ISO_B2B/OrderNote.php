@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\ISO_B2B;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,11 +15,11 @@ class OrderNote extends Model
 
     public function order()
     {
-        return $this->belongsTo(ISO_B2B\Order::class);
+        return $this->belongsTo(Order::class);
     }
 
     public function user()
     {
-        return $this->belongsTo(ISO_B2B\Order::class);
+        return $this->belongsTo(\App\Models\User::class); // User model is usually outside ISO_B2B
     }
 }

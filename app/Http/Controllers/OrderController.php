@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Arr;
+
+use App\Mail\OrderApprovalRequestMail;
+use Illuminate\Support\Facades\Mail;
 
 
 class OrderController extends Controller
@@ -20,8 +24,8 @@ public function index(Request $request)
 
     // 🗺️ Define region -> stores mapping
     $storeMapping = [
-        'lz' => ['h8'], // Luzon stores
-        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'], // Visayas stores
+        'lz' => ['h8'], // Luzon = only Antipolo
+        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'], // Visayas = everything EXCEPT Antipolo
     ];
 
     // Default statuses list
@@ -33,17 +37,17 @@ public function index(Request $request)
         $query->whereIn('order_status', $allowedStatuses);
 
         // 🔒 Restrict managers by region stores
-        if ($user->location_code && isset($storeMapping[$user->location_code])) {
-            $query->whereIn('requesting_store', $storeMapping[$user->location_code]);
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
         }
     } else {
         // Non-managers: single store restriction
-        if ($user->location_code) {
-            $query->where('requesting_store', $user->location_code);
+        if ($user->user_location) {
+            $query->where('requesting_store', $user->user_location);
         }
     }
 
-    // 🔎 Search (also search requesting_store)
+    // 🔎 Search
     if ($search = $request->input('search')) {
         $query->where(function ($q) use ($search) {
             $q->where('customer_name', 'like', "%{$search}%")
@@ -57,7 +61,7 @@ public function index(Request $request)
         $query->where('channel_order', $channel);
     }
 
-    // 🏬 Store filter (always based on requesting_store)
+    // 🏬 Store filter
     if ($storeCode = $request->input('store_code')) {
         $query->where('requesting_store', $storeCode);
     }
@@ -92,7 +96,7 @@ public function index(Request $request)
     $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
     $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
-    // All store names (exclude lz/vs keys)
+    // All store names
     $allStoreLocations = [
         'f2'  => 'F2 - Metro Wholesalemart Colon',
         's10' => 'S10 - Metro Maasin',
@@ -106,14 +110,22 @@ public function index(Request $request)
         'h10' => 'H10 - Super Metro Bogo',
     ];
 
-    // 🎯 Manager sees only their region’s stores in dropdown
-    if ($user->role === 'manager' && isset($storeMapping[$user->location_code])) {
-        $storeLocations = array_intersect_key(
-            $allStoreLocations,
-            array_flip($storeMapping[$user->location_code])
-        );
+    // 🎯 Restrict dropdown options
+    if ($user->role === 'manager') {
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            // Manager → only their region’s stores
+            $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+        } else {
+            // Manager with no region restriction
+            $storeLocations = $allStoreLocations;
+        }
     } else {
-        $storeLocations = $allStoreLocations;
+        if ($user->user_location) {
+            // Non-manager → only their store
+            $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
+        } else {
+            $storeLocations = $allStoreLocations;
+        }
     }
 
     return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
@@ -255,101 +267,159 @@ public function index(Request $request)
             'items.*.store_order_no' => 'nullable|string|max:255',
         ]);
 
-        try {
-            DB::beginTransaction();
 
-            // Find the order
-            $order = Order::findOrFail($id);
+    try {
+        DB::beginTransaction();
 
-            // Update order fields
-            $order->update([
-                'mbc_card_no' => $validated['mbc_card_no'],
-                'customer_name' => $validated['customer_name'],
-                'contact_number' => $validated['contact_number'],
-                'payment_center' => $validated['payment_center'],
-                'mode_payment' => $validated['mode_payment'],
-                'payment_date' => $validated['payment_date'],
-                'mode_dispatching' => $validated['mode_dispatching'],
-                'delivery_date' => $validated['delivery_date'],
-                'address' => $validated['address'],
-                'landmark' => $validated['landmark'],
+        // Find the order
+        $order = Order::findOrFail($id);
+
+        // Track changes for notes
+        $changes = [];
+
+        // === ORDER FIELDS CHANGES ===
+        $orderFields = [
+            'mbc_card_no',
+            'customer_name',
+            'contact_number',
+            'payment_center',
+            'mode_payment',
+            'payment_date',
+            'mode_dispatching',
+            'delivery_date',
+            'address',
+            'landmark',
+        ];
+
+        foreach ($orderFields as $field) {
+            $old = $order->$field;
+            $new = $validated[$field] ?? null;
+
+            if ($old != $new) {
+                $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
+            }
+        }
+
+        // Update order fields
+        $order->update(Arr::only($validated, $orderFields));
+
+        // === ORDER ITEMS CHANGES ===
+        foreach ($validated['items'] as $itemData) {
+            $orderItem = OrderItem::findOrFail($itemData['id']);
+
+            $oldData = $orderItem->toArray();
+
+            // Calculate amount
+            $price = $itemData['price'];
+            $discount = $itemData['discount'] ?? 0;
+
+
+
+                    $price = $price - floatval($discount);
+
+
+            $calculatedAmount = $price * $itemData['total_qty'];
+
+            $orderItem->update([
+                'sku' => $itemData['sku'],
+                'item_description' => $itemData['item_description'],
+                'scheme' => $itemData['scheme'],
+                'price_per_pc' => $itemData['price_per_pc'],
+                'price' => $itemData['price'], // keep original price
+                'qty_per_pc' => $itemData['qty_per_pc'],
+                'total_qty' => $itemData['total_qty'],
+                'discount' => $itemData['discount'],
+                'amount' => $calculatedAmount,
+                'remarks' => $itemData['remarks'],
+                'store_order_no' => $itemData['store_order_no'],
             ]);
 
-            // Update order items
-            foreach ($validated['items'] as $itemData) {
-                $orderItem = OrderItem::findOrFail($itemData['id']);
-                
-                // Check if it's a freebie item - freebies shouldn't have their amount calculated the same way
-                $isFreebieItem = ($itemData['scheme'] === 'Freebie');
-                
-                // For regular items: amount = price_per_pc * total_qty
-                // For freebie items: keep original amount or set to 0 depending on business logic
-                if ($isFreebieItem) {
-                    $calculatedAmount = 0; // Freebies typically have 0 amount
-                } else {
-                    $calculatedAmount = $itemData['price_per_pc'] * $itemData['total_qty'];
+            // Compare old vs new for notes
+            foreach ($orderItem->getChanges() as $field => $newVal) {
+                if ($field == 'updated_at') continue;
+
+                $oldVal = $oldData[$field] ?? null;
+                if ($oldVal != $newVal) {
+                    $changes[] = "Item {$orderItem->sku} - " . ucfirst(str_replace('_', ' ', $field)) . " changed from '{$oldVal}' to '{$newVal}'";
                 }
-                
-                $orderItem->update([
-                    'sku' => $itemData['sku'],
-                    'item_description' => $itemData['item_description'],
-                    'scheme' => $itemData['scheme'],
-                    'price_per_pc' => $itemData['price_per_pc'],
-                    'price' => $itemData['price'],
-                    'qty_per_pc' => $itemData['qty_per_pc'],
-                    'total_qty' => $itemData['total_qty'],
-                    'discount' => $itemData['discount'],
-                    'amount' => $calculatedAmount,
-                    'remarks' => $itemData['remarks'],
-                    'store_order_no' => $itemData['store_order_no'],
-                ]);
             }
-
-            DB::commit();
-
-            return redirect()->route('orders.show', $order->id)
-                ->with('success', 'Order updated successfully!');
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
         }
-    }
 
-    public function archive(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
+        // === SAVE NOTES IF THERE ARE CHANGES ===
+        // === SAVE NOTES IF THERE ARE CHANGES ===
+// === SAVE NOTES IF THERE ARE CHANGES ===
+    if (!empty($changes)) {
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => $order->order_status, // use current order status
+            'note'    => "• " . implode("\n• ", $changes), // bulleted list
         ]);
-
-        $order = Order::findOrFail($request->id);
-        $this->revertAllocationStock($order->id);
-        $order->order_status = 'archived';
-        $order->save();
-
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order archived successfully.');
     }
 
-    public function cancel(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
 
-        $order = Order::findOrFail($request->id);
-        $this->revertAllocationStock($order->id);
-        $order->order_status = 'cancelled';
-        $order->save();
 
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order cancelled successfully.');
+        DB::commit();
+
+        return redirect()->route('orders.show', $order->id)
+            ->with('success', 'Order updated successfully!');
+
+    } catch (\Exception $e) {
+        DB::rollback();
+
+        return redirect()->back()
+            ->withInput()
+            ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
     }
+    }
+
+public function archive(Request $request)
+{
+    $request->validate([
+        'id' => 'required|exists:orders,id',
+    ]);
+
+    $order = Order::findOrFail($request->id);
+    $this->revertAllocationStock($order->id);
+
+    $order->order_status = 'archived';
+    $order->save();
+
+    $order->notes()->create([
+        'user_id' => auth()->id(),
+        'status'  => 'archived',
+        'note'    => 'Order archived',
+    ]);
+
+    return redirect()
+        ->route('orders.show', $order->id)
+        ->with('success', 'Order archived successfully.');
+}
+
+public function cancel(Request $request)
+{
+    $request->validate([
+        'id'   => 'required|exists:orders,id',
+        'note' => 'required|string', // require reason
+    ]);
+
+    $order = Order::findOrFail($request->id);
+    $this->revertAllocationStock($order->id);
+
+    $order->order_status = 'cancelled';
+    $order->save();
+
+    // Log note with reason
+    $order->notes()->create([
+        'user_id' => auth()->id(),
+        'status'  => 'cancelled',
+        'note'    => 'Order was cancelled. Reason: ' . $request->note,
+    ]);
+
+    return redirect()
+        ->route('orders.show', $order->id)
+        ->with('success', 'Order cancelled successfully.');
+}
+
 
     public function restore(Request $request)
     {
@@ -362,26 +432,42 @@ public function index(Request $request)
         $this->deductAllocationStock($order->id);
         $order->save();
 
+        $order->notes()->create([
+    'user_id' => auth()->id(),
+    'status'  => 'restored',
+    'note'    => 'Order restored',
+]);
+
         return redirect()
             ->route('orders.show', $order->id)
             ->with('success', 'Order restored successfully.');
     }
 
-    public function forApproval(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
 
-        $order = Order::findOrFail($request->id);
-        $order->order_status = 'for approval';
-        $this->deductAllocationStock($order->id);
-        $order->save();
+public function forApproval(Request $request)
+{
+    $request->validate([
+        'id' => 'required|exists:orders,id',
+    ]);
 
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order requested for approval successfully.');
-    }
+    $order = Order::findOrFail($request->id);
+    $order->order_status = 'for approval';
+    $this->deductAllocationStock($order->id);
+    $order->save();
+
+    $order->notes()->create([
+        'user_id' => auth()->id(),
+        'status'  => 'for approval',
+        'note'    => 'Order sent for approval',
+    ]);
+
+    // 🔔 Send email
+    Mail::to('leonard.tomalon@metroretail.ph')->send(new OrderApprovalRequestMail($order));
+
+    return redirect()
+        ->route('orders.show', $order->id)
+        ->with('success', 'Order requested for approval successfully and email sent.');
+}
 
     public function approveOrder(Request $request)
     {
@@ -394,26 +480,41 @@ public function index(Request $request)
         $this->deductAllocationStock($order->id);
         $order->save();
 
+        $order->notes()->create([
+    'user_id' => auth()->id(),
+    'status'  => 'approved',
+    'note'    => 'Order approved',
+]);
+
+
         return redirect()
             ->route('orders.show', $order->id)
             ->with('success', 'Order approved successfully.');
     }
 
-    public function rejectOrder(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+public function rejectOrder(Request $request)
+{
+    $request->validate([
+        'id'   => 'required|exists:orders,id',
+        'note' => 'required|string', // require reason
+    ]);
 
-        $order = Order::findOrFail($request->id);
-        $order->order_status = 'rejected';
-        $this->deductAllocationStock($order->id);
-        $order->save();
+    $order = Order::findOrFail($request->id);
+    $order->order_status = 'rejected';
+    $this->deductAllocationStock($order->id);
+    $order->save();
 
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order rejected successfully.');
-    }
+    // Log note with reason
+    $order->notes()->create([
+        'user_id' => auth()->id(),
+        'status'  => 'rejected',
+        'note'    => 'Order was rejected. Reason: ' . $request->note,
+    ]);
+
+    return redirect()
+        ->route('orders.show', $order->id)
+        ->with('success', 'Order rejected successfully.');
+}
 
 
 
