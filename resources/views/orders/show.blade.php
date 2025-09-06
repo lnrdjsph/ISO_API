@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+
 		<style>
 				.search-results {
 						position: absolute;
@@ -331,6 +332,21 @@
 																				<p class="mb-0.5 text-xs text-gray-600">SOF Order ID</p>
 																				<p class="text-xs font-medium text-gray-900">{{ $order->sof_id }}</p>
 																		</div>
+																		@php
+																				$locationMap = [
+																				    'f2' => 'F2 - Metro Wholesalemart Colon',
+																				    's10' => 'S10 - Metro Maasin',
+																				    's17' => 'S17 - Metro Tacloban',
+																				    's19' => 'S19 - Metro Bay-Bay',
+																				    'f18' => 'F18 - Metro Alang-Alang',
+																				    'f19' => 'F19 - Metro Hilongos',
+																				    's8' => 'S8 - Metro Toledo',
+																				    'h8' => 'H8 - Super Metro Antipolo',
+																				    'h9' => 'H9 - Super Metro Carcar',
+																				    'h10' => 'H10 - Super Metro Bogo',
+																				];
+																				$order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+																		@endphp
 																		<div>
 																				<p class="mb-0.5 text-xs text-gray-600">Requesting Store & Personnel</p>
 																				<p class="text-xs font-medium text-gray-900">{{ $order->requesting_store }} - {{ $order->requested_by }}</p>
@@ -508,7 +524,7 @@
 
 																						<td
 																								class="border p-2 text-center"
-																								contenteditable="true"
+																								contenteditable="false"
 																								data-field="price"
 																						>{{ number_format($item->price, 2) }}</td>
 																						<input
@@ -583,7 +599,7 @@
 
 																						<td
 																								class="border p-2 text-center"
-																								contenteditable="true"
+																								contenteditable="false"
 																								data-field="amount"
 																						>{{ number_format($item->amount, 2) }}</td>
 																						<input
@@ -605,7 +621,7 @@
 
 																						<td
 																								class="border p-2 text-center"
-																								contenteditable="true"
+																								contenteditable="false"
 																								data-field="store_order_no"
 																						>{{ $item->store_order_no }}</td>
 																						<input
@@ -691,10 +707,31 @@
 																<!-- Middle: Mock Notes Box -->
 																<div class="mt-3 flex-1 space-y-2">
 
-																		<!-- Mock Notes Wireframe -->
-																		<div class="flex h-32 w-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400">
-																				📄 Order Notes (placeholder)
+																		<div class="mt-3 flex-1 space-y-2">
+																				<h3 class="text-xs font-semibold text-gray-600">📄 Order Notes</h3>
+
+																				<div class="rounded-md border border-gray-200 bg-gray-50 p-2">
+																						<div class="custom-scrollbar max-h-48 space-y-2 overflow-y-auto pr-1">
+																								@forelse ($order->notes as $note)
+																										<div class="rounded-md border border-gray-200 bg-white p-2 text-xs">
+																												<div class="flex justify-between">
+																														<span class="font-medium text-gray-700">{{ ucfirst($note->status) }}</span>
+																														<span class="text-gray-400">{{ $note->created_at->diffForHumans() }}</span>
+																												</div>
+																												<p class="mt-1 text-gray-600">{{ $note->note ?? '—' }}</p>
+																												<p class="mt-1 italic text-gray-400">By: {{ $note->user->name ?? 'System' }}</p>
+																										</div>
+																								@empty
+																										<div class="flex h-20 items-center justify-center rounded-md bg-gray-50 text-xs text-gray-400">
+																												No notes yet.
+																										</div>
+																								@endforelse
+																						</div>
+																				</div>
 																		</div>
+
+
+
 																</div>
 
 																@if (session('success'))
@@ -785,26 +822,30 @@
 																				}
 
 
-																				// Handle rejection with a textarea prompt
-																				if (action === 'rejected') {
+																				// Handle rejection or cancellation with a textarea prompt
+																				if (action === 'rejected' || action === 'cancel') {
+																						let title = action === 'rejected' ? 'Reject Order' : 'Cancel Order';
+																						let confirmBtn = action === 'rejected' ? 'Reject' : 'Cancel Order';
+
 																						Swal.fire({
-																								title: 'Reject Order',
+																								title: title,
 																								text: actionText,
 																								icon: 'warning',
 																								input: 'textarea',
-																								inputPlaceholder: 'Enter rejection note...',
+																								inputPlaceholder: action === 'rejected' ?
+																										'Enter rejection note...' : 'Enter cancellation reason...',
 																								inputValidator: (value) => {
 																										if (!value) {
-																												return 'You must provide a note before rejecting!';
+																												return 'You must provide a note!';
 																										}
 																								},
 																								showCancelButton: true,
 																								confirmButtonColor: confirmColor,
 																								cancelButtonColor: '#aaa',
-																								confirmButtonText: 'Reject'
+																								confirmButtonText: confirmBtn
 																						}).then((result) => {
 																								if (result.isConfirmed) {
-																										submitForm(action, result.value); // pass note as second param
+																										submitForm(action, result.value); // pass note
 																								} else {
 																										this.value = '';
 																								}
@@ -837,6 +878,13 @@
 																				switch (action) {
 																						case 'cancel':
 																								form.action = "{{ route('orders.cancel') }}";
+																								if (note) {
+																										const noteInput = document.createElement('input');
+																										noteInput.type = 'hidden';
+																										noteInput.name = 'note';
+																										noteInput.value = note;
+																										form.appendChild(noteInput);
+																								}
 																								break;
 																						case 'restore':
 																								form.action = "{{ route('orders.restore') }}";
@@ -849,7 +897,15 @@
 																								break;
 																						case 'rejected':
 																								form.action = "{{ route('orders.reject') }}";
+																								if (note) {
+																										const noteInput = document.createElement('input');
+																										noteInput.type = 'hidden';
+																										noteInput.name = 'note';
+																										noteInput.value = note;
+																										form.appendChild(noteInput);
+																								}
 																								break;
+
 																						default: // processing, completed
 																								form.action = "{{ route('orders.archive') }}";
 																								const statusInput = document.createElement('input');
@@ -883,29 +939,52 @@
 
 														<div class="relative rounded-xl border bg-white p-4 pb-24 shadow-sm">
 																<div class="mb-4 items-center justify-between">
-																		<h2 class="text-xs font-semibold uppercase tracking-widest text-gray-700">Grand Total</h2>
+																		<h2 class="text-xs font-semibold uppercase tracking-widest text-gray-700">INVOICE</h2>
 																</div>
 
 																<div class="mb-4 items-center justify-between border-t border-gray-200 pt-4">
-																		<p class="text-center text-lg font-extrabold text-green-600">
-																				₱<span id="totalAmount">0.00</span>
+																		<p class="text-center text-lg font-extrabold text-blue-600">
+																				{{-- ₱<span id="totalAmount">0.00</span> --}}
 																		</p>
 																</div>
 
 																<div class="space-y-2 text-sm text-gray-600">
-																		<div class="flex justify-between">
-																				<span>Total Payable Amount</span>
-																				<span class="font-semibold">₱<span id="mainTotal">0.00</span></span>
+																		<div class="flex justify-between text-xs">
+																				<span>Grand Total</span>
+																				<span class="font-semibold">₱<span id="totalAmount">{{ number_format($order->items->sum('amount'), 2) }}</span></span>
 																		</div>
-																		<div class="flex justify-between">
+
+																		@php
+																				$freebieTotal = $order->items->where('item_type', 'FREEBIE')->sum('amount') ?? 0;
+																				$discountTotal = $order->items->where('item_type', 'DISCOUNT')->sum('amount') ?? 0;
+																		@endphp
+
+																		<div
+																				id="freebieRow"
+																				class="{{ $freebieTotal > 0 ? '' : 'hidden' }} flex justify-between text-xs text-green-600"
+																		>
 																				<span>Total Freebies Amount</span>
-																				<span class="font-semibold">₱<span id="freebieTotal">0.00</span></span>
+																				<span class="font-semibold">- ₱<span id="freebieTotal">{{ number_format($freebieTotal, 2) }}</span></span>
 																		</div>
-																		<div class="flex justify-between">
+
+																		<div
+																				id="discountRow"
+																				class="{{ $discountTotal > 0 ? '' : 'hidden' }} flex justify-between text-xs text-green-600"
+																		>
 																				<span>Discount Savings</span>
-																				<span class="font-semibold text-red-600">₱<span id="discountTotal">0.00</span></span>
+																				<span class="font-semibold">- ₱<span id="discountTotal">{{ number_format($discountTotal, 2) }}</span></span>
+																		</div>
+
+
+																		<hr>
+
+																		<div class="flex justify-between text-xs text-blue-600">
+																				<span>Total Payable Amount</span>
+																				<span class="font-semibold">₱<span id="mainTotal">{{ number_format($order->items->sum('amount') - $freebieTotal - $discountTotal, 2) }}</span></span>
 																		</div>
 																</div>
+
+
 
 														</div>
 
@@ -1120,36 +1199,39 @@
 														freebies: 0
 												};
 
-												// --- 1. price = price_per_pc * qty_per_pc ---
-												calculations.price = values.pricePerPc * values.qtyPerPc;
+												// --- 1. Base price per case ---
+												const basePrice = values.pricePerPc * values.qtyPerPc;
 
-												// --- 2. total_qty = qty_per_cs + freebies_per_cs (ignore N/A) ---
-												calculations.totalQty = 0;
-												if (!isNaN(values.qtyPerCs)) calculations.totalQty += values.qtyPerCs;
-												if (!isNaN(values.freebiesPerCs)) calculations.totalQty += values.freebiesPerCs;
-
-												// --- 3. discount parsing ---
+												// --- 2. Discount parsing ---
 												let discountValue = 0;
 												if (values.discount) {
 														if (values.discount.toString().endsWith("%")) {
 																const percent = parseFloat(values.discount);
 																if (!isNaN(percent)) {
-																		discountValue = (percent / 100) * calculations.price;
+																		discountValue = (percent / 100) * basePrice;
 																}
 														} else {
 																discountValue = parseFloat(values.discount) || 0;
 														}
 												}
 
-												// --- 4. amount = (price - discount) * total_qty ---
-												const netPrice = calculations.price - discountValue;
-												calculations.amount = netPrice * calculations.totalQty;
+												// Final discounted price per case
+												calculations.price = basePrice - discountValue;
+
+												// --- 3. total_qty = qty_per_cs + freebies_per_cs ---
+												calculations.totalQty = 0;
+												if (!isNaN(values.qtyPerCs)) calculations.totalQty += values.qtyPerCs;
+												if (!isNaN(values.freebiesPerCs)) calculations.totalQty += values.freebiesPerCs;
+
+												// --- 4. amount = discounted price * total_qty ---
+												calculations.amount = calculations.price * calculations.totalQty;
 
 												// freebies tracking (optional)
 												calculations.freebies = values.freebiesPerCs;
 
 												return calculations;
 										}
+
 
 
 
@@ -1237,19 +1319,6 @@
 										}
 
 
-										getTotalOrderAmount() {
-												let total = 0;
-												$("tbody tr[data-index]").each((index, row) => {
-														const itemTypeInput = row.querySelector(`input[name="items[${index}][item_type]"]`);
-
-
-														const amountInput = row.querySelector(`input[name*="[amount]"]`);
-														if (amountInput) {
-																total += parseFloat(amountInput.value) || 0;
-														}
-												});
-												return total;
-										}
 
 										getMainAmountTotal() {
 												let total = 0;
@@ -1267,43 +1336,39 @@
 												return total;
 										}
 										getDiscountTotal() {
-												let deducted = 0;
+												let totalSavings = 0;
+
 												$("tbody tr[data-index]").each((_, row) => {
 														const index = $(row).data("index");
 														if (index === undefined) return;
 
-														const itemType = $(row).find(`input[name="items[${index}][item_type]"]`).val() || "MAIN";
+														const itemType = row.querySelector(`input[name="items[${index}][item_type]"]`)?.value || "MAIN";
 														if (itemType !== "DISCOUNT") return;
 
-														const discountInput = $(row).find(`input[name="items[${index}][discount]"]`).val() || 0;
-														const totalQtyInput = $(row).find(`input[name="items[${index}][total_qty]"]`).val() || 0;
-														const priceInput = $(row).find(`input[name="items[${index}][price]"]`).val() || 0;
-														const pricePerPcInput = $(row).find(`input[name="items[${index}][price_per_pc]"]`).val() || 0;
-														const qtyPerPcInput = $(row).find(`input[name="items[${index}][qty_per_pc]"]`).val() || 0;
+														const price = parseFloat(row.querySelector(`input[name="items[${index}][price]"]`)?.value) || 0;
+														const totalQty = parseFloat(row.querySelector(`input[name="items[${index}][total_qty]"]`)?.value) || 0;
+														const discount = (row.querySelector(`input[name="items[${index}][discount]"]`)?.value || "").trim();
 
-														const price = parseFloat(priceInput) || 0; // discounted price per case
-														const pricePerPc = parseFloat(pricePerPcInput) || 0;
-														const qtyPerPc = parseFloat(qtyPerPcInput) || 0;
-														const totalQty = parseFloat(totalQtyInput) || 0;
+														const originalPrice = price;
+														let discountedPrice = originalPrice;
 
-														// original price per case
-														const originalPrice = pricePerPc * qtyPerPc;
-
-														let discountValue = 0;
-														if (typeof discountInput === "string" && discountInput.includes("%")) {
-																// If discount is %, calculate original price from discounted
-																const percent = parseFloat(discountInput.replace("%", "")) || 0;
-																// Already discounted price = originalPrice * (1 - percent/100)
-																discountValue = originalPrice - price; // difference is discount amount
-														} else {
-																// flat discount
-																discountValue = originalPrice - price;
+														// Apply discount
+														if (discount.endsWith("%")) {
+																const percent = parseFloat(discount.replace("%", "")) || 0;
+																discountedPrice = originalPrice * (1 - percent / 100);
+														} else if (discount !== "") {
+																const flat = parseFloat(discount) || 0;
+																discountedPrice = originalPrice - flat;
 														}
 
-														deducted += discountValue * totalQty;
+														// Savings = (original - discounted) × total qty
+														const savings = (originalPrice - discountedPrice) * totalQty;
+														totalSavings += savings;
 												});
-												return deducted;
+
+												return totalSavings;
 										}
+
 
 
 										getFreebieAmountTotal() {
@@ -1468,24 +1533,37 @@
 
 
 								function updateOrderTotal() {
-										const mainTotal = orderCalculator.getMainAmountTotal();
-										const freebieTotal = orderCalculator.getFreebieAmountTotal();
-										const discountTotal = orderCalculator.getDiscountTotal();
-										const grandTotal = mainTotal + freebieTotal;
+										const mainTotal = Number(orderCalculator.getMainAmountTotal() || 0);
+										const freebieTotal = Number(orderCalculator.getFreebieAmountTotal() || 0);
+										const discountTotal = Number(orderCalculator.getDiscountTotal() || 0);
+										const grandTotal = mainTotal + freebieTotal + discountTotal;
 
-										$("#mainTotal").text(mainTotal.toLocaleString("en-US", {
-												minimumFractionDigits: 2
-										}));
-										$("#freebieTotal").text(freebieTotal.toLocaleString("en-US", {
-												minimumFractionDigits: 2
-										}));
-										$("#discountTotal").text(discountTotal.toLocaleString("en-US", {
-												minimumFractionDigits: 2
-										}));
 										$("#totalAmount").text(grandTotal.toLocaleString("en-US", {
 												minimumFractionDigits: 2
 										}));
+										$("#mainTotal").text(mainTotal.toLocaleString("en-US", {
+												minimumFractionDigits: 2
+										}));
+
+										if (freebieTotal !== 0) {
+												$("#freebieRow").removeClass("hidden");
+												$("#freebieTotal").text(freebieTotal.toLocaleString("en-US", {
+														minimumFractionDigits: 2
+												}));
+										} else {
+												$("#freebieRow").addClass("hidden");
+										}
+
+										if (discountTotal !== 0) {
+												$("#discountRow").removeClass("hidden");
+												$("#discountTotal").text(discountTotal.toLocaleString("en-US", {
+														minimumFractionDigits: 2
+												}));
+										} else {
+												$("#discountRow").addClass("hidden");
+										}
 								}
+
 
 
 
@@ -1772,7 +1850,7 @@
 
 
 						function lockFieldsByStatus(orderStatus) {
-								const lockStatuses = ["approved", "completed", "for approval", "cancelled"];
+								const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'rejected'];
 
 								if (lockStatuses.includes(orderStatus)) {
 										// Lock all inputs
@@ -1801,6 +1879,31 @@
 
 				<!-- Enhanced CSS for better visual feedback -->
 				<style>
+						/* Minimal custom scrollbar */
+						.custom-scrollbar::-webkit-scrollbar {
+								width: 6px;
+						}
+
+						.custom-scrollbar::-webkit-scrollbar-track {
+								background: transparent;
+						}
+
+						.custom-scrollbar::-webkit-scrollbar-thumb {
+								background-color: rgba(100, 116, 139, 0.4);
+								/* slate-500 w/ opacity */
+								border-radius: 9999px;
+						}
+
+						.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+								background-color: rgba(100, 116, 139, 0.6);
+						}
+
+						/* Firefox */
+						.custom-scrollbar {
+								scrollbar-width: thin;
+								scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+						}
+
 						/* Smooth transitions for all form elements */
 						input,
 						select,

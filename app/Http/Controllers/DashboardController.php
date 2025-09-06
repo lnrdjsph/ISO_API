@@ -17,6 +17,7 @@ class DashboardController extends Controller
         $completedCount = Order::where('order_status', 'completed')->count();
         $newOrderCount = Order::where('order_status', 'new order')->count();
         $forApprovalCount = Order::where('order_status', 'for approval')->count();
+        $approvedCount = Order::where('order_status', 'approved')->count();
 
         return view('dashboard.index', compact(
             'ordersCount',
@@ -24,7 +25,8 @@ class DashboardController extends Controller
             'cancelledCount',
             'completedCount',
             'newOrderCount',
-            'forApprovalCount'
+            'forApprovalCount',
+            'approvedCount'
 
             
         ));

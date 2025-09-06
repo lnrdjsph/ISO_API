@@ -12,8 +12,17 @@ return new class extends Migration {
     {
         Schema::create('order_notes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('order_id'); // Link to orders table
-            $table->unsignedBigInteger('user_id')->nullable(); // Who added the note
+
+            $table->unsignedInteger('order_id'); // match increments() type
+            $table->foreign('order_id')
+                ->references('id')->on('orders')
+                ->onDelete('cascade');
+
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')
+                ->references('id')->on('users')
+                ->onDelete('set null');
+
             $table->enum('status', [
                 'new order',
                 'for approval',
@@ -24,19 +33,12 @@ return new class extends Migration {
                 'completed',
                 'cancelled',
                 'restored',
-            ])->nullable(); // status at the time of note
-            $table->text('note')->nullable(); // actual note content (like rejection reason, approval comment, etc.)
+            ])->nullable();
+
+            $table->text('note')->nullable();
             $table->timestamps();
-
-            // Foreign keys (adjust table names if different)
-            $table->foreign('order_id')
-                ->references('id')->on('orders')
-                ->onDelete('cascade');
-
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
         });
+
     }
 
     /**

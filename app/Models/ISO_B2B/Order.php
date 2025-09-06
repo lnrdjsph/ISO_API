@@ -21,7 +21,7 @@ class Order extends Model
         'mode_payment',
         'payment_date',
         'mode_dispatching',
-        'delivery_date',
+        'delivery_date' => 'date',
         'address',
         'landmark',
         'requesting_store',
@@ -36,7 +36,13 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    public function notes()
+    {
+        return $this->hasMany(OrderNote::class, 'order_id')
+                    ->orderBy('created_at', 'desc');
+    }
 
+    
     // protected static function booted()
     // {
     //     static::updated(function ($order) {
