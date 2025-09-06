@@ -464,8 +464,8 @@ public function forApproval(Request $request)
     // 🔔 Send email
     Mail::to([
         'leonard.tomalon@metroretail.ph',
-        'gene.catarina@example.com',
-        'rainjay.grado@example.com'
+        'gene.catarina@metroretail.com',
+        'rainjay.grado@metroretail.com'
     ])->send(new OrderApprovalRequestMail($order));
 
     return redirect()
