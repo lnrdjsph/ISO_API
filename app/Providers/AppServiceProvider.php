@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {	 
 	// Force Laravel to always use APP_URL as base
     	URL::forceRootUrl(config('app.url')); 
+        URL::forceScheme('http');    
        //
     }
 }
