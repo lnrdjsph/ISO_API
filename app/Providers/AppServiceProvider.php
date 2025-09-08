@@ -1,31 +1,22 @@
 <?php
+namespace App\Providers;
 
- namespace App\Providers;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     *
-     * @return void
-     */
     public function register()
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
     public function boot()
-    {	 
-	// Force Laravel to always use APP_URL as base
-    	URL::forceRootUrl(config('app.url')); 
-        URL::forceScheme('http');    
-       //
+    {
+        // Force root from APP_URL
+        URL::forceRootUrl(rtrim(config('app.url'), '/'));
+
+        // Default to http unless proxy overrides
+        URL::forceScheme(app('request')->header('X-Forwarded-Proto', 'http'));
     }
 }
