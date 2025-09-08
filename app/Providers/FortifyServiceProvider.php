@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
@@ -14,7 +13,6 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Contracts\LoginResponse;
 use App\Http\Responses\LoginResponse as CustomLoginResponse;
-use Illuminate\Auth\AuthenticationException;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -25,7 +23,10 @@ class FortifyServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Fortify::loginView(fn () => view('auth.login'));
+        Fortify::loginView(function () {
+            return view('auth.login');
+        });
+        
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
@@ -35,21 +36,11 @@ class FortifyServiceProvider extends ServiceProvider
             $throttleKey = Str::transliterate(
                 Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
             );
-
             return Limit::perMinute(5)->by($throttleKey);
         });
 
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
-    }
-
-    protected function unauthenticated($request, AuthenticationException $exception)
-    {
-        $loginUrl = rtrim(config('app.url'), '/') . '/login';
-
-        return $request->expectsJson()
-            ? response()->json(['message' => 'Unauthenticated.'], 401)
-            : redirect()->guest($loginUrl);
     }
 }

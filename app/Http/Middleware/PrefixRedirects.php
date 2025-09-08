@@ -8,15 +8,21 @@ class PrefixRedirects
 {
     public function handle($request, Closure $next)
     {
-        // If nginx is forwarding with X-Forwarded-Prefix, force URL base
+        // Get the prefix from X-Forwarded-Prefix header
         if ($prefix = $request->header('X-Forwarded-Prefix')) {
-            $root = rtrim(config('app.url'), '/');
-            URL::forceRootUrl($root);
-
-            // Ensure scheme matches proxy
-            if ($request->header('X-Forwarded-Proto')) {
-                URL::forceScheme($request->header('X-Forwarded-Proto'));
+            $prefix = rtrim($prefix, '/');
+            
+            // Set the root URL to include the prefix
+            $rootUrl = rtrim(config('app.url'), '/');
+            URL::forceRootUrl($rootUrl);
+            
+            // Force the scheme based on X-Forwarded-Proto
+            if ($forwardedProto = $request->header('X-Forwarded-Proto')) {
+                URL::forceScheme($forwardedProto);
             }
+            
+            // Store the prefix in the request for later use
+            $request->attributes->set('app.prefix', $prefix);
         }
 
         return $next($request);
