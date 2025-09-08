@@ -7,9 +7,8 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        // Always respect intended URL first
-        return redirect()->intended(
-            config('fortify.home', '/iso-api')
-        );
+        $defaultRedirect = rtrim(config('app.url'), '/'); // respects APP_URL with /iso-api
+        return redirect()->intended($defaultRedirect);
     }
 }
+
