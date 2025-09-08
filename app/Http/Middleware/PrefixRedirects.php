@@ -8,21 +8,21 @@ class PrefixRedirects
 {
     public function handle($request, Closure $next)
     {
-        // Get the prefix from X-Forwarded-Prefix header
-        if ($prefix = $request->header('X-Forwarded-Prefix')) {
+        // Handle nginx reverse proxy headers
+        $prefix = $request->header('X-Forwarded-Prefix');
+        
+        if ($prefix) {
             $prefix = rtrim($prefix, '/');
             
-            // Set the root URL to include the prefix
-            $rootUrl = rtrim(config('app.url'), '/');
-            URL::forceRootUrl($rootUrl);
+            // Force the root URL to include proxy context
+            $host = $request->header('X-Forwarded-Host', $request->getHost());
+            $proto = $request->header('X-Forwarded-Proto', $request->getScheme());
             
-            // Force the scheme based on X-Forwarded-Proto
-            if ($forwardedProto = $request->header('X-Forwarded-Proto')) {
-                URL::forceScheme($forwardedProto);
-            }
+            URL::forceRootUrl("{$proto}://{$host}{$prefix}");
+            URL::forceScheme($proto);
             
-            // Store the prefix in the request for later use
-            $request->attributes->set('app.prefix', $prefix);
+            // Store prefix for use in responses
+            config(['app.proxy_prefix' => $prefix]);
         }
 
         return $next($request);

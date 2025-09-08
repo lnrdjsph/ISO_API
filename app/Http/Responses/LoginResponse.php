@@ -7,20 +7,21 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        // Get the intended URL or fallback to home
-        $intended = redirect()->intended()->getTargetUrl();
+        // Get intended URL, but ensure it includes proxy prefix
+        $intended = session()->pull('url.intended');
         
-        // If no specific intended URL, use the configured home path
-        if (str_contains($intended, '/login') || $intended === url('/')) {
-            $home = config('fortify.home', '/');
-            $baseUrl = rtrim(config('app.url'), '/');
-            
-            // Ensure home path starts with /
-            $home = '/' . ltrim($home, '/');
-            
-            return redirect()->to($baseUrl . $home);
+        if ($intended) {
+            // Make sure intended URL includes the proxy prefix
+            $prefix = $request->header('X-Forwarded-Prefix');
+            if ($prefix && !str_contains($intended, $prefix)) {
+                $host = $request->header('X-Forwarded-Host', $request->getHost());
+                $proto = $request->header('X-Forwarded-Proto', 'http');
+                $intended = "{$proto}://{$host}{$prefix}" . parse_url($intended, PHP_URL_PATH);
+            }
+            return redirect($intended);
         }
         
-        return redirect($intended);
+        // Default redirect to home
+        return redirect('/');
     }
 }
