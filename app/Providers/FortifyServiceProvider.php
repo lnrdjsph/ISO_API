@@ -14,20 +14,15 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Contracts\LoginResponse;
 use App\Http\Responses\LoginResponse as CustomLoginResponse;
+use Illuminate\Auth\AuthenticationException;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         $this->app->singleton(LoginResponse::class, CustomLoginResponse::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Fortify::loginView(fn () => view('auth.login'));
@@ -35,11 +30,11 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        
-        
-    
+
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
+            );
 
             return Limit::perMinute(5)->by($throttleKey);
         });
@@ -47,13 +42,14 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
-        
     }
-    protected function unauthenticated($request, \Illuminate\Auth\AuthenticationException $exception)
+
+    protected function unauthenticated($request, AuthenticationException $exception)
     {
-        // Always send expired sessions to iso-api login
+        $loginUrl = rtrim(config('app.url'), '/') . '/login';
+
         return $request->expectsJson()
             ? response()->json(['message' => 'Unauthenticated.'], 401)
-            : redirect()->guest('/iso-api/login');
+            : redirect()->guest($loginUrl);
     }
 }
