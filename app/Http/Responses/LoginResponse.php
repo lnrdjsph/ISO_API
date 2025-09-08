@@ -7,8 +7,11 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        return redirect()->intended(
-            rtrim(config('app.url'), '/') . config('fortify.home', '/')
-        );
+        // Always honor APP_URL and Fortify home
+        $base = rtrim(config('app.url'), '/');
+        $home = ltrim(config('fortify.home', '/'), '/');
+
+        return redirect()->intended("{$base}/{$home}");
     }
 }
+:
