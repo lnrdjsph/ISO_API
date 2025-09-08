@@ -148,29 +148,40 @@ if (!isset($pivot[$sku])) {
             foreach ($skuChunks as $batchSkus) {
                 $placeholders = implode(",", array_fill(0, count($batchSkus), '?'));
                 $sql = "
-                    SELECT im.item AS sku, im.item_desc AS product_name,
-                           CASE
-                               WHEN ils.stock_on_hand <= 0 
-                                    AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
-                               THEN 1000
-                               ELSE ils.stock_on_hand
-                           END AS stock
-                    FROM item_master im
-                    JOIN deps d ON im.dept = d.dept
-                    JOIN item_loc il ON im.item = il.item
-                    JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
-                    WHERE il.loc = ? AND im.item IN ($placeholders)
+SELECT im.item AS sku, 
+       im.item_desc AS product_name,
+       deps.dept_name AS department,
+       uda_values.uda_value_desc AS brand,
+       groups.group_name AS group_name,
+       CASE
+           WHEN ils.stock_on_hand <= 0 
+                AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
+           THEN 1000
+           ELSE ils.stock_on_hand
+       END AS stock
+FROM item_master im
+JOIN deps d ON im.dept = d.dept
+JOIN item_loc il ON im.item = il.item
+JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
+LEFT JOIN deps ON deps.dept = im.dept
+LEFT JOIN groups ON groups.group_no = deps.group_no
+LEFT JOIN uda_item_lov ON im.item = uda_item_lov.item
+LEFT JOIN uda_values ON uda_item_lov.uda_value = uda_values.uda_value 
+                     AND uda_item_lov.uda_id = uda_values.uda_id
+WHERE uda_values.uda_id = 9
+  AND il.loc = ? AND im.item IN ($placeholders)
+
                 ";
                 $params = array_merge([$storeCode], $batchSkus);
                 $rows   = DB::connection('oracle_rms')->select($sql, $params);
 
                 foreach ($rows as $r) {
                     $storeData[] = [
-                        $r->sku, 
-                        $r->product_name, 
-                        $r->department, 
-                        $r->brand, 
-                        $r->group_name, 
+                        $r->sku,
+                        $r->product_name,
+                        $r->department ?? '',
+                        $r->brand ?? '',
+                        $r->group_name ?? '',
                         $r->stock
                     ];
 
