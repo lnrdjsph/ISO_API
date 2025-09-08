@@ -2,15 +2,25 @@
 namespace App\Http\Responses;
 
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
-use Illuminate\Http\Request;
 
 class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        $base = rtrim(config('app.url'), '/');
-        $home = ltrim(config('fortify.home', '/'), '');
-
-        return redirect()->intended("{$base}/{$home}");
+        // Get the intended URL or fallback to home
+        $intended = redirect()->intended()->getTargetUrl();
+        
+        // If no specific intended URL, use the configured home path
+        if (str_contains($intended, '/login') || $intended === url('/')) {
+            $home = config('fortify.home', '/');
+            $baseUrl = rtrim(config('app.url'), '/');
+            
+            // Ensure home path starts with /
+            $home = '/' . ltrim($home, '/');
+            
+            return redirect()->to($baseUrl . $home);
+        }
+        
+        return redirect($intended);
     }
 }

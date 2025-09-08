@@ -13,10 +13,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Force root from APP_URL
-        URL::forceRootUrl(rtrim(config('app.url'), '/'));
-
-        // Default to http unless proxy overrides
-        URL::forceScheme(app('request')->header('X-Forwarded-Proto', 'http'));
+        // Only force root URL in non-CLI environments
+        if (!app()->runningInConsole()) {
+            $request = app('request');
+            
+            // Set the root URL based on APP_URL
+            URL::forceRootUrl(rtrim(config('app.url'), '/'));
+            
+            // Set scheme based on proxy headers or default to http
+            $scheme = $request->header('X-Forwarded-Proto', 
+                      $request->header('X-Forwarded-Ssl') === 'on' ? 'https' : 'http');
+            URL::forceScheme($scheme);
+        }
     }
 }
