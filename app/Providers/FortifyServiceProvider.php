@@ -49,4 +49,11 @@ class FortifyServiceProvider extends ServiceProvider
         });
         
     }
+    protected function unauthenticated($request, \Illuminate\Auth\AuthenticationException $exception)
+    {
+        // Always send expired sessions to iso-api login
+        return $request->expectsJson()
+            ? response()->json(['message' => 'Unauthenticated.'], 401)
+            : redirect()->guest('/iso-api/login');
+    }
 }
