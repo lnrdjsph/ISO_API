@@ -8,8 +8,9 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        $redirectTo = config('fortify.home', env('FORTIFY_HOME', '/'));
+        // Use intended URL or fallback to FORTIFY_REDIRECT
+        $redirectTo = $request->session()->pull('url.intended', env('FORTIFY_REDIRECT', '/'));
 
-        return redirect()->intended($redirectTo);
+        return redirect()->to($redirectTo);
     }
 }
