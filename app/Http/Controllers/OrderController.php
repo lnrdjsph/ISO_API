@@ -395,30 +395,30 @@ public function archive(Request $request)
         ->with('success', 'Order archived successfully.');
 }
 
-public function cancel(Request $request)
-{
-    $request->validate([
-        'id'   => 'required|exists:orders,id',
-        'note' => 'required|string', // require reason
-    ]);
+    public function cancel(Request $request)
+    {
+        $request->validate([
+            'id'   => 'required|exists:orders,id',
+            'note' => 'required|string', // require reason
+        ]);
 
-    $order = Order::findOrFail($request->id);
-    $this->revertAllocationStock($order->id);
+        $order = Order::findOrFail($request->id);
+        $this->revertAllocationStock($order->id);
 
-    $order->order_status = 'cancelled';
-    $order->save();
+        $order->order_status = 'cancelled';
+        $order->save();
 
-    // Log note with reason
-    $order->notes()->create([
-        'user_id' => auth()->id(),
-        'status'  => 'cancelled',
-        'note'    => 'Order was cancelled. Reason: ' . $request->note,
-    ]);
+        // Log note with reason
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'cancelled',
+            'note'    => 'Order was cancelled. Reason: ' . $request->note,
+        ]);
 
-    return redirect()
-        ->route('orders.show', $order->id)
-        ->with('success', 'Order cancelled successfully.');
-}
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order cancelled successfully.');
+    }
 
 
     public function restore(Request $request)
@@ -433,10 +433,10 @@ public function cancel(Request $request)
         $order->save();
 
         $order->notes()->create([
-    'user_id' => auth()->id(),
-    'status'  => 'restored',
-    'note'    => 'Order restored',
-]);
+            'user_id' => auth()->id(),
+            'status'  => 'restored',
+            'note'    => 'Order restored',
+        ]);
 
         return redirect()
             ->route('orders.show', $order->id)
@@ -444,34 +444,44 @@ public function cancel(Request $request)
     }
 
 
-public function forApproval(Request $request)
-{
-    $request->validate([
-        'id' => 'required|exists:orders,id',
-    ]);
+    public function forApproval(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
 
-    $order = Order::findOrFail($request->id);
-    $order->order_status = 'for approval';
-    $this->deductAllocationStock($order->id);
-    $order->save();
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'for approval';
+        $this->deductAllocationStock($order->id);
+        $order->save();
 
-    $order->notes()->create([
-        'user_id' => auth()->id(),
-        'status'  => 'for approval',
-        'note'    => 'Order sent for approval',
-    ]);
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'for approval',
+            'note'    => 'Order sent for approval',
+        ]);
 
-    // 🔔 Send email
-    Mail::to([
-        'leonard.tomalon@metroretail.ph',
-        'gene.catarina@metroretail.com',
-        'rainjay.grado@metroretail.com'
-    ])->send(new OrderApprovalRequestMail($order));
+        // 🔔 Determine recipient based on requesting_store
+        $recipients = [];
 
-    return redirect()
-        ->route('orders.show', $order->id)
-        ->with('success', 'Order requested for approval successfully and email sent.');
-}
+        if (in_array($order->requesting_store, ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'])) {
+            $recipients[] = 'gene.catarina@metroretail.ph';
+        }
+
+        if ($order->requesting_store === 'h8') {
+            $recipients[] = 'leonard.tomalon@metroretail.ph';
+        }
+
+        // If recipients found, send email
+        if (!empty($recipients)) {
+            Mail::to($recipients)->send(new OrderApprovalRequestMail($order));
+        }
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order requested for approval successfully and email sent.');
+    }
+
 
     public function approveOrder(Request $request)
     {
