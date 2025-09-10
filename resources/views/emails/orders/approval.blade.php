@@ -51,7 +51,7 @@
 																</tr>
 																<tr>
 																		<td><strong>Date & Time of Order</strong></td>
-																		<td>{{ $order->time_order->format('F d, Y - h:i A') }}</td>
+																		<td>{{ \Carbon\Carbon::parse($order->time_order)->format('F d, Y - h:i A') }}</td>
 																</tr>
 																<tr style="background:#f1f5f9;">
 																		<td><strong>Customer Name</strong></td>
