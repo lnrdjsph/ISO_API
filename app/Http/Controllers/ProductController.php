@@ -1217,14 +1217,11 @@ class ProductController extends Controller
             : $request->input('location');
 
         try {
-            // run command synchronously (no queue worker needed)
-            Artisan::call('products:update-allocations', [
-                '--location' => $location,
-            ]);
+            Artisan::call('products:update-allocations', ['--location' => $location]);
 
             return response()->json([
-                'status'  => 'success',
-                'message' => "Allocations update started for {$location}",
+                'status'  => 'done',
+                'message' => 'Allocations update finished successfully.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
