@@ -67,7 +67,7 @@
 																</tr>
 																<tr>
 																		<td><strong>Delivery Date</strong></td>
-																		<td>{{ \Carbon\Carbon::parse($order->delivery_date)->format('F d, Y') }}</td>
+																		<td>{{ \Carbon\Carbon::parse($order->delivery_date)->timezone('Asia/Manila')->format('F d, Y') }}</td>
 																</tr>
 																<tr style="background:#f1f5f9;">
 																		<td><strong>Channel Order</strong></td>
