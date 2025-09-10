@@ -349,7 +349,7 @@
 																		@endphp
 																		<div>
 																				<p class="mb-0.5 text-xs text-gray-600">Requesting Store & Personnel</p>
-																				<p class="text-xs font-medium text-gray-900">{{ $order->requesting_store }} - {{ $order->requested_by }}</p>
+																				<p class="text-xs font-medium text-gray-900">{{ $order->requesting_store }} - {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}</p>
 																		</div>
 																		<div>
 																				<p class="mb-0.5 text-xs text-gray-600">Channel Order</p>
@@ -661,6 +661,26 @@
 																		>
 																				Order Actions
 																		</label>
+
+																		<!-- Print Buttons -->
+																		<div class="mb-2 grid w-full grid-cols-2 gap-2">
+																				<a
+																						href="{{ route('orders.print.sof', $order->id) }}"
+																						target="_blank"
+																						class="w-full rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-blue-800 shadow-sm hover:bg-blue-50"
+																				>
+																						Print SOF
+																				</a>
+																				<a
+																						href="#"
+																						target="_blank"
+																						class="w-full rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-800 shadow-sm hover:bg-green-50"
+																				>
+																						Print Invoice
+																				</a>
+																		</div>
+
+
 																		<select
 																				id="orderAction"
 																				class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -676,7 +696,7 @@
 																								<option value="restore">Restore Order</option>
 																						@endif
 
-																						@if ($order->order_status !== 'for approval')
+																						@if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
 																								<option value="for approval">Request For Approval</option>
 																						@endif
 
@@ -689,12 +709,12 @@
 																						@endif --}}
 																				@endif
 
-																				@if (in_array(Auth::user()->role, ['manager', 'super_admin']))
-																						@if ($order->order_status !== 'approved')
+																				@if (in_array(Auth::user()->role, ['manager', 'super admin']))
+																						@if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
 																								<option value="approve">Approve Order</option>
 																						@endif
 
-																						@if ($order->order_status !== 'rejected')
+																						@if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
 																								<option value="rejected">Reject Order</option>
 																						@endif
 																				@endif

@@ -1225,25 +1225,16 @@ class ProductController extends Controller
         ]);
     }
 
+    // Check allocations status
     public function wmsStatus()
     {
-        $date = now('Asia/Manila')->format('Y-m-d');
-        $hour = now('Asia/Manila')->format('H');
-
-        $logFile = storage_path("logs/wms_logs/{$date}/allocations_{$hour}.log");
-
-        if (!file_exists($logFile)) {
-            return response()->json([
-                'status' => 'pending',
-                'message' => 'Waiting to start...'
-            ]);
-        }
-
-        $lastLine = trim(collect(file($logFile))->last());
+        // Simplest check = just look at logs
+        $latestLogDir = storage_path("logs/wms_logs");
+        $lastFile = collect(glob($latestLogDir . '/*/*.log'))->sortDesc()->first();
 
         return response()->json([
-            'status'  => str_contains($lastLine, 'Process completed') ? 'done' : 'running',
-            'message' => $lastLine,
+            'status' => $lastFile ? 'completed_or_in_progress' : 'not_started',
+            'last_log' => $lastFile,
         ]);
     }
 

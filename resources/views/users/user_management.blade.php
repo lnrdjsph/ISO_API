@@ -482,6 +482,20 @@
 										>
 								</div>
 
+								{{-- confirm password --}}
+								<div>
+										<label
+												for="edit_password_confirmation"
+												class="mb-1 block font-medium text-gray-700"
+										>Confirm Password</label>
+										<input
+												id="edit_password_confirmation"
+												name="password_confirmation"
+												type="password"
+												class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+												placeholder="••••••••"
+										>
+								</div>
 
 								<div>
 										<label
