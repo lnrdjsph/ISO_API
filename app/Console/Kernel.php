@@ -15,10 +15,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('products:update-allocations')
-            ->twiceDaily(6, 10, 12)
-            ->timezone('Asia/Manila'); // force Philippine timezone
-            
+        $schedule->command('products:update-allocations')->dailyAt('06:00')->timezone('Asia/Manila');
+        $schedule->command('products:update-allocations')->dailyAt('10:00')->timezone('Asia/Manila');
+        $schedule->command('products:update-allocations')->dailyAt('12:00')->timezone('Asia/Manila');
+
         $schedule->command('products:update-allocations')
             ->cron('0 10 * * *')      // 1:35 PM
             ->timezone('Asia/Manila');
