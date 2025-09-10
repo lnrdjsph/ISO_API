@@ -136,9 +136,18 @@
 														<div class="relative mb-6 w-full">
 																<input
 																		id="requested_by"
-																		value="{{ old('requested_by', auth()->user()->name ?? 'Personnel Sample') }}"
+																		value="{{ old('requested_by', auth()->user()->id ?? 'Personnel Sample') }}"
 																		type="text"
 																		name="requested_by"
+																		readonly
+																		class="peer hidden w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+																		placeholder="Requested By"
+																/>
+																<input
+																		id="requested_by_view"
+																		value="{{ old('requested_by_view', auth()->user()->name ?? 'Personnel Sample') }}"
+																		type="text"
+																		name="requested_by_view"
 																		readonly
 																		class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
 																		placeholder="Requested By"

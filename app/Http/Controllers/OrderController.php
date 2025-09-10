@@ -12,6 +12,7 @@ use Illuminate\Support\Arr;
 
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class OrderController extends Controller
@@ -483,28 +484,35 @@ public function archive(Request $request)
     }
 
 
-    public function approveOrder(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+public function approveOrder(Request $request)
+{
+    $request->validate([
+        'id' => 'required|exists:orders,id',
+    ]);
 
-        $order = Order::findOrFail($request->id);
-        $order->order_status = 'approved';
-        $this->deductAllocationStock($order->id);
-        $order->save();
+    $order = Order::findOrFail($request->id);
+    $order->order_status = 'approved';
+    $this->deductAllocationStock($order->id);
+    $order->save();
 
-        $order->notes()->create([
-    'user_id' => auth()->id(),
-    'status'  => 'approved',
-    'note'    => 'Order approved',
-]);
+    $order->notes()->create([
+        'user_id' => auth()->id(),
+        'status'  => 'approved',
+        'note'    => 'Order approved',
+    ]);
 
+    // ✅ Send email to requester
+    $requester = \App\Models\User::find($order->requested_by);
 
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order approved successfully.');
+    if ($requester && $requester->email) {
+        Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
     }
+
+    return redirect()
+        ->route('orders.show', $order->id)
+        ->with('success', 'Order approved successfully and requester notified.');
+}
+
 
 public function rejectOrder(Request $request)
 {
@@ -659,5 +667,15 @@ public function rejectOrder(Request $request)
 
     // }
 
-    
+    public function printSOF($id)
+    {
+        $order = Order::with('items')->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
+                ->setPaper('A4', 'landscape'); // switched to landscape
+
+        return $pdf->stream("SOF-Order-{$order->id}.pdf"); // Opens in browser
+        // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
+    }
+
 }
