@@ -689,7 +689,7 @@
 																						@endif --}}
 																				@endif
 
-																				@if (Auth::user()->role === 'manager')
+																				@if (in_array(Auth::user()->role, ['manager', 'super_admin']))
 																						@if ($order->order_status !== 'approved')
 																								<option value="approve">Approve Order</option>
 																						@endif
