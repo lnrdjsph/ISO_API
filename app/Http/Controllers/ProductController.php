@@ -1212,29 +1212,48 @@ class ProductController extends Controller
     public function wmsUpdate(Request $request)
     {
         $user = auth()->user();
-        $location = $user && $user->user_location ? strtolower($user->user_location) : null;
+        $location = $user && $user->user_location
+            ? strtolower($user->user_location)
+            : $request->input('location');
 
-        // Run in background
-        Artisan::queue('products:update-allocations', [
-            '--location' => $location,
-        ]);
+        try {
+            // run command synchronously (no queue worker needed)
+            Artisan::call('products:update-allocations', [
+                '--location' => $location,
+            ]);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Allocations update started. You will see results in logs.',
-        ]);
+            return response()->json([
+                'status'  => 'success',
+                'message' => "Allocations update started for {$location}",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // Check allocations status
+
     public function wmsStatus()
     {
-        // Simplest check = just look at logs
-        $latestLogDir = storage_path("logs/wms_logs");
-        $lastFile = collect(glob($latestLogDir . '/*/*.log'))->sortDesc()->first();
+        $date = now('Asia/Manila')->format('Y-m-d');
+        $hour = now('Asia/Manila')->format('H');
+
+        $logFile = storage_path("logs/wms_logs/{$date}/allocations_{$hour}.log");
+
+        if (!file_exists($logFile)) {
+            return response()->json([
+                'status' => 'pending',
+                'message' => 'Waiting to start...'
+            ]);
+        }
+
+        $lastLine = trim(collect(file($logFile))->last());
 
         return response()->json([
-            'status' => $lastFile ? 'completed_or_in_progress' : 'not_started',
-            'last_log' => $lastFile,
+            'status'  => str_contains($lastLine, 'Process completed') ? 'done' : 'running',
+            'message' => $lastLine,
         ]);
     }
 
