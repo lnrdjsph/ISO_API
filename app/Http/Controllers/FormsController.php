@@ -140,6 +140,7 @@ class FormsController extends Controller
         }
 
         try{
+            DB::beginTransaction();
             // Save main order info
             $this->checkAllocationStock($validated['orders']);
             // === Generate SOF ID ===
@@ -189,63 +190,63 @@ class FormsController extends Controller
             $discount   = $item['discount'] ?? 0;
             $discountType = $item['discount_type'] ?? 'amount'; // 'percent' or 'amount'
 
-// Base price per case
-$pricePerPc = $item['price_per_pc'] ?? 0;
-$qtyPerPc   = $item['qty_per_pc'] ?? 0;
-$discountRaw = $item['discount'] ?? 0;
+            // Base price per case
+            $pricePerPc = $item['price_per_pc'] ?? 0;
+            $qtyPerPc   = $item['qty_per_pc'] ?? 0;
+            $discountRaw = $item['discount'] ?? 0;
 
-$rawPrice = $pricePerPc * $qtyPerPc;
+            $rawPrice = $pricePerPc * $qtyPerPc;
 
-// Parse discount
-$discount = 0;
-$discountType = 'amount';
+            // Parse discount
+            $discount = 0;
+            $discountType = 'amount';
 
-if (is_string($discountRaw)) {
-    $discountStr = trim($discountRaw);
-    if (str_ends_with($discountStr, '%')) {
-        $discountType = 'percent';
-        $discount = (float) rtrim($discountStr, '%');
-    } else {
-        $discount = (float) $discountStr;
-    }
-} else {
-    $discount = (float) $discountRaw;
-}
+            if (is_string($discountRaw)) {
+                $discountStr = trim($discountRaw);
+                if (str_ends_with($discountStr, '%')) {
+                    $discountType = 'percent';
+                    $discount = (float) rtrim($discountStr, '%');
+                } else {
+                    $discount = (float) $discountStr;
+                }
+            } else {
+                $discount = (float) $discountRaw;
+            }
 
-// Apply discount
-$finalPrice = $rawPrice;
-if ($discount > 0) {
-    if ($discountType === 'percent') {
-        $finalPrice = $rawPrice - ($rawPrice * ($discount / 100));
-    } else {
-        $finalPrice = $rawPrice - $discount;
-    }
-}
+            // Apply discount
+            $finalPrice = $rawPrice;
+            if ($discount > 0) {
+                if ($discountType === 'percent') {
+                    $finalPrice = $rawPrice - ($rawPrice * ($discount / 100));
+                } else {
+                    $finalPrice = $rawPrice - $discount;
+                }
+            }
 
-// Prevent negative
-$finalPrice = max($finalPrice, 0);
+            // Prevent negative
+            $finalPrice = max($finalPrice, 0);
 
-// Total amount
-$qtyPerCs = $item['qty_per_cs'] ?? 0;
-$totalAmount = $finalPrice * $qtyPerCs;
+            // Total amount
+            $qtyPerCs = $item['qty_per_cs'] ?? 0;
+            $totalAmount = $finalPrice * $qtyPerCs;
 
-// Create item
-$order->items()->create([
-    'sku' => $item['sku'] ?? null,
-    'item_description' => $item['item_description'] ?? null,
-    'scheme' => $scheme,
-    'price_per_pc' => $pricePerPc,
-    'price' => $finalPrice, // discounted case price
-    'qty_per_pc' => $qtyPerPc,
-    'qty_per_cs' => $qtyPerCs,
-    'freebies_per_cs' => 0,
-    'total_qty' => $qtyPerCs,
-    'discount' => $discountRaw, // keep original input for reference
-    'amount' => $totalAmount, // discounted total
-    'remarks' => $item['remarks'] ?? null,
-    'store_order_no' => $item['store_order_no'] ?? null,
-    'item_type' => $discount > 0 ? 'DISCOUNT' : 'MAIN',
-]);
+            // Create item
+            $order->items()->create([
+                'sku' => $item['sku'] ?? null,
+                'item_description' => $item['item_description'] ?? null,
+                'scheme' => $scheme,
+                'price_per_pc' => $pricePerPc,
+                'price' => $finalPrice, // discounted case price
+                'qty_per_pc' => $qtyPerPc,
+                'qty_per_cs' => $qtyPerCs,
+                'freebies_per_cs' => 0,
+                'total_qty' => $qtyPerCs,
+                'discount' => $discountRaw, // keep original input for reference
+                'amount' => $totalAmount, // discounted total
+                'remarks' => $item['remarks'] ?? null,
+                'store_order_no' => $item['store_order_no'] ?? null,
+                'item_type' => $discount > 0 ? 'DISCOUNT' : 'MAIN',
+            ]);
 
 
 
@@ -292,7 +293,8 @@ $order->items()->create([
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['stock_error' => $e->getMessage()]);
+            return back()->withErrors(['stock_error' => $e->getMessage()])
+             ->withInput();
         }
     }
 

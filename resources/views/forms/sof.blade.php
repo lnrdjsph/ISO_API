@@ -182,7 +182,7 @@
 																		value="{{ old('time_order') }}"
 																		type="datetime-local"
 																		name="time_order"
-																		class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+																		class="datepicker required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
 																		placeholder=" "
 																/>
 																<label
@@ -192,6 +192,21 @@
 																</label>
 														</div>
 
+														<script>
+																flatpickr("#time_order", {
+																		enableTime: true,
+																		dateFormat: "Y-m-d H:i",
+																		allowInput: true,
+																		onReady: (selectedDates, dateStr, instance) => {
+																				const btn = document.createElement("button");
+																				btn.innerText = "OK";
+																				btn.className = "flatpickr-ok";
+																				btn.style.margin = "5px";
+																				btn.onclick = () => instance.close();
+																				instance.calendarContainer.appendChild(btn);
+																		}
+																});
+														</script>
 												</div>
 										</section>
 
@@ -478,16 +493,23 @@
 																				value=""
 																				disabled
 																				{{ old('mode_dispatching') ? '' : 'selected' }}
-																		> Select Mode of Dispatch</option>
+																		>
+																				Select Mode of Dispatch
+																		</option>
 																		<option
 																				value="Customer Pick-up"
-																				{{ old('mode_dispatching') == 'Customer Pick-up' ? 'selected' : '' }}
-																		>Customer Pick-up</option>
+																				{{ old('mode_dispatching') === 'Customer Pick-up' ? 'selected' : '' }}
+																		>
+																				Customer Pick-up
+																		</option>
 																		<option
 																				value="Delivery Direct to Customer"
-																				{{ old('mode_dispatching') == 'Delivery Direct to Customer' ? 'selected' : '' }}
-																		>Delivery Direct to Customer</option>
+																				{{ old('mode_dispatching') === 'Delivery Direct to Customer' ? 'selected' : '' }}
+																		>
+																				Delivery Direct to Customer
+																		</option>
 																</select>
+
 																<label
 																		for="mode_dispatching"
 																		class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"

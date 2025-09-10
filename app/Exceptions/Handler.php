@@ -33,4 +33,14 @@ class Handler extends ExceptionHandler
         // For nginx proxy, always redirect to /login (nginx will handle the prefix)
         return redirect()->guest('/login');
     }
+
+    public function render($request, Throwable $exception)
+    {
+        if ($exception instanceof \Illuminate\Session\TokenMismatchException) {
+            return response()->view('errors.419', [], 419);
+        }
+
+        return parent::render($request, $exception);
+    }
+
 }
