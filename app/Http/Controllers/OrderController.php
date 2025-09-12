@@ -484,59 +484,59 @@ public function archive(Request $request)
     }
 
 
-public function approveOrder(Request $request)
-{
-    $request->validate([
-        'id' => 'required|exists:orders,id',
-    ]);
+    public function approveOrder(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
 
-    $order = Order::findOrFail($request->id);
-    $order->order_status = 'approved';
-    $this->deductAllocationStock($order->id);
-    $order->save();
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'approved';
+        $this->deductAllocationStock($order->id);
+        $order->save();
 
-    $order->notes()->create([
-        'user_id' => auth()->id(),
-        'status'  => 'approved',
-        'note'    => 'Order approved',
-    ]);
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'approved',
+            'note'    => 'Order approved',
+        ]);
 
-    // ✅ Send email to requester
-    $requester = \App\Models\User::find($order->requested_by);
+        // ✅ Send email to requester
+        $requester = \App\Models\User::find($order->requested_by);
 
-    if ($requester && $requester->email) {
-        Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
+        if ($requester && $requester->email) {
+            Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
+        }
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order approved successfully and requester notified.');
     }
 
-    return redirect()
-        ->route('orders.show', $order->id)
-        ->with('success', 'Order approved successfully and requester notified.');
-}
 
+    public function rejectOrder(Request $request)
+    {
+        $request->validate([
+            'id'   => 'required|exists:orders,id',
+            'note' => 'required|string', // require reason
+        ]);
 
-public function rejectOrder(Request $request)
-{
-    $request->validate([
-        'id'   => 'required|exists:orders,id',
-        'note' => 'required|string', // require reason
-    ]);
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'rejected';
+        $this->deductAllocationStock($order->id);
+        $order->save();
 
-    $order = Order::findOrFail($request->id);
-    $order->order_status = 'rejected';
-    $this->deductAllocationStock($order->id);
-    $order->save();
+        // Log note with reason
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'rejected',
+            'note'    => 'Order was rejected. Reason: ' . $request->note,
+        ]);
 
-    // Log note with reason
-    $order->notes()->create([
-        'user_id' => auth()->id(),
-        'status'  => 'rejected',
-        'note'    => 'Order was rejected. Reason: ' . $request->note,
-    ]);
-
-    return redirect()
-        ->route('orders.show', $order->id)
-        ->with('success', 'Order rejected successfully.');
-}
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order rejected successfully.');
+    }
 
 
 
@@ -674,7 +674,7 @@ public function rejectOrder(Request $request)
         $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
                 ->setPaper('A4', 'landscape'); // switched to landscape
 
-        return $pdf->stream("SOF-Order-{$order->id}.pdf"); // Opens in browser
+        return $pdf->stream("{$order->id}.pdf"); // Opens in browser
         // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
     }
 

@@ -5,6 +5,7 @@ namespace App\Models\ISO_B2B;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Http\Controllers\ProductController;
+use App\Models\User;
 
 class Order extends Model
 {
@@ -42,7 +43,33 @@ class Order extends Model
                     ->orderBy('created_at', 'desc');
     }
 
-    
+public function approver()
+{
+    $map = [
+        'f2'  => 1,
+        's10' => 1,
+        's17' => 1,
+        's19' => 1,
+        'f18' => 1,
+        'f19' => 1,
+        's8'  => 1,
+        'h9'  => 1,
+        'h10' => 1,
+        'h8'  => 2,
+    ];
+
+    $storeCode = strtolower($this->requesting_store);
+    $userId = $map[$storeCode] ?? null;
+
+    return $userId ? User::find($userId) : null;
+}
+
+public function getApproverNameAttribute()
+{
+    return $this->approver()?->name;
+}
+
+
     // protected static function booted()
     // {
     //     static::updated(function ($order) {
