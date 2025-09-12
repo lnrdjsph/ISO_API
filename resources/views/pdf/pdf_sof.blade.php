@@ -7,7 +7,7 @@
 		<style>
 				body {
 						font-family: DejaVu Sans, sans-serif;
-						font-size: 11px;
+						font-size: 8px;
 						color: #333;
 						margin: 0px;
 				}
@@ -15,23 +15,23 @@
 				h2 {
 						margin: 0 0 15px 0;
 						padding: 0;
-						font-size: 16px;
+						font-size: 12px;
 						text-align: center;
 						font-weight: bold;
 						text-transform: uppercase;
 				}
 
 				.section {
-						border: 1px solid #ccc;
+						border: none;
 						border-radius: 4px;
-						margin-bottom: 20px;
+						margin-bottom: 10px;
 						padding: 10px;
 				}
 
 				.section-title {
 						font-weight: bold;
-						font-size: 12px;
-						margin-bottom: 5px;
+						font-size: 10px;
+						margin-bottom: 3px;
 						padding-bottom: 3px;
 						color: #111;
 				}
@@ -43,7 +43,7 @@
 				.info-table td {
 						padding: 1px;
 						vertical-align: center;
-						font-size: 10px;
+						font-size: 8px;
 				}
 
 				/* Ordered Items Table */
@@ -124,6 +124,30 @@
 						/* Remarks */
 						text-align: left;
 				}
+
+				/* Signature container */
+				.signature-container {
+						display: flex;
+						justify-content: space-around;
+						/* spaces them evenly */
+						margin-top: 60px;
+				}
+
+				/* Individual signature blocks */
+				.signature-area {
+						text-align: center;
+						font-size: 9px;
+				}
+
+				/* Signature line */
+				.signature-line {
+						margin-top: 40px;
+						border-top: 1px solid #000;
+						width: 200px;
+						margin-left: auto;
+						margin-right: auto;
+						padding-top: 3px;
+				}
 		</style>
 </head>
 @php
@@ -139,7 +163,7 @@
 		    'h9' => 'H9 - Super Metro Carcar',
 		    'h10' => 'H10 - Super Metro Bogo',
 		];
-		$order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+		$order->requesting_store_name = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
 @endphp
 
 <body>
@@ -149,44 +173,141 @@
 
 		<!-- Customer/Payment/Delivery/Order Info -->
 		<div class="section">
-				<table class="info-table">
+				<table
+						class="info-table"
+						width="100%"
+						cellspacing="0"
+						cellpadding="6"
+						style="border-collapse: collapse;"
+				>
 						<tr>
-								<td width="25%">
+								<!-- LEFT COLUMN: Customer + Payment + Delivery -->
+								<td
+										width="50%"
+										valign="top"
+										style="vertical-align: top;"
+								>
 										<div class="section-title">Customer Info</div>
-										<strong>MRC Card No:</strong> {{ $order->mbc_card_no }}<br>
-										<strong>Customer Name:</strong> {{ $order->customer_name }}<br>
-										<strong>Contact No:</strong> {{ $order->contact_number }}
+										<table
+												width="100%"
+												style="border: none;"
+										>
+												<tr>
+														<td width="40%"><strong>MRC Card No:</strong></td>
+														<td>{{ $order->mbc_card_no }}</td>
+												</tr>
+												<tr>
+														<td><strong>Customer Name:</strong></td>
+														<td>{{ $order->customer_name }}</td>
+												</tr>
+												<tr>
+														<td><strong>Contact No:</strong></td>
+														<td>{{ $order->contact_number }}</td>
+												</tr>
+										</table>
+
+
+
+										<div
+												class="section-title"
+												style="margin-top:10px;"
+										>Delivery Info</div>
+										<table
+												width="100%"
+												style="border: none;"
+										>
+												<tr>
+														<td width="40%"><strong>Dispatch:</strong></td>
+														<td>{{ $order->mode_dispatching }}</td>
+												</tr>
+												<tr>
+														<td><strong>Date:</strong></td>
+														<td>{{ \Carbon\Carbon::parse($order->delivery_date)->format('m/d/Y') }}</td>
+												</tr>
+												<tr>
+														<td><strong>Address:</strong></td>
+														<td>{{ $order->delivery_address ?? '-' }}</td>
+												</tr>
+												<tr>
+														<td><strong>Landmark:</strong></td>
+														<td>{{ $order->delivery_landmark ?? '-' }}</td>
+												</tr>
+										</table>
 								</td>
-								<td width="25%">
+
+								<!-- RIGHT COLUMN: Order Info -->
+								<td
+										width="50%"
+										valign="top"
+										style="vertical-align: top;"
+								>
 										<div class="section-title">Payment Info</div>
-										<strong>Center:</strong> {{ $order->payment_center }}<br>
-										<strong>Mode:</strong> {{ $order->mode_payment }}<br>
-										<strong>Date:</strong> {{ \Carbon\Carbon::parse($order->payment_date)->format('m/d/Y') }}
-								</td>
-								<td width="25%">
-										<div class="section-title">Delivery Info</div>
-										<strong>Dispatch:</strong> {{ $order->mode_dispatching }}<br>
-										<strong>Date:</strong> {{ \Carbon\Carbon::parse($order->delivery_date)->format('m/d/Y') }}<br>
-										<strong>Address:</strong> {{ $order->delivery_address ?? '-' }}<br>
-										<strong>Landmark:</strong> {{ $order->delivery_landmark ?? '-' }}
-								</td>
-								<td width="25%">
-										<div class="section-title">Order Info</div>
-										<strong>SOF ID:</strong> {{ $order->sof_id }}<br>
-										<strong>Store & Personnel:</strong> {{ $order->requesting_store }} - {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}<br>
-										<strong>Channel:</strong> {{ $order->channel_order }}<br>
-										<strong>Date/Time:</strong> {{ \Carbon\Carbon::parse($order->time_order)->format('M d, Y - h:i A') }}<br>
-										<strong>Status:</strong> {{ ucwords($order->order_status) }}
+										<table
+												width="100%"
+												style="border: none;"
+										>
+												<tr>
+														<td width="40%"><strong>Center:</strong></td>
+														<td>{{ $order->payment_center }}</td>
+												</tr>
+												<tr>
+														<td><strong>Mode:</strong></td>
+														<td>{{ $order->mode_payment }}</td>
+												</tr>
+												<tr>
+														<td><strong>Date:</strong></td>
+														<td>{{ \Carbon\Carbon::parse($order->payment_date)->format('m/d/Y') }}</td>
+												</tr>
+										</table>
+
+										<div
+												class="section-title"
+												style="margin-top:10px;"
+										>Order Info</div>
+										<table
+												width="100%"
+												style="border: none;"
+										>
+												<tr>
+														<td width="40%"><strong>SOF ID:</strong></td>
+														<td>{{ $order->sof_id }}</td>
+												</tr>
+												<tr>
+														<td><strong>Store:</strong></td>
+														<td>{{ $order->requesting_store_name }}</td>
+												</tr>
+												<tr>
+														<td><strong>Personnel:</strong></td>
+														<td>{{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}</td>
+												</tr>
+												<tr>
+														<td><strong>Channel:</strong></td>
+														<td>{{ $order->channel_order }}</td>
+												</tr>
+												<tr>
+														<td><strong>Date/Time:</strong></td>
+														<td>{{ \Carbon\Carbon::parse($order->time_order)->format('M d, Y - h:i A') }}</td>
+												</tr>
+												<tr>
+														<td><strong>Status:</strong></td>
+														<td>{{ ucwords($order->order_status) }}</td>
+												</tr>
+										</table>
+
 								</td>
 						</tr>
 				</table>
+
 		</div>
 
 		<!-- Ordered Items -->
 		<div class="section">
 				<div class="section-title">Ordered Items</div>
 
-				<table class="order-items">
+				<table
+						class="order-items"
+						style="border-collapse: collapse; width: 100%;"
+				>
 						<thead>
 								<tr>
 										<th rowspan="2">No.</th>
@@ -220,7 +341,7 @@
 												<td>{{ $item->discount ? $item->discount : '-' }}</td>
 												<td>{{ $item->qty_per_pc }}</td>
 												<td>{{ $item->qty_per_cs }}</td>
-												<td>{{ $item->freebies ?? 'N/A' }}</td>
+												<td>{{ $item->freebies_per_cs ?? 'N/A' }}</td>
 												<td>{{ $item->total_qty }}</td>
 												<td>{{ number_format($item->amount, 2) }}</td>
 												<td>{{ $item->remarks }}</td>
@@ -228,8 +349,52 @@
 										</tr>
 								@endforeach
 						</tbody>
+						<tfoot>
+								<tr>
+										<td
+												colspan="11"
+												style="text-align: right; font-weight: bold;"
+										>Total Amount:</td>
+										<td style="font-weight: bold;">
+												{{ number_format($order->items->sum('amount'), 2) }}
+										</td>
+										<td colspan="2"></td>
+								</tr>
+						</tfoot>
 				</table>
+
 		</div>
+		<!-- Signature Container (Table) -->
+		<!-- Signature Container (Table) -->
+		@php
+				$storeCode = strtolower($order->requesting_store);
+				$storeName = $locationMap[$storeCode] ?? $storeCode;
+				$approver = $order->approver_name; // pulled from model
+		@endphp
+		<table style="width:100%; margin-top:60px; text-align:center; border:0;">
+				<tr>
+						<td style="width:50%; text-align:center; vertical-align:bottom;">
+								<span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
+										{{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}
+								</span>
+								<div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
+										Prepared by
+								</div>
+						</td>
+						<td style="width:50%; text-align:center; vertical-align:bottom;">
+								<span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
+										{{ strtoupper($order->approver_name ?? 'N/A') }}
+
+								</span>
+								<div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
+										Approved by
+								</div>
+						</td>
+				</tr>
+
+		</table>
+
+
 
 </body>
 
