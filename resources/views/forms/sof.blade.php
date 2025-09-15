@@ -1545,42 +1545,41 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						select.addEventListener('change', function() {
 								const indexMatch = this.name.match(/orders\[(\d+)\]/);
 								if (!indexMatch) return;
-								const index = indexMatch[1];
 
-								// Use row-scoped selectors instead of global document selectors
 								const freebieSection = row.querySelector('.freebie-grid');
 								const mainItemSection = row.querySelector('.main-item');
 								const discountField = row.querySelector('.discount-field');
 
 								if (!freebieSection || !mainItemSection || !discountField) return;
 
+								// 🔄 Always clear values first
+								freebieSection.querySelectorAll('input').forEach(i => i.value = '');
+								const discountInput = discountField.querySelector('input');
+								if (discountInput) discountInput.value = '';
+
+								// 🔄 Always hide first
+								freebieSection.classList.add('hidden');
+								discountField.classList.add('hidden');
+								mainItemSection.classList.remove('md:grid-cols-3', 'md:grid-cols-4');
+
+								// ✅ Then apply correct mode
 								if (this.value === 'Freebie') {
 										freebieSection.classList.remove('hidden');
-										discountField.classList.add('hidden');
-										const discountInput = discountField.querySelector('input');
-										if (discountInput) discountInput.value = '';
-										mainItemSection.classList.remove('md:grid-cols-4');
 										mainItemSection.classList.add('md:grid-cols-3');
-
 								} else if (this.value === 'Discount') {
 										discountField.classList.remove('hidden');
-										freebieSection.classList.add('hidden');
-										freebieSection.querySelectorAll('input').forEach(i => i.value = '');
-										mainItemSection.classList.remove('md:grid-cols-3');
 										mainItemSection.classList.add('md:grid-cols-4');
 								} else {
-										// Hide both if empty or reset
+										mainItemSection.classList.add('md:grid-cols-3');
 										freebieSection.classList.add('hidden');
-										discountField.classList.add('hidden');
-										freebieSection.querySelectorAll('input').forEach(i => i.value = '');
-										const discountInput = discountField.querySelector('input');
-										if (discountInput) discountInput.value = '';
+
 								}
 						});
 
 						// Fire once on attach
 						select.dispatchEvent(new Event('change'));
 				}
+
 
 
 
@@ -1987,10 +1986,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								// ✅ If not a FREEBIE, apply discount
 								if (itemType !== 'FREEBIE' && discount) {
 										setValue(row.find('.discount'), discount);
-										// row.find('.discount').prop('readonly', false); // editable
+										row.find('.discount').prop('readonly', false); // editable
 								} else {
 										setValue(row.find('.discount'), '');
-										// row.find('.discount').prop('readonly', true); // lock freebies
+										row.find('.discount').prop('readonly', true); // lock freebies
 								}
 
 

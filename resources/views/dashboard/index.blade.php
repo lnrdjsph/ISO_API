@@ -246,40 +246,48 @@
 												</ul>
 										</div>
 								@endif
-								<!-- Products Card -->
+
+								<!-- Reports Card -->
 								<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
 										<div class="mb-3 flex items-center justify-between">
 												<h2 class="text-2xl font-semibold text-gray-800">Reports</h2>
-												<div class="rounded-full bg-green-100 p-2 text-green-600">
+												<div class="rounded-full bg-orange-100 p-2 text-orange-600">
 														<svg
 																class="h-5 w-5 flex-shrink-0"
 																fill="none"
 																stroke="currentColor"
 																viewBox="0 0 24 24"
 														>
+																<!-- Axes -->
 																<path
 																		stroke-linecap="round"
 																		stroke-linejoin="round"
 																		stroke-width="2"
-																		d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+																		d="M4 20h16M4 4v16"
+																/>
+																<!-- Line Chart -->
+																<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M4 14l4-4 4 3 6-6 2 2"
 																/>
 														</svg>
 												</div>
 										</div>
 										<ul class="space-y-2 text-sm text-gray-600">
 												<li><a
-																href="#"
+																href="{{ route('reports.sales') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>Sales</a></li>
+														>Sales </a></li>
 												<li><a
-																href="#"
+																href="{{ route('reports.freebies') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>For Approval</a></li>
+														>Freebies </a></li>
 												<li><a
 																href="#"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
 														>Overview</a></li>
-
 										</ul>
 								</div>
 

@@ -354,7 +354,7 @@
 
 		<aside
 				id="sidebar"
-				class="sidebar-expanded fixed z-[9999] flex hidden flex-col bg-white shadow-xl"
+				class="sidebar-expanded fixed z-[9999] flex flex-col bg-white shadow-xl"
 		>
 
 
@@ -539,10 +539,17 @@
 																						stroke-linecap="round"
 																						stroke-linejoin="round"
 																						stroke-width="2"
-																						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+																						d="M11 3.055A9 9 0 1020.945 13H11V3.055z"
+																				/>
+																				<path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
 																				/>
 																		</svg>
 																</span>
+
 																<span class="nav-text ml-3 font-medium">Forms</span>
 																<div class="tooltip">Forms</div>
 														</div>
@@ -606,6 +613,111 @@
 																		class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																>
 																		Request Order Form
+																</a>
+														</li>
+												</ul>
+										</li>
+
+
+										<!-- Reports Group -->
+										<li class="{{ request()->routeIs('reports*') ? 'active' : '' }} group relative">
+												@if (request()->routeIs('reports*'))
+														<!-- Expanded Reports Section -->
+														<div class="nav-item {{ request()->routeIs('reports*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+																<span class="icon-wrapper">
+																		<svg
+																				class="h-5 w-5 flex-shrink-0"
+																				fill="none"
+																				stroke="currentColor"
+																				viewBox="0 0 24 24"
+																		>
+																				<!-- Axes -->
+																				<path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M4 20h16M4 4v16"
+																				/>
+																				<!-- Line Chart -->
+																				<path
+																						stroke-linecap="round"
+																						stroke-linejoin="round"
+																						stroke-width="2"
+																						d="M4 14l4-4 4 3 6-6 2 2"
+																				/>
+																		</svg>
+																</span>
+
+																<span class="nav-text ml-3 font-medium">Reports</span>
+																<div class="tooltip">Reports</div>
+														</div>
+
+														<ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
+																<li>
+																		<a
+																				href="{{ route('reports.sales') }}"
+																				class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																		>
+																				<span class="nav-text">Sales Report</span>
+																		</a>
+																</li>
+																<li>
+																		<a
+																				href="{{ route('reports.freebies') }}"
+																				class="sub-item {{ request()->routeIs('reports.freebies') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																		>
+																				<span class="nav-text">Freebies Report</span>
+																		</a>
+																</li>
+														</ul>
+												@else
+														<!-- Collapsed Reports with Hover Flyout -->
+														<a
+																href="{{ route('reports.sales') }}"
+																class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+														>
+																<svg
+																		class="h-5 w-5 flex-shrink-0"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																>
+																		<!-- Axes -->
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M4 20h16M4 4v16"
+																		/>
+																		<!-- Line Chart -->
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M4 14l4-4 4 3 6-6 2 2"
+																		/>
+																</svg>
+																<span class="nav-text ml-3">Reports</span>
+																<div class="tooltip">Reports</div>
+														</a>
+												@endif
+
+												<!-- Hover Flyout Menu -->
+												<ul class="flyout-menu absolute top-0 z-50 hidden w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+														<li>
+																<a
+																		href="{{ route('reports.sales') }}"
+																		class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																>
+																		Sales Report
+																</a>
+														</li>
+														<li>
+																<a
+																		href="{{ route('reports.freebies') }}"
+																		class="sub-item {{ request()->routeIs('reports.freebies') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																>
+																		Freebies Report
 																</a>
 														</li>
 												</ul>
@@ -956,7 +1068,7 @@
 		</aside>
 
 		<!-- Mobile Header -->
-		<header class="relative z-30 block flex items-center justify-between border-b bg-white px-6 py-4 md:hidden">
+		<header class="relative z-30 mt-8 block flex items-center justify-between border-b bg-white px-6 py-4 md:hidden">
 				<div class="flex items-center space-x-4">
 						<button
 								id="toggleMobileMenu"
