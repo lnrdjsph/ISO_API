@@ -677,5 +677,15 @@ public function archive(Request $request)
         return $pdf->stream("{$order->id}.pdf"); // Opens in browser
         // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
     }
+    public function printSOFInvoice($id)
+    {
+        $order = Order::with('items')->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.pdf_sof_invoice', compact('order'))
+                ->setPaper('A4', 'portrait'); // switched to landscape
+
+        return $pdf->stream("{$order->id}.pdf"); // Opens in browser
+        // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
+    }
 
 }

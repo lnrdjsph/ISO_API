@@ -672,7 +672,7 @@
 																						Print SOF
 																				</a>
 																				<a
-																						href="#"
+																						href="{{ route('orders.print.sof_invoice', $order->id) }}"
 																						target="_blank"
 																						class="w-full rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-800 shadow-sm hover:bg-green-50"
 																				>
