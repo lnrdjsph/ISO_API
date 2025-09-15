@@ -3,7 +3,7 @@
 
 <head>
 		<meta charset="UTF-8">
-		<title>{{ $order->sof_id }}</title>
+		<title>INVOICE-{{ $order->sof_id }}</title>
 		<style>
 				body {
 						font-family: DejaVu Sans, sans-serif;
@@ -12,14 +12,6 @@
 						margin: 0px;
 				}
 
-				h2 {
-						margin: 0 0 15px 0;
-						padding: 0;
-						font-size: 12px;
-						text-align: center;
-						font-weight: bold;
-						text-transform: uppercase;
-				}
 
 				.section {
 						border: none;
@@ -49,10 +41,13 @@
 				/* Ordered Items Table */
 				table.order-items {
 						width: 100%;
+						max-width: 100%;
+						/* force table not to exceed page width */
 						border-collapse: collapse;
 						font-size: 8px;
-						table-layout: auto;
-						/* allow flexible widths */
+						table-layout: fixed;
+						/* force equal distribution of widths */
+						word-wrap: break-word;
 				}
 
 				table.order-items th,
@@ -60,93 +55,27 @@
 						border: 1px solid #999;
 						padding: 1px;
 						text-align: center;
-						vertical-align: center;
-						word-wrap: break-word;
-						/* wrap long words */
+						vertical-align: middle;
 						white-space: normal;
 						/* allow wrapping */
+						word-break: break-word;
+						/* break long words */
+						overflow-wrap: break-word;
 				}
+
 
 				table.order-items th {
 						background: #f7f7f7;
 						font-weight: bold;
 				}
 
-				/* Fixed width columns */
-				table.order-items th:nth-child(1),
-				table.order-items td:nth-child(1) {
-						width: 18px;
-				}
 
-				/* No. */
-
-				table.order-items th:nth-child(2),
-				table.order-items td:nth-child(2) {
-						width: 40px;
-				}
-
-				/* SKU */
-
-				table.order-items th:nth-child(4),
-				table.order-items td:nth-child(4),
-				table.order-items th:nth-child(5),
-				table.order-items td:nth-child(5),
-				table.order-items th:nth-child(6),
-				table.order-items td:nth-child(6),
-				table.order-items th:nth-child(7),
-				table.order-items td:nth-child(7),
-				table.order-items th:nth-child(8),
-				table.order-items td:nth-child(8),
-				table.order-items th:nth-child(9),
-				table.order-items td:nth-child(9),
-				table.order-items th:nth-child(10),
-				table.order-items td:nth-child(10),
-				table.order-items th:nth-child(11),
-				table.order-items td:nth-child(11),
-				table.order-items th:nth-child(12),
-				table.order-items td:nth-child(12),
-				table.order-items th:nth-child(14),
-				table.order-items td:nth-child(14) {
-						width: 50px;
-						/* compact columns */
-				}
 
 				/* Flexible columns */
 				table.order-items td:nth-child(3) {
-						min-width: 120px;
+						min-width: 120px !important;
 						/* Item Description */
 						text-align: left;
-				}
-
-				table.order-items th:nth-child(13),
-				table.order-items td:nth-child(13) {
-						min-width: 120px;
-						/* Remarks */
-						text-align: left;
-				}
-
-				/* Signature container */
-				.signature-container {
-						display: flex;
-						justify-content: space-around;
-						/* spaces them evenly */
-						margin-top: 60px;
-				}
-
-				/* Individual signature blocks */
-				.signature-area {
-						text-align: center;
-						font-size: 9px;
-				}
-
-				/* Signature line */
-				.signature-line {
-						margin-top: 40px;
-						border-top: 1px solid #000;
-						width: 200px;
-						margin-left: auto;
-						margin-right: auto;
-						padding-top: 3px;
 				}
 		</style>
 </head>
@@ -164,12 +93,34 @@
 		    'h10' => 'H10 - Super Metro Bogo',
 		];
 		$order->requesting_store_name = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+
+		$src = public_path('images/metro-white-logo-80.png');
+		$dest = storage_path('app/public/metro-black-logo.png');
+
+		$image = imagecreatefrompng($src);
+
+		// Invert colors pixel by pixel
+		imagefilter($image, IMG_FILTER_NEGATE);
+
+		// Save to new file
+		imagepng($image, $dest);
+		imagedestroy($image);
 @endphp
 
 <body>
+		<div style="display:flex; align-items:center; justify-content:center; position:relative; width:100%; margin-bottom:30px;">
+				<!-- Logo on the left -->
+				<div style="position:absolute; left:15px; top:0;">
+						<img
+								src="{{ public_path('images/MRSGI-LOGIN-LOGO.png') }}"
+								width="75"
+								alt="Metro Logo"
+						>
+				</div>
 
-		<!-- Header -->
-		<h2>Sales Order Form (SOF)</h2>
+				<!-- Centered Title -->
+				<h2 style="margin:0; margin-top:25px; text-align:center;">SOF Invoice</h2>
+		</div>
 
 		<!-- Customer/Payment/Delivery/Order Info -->
 		<div class="section">
@@ -306,27 +257,33 @@
 
 				<table
 						class="order-items"
-						style="border-collapse: collapse; width: 100%;"
+						style="border-collapse: collapse; width: 100%; "
 				>
 						<thead>
 								<tr>
 										<th rowspan="2">No.</th>
 										<th rowspan="2">SKU</th>
-										<th rowspan="2">Item Description</th>
+										<th
+												rowspan="2"
+												colspan="2"
+										>Item Description</th>
 										<th rowspan="2">Scheme</th>
 										<th rowspan="2">Price/PC</th>
 										<th rowspan="2">Price</th>
 										<th rowspan="2">Discount</th>
-										<th colspan="4">Order in Cases</th>
-										<th rowspan="2">Amount</th>
-										<th rowspan="2">Remarks</th>
-										<th rowspan="2">Store Order No.</th>
+										<th colspan="2">Order in Cases</th>
+										<th
+												rowspan="2"
+												colspan="2"
+										>Amount</th>
+										{{-- <th rowspan="2">Remarks</th>
+										<th rowspan="2">Store Order No.</th> --}}
 								</tr>
 								<tr>
 										<th>QTY/PC</th>
 										<th>QTY/CS</th>
-										<th>Freebies</th>
-										<th>Total QTY</th>
+										{{-- <th>Freebies</th>
+										<th>Total QTY</th> --}}
 								</tr>
 						</thead>
 						<tbody>
@@ -334,65 +291,76 @@
 										<tr>
 												<td>{{ $i + 1 }}</td>
 												<td>{{ $item->sku }}</td>
-												<td>{{ $item->item_description }}</td>
+												<td colspan="2">{{ $item->item_description }}</td>
 												<td>{{ $item->scheme ?? '-' }}</td>
 												<td>{{ number_format($item->price_per_pc, 2) }}</td>
 												<td>{{ number_format($item->price, 2) }}</td>
 												<td>{{ $item->discount ? $item->discount : '-' }}</td>
 												<td>{{ $item->qty_per_pc }}</td>
-												<td>{{ $item->qty_per_cs }}</td>
-												<td>{{ $item->freebies_per_cs ?? 'N/A' }}</td>
+												{{-- <td>{{ $item->qty_per_cs }}</td>
+												<td>{{ $item->freebies_per_cs ?? 'N/A' }}</td> --}}
 												<td>{{ $item->total_qty }}</td>
-												<td>{{ number_format($item->amount, 2) }}</td>
-												<td>{{ $item->remarks }}</td>
-												<td>{{ $item->store_order_no ?? '-' }}</td>
+												<td colspan="2">{{ number_format($item->amount, 2) }}</td>
+												{{-- <td>{{ $item->remarks }}</td>
+												<td>{{ $item->store_order_no ?? '-' }}</td> --}}
 										</tr>
 								@endforeach
 						</tbody>
 						<tfoot>
+								{{-- <tr>
+										<td
+												colspan="12"
+												style="padding:7px;"
+										> </td>
+
+								</tr> --}}
+								@php
+										$freebieAmount = $order->items->filter(fn($item) => strtoupper(trim($item->scheme)) === 'FREEBIE')->sum('amount');
+								@endphp
+
+								@if ($freebieAmount > 0)
+										<tr>
+												<td
+														colspan="8"
+														style="border-right: none"
+												></td>
+												<td
+														colspan="2"
+														style="padding-left:3px; text-align: left; font-weight: bold; border-left:none;"
+												>
+														Freebie Amount:
+												</td>
+												<td
+														style="text-align: center; font-weight: bold;"
+														colspan="2"
+												>
+														₱{{ number_format($freebieAmount, 2) }}
+												</td>
+										</tr>
+								@endif
+
 								<tr>
 										<td
-												colspan="11"
-												style="text-align: right; font-weight: bold;"
-										>Total Amount:</td>
-										<td style="font-weight: bold;">
-												{{ number_format($order->items->sum('amount'), 2) }}
+												colspan="8"
+												style="border-right: none"
+										></td>
+										<td
+												colspan="2"
+												style="padding-left:3px; text-align: left; font-weight: bold; border-left:none;"
+										>Total Payable Amount:</td>
+										<td
+												style="text-align: center; font-weight: bold;"
+												colspan="2"
+										>
+												₱{{ number_format($order->items->filter(fn($item) => strtoupper(trim($item->scheme)) !== 'FREEBIE')->sum('amount'), 2) }}
 										</td>
-										<td colspan="2"></td>
+										{{-- <td colspan="2"></td> --}}
 								</tr>
 						</tfoot>
 				</table>
 
 		</div>
-		<!-- Signature Container (Table) -->
-		<!-- Signature Container (Table) -->
-		@php
-				$storeCode = strtolower($order->requesting_store);
-				$storeName = $locationMap[$storeCode] ?? $storeCode;
-				$approver = $order->approver_name; // pulled from model
-		@endphp
-		<table style="width:100%; margin-top:60px; text-align:center; border:0;">
-				<tr>
-						<td style="width:50%; text-align:center; vertical-align:bottom;">
-								<span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
-										{{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}
-								</span>
-								<div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
-										Prepared by
-								</div>
-						</td>
-						<td style="width:50%; text-align:center; vertical-align:bottom;">
-								<span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
-										{{ strtoupper($order->approver_name ?? 'N/A') }}
 
-								</span>
-								<div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
-										Approved by
-								</div>
-						</td>
-				</tr>
-
-		</table>
 
 
 

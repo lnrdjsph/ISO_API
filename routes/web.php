@@ -53,7 +53,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
 
         Route::get('/{id}/print-sof', [OrderController::class, 'printSOF'])->name('print.sof');
-        // Route::get('/{id}/print-invoice', [OrderController::class, 'printInvoice'])->name('print.invoice');
+        Route::get('/{id}/print-sof-invoice', [OrderController::class, 'printSOFInvoice'])->name('print.sof_invoice');
 
         // Management Orders View
 

@@ -1987,10 +1987,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								// ✅ If not a FREEBIE, apply discount
 								if (itemType !== 'FREEBIE' && discount) {
 										setValue(row.find('.discount'), discount);
-										row.find('.discount').prop('readonly', false); // editable
+										// row.find('.discount').prop('readonly', false); // editable
 								} else {
 										setValue(row.find('.discount'), '');
-										row.find('.discount').prop('readonly', true); // lock freebies
+										// row.find('.discount').prop('readonly', true); // lock freebies
 								}
 
 
@@ -2541,6 +2541,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 										input.value = '';
 										input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
 										input.removeAttribute('data-selected');
+
 
 										// Reset background classes for new row
 										input.classList.remove('bg-indigo-50', 'border-indigo-300');
