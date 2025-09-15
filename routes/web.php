@@ -5,8 +5,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\FormsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Auth;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -129,5 +129,21 @@ Route::post('/update-allocations', [ProductController::class, 'wmsUpdate'])
 Route::get('/update-allocations/status', [ProductController::class, 'wmsStatus'])
     ->name('update.allocations.status');
 
+Route::prefix('reports')->group(function () {
+    Route::get('/sales', [ReportsController::class, 'salesReport'])
+        ->name('reports.sales');
+
+    Route::get('/freebies', [ReportsController::class, 'freebiesReport'])
+        ->name('reports.freebies');
+
+    // future reports
+    // Route::get('/customers', [ReportsController::class, 'customerReport'])
+    //     ->name('reports.customers');
+    
+    // Route::get('/products', [ReportsController::class, 'productReport'])
+    //     ->name('reports.products');
+});
+
 // unauthorized route
 Route::view('/403', 'errors.403');
+
