@@ -485,6 +485,7 @@
 																				@endif
 																		</a>
 																</th>
+																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Sub-Department</th>
 																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">WMS Inventory</th>
 																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Store Inventory</th>
 																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Case Pack</th>
@@ -525,6 +526,18 @@
 																								class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
 																						>
 																								{{ $product->description }}
+																						</div>
+																				</div>
+																		</td>
+																		<td class="max-w-xs px-3 py-3">
+																				<div class="relative inline-block w-full">
+																						<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
+																								{{ $product->department }}
+																						</div>
+																						<div
+																								class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																						>
+																								{{ $product->department }}
 																						</div>
 																				</div>
 																		</td>

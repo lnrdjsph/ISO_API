@@ -31,6 +31,7 @@ class Order extends Model
         'customer_name',
         'contact_number',
         'order_status', // 👈 make sure this is included
+        'approval_document',
     ];
 
     public function items()

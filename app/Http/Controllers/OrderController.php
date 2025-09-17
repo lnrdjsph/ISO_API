@@ -488,17 +488,31 @@ public function archive(Request $request)
     {
         $request->validate([
             'id' => 'required|exists:orders,id',
+            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
         ]);
 
         $order = Order::findOrFail($request->id);
+
+        // ✅ Save the file
+        $filePath = null;
+        if ($request->hasFile('attachment')) {
+            $filePath = $request->file('attachment')->store(
+                'order_approvals/' . $order->id, // folder per order
+                'public' // use the `public` disk
+            );
+        }
+
+        // ✅ Update order
         $order->order_status = 'approved';
+        $order->approval_document = $filePath; // make sure you add this column in DB (nullable string)
         $this->deductAllocationStock($order->id);
         $order->save();
 
+        // ✅ Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
-            'note'    => 'Order approved',
+            'note'    => 'Order approved' . ($filePath ? ' with document attached' : ''),
         ]);
 
         // ✅ Send email to requester
@@ -510,8 +524,9 @@ public function archive(Request $request)
 
         return redirect()
             ->route('orders.show', $order->id)
-            ->with('success', 'Order approved successfully and requester notified.');
+            ->with('success', 'Order approved successfully, document saved, and requester notified.');
     }
+
 
 
     public function rejectOrder(Request $request)
