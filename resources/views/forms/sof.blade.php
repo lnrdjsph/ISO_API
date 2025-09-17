@@ -1956,55 +1956,58 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const isFreebie = searchInput.hasClass('freebie-search');
 
 						function setValue(input, value) {
-								// Just set value
-								input.val(value);
-
-								// Trigger input for qty fields to update suggestions/calculations
+								if (!input.val()) { // don’t overwrite old()
+										input.val(value);
+								}
 								if (input.hasClass('qty-per-pc') || input.hasClass('freebie-qty-per-pc')) {
 										input.trigger('input');
 								}
 						}
 
 						if (isFreebie) {
-								setValue(row.find('.freebie-search'), sku && description ? `${sku} - ${description}` : '');
-								setValue(row.find('.freebie-sku-hidden'), sku);
-								setValue(row.find('.freebie-desc-hidden'), description);
-								setValue(row.find('.freebie-price-per-pc'), pricePerPc);
-								setValue(row.find('.freebie-qty-per-pc'), casePack);
+								// ✅ FREEBIE item: never touch discount/scheme
+								setValue(row.find('.freebie-search'), `${sku} - ${description}`);
+								setValue(row.find('[name*="[freebie_sku]"]'), sku);
+								setValue(row.find('[name*="[freebie_description]"]'), description);
+								setValue(row.find('[name*="[freebie_price_per_pc]"]'), pricePerPc);
+								setValue(row.find('[name*="[freebie_qty_per_pc]"]'), casePack);
+
+								// Lock discount fields
+								row.find('[name*="[discount]"]').val('').prop('readonly', true);
+
 
 						} else {
+								// ✅ Normal PRODUCT: never touch freebie fields
 								setValue(row.find('.product-search'), sku && description ? `${sku} - ${description}` : '');
 								setValue(row.find('.sku-hidden'), sku);
 								setValue(row.find('.desc-hidden'), description);
-								setValue(row.find('.price-per-pc'), pricePerPc);
-								setValue(row.find('.qty-per-pc'), casePack);
+								setValue(row.find('[name*="[price_per_pc]"]'), pricePerPc);
+								setValue(row.find('[name*="[qty_per_pc]"]'), casePack);
 
-								// ✅ Check if row is NOT a freebie before applying discount
-								// ✅ Determine item type from hidden input
 								const itemType = row.find('input[name*="[item_type]"]').val();
 
-								// ✅ If not a FREEBIE, apply discount
-								if (itemType !== 'FREEBIE' && discount) {
-										setValue(row.find('.discount'), discount);
-										row.find('.discount').prop('readonly', false); // editable
+								// Apply discount/scheme only if NOT FREEBIE
+								if (itemType !== 'FREEBIE') {
+										setValue(row.find('[name*="[discount]"]'), discount);
+
+										const paymentMode = $('[name="mode_payment"]').val();
+										let scheme = '';
+										if (paymentMode === 'PO15%') {
+												scheme = po15Scheme || '';
+										} else if (paymentMode === 'Cash / Bank Card') {
+												scheme = cashBankCardScheme || '';
+										}
+										setValue(row.find('[name*="[scheme]"]'), scheme);
+
 								} else {
-										setValue(row.find('.discount'), '');
-										row.find('.discount').prop('readonly', true); // lock freebies
+										// If still marked FREEBIE, clear and lock discount
+										row.find('[name*="[discount]"]').val('').prop('readonly', true);
+										row.find('[name*="[scheme]"]').val('');
 								}
 
+								row.find('.qty-per-pc').trigger('input');
 
-								const qtyInput = row.find('.qty-per-pc');
-								qtyInput.trigger('input');
-
-								const paymentMode = $('[name="mode_payment"]').val();
-								let scheme = '';
-								if (paymentMode === 'PO15%') {
-										scheme = po15Scheme || '';
-								} else if (paymentMode === 'Cash / Bank Card') {
-										scheme = cashBankCardScheme || '';
-								}
-								setValue(row.find('.scheme-input'), scheme);
-
+								// Auto-populate freebie SKU if available
 								if (freebieSku) {
 										const freebieInput = row.find('.freebie-search');
 										const resultList = freebieInput.siblings('.search-results');
@@ -2015,9 +2018,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								}
 						}
 
-
 						container.find('.search-results').empty().addClass('hidden');
 				});
+
 
 
 

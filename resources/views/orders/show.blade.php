@@ -710,16 +710,28 @@
 																				@endif
 
 																				@if (in_array(Auth::user()->role, ['manager', 'super admin']))
-																						@if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+																						@if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
 																								<option value="approve">Approve Order</option>
 																						@endif
 
-																						@if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+																						@if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
 																								<option value="rejected">Reject Order</option>
 																						@endif
 																				@endif
 																		</select>
 
+																		@if ($order->approval_document)
+																				<div class="mt-4 rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
+																						<h3 class="mb-2 text-sm font-semibold text-gray-700">Approval Document</h3>
+																						<a
+																								href="{{ asset('storage/' . $order->approval_document) }}"
+																								target="_blank"
+																								class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+																						>
+																								📂 View / Download
+																						</a>
+																				</div>
+																		@endif
 
 
 																</div>
@@ -824,9 +836,91 @@
 																								confirmColor = '#2563EB';
 																								break;
 																						case 'approve':
-																								actionText = 'This order will be marked as Approved!';
-																								confirmColor = '#16A34A';
-																								break;
+																								Swal.fire({
+																										title: 'Approve Order',
+																										html: `
+            <div style="text-align:center; font-size:14px; color:#444;">
+                <p style="margin-bottom:12px;">Upload approval document (PDF, Word, or Image):</p>
+                
+                <div id="uploadBox" 
+                     style="border:2px dashed #2563EB; border-radius:8px; 
+                            padding:20px; background:#f9fafb; cursor:pointer; 
+                            transition:0.2s ease-in-out;">
+                    <input type="file" id="approvalFile" 
+                           accept=".pdf,.doc,.docx,image/*" 
+                           style="display:none;" />
+                    
+                    <label for="approvalFile" 
+                           style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
+                        Click to select a file
+                    </label>
+                    <p id="fileName" 
+                       style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
+                       No file chosen
+                    </p>
+                </div>
+            </div>
+        `,
+																										icon: 'info',
+																										showCancelButton: true,
+																										confirmButtonColor: '#16A34A',
+																										cancelButtonColor: '#aaa',
+																										confirmButtonText: 'Approve',
+																										didOpen: () => {
+																												const uploadBox = document.getElementById('uploadBox');
+																												const fileInput = document.getElementById('approvalFile');
+																												const fileName = document.getElementById('fileName');
+
+																												// Clicking the box opens file picker
+																												uploadBox.addEventListener('click', () => fileInput.click());
+
+																												// Show selected file name
+																												fileInput.addEventListener('change', () => {
+																														fileName.textContent = fileInput.files.length ?
+																																fileInput.files[0].name :
+																																'No file chosen';
+																												});
+
+																												// Drag & drop support
+																												uploadBox.addEventListener('dragover', (e) => {
+																														e.preventDefault();
+																														uploadBox.style.background = "#eef2ff";
+																												});
+
+																												uploadBox.addEventListener('dragleave', () => {
+																														uploadBox.style.background = "#f9fafb";
+																												});
+
+																												uploadBox.addEventListener('drop', (e) => {
+																														e.preventDefault();
+																														uploadBox.style.background = "#f9fafb";
+																														if (e.dataTransfer.files.length) {
+																																fileInput.files = e.dataTransfer.files;
+																																fileName.textContent = e.dataTransfer.files[0].name;
+																														}
+																												});
+																										},
+																										preConfirm: () => {
+																												const file = document.getElementById('approvalFile').files[0];
+																												if (!file) {
+																														Swal.showValidationMessage('Please upload a document before approving.');
+																														return false;
+																												}
+																												return file;
+																										}
+																								}).then((result) => {
+																										if (result.isConfirmed && result.value) {
+																												submitForm('approve', null, result.value);
+																										} else {
+																												actionSelect.value = ''; // reset select if cancelled
+																										}
+																								});
+
+																								return;
+
+
+
+
 																						case 'rejected':
 																								actionText = 'Please provide a note before rejecting this order.';
 																								confirmColor = '#B91C1C';
@@ -890,9 +984,10 @@
 																				}
 																		});
 
-																		function submitForm(action, note = null) {
+																		function submitForm(action, note = null, file = null) {
 																				const form = document.createElement('form');
 																				form.method = 'POST';
+																				form.enctype = 'multipart/form-data'; // ✅ needed for file upload
 																				form.style.display = 'none';
 
 																				switch (action) {
@@ -906,15 +1001,31 @@
 																										form.appendChild(noteInput);
 																								}
 																								break;
+
 																						case 'restore':
 																								form.action = "{{ route('orders.restore') }}";
 																								break;
+
 																						case 'for approval':
 																								form.action = "{{ route('orders.for_approval') }}";
 																								break;
+
 																						case 'approve':
 																								form.action = "{{ route('orders.approve') }}";
+																								if (file) {
+																										const fileInput = document.createElement('input');
+																										fileInput.type = 'file';
+																										fileInput.name = 'attachment';
+
+																										// ✅ Attach file object
+																										const dataTransfer = new DataTransfer();
+																										dataTransfer.items.add(file);
+																										fileInput.files = dataTransfer.files;
+
+																										form.appendChild(fileInput);
+																								}
 																								break;
+
 																						case 'rejected':
 																								form.action = "{{ route('orders.reject') }}";
 																								if (note) {
@@ -936,13 +1047,14 @@
 																								break;
 																				}
 
-
+																				// CSRF token
 																				const inputCsrf = document.createElement('input');
 																				inputCsrf.type = 'hidden';
 																				inputCsrf.name = '_token';
 																				inputCsrf.value = csrfToken;
 																				form.appendChild(inputCsrf);
 
+																				// Order ID
 																				const orderIdInput = document.createElement('input');
 																				orderIdInput.type = 'hidden';
 																				orderIdInput.name = 'id';
@@ -952,6 +1064,7 @@
 																				document.body.appendChild(form);
 																				form.submit();
 																		}
+
 																});
 														</script>
 
@@ -1544,7 +1657,9 @@
 
 												// Now check each element - this should not trigger highlights if nothing changed
 												// Only uncomment the line below if you want to check for pre-existing changes
-												// trackableElements.each(function() { checkElementChange(this); });
+												trackableElements.each(function() {
+														checkElementChange(this);
+												});
 
 												updateSubmitButtonState();
 												console.log('Change detection initialized');
