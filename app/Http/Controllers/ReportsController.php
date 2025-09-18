@@ -8,7 +8,8 @@ use App\Models\ISO_B2B\OrderItem;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Response;
-
+use Illuminate\Support\Arr;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsController extends Controller
 {
@@ -116,7 +117,7 @@ class ReportsController extends Controller
 
             // 🔑 Map store code -> store name if found in $allStoreLocations
             $storeName = $this->allStoreLocations[strtolower($storeCode)] ?? $storeCode;
-            
+
 
             return [$storeName => $dailyData];
         });
@@ -297,6 +298,271 @@ class ReportsController extends Controller
         $stores = Order::select('requesting_store')->distinct()->get();
         return view('reports.sales', array_merge($data, ['stores' => $stores]));    
     }
+
+
+
+public function ordersReport(Request $request)
+{
+    $user = auth()->user();
+    $query = Order::query()->with('items');
+
+    // 🗺️ Region -> stores mapping
+    $storeMapping = [
+        'lz' => ['h8'],
+        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'],
+    ];
+
+    $allowedStatuses = null;
+
+    // 👔 Manager restrictions
+    if ($user->role === 'manager') {
+        $allowedStatuses = ['for approval', 'approved', 'rejected'];
+        $query->whereIn('order_status', $allowedStatuses);
+
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+        }
+    } else {
+        // if ($user->user_location) {
+        //     $query->where('requesting_store', $user->user_location);
+        // }
+    }
+
+    // 🔎 Search
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('customer_name', 'like', "%{$search}%")
+              ->orWhere('sof_id', 'like', "%{$search}%")
+              ->orWhere('requesting_store', 'like', "%{$search}%");
+        });
+    }
+
+    // 📦 Channel filter
+    if ($channel = $request->input('channel')) {
+        $query->where('channel_order', $channel);
+    }
+
+    // 🏬 Store filter
+    if ($storeCode = $request->input('store_code')) {
+        $query->where('requesting_store', $storeCode);
+    }
+
+    // ✅ Status filter
+    if ($status = $request->input('status')) {
+        if ($allowedStatuses) {
+            if (in_array($status, $allowedStatuses)) {
+                $query->where('order_status', $status);
+            }
+        } else {
+            $query->where('order_status', $status);
+        }
+    }
+
+    // 📅 Date range filter
+    if ($startDate = $request->input('start_date')) {
+        $query->whereDate('time_order', '>=', $startDate);
+    }
+    if ($endDate = $request->input('end_date')) {
+        $query->whereDate('time_order', '<=', $endDate);
+    }
+
+    // ✅ Pagination
+    $perPage = $request->input('per_page', 10);
+
+    $orders = $query->orderByDesc('created_at')
+        ->paginate($perPage)
+        ->withQueryString();
+
+    // ➕ Add computed amounts
+    // After transforming each order with payable/freebies/grand total
+    $orders->getCollection()->transform(function ($order) {
+        $payableAmount = $order->items->where('item_type', 'MAIN')->sum('amount');
+        $freebiesAmount = $order->items->where('item_type', 'FREEBIE')->sum('amount');
+        $grandTotal = $payableAmount + $freebiesAmount;
+
+        $order->payable_amount = $payableAmount;
+        $order->freebies_amount = $freebiesAmount;
+        $order->grand_total = $grandTotal;
+
+        return $order;
+    });
+
+    // 📊 Compute totals across the current page
+    $totals = [
+        'payable'  => $orders->sum('payable_amount'),
+        'freebies' => $orders->sum('freebies_amount'),
+        'grand'    => $orders->sum('grand_total'),
+    ];
+
+
+    // Dropdowns
+    $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+    $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
+
+    $allStoreLocations = [
+        'f2'  => 'F2 - Metro Wholesalemart Colon',
+        's10' => 'S10 - Metro Maasin',
+        's17' => 'S17 - Metro Tacloban',
+        's19' => 'S19 - Metro Bay-Bay',
+        'f18' => 'F18 - Metro Alang-Alang',
+        'f19' => 'F19 - Metro Hilongos',
+        's8'  => 'S8 - Metro Toledo',
+        'h8'  => 'H8 - Super Metro Antipolo',
+        'h9'  => 'H9 - Super Metro Carcar',
+        'h10' => 'H10 - Super Metro Bogo',
+    ];
+
+    if ($user->role === 'manager') {
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+        } else {
+            $storeLocations = $allStoreLocations;
+        }
+    } else {
+        if ($user->user_location) {
+            $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
+        } else {
+            $storeLocations = $allStoreLocations;
+        }
+    }
+
+    return view('reports.orders_report', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations', 'totals'));
+}
+
+
+
+
+
+public function exportOrdersReport(Request $request)
+{
+    $user = auth()->user();
+    $query = Order::query()->with('items');
+
+    $storeMapping = [
+        'lz' => ['h8'],
+        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'],
+    ];
+
+    $allowedStatuses = null;
+
+    // 👔 Manager restrictions
+    if ($user->role === 'manager') {
+        $allowedStatuses = ['for approval', 'approved', 'rejected'];
+        $query->whereIn('order_status', $allowedStatuses);
+
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+        }
+    }
+
+    // 🔎 Search
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('customer_name', 'like', "%{$search}%")
+              ->orWhere('sof_id', 'like', "%{$search}%")
+              ->orWhere('requesting_store', 'like', "%{$search}%");
+        });
+    }
+
+    // 📦 Channel filter
+    if ($channel = $request->input('channel')) {
+        $query->where('channel_order', $channel);
+    }
+
+    // 🏬 Store filter
+    if ($storeCode = $request->input('store_code')) {
+        $query->where('requesting_store', $storeCode);
+    }
+
+    // ✅ Status filter
+    if ($status = $request->input('status')) {
+        if ($allowedStatuses) {
+            if (in_array($status, $allowedStatuses)) {
+                $query->where('order_status', $status);
+            }
+        } else {
+            $query->where('order_status', $status);
+        }
+    }
+
+    // 📅 Date range filter
+    if ($startDate = $request->input('start_date')) {
+        $query->whereDate('time_order', '>=', $startDate);
+    }
+    if ($endDate = $request->input('end_date')) {
+        $query->whereDate('time_order', '<=', $endDate);
+    }
+
+    $orders = $query->orderByDesc('created_at')->get();
+
+    // ➕ Add computed amounts
+    $orders->transform(function ($order) {
+        $payableAmount = $order->items->where('item_type', 'MAIN')->sum('amount');
+        $freebiesAmount = $order->items->where('item_type', 'FREEBIE')->sum('amount');
+        $grandTotal = $payableAmount + $freebiesAmount;
+
+        $order->payable_amount = $payableAmount;
+        $order->freebies_amount = $freebiesAmount;
+        $order->grand_total = $grandTotal;
+
+        return $order;
+    });
+
+    // 📊 Totals
+    $totals = [
+        'payable'  => $orders->sum('payable_amount'),
+        'freebies' => $orders->sum('freebies_amount'),
+        'grand'    => $orders->sum('grand_total'),
+    ];
+
+    // 📝 Prepare CSV
+    $filename = "orders_report_" . now()->format('Ymd_His') . ".csv";
+
+    $handle = fopen('php://output', 'w');
+    ob_start();
+
+    // 👉 Header row
+    fputcsv($handle, [
+        'Order #', 'Customer', 'Channel', 'Order Date',
+        'Requesting Store', 'Payable Amount', 'Freebies Amount', 'Grand Total'
+    ]);
+
+    // 👉 Data rows
+    foreach ($orders as $order) {
+        $storeName = $this->allStoreLocations[$order->requesting_store] ?? $order->requesting_store;
+
+        fputcsv($handle, [
+            $order->sof_id,
+            $order->customer_name,
+            $order->channel_order,
+            \Carbon\Carbon::parse($order->time_order)->format('Y-m-d'),
+            $storeName,
+            number_format($order->payable_amount, 2),
+            number_format($order->freebies_amount, 2),
+            number_format($order->grand_total, 2),
+        ]);
+    }
+
+    // 👉 Totals row
+    fputcsv($handle, []);
+    fputcsv($handle, [
+        '', '', '', '', 'TOTALS',
+        number_format($totals['payable'], 2),
+        number_format($totals['freebies'], 2),
+        number_format($totals['grand'], 2),
+    ]);
+
+    $csvOutput = ob_get_clean();
+    fclose($handle);
+
+    return response($csvOutput)
+        ->header('Content-Type', 'text/csv')
+        ->header('Content-Disposition', "attachment; filename={$filename}");
+}
+
+
+
+
 
     /**
      * Separate Freebies Report (if still needed)
