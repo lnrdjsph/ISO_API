@@ -116,6 +116,7 @@ class ReportsController extends Controller
 
             // 🔑 Map store code -> store name if found in $allStoreLocations
             $storeName = $this->allStoreLocations[strtolower($storeCode)] ?? $storeCode;
+            
 
             return [$storeName => $dailyData];
         });
