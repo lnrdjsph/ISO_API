@@ -378,7 +378,7 @@
 						</div>
 
 						<!-- Modern Product Table -->
-						<div class="overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
+						<div class="w-full overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
 								<div class="max-w-full overflow-x-auto">
 										<table class="table-sm w-full table-auto">
 												@php

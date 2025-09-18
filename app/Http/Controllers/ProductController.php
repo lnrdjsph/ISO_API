@@ -495,65 +495,94 @@ class ProductController extends Controller
 
     public function export(Request $request)
     {
-        $productsQuery = DB::connection('mysql')
-            ->table('products')
-            ->select(
-                'sku',
-                'description',
-                'allocation_per_case',
-                'case_pack',
-                'srp',
-                'cash_bank_card_scheme',
-                'po15_scheme',
-                'freebie_sku'
-            );
+        try {
+            // 🏬 Get user location → build table name
+            $userLocation = strtolower(auth()->user()->user_location);
+            $tableName = 'products_' . $userLocation;
 
-        // Apply filter if SKU is provided
-        if ($request->filled('sku')) {
-            $skus = explode(',', $request->sku);
-            $productsQuery->whereIn('sku', $skus);
-        }
-
-        $products = $productsQuery->get();
-
-        // Set dynamic filename
-        $filename = 'products_export_' . date('Ymd_His') . '.csv';
-
-        // Set headers
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
-
-        // Stream CSV response
-        $callback = function () use ($products) {
-            $handle = fopen('php://output', 'w');
-            // Write CSV header
-            fputcsv($handle, [
-                'SKU', 'Description', 'Case Pack', 'SRP',
-                'Allocation per Case', 'Cash/Bank/Card Scheme',
-                'PO15 Scheme', 'Freebie SKU'
-            ]);
-
-            // Write each product
-            foreach ($products as $product) {
-                fputcsv($handle, [
-                    $product->sku,
-                    $product->description,
-                    $product->allocation_per_case,
-                    $product->case_pack,
-                    $product->srp,
-                    $product->cash_bank_card_scheme,
-                    $product->po15_scheme,
-                    $product->freebie_sku
-                ]);
+            // ✅ Validate that table exists before querying
+            if (!Schema::connection('mysql')->hasTable($tableName)) {
+                throw new \Exception("The database table '{$tableName}' does not exist.");
             }
 
-            fclose($handle);
-        };
+            $productsQuery = DB::connection('mysql')
+                ->table($tableName)
+                ->select(
+                    'sku',
+                    'description',
+                    'department',
+                    'allocation_per_case',
+                    'case_pack',
+                    'srp',
+                    'cash_bank_card_scheme',
+                    'po15_scheme',
+                    'discount_scheme',
+                    'freebie_sku'
+                )
+                ->whereNull('archived_at'); // keep consistent with your index()
 
-        return response()->stream($callback, 200, $headers);
+            // 🎯 If specific product IDs are passed
+            if ($request->filled('product_ids')) {
+                $productIds = $request->input('product_ids');
+                $productsQuery->whereIn('id', (array) $productIds);
+            }
+
+            // 🎯 Or if SKUs are provided
+            if ($request->filled('sku')) {
+                $skus = explode(',', $request->sku);
+                $productsQuery->whereIn('sku', $skus);
+            }
+
+            $products = $productsQuery->get();
+
+            // 📂 Set dynamic filename
+            $filename = 'products_export_' . $userLocation . '_' . date('Ymd_His') . '.csv';
+
+            // 📄 Headers
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            // 📤 Stream CSV
+            $callback = function () use ($products) {
+                $handle = fopen('php://output', 'w');
+
+                // CSV header
+                fputcsv($handle, [
+                    'SKU', 'Description', 'Department', 'Case Pack', 'SRP',
+                    'Allocation per Case', 'Cash/Bank/Card Scheme',
+                    'PO15 Scheme', 'Discount Scheme', 'Freebie SKU'
+                ]);
+
+                // Rows
+                foreach ($products as $product) {
+                    fputcsv($handle, [
+                        $product->sku,
+                        $product->description,
+                        $product->department,
+                        $product->case_pack,
+                        $product->srp,
+                        $product->allocation_per_case,
+                        $product->cash_bank_card_scheme,
+                        $product->po15_scheme,
+                        $product->discount_scheme,
+                        $product->freebie_sku
+                    ]);
+                }
+
+                fclose($handle);
+            };
+
+            return response()->stream($callback, 200, $headers);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Export failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
+
 
 
 
