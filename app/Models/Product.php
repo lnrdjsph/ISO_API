@@ -12,6 +12,7 @@ class Product extends Model
     protected $fillable = [
         'sku',
         'description',
+        'department',
         'case_pack',
         'srp',
         'allocation_per_case',

@@ -35,6 +35,15 @@ class AdminUserSeeder extends Seeder
             ]
         );
         User::updateOrCreate(
+            ['email' =>  'akehide.tecson@metroretail.ph'],
+            [
+                'name' => 'Akehide',
+                'password' => Hash::make('AKEHIDE'),
+                'role' => 'super admin',
+                'user_location' => 'f2', 
+            ]
+        );
+        User::updateOrCreate(
             ['email' =>  'test.storepersonnel@metroretail.ph'],
             [
                 'name' => 'Store Personnel',

@@ -601,7 +601,7 @@
 														@empty
 																<tr>
 																		<td
-																				colspan="10"
+																				colspan="12"
 																				class="px-6 py-8 text-center text-gray-500"
 																		>
 																				No products found.

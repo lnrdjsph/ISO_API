@@ -658,7 +658,7 @@
 																				href="{{ route('reports.sales') }}"
 																				class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																		>
-																				<span class="nav-text">Sales Report</span>
+																				<span class="nav-text">Sales Overview</span>
 																		</a>
 																</li>
 																<li>
@@ -709,7 +709,7 @@
 																		href="{{ route('reports.sales') }}"
 																		class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																>
-																		Sales Report
+																		Sales Overview
 																</a>
 														</li>
 														<li>
