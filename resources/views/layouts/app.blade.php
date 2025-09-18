@@ -663,6 +663,14 @@
 																</li>
 																<li>
 																		<a
+																				href="{{ route('reports.orders') }}"
+																				class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																		>
+																				<span class="nav-text">Orders Report</span>
+																		</a>
+																</li>
+																<li>
+																		<a
 																				href="{{ route('reports.freebies') }}"
 																				class="sub-item {{ request()->routeIs('reports.freebies') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																		>
@@ -710,6 +718,14 @@
 																		class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																>
 																		Sales Overview
+																</a>
+														</li>
+														<li>
+																<a
+																		href="{{ route('reports.orders') }}"
+																		class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																>
+																		Orders Report
 																</a>
 														</li>
 														<li>

@@ -7,6 +7,7 @@ use App\Http\Controllers\FormsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Auth;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -132,6 +133,13 @@ Route::get('/update-allocations/status', [ProductController::class, 'wmsStatus']
 Route::prefix('reports')->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
+
+    Route::get('/orders', [ReportsController::class, 'ordersReport'])
+        ->name('reports.orders');
+
+    Route::get('/orders/export', [ReportsController::class, 'exportOrdersReport'])
+        ->name('reports.orders.export');
+
 
     Route::get('/freebies', [ReportsController::class, 'freebiesReport'])
         ->name('reports.freebies');
