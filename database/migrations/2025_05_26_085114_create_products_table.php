@@ -25,6 +25,8 @@ return new class extends Migration {
                 $table->bigIncrements('id');
                 $table->string('sku')->unique();
                 $table->string('description');
+                $table->string('department')->nullable();
+                
 
                 // New columns
                 $table->string('case_pack')->nullable(); // Number of items per case

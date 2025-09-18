@@ -136,6 +136,8 @@ Route::prefix('reports')->group(function () {
     Route::get('/freebies', [ReportsController::class, 'freebiesReport'])
         ->name('reports.freebies');
 
+    Route::get('/sales/export', [ReportsController::class, 'exportCsv'])
+        ->name('reports.sales.export');
     // future reports
     // Route::get('/customers', [ReportsController::class, 'customerReport'])
     //     ->name('reports.customers');

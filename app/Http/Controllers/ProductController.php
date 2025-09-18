@@ -53,7 +53,7 @@ class ProductController extends Controller
                 $direction = 'asc';
             }
 
-            $search = strtolower($request->get('query'));
+            $search = strtolower($request->get('query', ''));
 
             $productsQuery = DB::connection('mysql')
                 ->table($tableName)
@@ -61,6 +61,7 @@ class ProductController extends Controller
                     'id',
                     'sku',
                     'description',
+                    'department',
                     'wms_allocation_per_case',
                     'allocation_per_case',
                     'case_pack',
@@ -79,12 +80,13 @@ class ProductController extends Controller
                 $productsQuery->where(function ($q) use ($search) {
                     $q->whereRaw('LOWER(description) LIKE ?', ["%{$search}%"])
                     ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$search}%"]);
-                });
 
-                if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
-                    $productsQuery->orWhereRaw('LOWER(sku) = ?', [$search]);
-                }
+                    if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
+                        $q->orWhereRaw('LOWER(sku) = ?', [$search]);
+                    }
+                });
             }
+
             $perPage = $request->get('per_page', 10); // default 10 if not provided
 
             $products = $productsQuery->orderBy($sort, $direction)
@@ -102,58 +104,6 @@ class ProductController extends Controller
                 $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
             }
 
-                    // ✅ Enrich with freebies + Oracle RMS
-            foreach ($products as $product) {
-                // Add freebie description
-                $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
-
-                // 🔗 Fetch Oracle RMS data for this product
-                $oracleData = DB::connection('oracle_rms')->selectOne("
-                    SELECT * FROM (
-                        SELECT
-                            item_master.item_parent AS sku,
-                            item_master.item_desc AS description,
-                            deps.dept_name AS department,
-                            uda_values.uda_value_desc AS brand,
-                            groups.group_name,
-                            COALESCE(stock.stock_on_hand, 0) AS stock_on_hand,
-                            class.class_name AS class_name
-                        FROM item_supplier
-                        LEFT JOIN item_master 
-                            ON item_supplier.item = item_master.item
-                        LEFT JOIN uda_item_lov 
-                            ON item_supplier.item = uda_item_lov.item 
-                            AND item_master.item = uda_item_lov.item
-                        LEFT JOIN uda_values 
-                            ON uda_item_lov.uda_value = uda_values.uda_value 
-                            AND uda_item_lov.uda_id = uda_values.uda_id
-                        LEFT JOIN deps 
-                            ON deps.dept = item_master.dept
-                        LEFT JOIN groups 
-                            ON groups.group_no = deps.group_no
-                        LEFT JOIN class 
-                            ON class.dept = item_master.dept 
-                            AND class.class = item_master.class
-                        LEFT JOIN (
-                            SELECT item, SUM(stock_on_hand) AS stock_on_hand
-                            FROM item_loc_soh
-                            GROUP BY item
-                        ) stock 
-                            ON stock.item = item_master.item
-                        WHERE uda_values.uda_id = 9
-                        AND item_master.item = ?
-                    ) WHERE ROWNUM = 1
-                ", [$product->sku]);
-
-                // Attach Oracle fields if found
-                if ($oracleData) {
-                    $product->department    = $oracleData->department ?? null;
-                    $product->brand         = $oracleData->brand ?? null;
-                    $product->group_name    = $oracleData->group_name ?? null;
-                    $product->stock_on_hand = $oracleData->stock_on_hand ?? 0;
-                    $product->class_name    = $oracleData->class_name ?? null;
-                }
-            }
 
             return view('products.index', compact('products'));
 
@@ -1107,10 +1057,22 @@ class ProductController extends Controller
                     continue;
                 }
 
+
+                $oracleData = DB::connection('oracle_rms')->selectOne("
+                    SELECT deps.dept_name AS department
+                    FROM item_master
+                    LEFT JOIN deps ON deps.dept = item_master.dept
+                    WHERE item_master.item_parent = ?
+                    AND ROWNUM = 1
+                ", [$sku]);
+
+
+
                 // Build Record
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
+                    'department' => $oracleData->department ?? null,
                     'allocation_per_case' => intval($allocationPerCase),
                     'case_pack' => $casePack !== '' ? $casePack : null,
                     'srp' => floatval($srp),
@@ -1134,6 +1096,7 @@ class ProductController extends Controller
             if (!empty($allData)) {
                 DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
+                    'department',
                     'allocation_per_case',
                     'case_pack',
                     'srp',
