@@ -216,10 +216,15 @@
 												<tbody>
 														@forelse ($top_products as $product)
 																<tr class="border-b hover:bg-gray-50">
-																		<td class="px-3 py-2">{{ $product->sku }}</td>
-																		<td class="px-3 py-2">{{ $product->item_description }}</td>
-																		<td class="px-3 py-2 text-right">{{ number_format($product->total_qty) }}</td>
-																		<td class="px-3 py-2 text-right">₱{{ number_format($product->total_sales, 2) }}</td>
+																		<td class="px-3 py-2">{{ $product->sku ?? '-' }}</td>
+																		<td class="px-3 py-2">{{ $product->item_description ?? 'N/A' }}</td>
+																		<td class="px-3 py-2 text-right">
+																				{{ number_format($product->total_qty ?? 0) }}
+																		</td>
+																		<td class="px-3 py-2 text-right">
+																				₱{{ number_format($product->total_sales ?? 0, 2) }}
+																		</td>
+
 																</tr>
 														@empty
 																<tr>
@@ -252,8 +257,13 @@
 																<tr class="border-b hover:bg-gray-50">
 																		<td class="px-3 py-2">{{ $freebie->sku ?? '-' }}</td>
 																		<td class="px-3 py-2">{{ $freebie->item_description ?? 'N/A' }}</td>
-																		<td class="px-3 py-2 text-right">{{ number_format($freebie->total_qty ?? 0) }}</td>
-																		<td class="px-3 py-2 text-right">₱{{ number_format($freebie->total_value ?? 0, 2) }}</td>
+																		<td class="px-3 py-2 text-right">
+																				{{ number_format($freebie->total_qty ?? 0) }}
+																		</td>
+																		<td class="px-3 py-2 text-right">
+																				₱{{ number_format($freebie->total_value ?? 0, 2) }}
+																		</td>
+
 																</tr>
 														@empty
 																<tr>
