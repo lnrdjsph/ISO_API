@@ -62,15 +62,16 @@ class ReportsController extends Controller
                 COALESCE(AVG(order_items.amount), 0) as avg_item_amount
             ')
             ->first() ?? (object)[
-                'total_sales'     => 0,
-                'total_orders'    => 0,
+                'total_sales'   => 0,
+                'total_orders'  => 0,
                 'avg_item_amount' => 0,
             ];
+
 
         // ✅ Sales by day
         $sales = Order::join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('order_items.created_at', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie')
+            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
             ->when($store, $storeFilter)
             ->selectRaw('DATE(order_items.created_at) as day, SUM(order_items.amount) as sales')
             ->groupBy('day')
@@ -86,10 +87,44 @@ class ReportsController extends Controller
             ]);
         }
 
+        // ✅ Sales by Store Over Time
+        $salesByStoreOverTime = Order::join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->whereBetween('order_items.created_at', [$from, $to])
+            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
+            ->selectRaw('
+                DATE(order_items.created_at) as day,
+                COALESCE(orders.requesting_store, "Unknown Store") as store,
+                SUM(order_items.amount) as sales
+            ')
+            ->groupBy('day', 'orders.requesting_store')
+            ->orderBy('day')
+            ->get();
+
+        // 🔄 Format as [Store Name => [day => sales]]
+        $storesList = $salesByStoreOverTime->groupBy('store')->mapWithKeys(function ($rows, $storeCode) use ($from, $to) {
+            $period = CarbonPeriod::create($from, $to);
+            $dailyData = collect();
+
+            foreach ($period as $date) {
+                $day = $date->toDateString();
+                $row = $rows->firstWhere('day', $day);
+                $dailyData->push((object)[
+                    'day'   => $day,
+                    'sales' => (float) ($row->sales ?? 0),
+                ]);
+            }
+
+            // 🔑 Map store code -> store name if found in $allStoreLocations
+            $storeName = $this->allStoreLocations[strtolower($storeCode)] ?? $storeCode;
+
+            return [$storeName => $dailyData];
+        });
+
+
         // ✅ Top products
         $topProducts = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('order_items.created_at', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie')
+            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
             ->when($store, $storeFilter)
             ->selectRaw('
                 order_items.sku, 
@@ -111,10 +146,10 @@ class ReportsController extends Controller
             ]]);
         }
 
-        // ✅ Sales by store
+        // ✅ Sales by store (ignore store filter for comparison)
         $byStore = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('order_items.created_at', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie')
+            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
             ->selectRaw('
                 COALESCE(orders.requesting_store, "Unknown Store") as store,
                 CAST(SUM(order_items.amount) AS DECIMAL(15,2)) as total_sales
@@ -140,11 +175,7 @@ class ReportsController extends Controller
                 COALESCE(SUM(order_items.amount), 0) as total_freebies_value,
                 COUNT(DISTINCT order_items.order_id) as orders_with_freebies
             ')
-            ->first() ?? (object)[
-                'total_freebies_qty'   => 0,
-                'total_freebies_value' => 0,
-                'orders_with_freebies' => 0,
-            ];
+            ->first();
 
         // ✅ Freebies by day
         $freebies = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -240,34 +271,21 @@ class ReportsController extends Controller
                 return $order;
             });
 
-        if ($orders->isEmpty()) {
-            $orders = collect([[
-                'id'              => null,
-                'sof_id'          => null,
-                'customer_name'   => 'No Orders',
-                'channel_order'   => null,
-                'time_order'      => null,
-                'delivery_date'   => null,
-                'requesting_store'=> null,
-                'grand_total'     => 0,
-                'total_freebies'  => 0,
-                'total_payable'   => 0,
-            ]]);
-        }
 
         // 📊 Combined Data package
         $data = [
-            'date_range'        => [$from->toDateString(), $to->toDateString()],
-            'totals'            => $totals,
-            'sales_by_day'      => $salesByDay,
-            'top_products'      => $topProducts,
-            'by_store'          => $byStore,
-            'freebie_totals'    => $freebieTotals,
-            'freebies_by_day'   => $freebiesByDay,
-            'top_freebies'      => $topFreebies,
-            'freebies_by_store' => $freebiesByStore,
-            'orders'            => $orders,
-            'selected_store'    => $store,
+            'date_range'          => [$from->toDateString(), $to->toDateString()],
+            'totals'              => $totals,
+            'sales_by_day'        => $salesByDay,
+            'by_store_over_time' => $storesList,
+            'top_products'        => $topProducts,
+            'by_store'            => $byStore,
+            'freebie_totals'      => $freebieTotals,
+            'freebies_by_day'     => $freebiesByDay,
+            'top_freebies'        => $topFreebies,
+            'freebies_by_store'   => $freebiesByStore,
+            'orders'              => $orders, 
+            'selected_store'      => $store,
         ];
 
         // 🔀 JSON vs Blade
@@ -278,7 +296,6 @@ class ReportsController extends Controller
         $stores = Order::select('requesting_store')->distinct()->get();
         return view('reports.sales', array_merge($data, ['stores' => $stores]));    
     }
-
 
     /**
      * Separate Freebies Report (if still needed)

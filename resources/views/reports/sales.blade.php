@@ -162,9 +162,9 @@
 				<div class="grid grid-cols-2 gap-4 lg:grid-cols-3">
 						<!-- Combined Sales & Freebies Over Time -->
 						<div class="rounded-lg bg-white p-4 shadow">
-								<h3 class="mb-3 font-semibold text-gray-700">Sales & Freebies Over Time</h3>
+								<h3 class="mb-3 font-semibold text-gray-700">Sales Per Store Over Time</h3>
 								<div
-										id="combinedTimeChart"
+										id="salesByStoreOverTimeChart"
 										class="h-64"
 								></div>
 						</div>
@@ -490,67 +490,34 @@
 		</script>
 		<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 		<script>
-				// 📈 1. Combined Sales & Freebies Over Time (Multi-axis)
-				var combinedTimeOptions = {
+				var storeSalesOptions = {
 						chart: {
 								type: 'line',
-								height: 400,
-								toolbar: {
-										show: true
-								}
+								height: 400
 						},
-						series: [{
-										name: 'Sales Amount',
-										type: 'line',
-										data: @json($sales_by_day->pluck('sales'))
-								},
-								{
-										name: 'Freebies Amount',
-										type: 'line',
-										data: @json($freebies_by_day->pluck('amount'))
-								}
+						series: [
+								@foreach ($by_store_over_time as $store => $rows)
+										{
+												name: "{{ $allStoreLocations[$store] ?? $store }}",
+												data: @json($rows->pluck('sales'))
+										},
+								@endforeach
 						],
 						xaxis: {
-								categories: @json($sales_by_day->pluck('day')),
-								labels: {
-										rotate: -45
-								}
+								categories: @json($sales_by_day->pluck('day'))
 						},
-						yaxis: [{
-										title: {
-												text: "Sales Amount (₱)"
-										},
-										labels: {
-												formatter: val => "₱" + val.toLocaleString()
-										}
-								},
-								{
-										opposite: true,
-										title: {
-												text: "Freebies Amount (₱)"
-										},
-										labels: {
-												formatter: val => "₱" + val.toLocaleString()
-										}
-								}
-						],
 						stroke: {
 								curve: 'smooth',
-								width: [3, 2]
-						},
-						colors: ['#4F46E5', '#F59E0B'],
-						tooltip: {
-								y: {
-										formatter: function(val, opts) {
-												return "₱" + val.toLocaleString();
-										}
-								}
+								width: 2
 						},
 						legend: {
-								position: 'top'
+								position: 'bottom'
 						}
 				};
-				new ApexCharts(document.querySelector("#combinedTimeChart"), combinedTimeOptions).render();
+
+				new ApexCharts(document.querySelector("#salesByStoreOverTimeChart"), storeSalesOptions).render();
+
+				console.log("By store over time:", @json($by_store_over_time));
 
 				// 📊 2. Combined Sales & Freebies by Store (Overlapping Vertical Bar)
 				var storeNames = @json($by_store->pluck('store_name'));
@@ -771,7 +738,7 @@
 								strokeDashArray: 3
 						}
 				};
-				new ApexCharts(document.querySelector("#topStoresChart"), topStoresOptions).render();
+				// new ApexCharts(document.querySelector("#topStoresChart"), topStoresOptions).render();
 
 				// 📊 4. Daily Performance Metrics (Mixed Chart)
 				var performanceOptions = {
