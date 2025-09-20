@@ -703,4 +703,115 @@ public function archive(Request $request)
         // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
     }
 
+
+
+    public function generateFreebiesForm($orderId)
+    {
+        // Fetch order info from orders table
+        $orderInfo = DB::table('orders')
+            ->where('id', $orderId)
+            ->first();
+
+        // Get all items for the order, ordered by ID
+        $items = DB::table('order_items')
+            ->where('order_id', $orderId)
+            ->orderBy('id')
+            ->get();
+
+        $rows = [];
+        $lastMain = null;
+
+        foreach ($items as $item) {
+            if ($item->item_type === 'MAIN') {
+                // Remember the last MAIN item
+                $lastMain = $item;
+            } elseif ($item->item_type === 'FREEBIE' && $lastMain) {
+                // Pair the FREEBIE with the MAIN item before it
+                $totalMainQty = $lastMain->qty_per_pc * $lastMain->qty_per_cs;
+                $totalFreebieQty = $item->qty_per_pc * $item->freebies_per_cs;
+
+                $rows[] = [
+                    'main_sku' => $lastMain->sku,
+                    'main_description' => $lastMain->item_description,
+                    'main_qty' => $lastMain->qty_per_cs,
+                    'total_main_qty' => $totalMainQty,
+                    'main_scheme' => $lastMain->scheme,
+                    'freebie_sku' => $item->sku,
+                    'freebie_description' => $item->item_description,
+                    'freebie_qty' => $item->freebies_per_cs,
+                    'total_freebie_qty' => $totalFreebieQty,
+                ];
+            }
+        }
+
+        $pdf = Pdf::loadView('pdf.freebies_form', [
+            'rows' => $rows,
+            'customer_name' => $orderInfo->customer_name ?? '',
+            'date' => optional($orderInfo->time_order)->format('F j, Y') ?? now()->format('F j, Y'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('freebies_form.pdf');
+    }
+
+    public function generateOrderSlip($orderId)
+{
+    // Get order info
+    $orderInfo = DB::table('orders')->where('id', $orderId)->first();
+
+    // Get all items for the order
+    $items = DB::table('order_items')
+        ->where('order_id', $orderId)
+        ->where('item_type', '!=', 'FREEBIE')
+        ->orderBy('id')
+        ->get();
+
+
+    $schemes = $items->pluck('scheme')->filter()->unique()->values();
+
+    $schemeDisplay = '';
+    if ($schemes->count() === 1) {
+        // Only one scheme
+        $schemeDisplay = $schemes->first();
+    } elseif ($schemes->count() > 1) {
+        // Multiple schemes → label them as Scheme 1, Scheme 2, ...
+        $schemeDisplay = $schemes->map(function ($s, $i) {
+            return 'Scheme ' . ($i + 1) . ': ' . $s;
+        })->implode(', ');
+    }
+    
+    // Build rows for table
+    $rows = [];
+    foreach ($items as $item) {
+        $totalQty = $item->qty_per_pc * $item->qty_per_cs;
+
+        $rows[] = [
+            'no_of_case'      => $item->qty_per_cs,
+            'item_description'=> $item->item_description,
+            'remarks'         => $item->remarks,
+            'qty_per_case'    => $item->qty_per_pc,
+            'total_qty'       => $totalQty,
+            'punch'           => '???', // placeholder if needed
+            'sku'             => $item->sku,
+            'price_per_piece' => $item->price_per_pc,
+            'total_amount'    => $item->amount,
+            'trans_no'        => $item->store_order_no,
+            'terminal'        => '???', // you can adjust if stored
+        ];
+    }
+
+    // Generate PDF
+    $pdf = Pdf::loadView('pdf.order_slip', [
+        'rows'           => $rows,
+        'customer_name'  => $orderInfo->customer_name ?? '',
+        'date'           => optional($orderInfo->time_order)->format('F j, Y') ?? now()->format('F j, Y'),
+        'address'        => $orderInfo->address ?? '',
+        'telephone'      => $orderInfo->contact_number ?? '',
+        'payment_mode'   => $orderInfo->mode_payment ?? '',
+        'scheme'         => $schemeDisplay ?? '',
+        'cashier'        => $orderInfo->cashier ?? '',
+    ])->setPaper('a4', 'portrait');
+
+    return $pdf->stream('order_slip.pdf');
+}
+
 }

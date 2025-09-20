@@ -55,6 +55,8 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
         Route::get('/{id}/print-sof', [OrderController::class, 'printSOF'])->name('print.sof');
         Route::get('/{id}/print-sof-invoice', [OrderController::class, 'printSOFInvoice'])->name('print.sof_invoice');
+        Route::get('/{id}/freebies-pdf', [OrderController::class, 'generateFreebiesForm'])->name('print.freebies');
+        Route::get('/{id}/print-order-slip', [OrderController::class, 'generateOrderSlip'])->name('print.order_slip');
 
         // Management Orders View
 
@@ -133,6 +135,9 @@ Route::get('/update-allocations/status', [ProductController::class, 'wmsStatus']
 Route::prefix('reports')->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
+        
+    Route::get('/payments', [ReportsController::class, 'paymentReport'])
+        ->name('reports.payments');
 
     Route::get('/orders', [ReportsController::class, 'ordersReport'])
         ->name('reports.orders');

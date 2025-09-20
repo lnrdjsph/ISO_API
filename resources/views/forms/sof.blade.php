@@ -1955,8 +1955,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const searchInput = container.find('.product-search, .freebie-search');
 						const isFreebie = searchInput.hasClass('freebie-search');
 
-						function setValue(input, value) {
-								if (!input.val()) { // don’t overwrite old()
+						function setValue(input, value, force = false) {
+								if (force || !input.val()) {
 										input.val(value);
 								}
 								if (input.hasClass('qty-per-pc') || input.hasClass('freebie-qty-per-pc')) {
@@ -1966,7 +1966,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 						if (isFreebie) {
 								// ✅ FREEBIE item: never touch discount/scheme
-								setValue(row.find('.freebie-search'), `${sku} - ${description}`);
+								setValue(searchInput, `${sku} - ${description}`, true);
 								setValue(row.find('[name*="[freebie_sku]"]'), sku);
 								setValue(row.find('[name*="[freebie_description]"]'), description);
 								setValue(row.find('[name*="[freebie_price_per_pc]"]'), pricePerPc);
@@ -1978,7 +1978,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 						} else {
 								// ✅ Normal PRODUCT: never touch freebie fields
-								setValue(row.find('.product-search'), sku && description ? `${sku} - ${description}` : '');
+								setValue(searchInput, `${sku} - ${description}`, true);
 								setValue(row.find('.sku-hidden'), sku);
 								setValue(row.find('.desc-hidden'), description);
 								setValue(row.find('[name*="[price_per_pc]"]'), pricePerPc);

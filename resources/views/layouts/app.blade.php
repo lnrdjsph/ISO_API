@@ -671,10 +671,10 @@
 																</li>
 																<li>
 																		<a
-																				href="{{ route('reports.freebies') }}"
-																				class="sub-item {{ request()->routeIs('reports.freebies') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																				href="{{ route('reports.payments') }}"
+																				class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																		>
-																				<span class="nav-text">Freebies Report</span>
+																				<span class="nav-text">Mode of Payments</span>
 																		</a>
 																</li>
 														</ul>
@@ -730,10 +730,10 @@
 														</li>
 														<li>
 																<a
-																		href="{{ route('reports.freebies') }}"
-																		class="sub-item {{ request()->routeIs('reports.freebies') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+																		href="{{ route('reports.payments') }}"
+																		class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600"
 																>
-																		Freebies Report
+																		Mode of Payments
 																</a>
 														</li>
 												</ul>

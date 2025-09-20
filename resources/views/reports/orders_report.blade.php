@@ -2,30 +2,38 @@
 
 @section('content')
 		<div class="">
-				<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
 
 						<!-- Header Section -->
 						<div class="mb-8">
 								<div class="flex items-center space-x-4">
 										<div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
 												<svg
-														xmlns="http://www.w3.org/2000/svg"
-														class="h-8 w-8 text-white"
+														class="h-5 w-5 flex-shrink-0"
 														fill="none"
+														stroke="white"
 														viewBox="0 0 24 24"
-														stroke="currentColor"
 												>
+														<!-- Axes -->
 														<path
 																stroke-linecap="round"
 																stroke-linejoin="round"
 																stroke-width="2"
-																d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"
+																d="M4 20h16M4 4v16"
+														/>
+														<!-- Line Chart -->
+														<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M4 14l4-4 4 3 6-6 2 2"
 														/>
 												</svg>
 										</div>
 										<div>
-												<h1 class="text-3xl font-bold text-gray-900">Sales Order List</h1>
-												<p class="mt-1 text-gray-600">List of all B2B sales orders submitted for processing and fulfillment.</p>
+												<h1 class="text-3xl font-bold text-gray-900">Sales Order Report</h1>
+												<p class="mt-1 text-gray-600">B2B2C sales orders report for accounting and financial review.</p>
+
 										</div>
 								</div>
 						</div>
