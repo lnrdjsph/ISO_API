@@ -662,24 +662,6 @@
 																				Order Actions
 																		</label>
 
-																		<!-- Print Buttons -->
-																		<div class="mb-2 grid w-full grid-cols-2 gap-2">
-																				<a
-																						href="{{ route('orders.print.sof', $order->id) }}"
-																						target="_blank"
-																						class="w-full rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-blue-800 shadow-sm hover:bg-blue-50"
-																				>
-																						Print SOF
-																				</a>
-																				<a
-																						href="{{ route('orders.print.sof_invoice', $order->id) }}"
-																						target="_blank"
-																						class="w-full rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-800 shadow-sm hover:bg-green-50"
-																				>
-																						Print Invoice
-																				</a>
-																		</div>
-
 
 																		<select
 																				id="orderAction"
@@ -732,6 +714,46 @@
 																						</a>
 																				</div>
 																		@endif
+
+																		<!-- Print Buttons -->
+																		<div class="mt-4 grid w-full grid-cols-2 gap-2">
+																				<a
+																						href="{{ route('orders.print.sof', $order->id) }}"
+																						target="_blank"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-blue-800 shadow-sm hover:bg-blue-50"
+																				>
+																						Print SOF
+																				</a>
+																				<a
+																						href="{{ route('orders.print.sof_invoice', $order->id) }}"
+																						target="_blank"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-800 shadow-sm hover:bg-green-50"
+																				>
+																						Print Invoice
+																				</a>
+																				@php
+																						$hasFreebies = \DB::table('order_items')->where('order_id', $order->id)->where('item_type', 'FREEBIE')->exists();
+																				@endphp
+
+																				@if ($hasFreebies)
+																						<a
+																								href="{{ route('orders.print.freebies', $order->id) }}"
+																								target="_blank"
+																								class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-purple-800 shadow-sm hover:bg-purple-50"
+																						>
+																								Print Freebies Form
+																						</a>
+																				@endif
+																				<a
+																						href="{{ route('orders.print.order_slip', $order->id) }}"
+																						target="_blank"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-red-800 shadow-sm hover:bg-red-50"
+																				>
+																						Print Order Slip
+																				</a>
+																		</div>
+
+
 
 
 																</div>
