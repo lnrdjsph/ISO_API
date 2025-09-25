@@ -56,55 +56,62 @@ class InventoryExportController extends Controller
         // ---- 3. Generate CSV (pivot) ----
         if ($format === 'csv') {
             $pivot = [];
+
+            // Initialize pivot with all SKUs
+            foreach ($skus as $sku) {
+                $pivot[$sku] = [
+                    'ITEM'       => $sku,
+                    'ITEM_DESC'  => '',
+                    'DEPARTMENT' => '',
+                    'BRAND'      => '',
+                    'GROUP'      => '',
+                ];
+                foreach (array_keys($storeMap) as $storeCode) {
+                    $pivot[$sku][$storeCode] = '';
+                }
+            }
+
+            // Fetch from Oracle and overwrite
             foreach (array_keys($storeMap) as $storeCode) {
                 foreach ($skuChunks as $batchSkus) {
                     $placeholders = implode(",", array_fill(0, count($batchSkus), '?'));
                     $sql = "
                         SELECT im.item AS sku, 
-       im.item_desc AS product_name,
-       deps.dept_name AS department,
-       uda_values.uda_value_desc AS brand,
-       groups.group_name AS group_name,
-       il.loc AS store,
-       CASE
-           WHEN ils.stock_on_hand <= 0 
-                AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
-           THEN 1000
-           ELSE ils.stock_on_hand
-       END AS stock
-FROM item_master im
-JOIN deps d ON im.dept = d.dept
-JOIN item_loc il ON im.item = il.item
-JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
-LEFT JOIN deps ON deps.dept = im.dept
-LEFT JOIN groups ON groups.group_no = deps.group_no
-LEFT JOIN uda_item_lov ON im.item = uda_item_lov.item
-LEFT JOIN uda_values ON uda_item_lov.uda_value = uda_values.uda_value 
-                     AND uda_item_lov.uda_id = uda_values.uda_id
-WHERE uda_values.uda_id = 9
-  AND il.loc = ? AND im.item IN ($placeholders)
+                               im.item_desc AS product_name,
+                               deps.dept_name AS department,
+                               uda_values.uda_value_desc AS brand,
+                               groups.group_name AS group_name,
+                               il.loc AS store,
+                               CASE
+                                   WHEN ils.stock_on_hand <= 0 
+                                        AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
+                                   THEN 1000
+                                   ELSE ils.stock_on_hand
+                               END AS stock
+                        FROM item_master im
+                        JOIN deps d ON im.dept = d.dept
+                        JOIN item_loc il ON im.item = il.item
+                        JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
+                        LEFT JOIN deps ON deps.dept = im.dept
+                        LEFT JOIN groups ON groups.group_no = deps.group_no
+                        LEFT JOIN uda_item_lov ON im.item = uda_item_lov.item
+                        LEFT JOIN uda_values ON uda_item_lov.uda_value = uda_values.uda_value 
+                                             AND uda_item_lov.uda_id = uda_values.uda_id
+                        WHERE uda_values.uda_id = 9
+                          AND il.loc = ? AND im.item IN ($placeholders)
                     ";
                     $params = array_merge([$storeCode], $batchSkus);
                     $rows   = DB::connection('oracle_rms')->select($sql, $params);
 
                     foreach ($rows as $r) {
                         $sku = $r->sku;
-if (!isset($pivot[$sku])) {
-    $pivot[$sku] = [
-        'ITEM'       => $sku,
-        'ITEM_DESC'  => $r->product_name,
-        'DEPARTMENT' => $r->department,
-        'BRAND'      => $r->brand,
-        'GROUP'      => $r->group_name,
-    ];
-}
-                        $pivot[$sku][$r->store] = $r->stock;
+                        $pivot[$sku]['ITEM_DESC']  = $r->product_name;
+                        $pivot[$sku]['DEPARTMENT'] = $r->department;
+                        $pivot[$sku]['BRAND']      = $r->brand;
+                        $pivot[$sku]['GROUP']      = $r->group_name;
+                        $pivot[$sku][$r->store]    = $r->stock;
                     }
                 }
-            }
-
-            if (empty($pivot)) {
-                return back()->withErrors(['sku_csv' => 'No data found.']);
             }
 
             $filename = 'SKU_INVENTORY_' . implode('_', array_keys($storeMap)) . '.csv';
@@ -131,7 +138,6 @@ if (!isset($pivot[$sku])) {
                         $line[] = $row[$code] ?? '';
                     }
                     fputcsv($out, $line);
-
                 }
                 fclose($out);
             };
@@ -145,38 +151,46 @@ if (!isset($pivot[$sku])) {
 
         foreach ($storeMap as $storeCode => $storeName) {
             $storeData = [];
+
             foreach ($skuChunks as $batchSkus) {
+                // Initialize batch with blanks
+                $batchMap = [];
+                foreach ($batchSkus as $sku) {
+                    $batchMap[$sku] = [
+                        $sku, '', '', '', '', '' // ITEM, DESC, DEPT, BRAND, GROUP, STOCK
+                    ];
+                }
+
                 $placeholders = implode(",", array_fill(0, count($batchSkus), '?'));
                 $sql = "
-SELECT im.item AS sku, 
-       im.item_desc AS product_name,
-       deps.dept_name AS department,
-       uda_values.uda_value_desc AS brand,
-       groups.group_name AS group_name,
-       CASE
-           WHEN ils.stock_on_hand <= 0 
-                AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
-           THEN 1000
-           ELSE ils.stock_on_hand
-       END AS stock
-FROM item_master im
-JOIN deps d ON im.dept = d.dept
-JOIN item_loc il ON im.item = il.item
-JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
-LEFT JOIN deps ON deps.dept = im.dept
-LEFT JOIN groups ON groups.group_no = deps.group_no
-LEFT JOIN uda_item_lov ON im.item = uda_item_lov.item
-LEFT JOIN uda_values ON uda_item_lov.uda_value = uda_values.uda_value 
-                     AND uda_item_lov.uda_id = uda_values.uda_id
-WHERE uda_values.uda_id = 9
-  AND il.loc = ? AND im.item IN ($placeholders)
-
+                    SELECT im.item AS sku, 
+                           im.item_desc AS product_name,
+                           deps.dept_name AS department,
+                           uda_values.uda_value_desc AS brand,
+                           groups.group_name AS group_name,
+                           CASE
+                               WHEN ils.stock_on_hand <= 0 
+                                    AND (d.purchase_type = 2 OR d.group_no IN (2020, 2030, 2040))
+                               THEN 1000
+                               ELSE ils.stock_on_hand
+                           END AS stock
+                    FROM item_master im
+                    JOIN deps d ON im.dept = d.dept
+                    JOIN item_loc il ON im.item = il.item
+                    JOIN item_loc_soh ils ON il.loc = ils.loc AND il.item = ils.item
+                    LEFT JOIN deps ON deps.dept = im.dept
+                    LEFT JOIN groups ON groups.group_no = deps.group_no
+                    LEFT JOIN uda_item_lov ON im.item = uda_item_lov.item
+                    LEFT JOIN uda_values ON uda_item_lov.uda_value = uda_values.uda_value 
+                                         AND uda_item_lov.uda_id = uda_values.uda_id
+                    WHERE uda_values.uda_id = 9
+                      AND il.loc = ? AND im.item IN ($placeholders)
                 ";
                 $params = array_merge([$storeCode], $batchSkus);
                 $rows   = DB::connection('oracle_rms')->select($sql, $params);
 
                 foreach ($rows as $r) {
-                    $storeData[] = [
+                    $batchMap[$r->sku] = [
                         $r->sku,
                         $r->product_name,
                         $r->department ?? '',
@@ -184,8 +198,9 @@ WHERE uda_values.uda_id = 9
                         $r->group_name ?? '',
                         $r->stock
                     ];
-
                 }
+
+                $storeData = array_merge($storeData, array_values($batchMap));
             }
 
             // Create a new sheet per store

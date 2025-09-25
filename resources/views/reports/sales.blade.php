@@ -3,11 +3,11 @@
 @section('title', 'Sales Overview')
 
 @section('content')
-		<div class="space-y-6 p-6">
+		<div class="mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
 				<!-- Header Section -->
 				<div class="mb-8">
 						<div class="flex items-center space-x-4">
-								<div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
+								<div class="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 p-3 shadow-lg">
 										<svg
 												class="h-5 w-5 flex-shrink-0"
 												fill="none"

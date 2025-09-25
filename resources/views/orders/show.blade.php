@@ -720,14 +720,14 @@
 																				<a
 																						href="{{ route('orders.print.sof', $order->id) }}"
 																						target="_blank"
-																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-blue-800 shadow-sm hover:bg-blue-50"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-blue-700 shadow-sm hover:bg-blue-50"
 																				>
 																						Print SOF
 																				</a>
 																				<a
 																						href="{{ route('orders.print.sof_invoice', $order->id) }}"
 																						target="_blank"
-																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-800 shadow-sm hover:bg-green-50"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-green-700 shadow-sm hover:bg-green-50"
 																				>
 																						Print Invoice
 																				</a>
@@ -739,7 +739,7 @@
 																						<a
 																								href="{{ route('orders.print.freebies', $order->id) }}"
 																								target="_blank"
-																								class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-purple-800 shadow-sm hover:bg-purple-50"
+																								class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-purple-700 shadow-sm hover:bg-purple-50"
 																						>
 																								Print Freebies Form
 																						</a>
@@ -747,7 +747,7 @@
 																				<a
 																						href="{{ route('orders.print.order_slip', $order->id) }}"
 																						target="_blank"
-																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-red-800 shadow-sm hover:bg-red-50"
+																						class="flex w-full items-center justify-center rounded-md border bg-white px-1 py-1 text-center text-xs font-medium text-red-700 shadow-sm hover:bg-red-50"
 																				>
 																						Print Order Slip
 																				</a>
