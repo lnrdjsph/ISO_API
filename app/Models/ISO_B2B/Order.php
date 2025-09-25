@@ -22,7 +22,7 @@ class Order extends Model
         'mode_payment',
         'payment_date',
         'mode_dispatching',
-        'delivery_date' => 'date',
+        'delivery_date',
         'address',
         'landmark',
         'requesting_store',

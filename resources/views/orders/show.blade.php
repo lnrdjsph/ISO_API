@@ -1,7 +1,21 @@
 @extends('layouts.app')
 
 @section('content')
-
+		@php
+				$locationMap = [
+				    'f2' => 'F2 - Metro Wholesalemart Colon',
+				    's10' => 'S10 - Metro Maasin',
+				    's17' => 'S17 - Metro Tacloban',
+				    's19' => 'S19 - Metro Bay-Bay',
+				    'f18' => 'F18 - Metro Alang-Alang',
+				    'f19' => 'F19 - Metro Hilongos',
+				    's8' => 'S8 - Metro Toledo',
+				    'h8' => 'H8 - Super Metro Antipolo',
+				    'h9' => 'H9 - Super Metro Carcar',
+				    'h10' => 'H10 - Super Metro Bogo',
+				];
+				$order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+		@endphp
 		<style>
 				.search-results {
 						position: absolute;
@@ -170,41 +184,21 @@
 																								value=""
 																								disabled
 																								{{ $order->payment_center ? '' : 'selected' }}
-																						>Select Payment Center</option>
-																						<option
-																								value="S10-MAASIN"
-																								{{ $order->payment_center === 'S10-MAASIN' ? 'selected' : '' }}
-																						>S10-MAASIN</option>
-																						<option
-																								value="S17-TACLOBAN"
-																								{{ $order->payment_center === 'S17-TACLOBAN' ? 'selected' : '' }}
-																						>S17-TACLOBAN</option>
-																						<option
-																								value="S19-METRO BAY-BAY"
-																								{{ $order->payment_center === 'S19-METRO BAY-BAY' ? 'selected' : '' }}
-																						>S19-METRO BAY-BAY</option>
-																						<option
-																								value="F18-ALANG-ALANG"
-																								{{ $order->payment_center === 'F18-ALANG-ALANG' ? 'selected' : '' }}
-																						>F18-ALANG-ALANG</option>
-																						<option
-																								value="F19-HILONGOS"
-																								{{ $order->payment_center === 'F19-HILONGOS' ? 'selected' : '' }}
-																						>F19-HILONGOS</option>
-																						<option
-																								value="S8-TOLEDO"
-																								{{ $order->payment_center === 'S8-TOLEDO' ? 'selected' : '' }}
-																						>S8-TOLEDO</option>
-																						<option
-																								value="H9-CARCAR"
-																								{{ $order->payment_center === 'H9-CARCAR' ? 'selected' : '' }}
-																						>H9-CARCAR</option>
-																						<option
-																								value="H10-BOGO"
-																								{{ $order->payment_center === 'H10-BOGO' ? 'selected' : '' }}
-																						>H10-BOGO</option>
+																						>
+																								Select Payment Center
+																						</option>
+
+																						@foreach ($locationMap as $code => $label)
+																								<option
+																										value="{{ $label }}"
+																										{{ $order->payment_center === $label ? 'selected' : '' }}
+																								>
+																										{{ $label }}
+																								</option>
+																						@endforeach
 																				</select>
 																		</div>
+
 
 																		<!-- Mode of Payment -->
 																		<div>
@@ -332,21 +326,7 @@
 																				<p class="mb-0.5 text-xs text-gray-600">SOF Order ID</p>
 																				<p class="text-xs font-medium text-gray-900">{{ $order->sof_id }}</p>
 																		</div>
-																		@php
-																				$locationMap = [
-																				    'f2' => 'F2 - Metro Wholesalemart Colon',
-																				    's10' => 'S10 - Metro Maasin',
-																				    's17' => 'S17 - Metro Tacloban',
-																				    's19' => 'S19 - Metro Bay-Bay',
-																				    'f18' => 'F18 - Metro Alang-Alang',
-																				    'f19' => 'F19 - Metro Hilongos',
-																				    's8' => 'S8 - Metro Toledo',
-																				    'h8' => 'H8 - Super Metro Antipolo',
-																				    'h9' => 'H9 - Super Metro Carcar',
-																				    'h10' => 'H10 - Super Metro Bogo',
-																				];
-																				$order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
-																		@endphp
+
 																		<div>
 																				<p class="mb-0.5 text-xs text-gray-600">Requesting Store & Personnel</p>
 																				<p class="text-xs font-medium text-gray-900">{{ $order->requesting_store }} - {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}</p>

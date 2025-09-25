@@ -201,7 +201,7 @@
 																</label>
 														</div>
 
-														<script>
+														{{-- <script>
 																flatpickr("#time_order", {
 																		enableTime: true,
 																		dateFormat: "Y-m-d H:i",
@@ -215,7 +215,7 @@
 																				instance.calendarContainer.appendChild(btn);
 																		}
 																});
-														</script>
+														</script> --}}
 												</div>
 										</section>
 
@@ -1542,6 +1542,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 						const select = row.querySelector('.sale-type');
 						if (!select) return;
 
+						let lastValue = select.value; // keep track of previous sale type
+
 						select.addEventListener('change', function() {
 								const indexMatch = this.name.match(/orders\[(\d+)\]/);
 								if (!indexMatch) return;
@@ -1552,10 +1554,19 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
 								if (!freebieSection || !mainItemSection || !discountField) return;
 
-								// 🔄 Always clear values first
-								freebieSection.querySelectorAll('input').forEach(i => i.value = '');
-								const discountInput = discountField.querySelector('input');
-								if (discountInput) discountInput.value = '';
+								// 🛑 Only clear when switching away from Freebie/Discount
+								if (lastValue !== this.value) {
+										if (this.value !== 'Freebie') {
+												freebieSection.querySelectorAll('input').forEach(i => {
+														// keep hidden values safe
+														if (i.type !== 'hidden') i.value = '';
+												});
+										}
+										if (this.value !== 'Discount') {
+												const discountInput = discountField.querySelector('input');
+												if (discountInput) discountInput.value = '';
+										}
+								}
 
 								// 🔄 Always hide first
 								freebieSection.classList.add('hidden');
@@ -1572,13 +1583,16 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 								} else {
 										mainItemSection.classList.add('md:grid-cols-3');
 										freebieSection.classList.add('hidden');
-
 								}
+
+								// update tracker
+								lastValue = this.value;
 						});
 
 						// Fire once on attach
 						select.dispatchEvent(new Event('change'));
 				}
+
 
 
 
