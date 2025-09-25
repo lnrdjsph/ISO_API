@@ -94,7 +94,7 @@ class FormsController extends Controller
         ]);
 
         foreach ($request->input('orders', []) as $index => $order) {
-            $validated['orders'][$index] = validator(
+            validator(
                 $order,
                 [
                     'sku' => 'required|string',
