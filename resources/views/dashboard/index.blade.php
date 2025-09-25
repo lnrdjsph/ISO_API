@@ -279,15 +279,15 @@
 												<li><a
 																href="{{ route('reports.sales') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>Sales </a></li>
+														>Sales Overview</a></li>
 												<li><a
-																href="{{ route('reports.freebies') }}"
+																href="{{ route('reports.orders') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>Freebies </a></li>
+														>Sales Orders Report </a></li>
 												<li><a
-																href="#"
+																href="{{ route('reports.payments') }}"
 																class="text-xl decoration-2 hover:text-green-600 hover:underline"
-														>Overview</a></li>
+														>Payments Overview</a></li>
 										</ul>
 								</div>
 
