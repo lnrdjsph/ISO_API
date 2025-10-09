@@ -55,7 +55,7 @@ class UserController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:6|confirmed',
-            'role'          => ['required', Rule::in(['super admin', 'admin', 'user'])],
+            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'])],
             'user_location' => 'required|string|max:10',
         ]);
 
@@ -79,7 +79,7 @@ class UserController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => ['required', 'email', Rule::unique('users')->ignore($user->id)],
             'password'      => 'nullable|string|min:4|confirmed',
-            'role'          => ['required', Rule::in(['super admin', 'admin', 'user', 'manager' , 'store personnel'])],
+            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'])],
             'user_location' => 'required|string|max:10',
         ]);
 
