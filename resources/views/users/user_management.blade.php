@@ -226,10 +226,18 @@
 										<tbody class="divide-y divide-gray-100">
 												@php
 														$locationMap = [
+														    'lz' => 'LZ - Luzon',
+														    'vs' => 'VS - Visayas',
 														    'f2' => 'F2 - Metro Wholesalemart Colon',
+														    's10' => 'S10 - Metro Maasin',
+														    's17' => 'S17 - Metro Tacloban',
+														    's19' => 'S19 - Metro Bay-Bay',
+														    'f18' => 'F18 - Metro Alang-Alang',
+														    'f19' => 'F19 - Metro Hilongos',
+														    's8' => 'S8 - Metro Toledo',
 														    'h8' => 'H8 - Super Metro Antipolo',
-														    'm1' => 'M1 - Metro Department Store',
-														    'l3' => 'L3 - Metro Supermarket',
+														    'h9' => 'H9 - Super Metro Carcar',
+														    'h10' => 'H10 - Super Metro Bogo',
 														    // add all your other codes here
 														];
 												@endphp
