@@ -2060,6 +2060,7 @@
 
 						document.getElementById('generateSOButton').addEventListener('click', async () => {
 								const sofId = "{{ $order->sof_id }}";
+								const url = "{{ route('oracle.transfer') }}";
 
 								Swal.fire({
 										title: 'Processing...',
@@ -2069,7 +2070,7 @@
 								});
 
 								try {
-										const response = await fetch('/api/oracle/transfer', {
+										const response = await fetch(url, {
 												method: 'POST',
 												headers: {
 														'Content-Type': 'application/json',
