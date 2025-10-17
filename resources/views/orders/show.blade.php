@@ -361,6 +361,10 @@
 																		>
 																				Generate SO#
 																		</button>
+																		<meta
+																				name="csrf-token"
+																				content="{{ csrf_token() }}"
+																		>
 																@endif
 
 																{{-- <script>
@@ -2061,6 +2065,7 @@
 						document.getElementById('generateSOButton').addEventListener('click', async () => {
 								const sofId = "{{ $order->sof_id }}";
 								const url = "{{ route('oracle.transfer') }}";
+								const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 								Swal.fire({
 										title: 'Processing...',
@@ -2074,7 +2079,8 @@
 												method: 'POST',
 												headers: {
 														'Content-Type': 'application/json',
-														'Accept': 'application/json'
+														'Accept': 'application/json',
+														'X-CSRF-TOKEN': csrfToken
 												},
 												body: JSON.stringify({
 														sof_id: sofId
