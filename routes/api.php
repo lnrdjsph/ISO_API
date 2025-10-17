@@ -35,6 +35,8 @@ Route::prefix('iso-api')->group(function () {
     Route::post('/otp-verify', [OtpController::class, 'verifyOtp']);
     Route::post('/loyalty-points', [UserPointsController::class, 'getLoyaltyPoints']);
     Route::post('/transactions', [TransactionHistoryController::class, 'getTransactions']);
+    //Oracle RIB Routes
+    Route::post('/oracle/transfer', [OracleTransferController::class, 'send']);
 
    
 });
@@ -46,8 +48,6 @@ Route::post('/payment-data', [ECRController::class, 'getPaymentData']);
 Route::post('/oracle-rms/item', [OracleRmsController::class, 'fetchItemData']);
 
 
-//Oracle RIB Routes
-Route::post('/oracle/transfer', [OracleTransferController::class, 'send']);
 
 
 Route::prefix('v1')->group(function () {
