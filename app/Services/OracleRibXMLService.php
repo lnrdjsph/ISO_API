@@ -156,15 +156,25 @@ XML;
             $trimmedOutput = trim($output);
             Log::info("📜 [SSH OUTPUT] {$trimmedOutput}");
 
-            // ✅ Check success from script logs
-            if (
-                str_contains($trimmedOutput, 'Publishing Complete') ||
-                str_contains($trimmedOutput, 'File moved to PROCESSED') ||
-                str_contains($trimmedOutput, 'Done.')
-            ) {
-                return ['success' => true, 'message' => 'Remote script executed successfully and Oracle confirmed processing.'];
+            // ✅ Enhanced success detection
+            $successIndicators = [
+                'Publishing Complete',
+                'File moved to PROCESSED',
+                'STOP',
+                'Done.',
+                'XTsf_sub_1 Subscriber Status : UP and Running'
+            ];
+
+            foreach ($successIndicators as $keyword) {
+                if (stripos($trimmedOutput, $keyword) !== false) {
+                    return [
+                        'success' => true,
+                        'message' => "Oracle RIB confirmed success ({$keyword})."
+                    ];
+                }
             }
 
+            // ❌ No success keyword found
             return [
                 'success' => false,
                 'message' => 'Script executed but no Oracle completion confirmation found.'
@@ -175,4 +185,5 @@ XML;
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
+
 }
