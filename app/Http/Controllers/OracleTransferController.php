@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\OracleRibXMLService;
 use App\Models\ISO_B2B\Order;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class OracleTransferController extends Controller
@@ -95,11 +96,22 @@ class OracleTransferController extends Controller
 
             // ✅ Step 8: Update only items sent
             if ($response['success']) {
-                DB::table('order_items')
-                    ->where('order_id', $order->id)
-                    ->whereNull('store_order_no')
+                $affected = DB::table('order_items')
+                    ->where(function ($q) use ($order) {
+                        $q->where('order_id', $order->id)
+                        ->orWhere('sof_id', $order->sof_id);
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('store_order_no')
+                        ->orWhere('store_order_no', '');
+                    })
                     ->update(['store_order_no' => $nextTsfNo]);
+
+                Log::info("✅ Updated {$affected} order_items rows with TSF#: {$nextTsfNo}");
+            } else {
+                Log::warning("⚠️ Oracle RIB sendTransfer failed, skipping update.", $response);
             }
+
 
             // ✅ Step 9: Return structured response
             return response()->json([

@@ -137,7 +137,8 @@ XML;
         $port       = (int) env('ORACLE_RIB_SFTP_PORT', 22);
         $username   = env('ORACLE_RIB_SFTP_USER');
         $password   = env('ORACLE_RIB_SFTP_PASSWORD');
-        $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // full path e.g. /usr01/app/oracle/.../mg_xtsf_sub.sh
+        $basePath   = env('ORACLE_RIB_BASE_PATH');   // e.g. /usr01/app/oracle/product/rib/.../OFININTF
+        $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // e.g. /usr01/app/oracle/.../scripts/mg_xtsf_sub.sh
 
         try {
             Log::info("🛰 [SSH] Connecting to {$host} to execute {$scriptPath}");
@@ -148,15 +149,17 @@ XML;
                 return ['success' => false, 'message' => 'SSH authentication failed.'];
             }
 
-            // ✅ Run script synchronously and capture streaming output
-            $command = (str_starts_with($scriptPath, '/')) ? "./{$scriptPath}" : "./{$scriptPath}";
+            // ✅ Always ensure the script has execute permissions
+            $ssh->exec("chmod +x {$scriptPath}");
+
+            // ✅ Go to the scripts directory, then execute using ./ syntax
+            $command = "cd {$basePath}/scripts && ./mg_xtsf_sub.sh";
             Log::info("🚀 [SSH] Executing: {$command}");
 
-            $stream = $ssh->exec($command);
-            $output = trim($stream);
+            $output = trim($ssh->exec($command));
             Log::info("📜 [SSH OUTPUT] Initial output: " . substr($output, 0, 500));
 
-            // ✅ Define known success markers
+            // ✅ Known Oracle RIB success markers
             $successIndicators = [
                 'Publishing Complete',
                 'File moved to PROCESSED',
@@ -165,26 +168,28 @@ XML;
                 'XTsf_sub_1 Subscriber Status : UP and Running'
             ];
 
-            // 🕒 Retry check up to 5 times (wait for delayed Oracle completion logs)
+            // 🕒 Retry for delayed success markers (up to 5 retries)
             $maxRetries = 5;
             for ($i = 0; $i < $maxRetries; $i++) {
                 foreach ($successIndicators as $keyword) {
                     if (stripos($output, $keyword) !== false) {
                         Log::info("✅ [SSH] Oracle success detected: {$keyword}");
-                        return ['success' => true, 'message' => "Oracle RIB confirmed success ({$keyword})."];
+                        return [
+                            'success' => true,
+                            'message' => "Oracle RIB confirmed success ({$keyword})."
+                        ];
                     }
                 }
 
-                // Wait a bit before checking again
                 sleep(2);
                 $newOutput = trim($ssh->read());
                 if (!empty($newOutput)) {
                     $output .= "\n" . $newOutput;
-                    Log::debug("🔁 [SSH] Additional output received: " . substr($newOutput, 0, 300));
+                    Log::debug("🔁 [SSH] Additional output: " . substr($newOutput, 0, 300));
                 }
             }
 
-            // ❌ No success keyword found even after retries
+            // ❌ No Oracle confirmation found after retries
             Log::error("❌ [SSH] Script executed but no Oracle completion confirmation found.");
             return [
                 'success' => false,
@@ -196,6 +201,7 @@ XML;
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
+
 
 
 }
