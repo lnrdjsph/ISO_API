@@ -350,7 +350,49 @@
 
 												<div class="relative overflow-x-auto overflow-y-visible rounded-xl border bg-white p-4 pb-24 shadow-sm">
 
-														<h2 class="mb-4 text-lg font-semibold text-gray-700">Ordered Items</h2>
+														<div class="mb-4 flex items-center justify-between">
+																<h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
+
+																@if ($order->order_status === 'approved')
+																		<button
+																				type="button"
+																				id="generateSOButton"
+																				class="items-center justify-center rounded-md bg-green-700 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-green-800 focus:outline-none focus:ring-1 focus:ring-green-600 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+																		>
+																				Generate SO#
+																		</button>
+																@endif
+
+																{{-- <script>
+																		document.getElementById('generateSOButton').addEventListener('click', function() {
+																				const sofId = "{{ $order->sof_id }}";
+
+																				fetch('/oracle/transfer', {
+																								method: 'POST',
+																								headers: {
+																										'Content-Type': 'application/json',
+																										'X-CSRF-TOKEN': '{{ csrf_token() }}'
+																								},
+																								body: JSON.stringify({
+																										sof_id: sofId
+																								})
+																						})
+																						.then(response => response.json())
+																						.then(data => {
+																								console.log(data);
+																								alert('✅ TSF generated: ' + data.generated_tsf_no);
+																						})
+																						.catch(error => {
+																								console.error(error);
+																								alert('❌ Failed to generate SO.');
+																						});
+																		});
+																</script> --}}
+
+
+
+														</div>
+
 														<table class="min-w-full border border-gray-200 text-xs text-gray-700">
 																<thead class="bg-gray-100 text-xs uppercase">
 																		<tr>
@@ -399,7 +441,7 @@
 																				<th
 																						rowspan="2"
 																						class="border px-2 py-1"
-																				>Store Order No.</th>
+																				>Store Order No. (SO#)</th>
 																		</tr>
 																		<tr>
 																				<th class="border p-1 text-center">QTY/PC</th>
@@ -2011,6 +2053,67 @@
 
 						$(document).ready(function() {
 								lockFieldsByStatus("{{ $order->order_status }}");
+						});
+
+
+
+
+						document.getElementById('generateSOButton').addEventListener('click', async () => {
+								const sofId = "{{ $order->sof_id }}";
+
+								Swal.fire({
+										title: 'Processing...',
+										text: 'Sending order to Oracle RIB. Please wait.',
+										allowOutsideClick: false,
+										didOpen: () => Swal.showLoading()
+								});
+
+								try {
+										const response = await fetch('/api/oracle/transfer', {
+												method: 'POST',
+												headers: {
+														'Content-Type': 'application/json',
+														'Accept': 'application/json'
+												},
+												body: JSON.stringify({
+														sof_id: sofId
+												})
+										});
+
+										const text = await response.text();
+										console.log('Raw response:', text);
+										let data;
+										try {
+												data = JSON.parse(text);
+										} catch {
+												data = {};
+										}
+
+										Swal.close();
+
+										if (response.ok && data.generated_tsf_no) {
+												await Swal.fire({
+														icon: 'success',
+														title: 'TSF Generated!',
+														text: data.generated_tsf_no
+												});
+												location.reload();
+										} else {
+												await Swal.fire({
+														icon: 'warning',
+														title: 'Warning',
+														text: data.message || 'No action taken.'
+												});
+										}
+								} catch (err) {
+										console.error(err);
+										Swal.close();
+										await Swal.fire({
+												icon: 'error',
+												title: 'Fetch Failed',
+												text: err.message
+										});
+								}
 						});
 				</script>
 

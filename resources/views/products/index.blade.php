@@ -170,65 +170,24 @@
 
 
 
+														{{-- </div> --}}
 												</div>
 										</div>
 								</div>
-						</div>
 
-						<!-- Search and Actions Bar -->
-						<div class="mb-4">
-								<div class="flex flex-nowrap items-start justify-between gap-4">
+								<!-- Search and Actions Bar -->
+								<div class="mb-4">
+										<div class="flex flex-nowrap items-start justify-between gap-4">
 
-										<form
-												method="GET"
-												action="{{ route('products.index') }}"
-												class="w-full max-w-lg"
-										>
-												<div class="relative">
-														<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-																<svg
-																		class="h-5 w-5 text-gray-400"
-																		fill="none"
-																		stroke="currentColor"
-																		viewBox="0 0 24 24"
-																>
-																		<path
-																				stroke-linecap="round"
-																				stroke-linejoin="round"
-																				stroke-width="2"
-																				d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-																		/>
-																</svg>
-														</div>
-														<input
-																type="text"
-																name="query"
-																id="product-search"
-																value="{{ request('query') }}"
-																autocomplete="off"
-																class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-4 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-																placeholder="Search by SKU or product description..."
-														/>
-														<ul
-																id="product-list"
-																class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"
-														></ul>
-
-												</div>
-										</form>
-
-										<!-- Bulk Actions Bar -->
-										<div
-												id="bulk-actions-bar"
-												class="hidden"
-										>
-												<div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 p-1">
-														<div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
-
-																<!-- Count -->
-																<div class="flex items-center gap-2">
+												<form
+														method="GET"
+														action="{{ route('products.index') }}"
+														class="w-full max-w-lg"
+												>
+														<div class="relative">
+																<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
 																		<svg
-																				class="h-5 w-5"
+																				class="h-5 w-5 text-gray-400"
 																				fill="none"
 																				stroke="currentColor"
 																				viewBox="0 0 24 24"
@@ -237,19 +196,60 @@
 																						stroke-linecap="round"
 																						stroke-linejoin="round"
 																						stroke-width="2"
-																						d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+																						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
 																				/>
 																		</svg>
-																		<span
-																				id="selected-count"
-																				class="font-semibold"
-																		>0</span>
-																		<span>items selected</span>
 																</div>
+																<input
+																		type="text"
+																		name="query"
+																		id="product-search"
+																		value="{{ request('query') }}"
+																		autocomplete="off"
+																		class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-4 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+																		placeholder="Search by SKU or product description..."
+																/>
+																<ul
+																		id="product-list"
+																		class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"
+																></ul>
 
-																<!-- Buttons -->
-																<div class="flex items-center gap-3">
-																		{{-- <button
+														</div>
+												</form>
+
+												<!-- Bulk Actions Bar -->
+												<div
+														id="bulk-actions-bar"
+														class="hidden"
+												>
+														<div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 p-1">
+																<div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
+
+																		<!-- Count -->
+																		<div class="flex items-center gap-2">
+																				<svg
+																						class="h-5 w-5"
+																						fill="none"
+																						stroke="currentColor"
+																						viewBox="0 0 24 24"
+																				>
+																						<path
+																								stroke-linecap="round"
+																								stroke-linejoin="round"
+																								stroke-width="2"
+																								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+																						/>
+																				</svg>
+																				<span
+																						id="selected-count"
+																						class="font-semibold"
+																				>0</span>
+																				<span>items selected</span>
+																		</div>
+
+																		<!-- Buttons -->
+																		<div class="flex items-center gap-3">
+																				{{-- <button
 																						id="bulk-edit-btn"
 																						class="flex items-center rounded-xl px-3 font-medium hover:underline"
 																				>
@@ -269,428 +269,428 @@
 																						Bulk Edit
 																				</button> --}}
 
-																		<button
-																				id="bulk-archive-btn"
-																				class="flex items-center rounded-xl px-3 font-medium hover:underline"
-																		>
-																				<svg
-																						class="mr-1 h-4 w-4"
-																						fill="none"
-																						stroke="currentColor"
-																						viewBox="0 0 24 24"
+																				<button
+																						id="bulk-archive-btn"
+																						class="flex items-center rounded-xl px-3 font-medium hover:underline"
 																				>
-																						<path
-																								stroke-linecap="round"
-																								stroke-linejoin="round"
-																								stroke-width="2"
-																								d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-																						/>
-																				</svg>
-																				Archive
-																		</button>
+																						<svg
+																								class="mr-1 h-4 w-4"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+																								/>
+																						</svg>
+																						Archive
+																				</button>
 
-																		<button
-																				id="clear-selection-btn"
-																				class="flex items-center rounded-xl px-2 hover:underline"
-																		>
-																				<svg
-																						class="h-4 w-4"
-																						fill="none"
-																						stroke="currentColor"
-																						viewBox="0 0 24 24"
+																				<button
+																						id="clear-selection-btn"
+																						class="flex items-center rounded-xl px-2 hover:underline"
 																				>
-																						<path
-																								stroke-linecap="round"
-																								stroke-linejoin="round"
-																								stroke-width="2"
-																								d="M6 18L18 6M6 6l12 12"
-																						/>
-																				</svg>
-																		</button>
+																						<svg
+																								class="h-4 w-4"
+																								fill="none"
+																								stroke="currentColor"
+																								viewBox="0 0 24 24"
+																						>
+																								<path
+																										stroke-linecap="round"
+																										stroke-linejoin="round"
+																										stroke-width="2"
+																										d="M6 18L18 6M6 6l12 12"
+																								/>
+																						</svg>
+																				</button>
+																		</div>
 																</div>
 														</div>
 												</div>
-										</div>
-										<!-- Action Buttons -->
-										<div class="flex flex-shrink-0 items-center gap-3">
-												<!-- Filter -->
-												<button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
-														<svg
-																class="mr-2 h-5 w-5"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-														>
-																<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-																/>
-														</svg>
-														Filter
-												</button>
-
-												<!-- Export -->
-												<a
-														href="{{ route('products.export', request()->query()) }}"
-														class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800"
-												>
-														<svg
-																class="mr-2 h-5 w-5"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-														>
-																<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-																/>
-														</svg>
-														Export
-												</a>
-
-												<!-- Add Product -->
-												<a
-														href="{{ route('products.create') }}"
-														class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
-												>
-														<svg
-																class="mr-2 h-5 w-5"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-														>
-																<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-																/>
-														</svg>
-														Add Product
-												</a>
-										</div>
-
-								</div>
-						</div>
-
-						<!-- Modern Product Table -->
-						<div class="w-full overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
-								<div class="max-w-full overflow-x-auto">
-										<table class="table-sm w-full table-auto">
-												@php
-														$currentSort = request('sort', 'sku');
-														$currentDirection = request('direction', 'asc');
-
-														if (!function_exists('sortRoute')) {
-														    function sortRoute($column)
-														    {
-														        $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
-
-														        return route(
-														            'products.index',
-														            array_merge(request()->except(['page', 'direction', 'sort']), [
-														                'sort' => $column,
-														                'direction' => request('sort') === $column ? $direction : 'asc',
-														            ]),
-														        );
-														    }
-														}
-												@endphp
-												<thead>
-														<tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-																<th class="text-blue w-16 rounded-tl-3xl py-2 pl-6 text-left text-sm font-bold uppercase">
-																		<div class="flex items-center">
-																				<input
-																						type="checkbox"
-																						id="select-all"
-																						class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
-																				>
-																		</div>
-																</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
-																		<a
-																				href="{{ sortRoute('sku') }}"
-																				class="group flex items-center space-x-2"
-																		>
-																				<span>SKU</span>
-																				@if ($currentSort === 'sku')
-																						<svg
-																								class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																								></path>
-																						</svg>
-																				@else
-																						<svg
-																								class="h-4 w-4 opacity-60 group-hover:text-blue-400"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																								></path>
-																						</svg>
-																				@endif
-																		</a>
-																</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
-																		<a
-																				href="{{ sortRoute('description') }}"
-																				class="group flex items-center space-x-2"
-																		>
-																				<span>Product description</span>
-																				@if ($currentSort === 'description')
-																						<svg
-																								class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																								></path>
-																						</svg>
-																				@else
-																						<svg
-																								class="h-4 w-4 opacity-60 group-hover:text-blue-400"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																								></path>
-																						</svg>
-																				@endif
-																		</a>
-																</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Sub-Department</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">WMS Inventory</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Store Inventory</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Case Pack</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">SRP</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">C/BC Scheme</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">PO15 Scheme</th>
-																<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Discount Scheme</th>
-																<th class="text-blue rounded-tr-3xl px-3 py-3 text-left text-xs font-bold uppercase">Freebie SKU</th>
-														</tr>
-												</thead>
-												<tbody class="divide-y divide-gray-100/60">
-														@forelse ($products as $product)
-																<tr
-																		class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-indigo-100/60"
-																		data-product-id="{{ $product->id }}"
+												<!-- Action Buttons -->
+												<div class="flex flex-shrink-0 items-center gap-3">
+														<!-- Filter -->
+														<button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
+																<svg
+																		class="mr-2 h-5 w-5"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
 																>
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<input
-																						type="checkbox"
-																						class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
-																						value="{{ $product->id }}"
-																						id="product-{{ $product->id }}"
-																				>
-																		</td>
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<div class="flex items-center">
-																						<span class="rounded-lg bg-gray-100/60 px-3 py-1 font-mono text-xs font-semibold text-gray-800">
-																								{{ $product->sku }}
-																						</span>
-																				</div>
-																		</td>
-																		<td class="max-w-xs px-3 py-3">
-																				<div class="relative inline-block w-full">
-																						<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
-																								{{ $product->description }}
-																						</div>
-																						<div
-																								class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
-																						>
-																								{{ $product->description }}
-																						</div>
-																				</div>
-																		</td>
-																		<td class="max-w-xs px-3 py-3">
-																				<div class="relative inline-block w-full">
-																						<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
-																								{{ $product->department }}
-																						</div>
-																						<div
-																								class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
-																						>
-																								{{ $product->department }}
-																						</div>
-																				</div>
-																		</td>
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+																		/>
+																</svg>
+																Filter
+														</button>
 
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ $product->wms_allocation_per_case ?? '-' }}
-																				</span>
-																		</td>
-
-
-																		<td class="px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ $product->allocation_per_case ?? '-' }}
-																				</span>
-																		</td>
-
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ $product->case_pack ?? '-' }}
-																				</span>
-																		</td>
-
-
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						₱{{ number_format($product->srp ?? 0, 2) }}
-																				</span>
-																		</td>
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
-																				</span>
-																		</td>
-
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
-																				</span>
-																		</td>
-
-																		<td class="whitespace-nowrap px-3 py-3">
-																				<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																						{{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
-																				</span>
-																		</td>
-																		<td class="max-w-xs px-3 py-3">
-																				<div class="relative inline-block w-full">
-																						<div class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-																								{{ !empty($product->freebie_sku) ? $product->freebie_sku : '-' }}
-																						</div>
-																						<div
-																								class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max max-w-xs -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
-																						>
-																								{{ !empty($product->freebie_description) ? $product->freebie_description : 'No description found' }}
-																						</div>
-																				</div>
-																		</td>
-
-																</tr>
-														@empty
-																<tr>
-																		<td
-																				colspan="12"
-																				class="px-6 py-8 text-center text-gray-500"
-																		>
-																				No products found.
-																				<div class="mt-4 inline-flex items-center justify-center">
-																						<select
-																								id="no-products-action"
-																								onchange="if(this.value) window.location.href=this.value"
-																								class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
-																								style="border:none; outline:none; width:auto;"
-																						>
-																								<option
-																										value=""
-																										selected
-																										disabled
-																								>Click here to . . .</option>
-																								<option value="{{ route('products.create') }}">Add New Product</option>
-																								<option value="{{ route('products.import.show') }}">Import Products</option>
-																						</select>
-																				</div>
-																		</td>
-																</tr>
-
-																<style>
-																		#no-products-action {
-																				-webkit-appearance: none;
-																				-moz-appearance: none;
-																				appearance: none;
-																				background: transparent;
-																				border: none;
-																				cursor: pointer;
-																				padding-right: 1em;
-																				/* optional, space for text */
-																		}
-																</style>
-																<script>
-																		document.getElementById('no-products-action').addEventListener('change', function() {
-																				const url = this.value;
-																				if (url) {
-																						window.location.href = url;
-																				}
-																		});
-																</script>
-														@endforelse
-												</tbody>
-										</table>
-								</div>
-
-								<!-- Enhanced Pagination -->
-								<div class="flex items-center justify-between rounded-b-3xl bg-white px-3 py-3 backdrop-blur-sm">
-
-										<!-- Rows per page -->
-										<form
-												method="GET"
-												action="{{ route('products.index') }}"
-												class="flex items-center space-x-2"
-										>
-												<div class="flex items-center overflow-hidden rounded-lg">
-														<span class="px-3 text-sm text-gray-600">
-																Rows
-														</span>
-														<select
-																name="per_page"
-																id="perPage"
-																class="border-0 px-10 py-1 text-sm ring-0"
-																onchange="this.form.submit()"
+														<!-- Export -->
+														<a
+																href="{{ route('products.export', request()->query()) }}"
+																class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800"
 														>
-																@foreach ([10, 25, 50, 100] as $size)
-																		<option
-																				value="{{ $size }}"
-																				{{ request('per_page', 10) == $size ? 'selected' : '' }}
-																		>
-																				{{ $size }}
-																		</option>
-																@endforeach
-														</select>
+																<svg
+																		class="mr-2 h-5 w-5"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																>
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+																		/>
+																</svg>
+																Export
+														</a>
+
+														<!-- Add Product -->
+														<a
+																href="{{ route('products.create') }}"
+																class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl"
+														>
+																<svg
+																		class="mr-2 h-5 w-5"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																>
+																		<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+																		/>
+																</svg>
+																Add Product
+														</a>
 												</div>
-										</form>
 
-
-										<!-- Laravel pagination -->
-										<div>
-												{{ $products->withPath(route('products.index'))->appends(['per_page' => request('per_page')])->onEachSide(1)->links() }}
 										</div>
 								</div>
 
-						</div>
+								<!-- Modern Product Table -->
+								<div class="w-full overflow-hidden rounded-3xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
+										<div class="max-w-full overflow-x-auto">
+												<table class="table-sm w-full table-auto">
+														@php
+																$currentSort = request('sort', 'sku');
+																$currentDirection = request('direction', 'asc');
 
+																if (!function_exists('sortRoute')) {
+																    function sortRoute($column)
+																    {
+																        $direction = request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
+
+																        return route(
+																            'products.index',
+																            array_merge(request()->except(['page', 'direction', 'sort']), [
+																                'sort' => $column,
+																                'direction' => request('sort') === $column ? $direction : 'asc',
+																            ]),
+																        );
+																    }
+																}
+														@endphp
+														<thead>
+																<tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+																		<th class="text-blue w-16 rounded-tl-3xl py-2 pl-6 text-left text-sm font-bold uppercase">
+																				<div class="flex items-center">
+																						<input
+																								type="checkbox"
+																								id="select-all"
+																								class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+																						>
+																				</div>
+																		</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+																				<a
+																						href="{{ sortRoute('sku') }}"
+																						class="group flex items-center space-x-2"
+																				>
+																						<span>SKU</span>
+																						@if ($currentSort === 'sku')
+																								<svg
+																										class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+																										fill="none"
+																										stroke="currentColor"
+																										viewBox="0 0 24 24"
+																								>
+																										<path
+																												stroke-linecap="round"
+																												stroke-linejoin="round"
+																												stroke-width="2"
+																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																										></path>
+																								</svg>
+																						@else
+																								<svg
+																										class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+																										fill="none"
+																										stroke="currentColor"
+																										viewBox="0 0 24 24"
+																								>
+																										<path
+																												stroke-linecap="round"
+																												stroke-linejoin="round"
+																												stroke-width="2"
+																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																										></path>
+																								</svg>
+																						@endif
+																				</a>
+																		</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+																				<a
+																						href="{{ sortRoute('description') }}"
+																						class="group flex items-center space-x-2"
+																				>
+																						<span>Product description</span>
+																						@if ($currentSort === 'description')
+																								<svg
+																										class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+																										fill="none"
+																										stroke="currentColor"
+																										viewBox="0 0 24 24"
+																								>
+																										<path
+																												stroke-linecap="round"
+																												stroke-linejoin="round"
+																												stroke-width="2"
+																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																										></path>
+																								</svg>
+																						@else
+																								<svg
+																										class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+																										fill="none"
+																										stroke="currentColor"
+																										viewBox="0 0 24 24"
+																								>
+																										<path
+																												stroke-linecap="round"
+																												stroke-linejoin="round"
+																												stroke-width="2"
+																												d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																										></path>
+																								</svg>
+																						@endif
+																				</a>
+																		</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Sub-Department</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">WMS Inventory</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Store Inventory</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Case Pack</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">SRP</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">C/BC Scheme</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">PO15 Scheme</th>
+																		<th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Discount Scheme</th>
+																		<th class="text-blue rounded-tr-3xl px-3 py-3 text-left text-xs font-bold uppercase">Freebie SKU</th>
+																</tr>
+														</thead>
+														<tbody class="divide-y divide-gray-100/60">
+																@forelse ($products as $product)
+																		<tr
+																				class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-indigo-100/60"
+																				data-product-id="{{ $product->id }}"
+																		>
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<input
+																								type="checkbox"
+																								class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+																								value="{{ $product->id }}"
+																								id="product-{{ $product->id }}"
+																						>
+																				</td>
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<div class="flex items-center">
+																								<span class="rounded-lg bg-gray-100/60 px-3 py-1 font-mono text-xs font-semibold text-gray-800">
+																										{{ $product->sku }}
+																								</span>
+																						</div>
+																				</td>
+																				<td class="max-w-xs px-3 py-3">
+																						<div class="relative inline-block w-full">
+																								<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
+																										{{ $product->description }}
+																								</div>
+																								<div
+																										class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																								>
+																										{{ $product->description }}
+																								</div>
+																						</div>
+																				</td>
+																				<td class="max-w-xs px-3 py-3">
+																						<div class="relative inline-block w-full">
+																								<div class="peer max-w-full overflow-hidden truncate text-xs font-semibold text-gray-800">
+																										{{ $product->department_code }} - {{ $product->department }}
+																								</div>
+																								<div
+																										class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																								>
+																										{{ $product->department_code }} - {{ $product->department }}
+																								</div>
+																						</div>
+																				</td>
+
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ $product->wms_allocation_per_case ?? '-' }}
+																						</span>
+																				</td>
+
+
+																				<td class="px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ $product->allocation_per_case ?? '-' }}
+																						</span>
+																				</td>
+
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ $product->case_pack ?? '-' }}
+																						</span>
+																				</td>
+
+
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								₱{{ number_format($product->srp ?? 0, 2) }}
+																						</span>
+																				</td>
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
+																						</span>
+																				</td>
+
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
+																						</span>
+																				</td>
+
+																				<td class="whitespace-nowrap px-3 py-3">
+																						<span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																								{{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
+																						</span>
+																				</td>
+																				<td class="max-w-xs px-3 py-3">
+																						<div class="relative inline-block w-full">
+																								<div class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+																										{{ !empty($product->freebie_sku) ? $product->freebie_sku : '-' }}
+																								</div>
+																								<div
+																										class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max max-w-xs -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100"
+																								>
+																										{{ !empty($product->freebie_description) ? $product->freebie_description : 'No description found' }}
+																								</div>
+																						</div>
+																				</td>
+
+																		</tr>
+																@empty
+																		<tr>
+																				<td
+																						colspan="12"
+																						class="px-6 py-8 text-center text-gray-500"
+																				>
+																						No products found.
+																						<div class="mt-4 inline-flex items-center justify-center">
+																								<select
+																										id="no-products-action"
+																										onchange="if(this.value) window.location.href=this.value"
+																										class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
+																										style="border:none; outline:none; width:auto;"
+																								>
+																										<option
+																												value=""
+																												selected
+																												disabled
+																										>Click here to . . .</option>
+																										<option value="{{ route('products.create') }}">Add New Product</option>
+																										<option value="{{ route('products.import.show') }}">Import Products</option>
+																								</select>
+																						</div>
+																				</td>
+																		</tr>
+
+																		<style>
+																				#no-products-action {
+																						-webkit-appearance: none;
+																						-moz-appearance: none;
+																						appearance: none;
+																						background: transparent;
+																						border: none;
+																						cursor: pointer;
+																						padding-right: 1em;
+																						/* optional, space for text */
+																				}
+																		</style>
+																		<script>
+																				document.getElementById('no-products-action').addEventListener('change', function() {
+																						const url = this.value;
+																						if (url) {
+																								window.location.href = url;
+																						}
+																				});
+																		</script>
+																@endforelse
+														</tbody>
+												</table>
+										</div>
+
+										<!-- Enhanced Pagination -->
+										<div class="flex items-center justify-between rounded-b-3xl bg-white px-3 py-3 backdrop-blur-sm">
+
+												<!-- Rows per page -->
+												<form
+														method="GET"
+														action="{{ route('products.index') }}"
+														class="flex items-center space-x-2"
+												>
+														<div class="flex items-center overflow-hidden rounded-lg">
+																<span class="px-3 text-sm text-gray-600">
+																		Rows
+																</span>
+																<select
+																		name="per_page"
+																		id="perPage"
+																		class="border-0 px-10 py-1 text-sm ring-0"
+																		onchange="this.form.submit()"
+																>
+																		@foreach ([10, 25, 50, 100] as $size)
+																				<option
+																						value="{{ $size }}"
+																						{{ request('per_page', 10) == $size ? 'selected' : '' }}
+																				>
+																						{{ $size }}
+																				</option>
+																		@endforeach
+																</select>
+														</div>
+												</form>
+
+
+												<!-- Laravel pagination -->
+												<div>
+														{{ $products->withPath(route('products.index'))->appends(['per_page' => request('per_page')])->onEachSide(1)->links() }}
+												</div>
+										</div>
+
+								</div>
+
+						</div>
 				</div>
-		</div>
 		</div>
 
 		<!-- Bulk Edit Modal -->

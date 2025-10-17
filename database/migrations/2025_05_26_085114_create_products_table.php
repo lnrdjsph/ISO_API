@@ -25,6 +25,7 @@ return new class extends Migration {
                 $table->bigIncrements('id');
                 $table->string('sku')->unique();
                 $table->string('description');
+                $table->string('department_code')->nullable();
                 $table->string('department')->nullable();
                 
 
