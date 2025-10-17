@@ -7,6 +7,7 @@ use App\Http\Controllers\FormsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\OracleTransferController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,8 @@ Route::middleware(['auth'])->group(function () {
         return redirect(env('FORTIFY_LOGOUT_REDIRECT', '/login'));
     })->name('logout');
 });
+
+
 
 Route::prefix('b2b2c')->middleware('auth')->group(function () {
 
@@ -158,6 +161,11 @@ Route::prefix('reports')->group(function () {
     // Route::get('/products', [ReportsController::class, 'productReport'])
     //     ->name('reports.products');
 });
+
+
+
+Route::post('/oracle/transfer', [OracleTransferController::class, 'send'])
+    ->name('oracle.transfer');
 
 // unauthorized route
 Route::view('/403', 'errors.403');
