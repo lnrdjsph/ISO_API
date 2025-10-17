@@ -137,10 +137,10 @@ XML;
      */
     private static function runRemoteShellScript(): array
     {
-        $host      = env('ORACLE_RIB_SFTP_HOST');
-        $port      = (int) env('ORACLE_RIB_SFTP_PORT', 22);
-        $username  = env('ORACLE_RIB_SFTP_USER');
-        $password  = env('ORACLE_RIB_SFTP_PASSWORD');
+        $host       = env('ORACLE_RIB_SFTP_HOST');
+        $port       = (int) env('ORACLE_RIB_SFTP_PORT', 22);
+        $username   = env('ORACLE_RIB_SFTP_USER');
+        $password   = env('ORACLE_RIB_SFTP_PASSWORD');
         $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // ✅ pulled from .env
 
         try {
@@ -152,7 +152,8 @@ XML;
                 return ['success' => false, 'message' => 'SSH authentication failed.'];
             }
 
-            $command = "bash {$scriptPath}";
+            // ✅ Run script directly using ./ instead of bash
+            $command = "./{$scriptPath}";
             Log::info("🚀 Running remote command: {$command}");
 
             $output = $ssh->exec($command);
@@ -165,4 +166,5 @@ XML;
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
+
 }

@@ -75,7 +75,7 @@
 																		<ul class="mt-3 space-y-1 text-gray-600">
 																				<li class="flex items-center gap-2">
 																						<span class="h-2 w-2 rounded-full bg-blue-500"></span>
-																						WMS Inventor
+																						WMS Inventory
 																				</li>
 																				<li class="flex items-center gap-2">
 																						<span class="h-2 w-2 rounded-full bg-blue-500"></span>
