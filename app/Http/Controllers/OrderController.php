@@ -754,64 +754,66 @@ public function archive(Request $request)
     }
 
     public function generateOrderSlip($orderId)
-{
-    // Get order info
-    $orderInfo = DB::table('orders')->where('id', $orderId)->first();
+    {
+        // Get order info
+        $orderInfo = DB::table('orders')->where('id', $orderId)->first();
 
-    // Get all items for the order
-    $items = DB::table('order_items')
-        ->where('order_id', $orderId)
-        ->where('item_type', '!=', 'FREEBIE')
-        ->orderBy('id')
-        ->get();
+        // Get all items for the order
+        $items = DB::table('order_items')
+            ->where('order_id', $orderId)
+            ->where('item_type', '!=', 'FREEBIE')
+            ->orderBy('id')
+            ->get();
 
 
-    $schemes = $items->pluck('scheme')->filter()->unique()->values();
+        $schemes = $items->pluck('scheme')->filter()->unique()->values();
 
-    $schemeDisplay = '';
-    if ($schemes->count() === 1) {
-        // Only one scheme
-        $schemeDisplay = $schemes->first();
-    } elseif ($schemes->count() > 1) {
-        // Multiple schemes → label them as Scheme 1, Scheme 2, ...
-        $schemeDisplay = $schemes->map(function ($s, $i) {
-            return 'Scheme ' . ($i + 1) . ': ' . $s;
-        })->implode(', ');
+        $schemeDisplay = '';
+        if ($schemes->count() === 1) {
+            // Only one scheme
+            $schemeDisplay = $schemes->first();
+        } elseif ($schemes->count() > 1) {
+            // Multiple schemes → label them as Scheme 1, Scheme 2, ...
+            $schemeDisplay = $schemes->map(function ($s, $i) {
+                return 'Scheme ' . ($i + 1) . ': ' . $s;
+            })->implode(', ');
+        }
+        
+        // Build rows for table
+        $rows = [];
+        foreach ($items as $item) {
+            $totalQty = $item->qty_per_pc * $item->qty_per_cs;
+
+            $rows[] = [
+                'no_of_case'      => $item->qty_per_cs,
+                'item_description'=> $item->item_description,
+                'remarks'         => $item->remarks,
+                'qty_per_case'    => $item->qty_per_pc,
+                'total_qty'       => $totalQty,
+                'punch'           => '???', // placeholder if needed
+                'sku'             => $item->sku,
+                'price_per_piece' => $item->price_per_pc,
+                'total_amount'    => $item->amount,
+                'trans_no'        => $item->store_order_no,
+                'terminal'        => '???', // you can adjust if stored
+            ];
+        }
+
+        // Generate PDF
+        $pdf = Pdf::loadView('pdf.order_slip', [
+            'rows'           => $rows,
+            'customer_name'  => $orderInfo->customer_name ?? '',
+            'date'           => optional($orderInfo->time_order)->format('F j, Y') ?? now()->format('F j, Y'),
+            'address'        => $orderInfo->address ?? '',
+            'telephone'      => $orderInfo->contact_number ?? '',
+            'payment_mode'   => $orderInfo->mode_payment ?? '',
+            'scheme'         => $schemeDisplay ?? '',
+            'cashier'        => $orderInfo->cashier ?? '',
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('order_slip.pdf');
     }
+
     
-    // Build rows for table
-    $rows = [];
-    foreach ($items as $item) {
-        $totalQty = $item->qty_per_pc * $item->qty_per_cs;
-
-        $rows[] = [
-            'no_of_case'      => $item->qty_per_cs,
-            'item_description'=> $item->item_description,
-            'remarks'         => $item->remarks,
-            'qty_per_case'    => $item->qty_per_pc,
-            'total_qty'       => $totalQty,
-            'punch'           => '???', // placeholder if needed
-            'sku'             => $item->sku,
-            'price_per_piece' => $item->price_per_pc,
-            'total_amount'    => $item->amount,
-            'trans_no'        => $item->store_order_no,
-            'terminal'        => '???', // you can adjust if stored
-        ];
-    }
-
-    // Generate PDF
-    $pdf = Pdf::loadView('pdf.order_slip', [
-        'rows'           => $rows,
-        'customer_name'  => $orderInfo->customer_name ?? '',
-        'date'           => optional($orderInfo->time_order)->format('F j, Y') ?? now()->format('F j, Y'),
-        'address'        => $orderInfo->address ?? '',
-        'telephone'      => $orderInfo->contact_number ?? '',
-        'payment_mode'   => $orderInfo->mode_payment ?? '',
-        'scheme'         => $schemeDisplay ?? '',
-        'cashier'        => $orderInfo->cashier ?? '',
-    ])->setPaper('a4', 'portrait');
-
-    return $pdf->stream('order_slip.pdf');
-}
 
 }

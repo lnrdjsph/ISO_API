@@ -61,6 +61,7 @@ class ProductController extends Controller
                     'id',
                     'sku',
                     'description',
+                    'department_code',
                     'department',
                     'wms_allocation_per_case',
                     'allocation_per_case',
@@ -986,58 +987,41 @@ class ProductController extends Controller
 
                 $formattedSku = strtoupper($sku);
 
-                // SKU Validation
-                if (!$sku) {
-                    $errors[] = "Row {$rowNumber}: SKU is required.";
+                // --- VALIDATIONS (same as your version, trimmed for brevity) ---
+                if (!$sku || !preg_match('/^\d+$/', $sku)) {
+                    $errors[] = "Row {$rowNumber}: SKU must be numeric and not empty.";
                     continue;
                 }
-                if (!preg_match('/^\d+$/', $sku)) {
-                    $errors[] = "Row {$rowNumber}: SKU must be numeric.";
-                    continue;
-                }
+
                 if (in_array($formattedSku, $seenCsvSkus)) {
                     $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
                     continue;
                 }
+
                 $seenCsvSkus[] = $formattedSku;
 
-                // Description Validation
                 if (!$description) {
                     $errors[] = "Row {$rowNumber}: Product Description is required.";
                     continue;
                 }
 
-                // Allocation Validation
-                if ($allocationPerCase === '') {
-                    $errors[] = "Row {$rowNumber}: Store Allocation is required.";
-                    continue;
-                }
-                if (!is_numeric($allocationPerCase)) {
-                    $errors[] = "Row {$rowNumber}: Store Allocation must be numeric.";
-                    continue;
-                }
-                if ($allocationPerCase <= 0) {
-                    $errors[] = "Row {$rowNumber}: Store Allocation must be greater than 0.";
+                if ($allocationPerCase === '' || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
+                    $errors[] = "Row {$rowNumber}: Store Allocation must be a number greater than 0.";
                     continue;
                 }
 
-                // Case Pack Validation
+                // Case Pack merge
                 $casePackNumbers = [];
                 if ($casePackRaw !== '') {
                     $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
                     foreach ($casePackNumbers as $num) {
-                        if (!is_numeric($num)) {
-                            $errors[] = "Row {$rowNumber}: Case Pack value '{$num}' must be numeric.";
-                            continue 2;
-                        }
-                        if ($num <= 0) {
-                            $errors[] = "Row {$rowNumber}: Case Pack value '{$num}' must be greater than 0.";
+                        if (!is_numeric($num) || $num <= 0) {
+                            $errors[] = "Row {$rowNumber}: Invalid Case Pack value '{$num}'.";
                             continue 2;
                         }
                     }
                 }
 
-                // Merge Case Pack with DB
                 if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
                     $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
                     $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
@@ -1046,62 +1030,52 @@ class ProductController extends Controller
                     $casePack = implode(' | ', $casePackNumbers);
                 }
 
-                // SRP Validation
+                // SRP validation
                 $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-                if ($srpRaw === '') {
-                    $errors[] = "Row {$rowNumber}: SRP is required.";
-                    continue;
-                }
-                if ($srp === '' || !is_numeric($srp)) {
-                    $errors[] = "Row {$rowNumber}: SRP must be numeric.";
-                    continue;
-                }
-                if ($srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be greater than 0.";
+                if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
+                    $errors[] = "Row {$rowNumber}: SRP must be numeric and greater than 0.";
                     continue;
                 }
 
-                // CBC Scheme Validation
+                // Scheme & freebie validation (same)
                 if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
                     $errors[] = "Row {$rowNumber}: CBC Scheme must be in 'number+number' format.";
                     continue;
                 }
 
-                // PO15 Scheme Validation
                 if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
                     $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format.";
                     continue;
                 }
 
-                // Discount Validation
                 if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
                     $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
                     continue;
                 }
 
-                // Freebie SKU Validation
                 $freebieSku = trim($freebieSkuRaw);
                 if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
                     $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/', '|', or spaces.";
                     continue;
                 }
 
-
+                // ✅ Get department CODE and NAME from Oracle
                 $oracleData = DB::connection('oracle_rms')->selectOne("
-                    SELECT deps.dept_name AS department
+                    SELECT 
+                        item_master.dept AS department_code,
+                        deps.dept_name AS department_name
                     FROM item_master
                     LEFT JOIN deps ON deps.dept = item_master.dept
                     WHERE item_master.item_parent = ?
                     AND ROWNUM = 1
                 ", [$sku]);
 
-
-
-                // Build Record
+                // Build record
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
-                    'department' => $oracleData->department ?? null,
+                    'department_code' => $oracleData->department_code ?? null, // ✅ save department code
+                    'department' => $oracleData->department_name ?? null,       // ✅ save department name
                     'allocation_per_case' => intval($allocationPerCase),
                     'case_pack' => $casePack !== '' ? $casePack : null,
                     'srp' => floatval($srp),
@@ -1120,11 +1094,12 @@ class ProductController extends Controller
                 }
             }
 
-            // Upsert all valid data
+            // ✅ Upsert all valid data
             $allData = array_merge($insertData, $updateData);
             if (!empty($allData)) {
                 DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
+                    'department_code',
                     'department',
                     'allocation_per_case',
                     'case_pack',
@@ -1144,6 +1119,7 @@ class ProductController extends Controller
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
+
 
 
 
