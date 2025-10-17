@@ -12,26 +12,28 @@ class OracleRibXMLService
     public static function sendTransfer(array $data): array
     {
         try {
+            // 1️⃣ Generate XML
             $filePath = self::generateXML($data);
             $fileName = basename($filePath);
+            Log::info("📝 [XML] Generated multi-detail file: {$fileName}");
 
-            $uploadSuccess = self::uploadToSFTP($filePath, $fileName);
-
-            if (!$uploadSuccess) {
-                Log::error("❌ Oracle upload failed: {$fileName}");
+            // 2️⃣ Upload to Oracle via SFTP
+            if (!self::uploadToSFTP($filePath, $fileName)) {
+                Log::error("❌ [SFTP] Upload failed for: {$fileName}");
                 return [
                     'success' => false,
-                    'message' => 'Failed to upload XML to Oracle SFTP.',
+                    'message' => "Failed to upload XML to Oracle SFTP.",
                     'file'    => $fileName
                 ];
             }
 
-            Log::info("✅ Oracle upload success: {$fileName}");
+            Log::info("✅ [SFTP] Upload successful: {$fileName}");
 
-            // ✅ Run remote Oracle RIB script
+            // 3️⃣ Execute Oracle RIB script remotely
             $scriptResult = self::runRemoteShellScript();
 
             if (!$scriptResult['success']) {
+                Log::error("❌ [SSH] Script failed: {$scriptResult['message']}");
                 return [
                     'success' => false,
                     'message' => 'File uploaded but script execution failed: ' . $scriptResult['message'],
@@ -46,7 +48,7 @@ class OracleRibXMLService
             ];
 
         } catch (Exception $e) {
-            Log::error("🔥 OracleRibXMLService Error: " . $e->getMessage());
+            Log::error("🔥 [OracleRibXMLService] " . $e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Integration failed: ' . $e->getMessage()
@@ -55,7 +57,7 @@ class OracleRibXMLService
     }
 
     /**
-     * Generate Oracle XTsfDesc XML (supports multiple XTsfDtl)
+     * 🧾 Generate Oracle XTsfDesc XML (supports multiple XTsfDtl nodes)
      */
     private static function generateXML(array $data): string
     {
@@ -79,16 +81,12 @@ class OracleRibXMLService
             $xmlBody .= "        <{$field}>{$value}</{$field}>\n";
         }
 
-        if (!empty($data['details']) && is_array($data['details'])) {
+        if (!empty($data['details'])) {
             foreach ($data['details'] as $detail) {
-                $item           = htmlspecialchars($detail['item'] ?? '', ENT_XML1, 'UTF-8');
-                $tsf_qty        = htmlspecialchars($detail['tsf_qty'] ?? '', ENT_XML1, 'UTF-8');
-                $supp_pack_size = htmlspecialchars($detail['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8');
-
                 $xmlBody .= "    <XTsfDtl>\n";
-                $xmlBody .= "        <item>{$item}</item>\n";
-                $xmlBody .= "        <tsf_qty>{$tsf_qty}</tsf_qty>\n";
-                $xmlBody .= "        <supp_pack_size>{$supp_pack_size}</supp_pack_size>\n";
+                $xmlBody .= "        <item>" . htmlspecialchars($detail['item'] ?? '', ENT_XML1, 'UTF-8') . "</item>\n";
+                $xmlBody .= "        <tsf_qty>" . htmlspecialchars($detail['tsf_qty'] ?? '', ENT_XML1, 'UTF-8') . "</tsf_qty>\n";
+                $xmlBody .= "        <supp_pack_size>" . htmlspecialchars($detail['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8') . "</supp_pack_size>\n";
                 $xmlBody .= "    </XTsfDtl>\n";
             }
         }
@@ -102,13 +100,11 @@ $xmlBody</XTsfDesc>
 XML;
 
         file_put_contents($filePath, $xmlString);
-        Log::info("📝 XML generated (multi-detail RIB format): {$filePath}");
-
         return $filePath;
     }
 
     /**
-     * Upload XML file to Oracle RIB via SFTP
+     * 📡 Upload XML to Oracle inbound directory via SFTP
      */
     private static function uploadToSFTP(string $localPath, string $fileName): bool
     {
@@ -116,24 +112,24 @@ XML;
         $port      = (int) env('ORACLE_RIB_SFTP_PORT', 22);
         $username  = env('ORACLE_RIB_SFTP_USER');
         $password  = env('ORACLE_RIB_SFTP_PASSWORD');
-        $remoteDir = env('ORACLE_RIB_INBOUND_DIR'); // ✅ Now configurable
+        $remoteDir = rtrim(env('ORACLE_RIB_INBOUND_DIR'), '/');
 
         $sftp = new SFTP($host, $port);
-        Log::info("🔌 Connecting to Oracle SFTP: {$host}:{$port}");
+        Log::info("🔌 [SFTP] Connecting to {$host}:{$port}");
 
         if (!$sftp->login($username, $password)) {
-            Log::error('❌ SFTP login failed. Invalid credentials or timeout.');
+            Log::error('❌ [SFTP] Login failed (invalid credentials or timeout)');
             return false;
         }
 
-        $remotePath = rtrim($remoteDir, '/') . '/' . $fileName;
-        Log::info("⬆️ Uploading {$fileName} to: {$remotePath}");
+        $remotePath = "{$remoteDir}/{$fileName}";
+        Log::info("⬆️ [SFTP] Uploading file to: {$remotePath}");
 
         return $sftp->put($remotePath, file_get_contents($localPath));
     }
 
     /**
-     * ✅ Run mg_xtsf_sub.sh remotely via SSH after upload
+     * ⚙️ Run mg_xtsf_sub.sh remotely via SSH and validate success from output
      */
     private static function runRemoteShellScript(): array
     {
@@ -141,30 +137,42 @@ XML;
         $port       = (int) env('ORACLE_RIB_SFTP_PORT', 22);
         $username   = env('ORACLE_RIB_SFTP_USER');
         $password   = env('ORACLE_RIB_SFTP_PASSWORD');
-        $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // ✅ pulled from .env
+        $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // e.g. /usr01/app/oracle/.../mg_xtsf_sub.sh
 
         try {
-            Log::info("🛰 Connecting to Oracle via SSH to execute script...");
+            Log::info("🛰 [SSH] Connecting to {$host} to execute {$scriptPath}");
 
             $ssh = new SSH2($host, $port);
             if (!$ssh->login($username, $password)) {
-                Log::error("❌ SSH login failed on {$host}");
+                Log::error("❌ [SSH] Authentication failed on {$host}");
                 return ['success' => false, 'message' => 'SSH authentication failed.'];
             }
 
-            // ✅ Run script directly using ./ instead of bash
-            $command = "./{$scriptPath}";
-            Log::info("🚀 Running remote command: {$command}");
+            // Run the remote Oracle RIB script
+            $command = (str_starts_with($scriptPath, '/')) ? $scriptPath : "./{$scriptPath}";
+            Log::info("🚀 [SSH] Executing: {$command}");
 
             $output = $ssh->exec($command);
-            Log::info("📜 Script output: " . trim($output));
+            $trimmedOutput = trim($output);
+            Log::info("📜 [SSH OUTPUT] {$trimmedOutput}");
 
-            return ['success' => true, 'message' => 'Remote script executed successfully.'];
+            // ✅ Check success from script logs
+            if (
+                str_contains($trimmedOutput, 'Publishing Complete') ||
+                str_contains($trimmedOutput, 'File moved to PROCESSED') ||
+                str_contains($trimmedOutput, 'Done.')
+            ) {
+                return ['success' => true, 'message' => 'Remote script executed successfully and Oracle confirmed processing.'];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Script executed but no Oracle completion confirmation found.'
+            ];
 
         } catch (Exception $e) {
-            Log::error("🔥 Remote script execution error: " . $e->getMessage());
+            Log::error("🔥 [SSH ERROR] " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
-
 }
