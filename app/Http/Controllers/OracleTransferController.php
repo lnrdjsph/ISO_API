@@ -13,46 +13,22 @@ class OracleTransferController extends Controller
 {
     public function send(Request $request)
     {
-        $request->validate([
-            'sof_id' => 'required|string'
-        ]);
+        $request->validate(['sof_id' => 'required|string']);
 
         try {
-            // ✅ Step 1: Get order header
             $order = Order::where('sof_id', $request->sof_id)->firstOrFail();
 
-            // ✅ Step 2: Count total items and how many already have store_order_no
-            $totalItems = DB::table('order_items')
-                ->where('order_id', $order->id)
-                ->count();
-
-            $itemsWithSO = DB::table('order_items')
-                ->where('order_id', $order->id)
-                ->whereNotNull('store_order_no')
-                ->count();
-
-            // ✅ Stop if all items already have store_order_no
-            if ($totalItems > 0 && $totalItems === $itemsWithSO) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'All items in this order already have a Store Order Number. No processing needed.'
-                ], 400);
-            }
-
-            // ✅ Step 3: Get only items without store_order_no
             $items = DB::table('order_items')
                 ->where('order_id', $order->id)
-                ->whereNull('store_order_no')
-                ->get();
+                ->where(function ($q) {
+                    $q->whereNull('store_order_no')->orWhere('store_order_no', '');
+                })->get();
 
             if ($items->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No items available for transfer.'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'No items to process'], 400);
             }
 
-            // ✅ Step 4: Prepare header data
+            // Build transfer data
             $data = [
                 'from_loc_type' => 'S',
                 'from_loc' => '7000',
@@ -65,69 +41,46 @@ class OracleTransferController extends Controller
                 'status' => 'A',
                 'user_id' => 'External',
                 'comment_desc' => 'Generated from SOF# ' . $order->sof_id,
+                'details' => $items->map(fn($i) => [
+                    'item' => $i->sku,
+                    'tsf_qty' => (string)$i->total_qty,
+                    'supp_pack_size' => (string)$i->qty_per_pc,
+                ])->toArray()
             ];
 
-            // ✅ Step 5: Build item details
-            $data['details'] = $items->map(function ($item) {
-                return [
-                    'item' => $item->sku,
-                    'tsf_qty' => (string) $item->total_qty,
-                    'supp_pack_size' => (string) $item->qty_per_pc,
-                ];
-            })->toArray();
+            // Generate next TSF number
+            $latest = DB::connection('oracle_rms')->table('tsfhead')
+                ->select('tsf_no')->whereRaw("REGEXP_LIKE(tsf_no,'^[0-9]+$')")
+                ->orderByRaw('TO_NUMBER(tsf_no) DESC')->first();
 
-            // ✅ Step 6: Get latest TSF number from Oracle
-            $latestTsf = DB::connection('oracle_rms')
-                ->table('tsfhead')
-                ->select('tsf_no')
-                ->whereRaw("REGEXP_LIKE(tsf_no, '^[0-9]+$')")
-                ->orderByRaw('TO_NUMBER(tsf_no) DESC')
-                ->first();
+            $nextTsf = $latest ? str_pad((int)$latest->tsf_no + 1, 10, '0', STR_PAD_LEFT) : '3006000001';
+            $data['tsf_no'] = $nextTsf;
 
-            $nextTsfNo = $latestTsf && isset($latestTsf->tsf_no)
-                ? (string)((int)$latestTsf->tsf_no + 1)
-                : '3006000001';
-
-            $nextTsfNo = str_pad($nextTsfNo, 10, '0', STR_PAD_LEFT);
-            $data['tsf_no'] = $nextTsfNo;
-
-            // ✅ Step 7: Send XML to Oracle
+            // Send XML and validate processing
             $response = OracleRibXMLService::sendTransfer($data);
 
-            // ✅ Step 8: Update only items sent
             if ($response['success']) {
-                $affected = DB::table('order_items')
-                    ->where(function ($q) use ($order) {
-                        $q->where('order_id', $order->id)
-                        ->orWhere('sof_id', $order->sof_id);
-                    })
-                    ->where(function ($q) {
-                        $q->whereNull('store_order_no')
-                        ->orWhere('store_order_no', '');
-                    })
-                    ->update(['store_order_no' => $nextTsfNo]);
+                DB::table('order_items')
+                    ->where('order_id', $order->id)
+                    ->whereNull('store_order_no')
+                    ->orWhere('store_order_no', '')
+                    ->update(['store_order_no' => $nextTsf]);
 
-                Log::info("✅ Updated {$affected} order_items rows with TSF#: {$nextTsfNo}");
+                Log::info("✅ RIB processed successfully — Updated TSF#: {$nextTsf}");
             } else {
-                Log::warning("⚠️ Oracle RIB sendTransfer failed, skipping update.", $response);
+                Log::warning("⚠️ RIB did not confirm processing, skipping store_order_no update.");
             }
 
-
-            // ✅ Step 9: Return structured response
             return response()->json([
-                'success' => true,
+                'success' => $response['success'],
                 'sof_id' => $order->sof_id,
-                'generated_tsf_no' => $nextTsfNo,
-                'header' => $data,
-                'details_sent' => $data['details'],
+                'generated_tsf_no' => $nextTsf,
                 'rib_response' => $response
             ]);
 
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error processing order: ' . $e->getMessage()
-            ], 500);
+            Log::error("🔥 OracleTransferController: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

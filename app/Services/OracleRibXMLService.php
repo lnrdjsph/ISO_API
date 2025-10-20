@@ -15,58 +15,47 @@ class OracleRibXMLService
             // 1️⃣ Generate XML
             $filePath = self::generateXML($data);
             $fileName = basename($filePath);
-            Log::info("📝 [XML] Generated multi-detail file: {$fileName}");
+            Log::info("📝 [XML] Generated file: {$fileName}");
 
-            // 2️⃣ Upload to Oracle via SFTP
+            // 2️⃣ Upload via SFTP
             if (!self::uploadToSFTP($filePath, $fileName)) {
-                Log::error("❌ [SFTP] Upload failed for: {$fileName}");
-                return [
-                    'success' => false,
-                    'message' => "Failed to upload XML to Oracle SFTP.",
-                    'file'    => $fileName
-                ];
+                return ['success' => false, 'message' => "SFTP upload failed: {$fileName}"];
             }
 
             Log::info("✅ [SFTP] Upload successful: {$fileName}");
 
-            // 3️⃣ Execute Oracle RIB script remotely
-            $scriptResult = self::runRemoteShellScript();
+            // 3️⃣ Run RIB script
+            $scriptResult = self::runRemoteShellScript($fileName);
 
+            // 4️⃣ If failed, remove uploaded file
             if (!$scriptResult['success']) {
-                Log::error("❌ [SSH] Script failed: {$scriptResult['message']}");
+                Log::warning("⚠️ [RIB] Script failed — removing uploaded XML: {$fileName}");
+                self::deleteFromSFTP($fileName);
                 return [
                     'success' => false,
-                    'message' => 'File uploaded but script execution failed: ' . $scriptResult['message'],
-                    'file'    => $fileName
+                    'message' => 'File uploaded but RIB processing failed. XML removed from inbound.',
+                    'details' => $scriptResult
                 ];
             }
 
             return [
                 'success' => true,
-                'message' => 'XML sent and Oracle RIB script executed successfully.',
-                'file'    => $fileName
+                'message' => 'XML successfully processed by Oracle RIB.',
+                'details' => $scriptResult
             ];
 
         } catch (Exception $e) {
             Log::error("🔥 [OracleRibXMLService] " . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Integration failed: ' . $e->getMessage()
-            ];
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * 🧾 Generate Oracle XTsfDesc XML (supports multiple XTsfDtl nodes)
-     */
+    /** 🧾 Generate Oracle XTsfDesc XML */
     private static function generateXML(array $data): string
     {
         $fileName = 'XTsfDesc_' . $data['tsf_no'] . '.xml';
         $filePath = storage_path("app/oracle/{$fileName}");
-
-        if (!is_dir(dirname($filePath))) {
-            mkdir(dirname($filePath), 0775, true);
-        }
+        if (!is_dir(dirname($filePath))) mkdir(dirname($filePath), 0775, true);
 
         $fields = [
             'tsf_no', 'from_loc_type', 'from_loc',
@@ -76,22 +65,20 @@ class OracleRibXMLService
         ];
 
         $xmlBody = '';
-        foreach ($fields as $field) {
-            $value = htmlspecialchars($data[$field] ?? '', ENT_XML1, 'UTF-8');
-            $xmlBody .= "        <{$field}>{$value}</{$field}>\n";
+        foreach ($fields as $f) {
+            $v = htmlspecialchars($data[$f] ?? '', ENT_XML1, 'UTF-8');
+            $xmlBody .= "        <{$f}>{$v}</{$f}>\n";
         }
 
-        if (!empty($data['details'])) {
-            foreach ($data['details'] as $detail) {
-                $xmlBody .= "    <XTsfDtl>\n";
-                $xmlBody .= "        <item>" . htmlspecialchars($detail['item'] ?? '', ENT_XML1, 'UTF-8') . "</item>\n";
-                $xmlBody .= "        <tsf_qty>" . htmlspecialchars($detail['tsf_qty'] ?? '', ENT_XML1, 'UTF-8') . "</tsf_qty>\n";
-                $xmlBody .= "        <supp_pack_size>" . htmlspecialchars($detail['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8') . "</supp_pack_size>\n";
-                $xmlBody .= "    </XTsfDtl>\n";
-            }
+        foreach ($data['details'] ?? [] as $d) {
+            $xmlBody .= "    <XTsfDtl>\n";
+            $xmlBody .= "        <item>" . htmlspecialchars($d['item'] ?? '', ENT_XML1, 'UTF-8') . "</item>\n";
+            $xmlBody .= "        <tsf_qty>" . htmlspecialchars($d['tsf_qty'] ?? '', ENT_XML1, 'UTF-8') . "</tsf_qty>\n";
+            $xmlBody .= "        <supp_pack_size>" . htmlspecialchars($d['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8') . "</supp_pack_size>\n";
+            $xmlBody .= "    </XTsfDtl>\n";
         }
 
-        $xmlString = <<<XML
+        $xml = <<<XML
 <XTsfDesc
    xmlns="http://www.oracle.com/retail/integration/base/bo/XTsfDesc/v1"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -99,109 +86,103 @@ class OracleRibXMLService
 $xmlBody</XTsfDesc>
 XML;
 
-        file_put_contents($filePath, $xmlString);
+        file_put_contents($filePath, $xml);
         return $filePath;
     }
 
-    /**
-     * 📡 Upload XML to Oracle inbound directory via SFTP
-     */
+    /** 📡 Upload XML to Oracle inbound directory via SFTP */
     private static function uploadToSFTP(string $localPath, string $fileName): bool
     {
-        $host      = env('ORACLE_RIB_SFTP_HOST');
-        $port      = (int) env('ORACLE_RIB_SFTP_PORT', 22);
-        $username  = env('ORACLE_RIB_SFTP_USER');
-        $password  = env('ORACLE_RIB_SFTP_PASSWORD');
+        $sftp = self::connectSFTP();
+        if (!$sftp) return false;
+
         $remoteDir = rtrim(env('ORACLE_RIB_INBOUND_DIR'), '/');
+        $success = $sftp->put("{$remoteDir}/{$fileName}", file_get_contents($localPath));
+
+        $sftp->disconnect();
+        return $success;
+    }
+
+    /** 🧹 Delete uploaded XML if RIB processing fails */
+    private static function deleteFromSFTP(string $fileName): void
+    {
+        try {
+            $sftp = self::connectSFTP();
+            if ($sftp) {
+                $remoteDir = rtrim(env('ORACLE_RIB_INBOUND_DIR'), '/');
+                $remoteFile = "{$remoteDir}/{$fileName}";
+                if ($sftp->file_exists($remoteFile)) {
+                    $sftp->delete($remoteFile);
+                    Log::info("🧹 [SFTP] Deleted unprocessed XML: {$remoteFile}");
+                } else {
+                    Log::warning("⚠️ [SFTP] File not found for deletion: {$remoteFile}");
+                }
+                $sftp->disconnect();
+            }
+        } catch (Exception $e) {
+            Log::error("🔥 [SFTP DELETE ERROR] " . $e->getMessage());
+        }
+    }
+
+    /** 🪜 Helper for SFTP login */
+    private static function connectSFTP(): ?SFTP
+    {
+        $host = env('ORACLE_RIB_SFTP_HOST');
+        $port = (int) env('ORACLE_RIB_SFTP_PORT', 22);
+        $user = env('ORACLE_RIB_SFTP_USER');
+        $pass = env('ORACLE_RIB_SFTP_PASSWORD');
 
         $sftp = new SFTP($host, $port);
-        Log::info("🔌 [SFTP] Connecting to {$host}:{$port}");
-
-        if (!$sftp->login($username, $password)) {
-            Log::error('❌ [SFTP] Login failed (invalid credentials or timeout)');
-            return false;
+        if (!$sftp->login($user, $pass)) {
+            Log::error("❌ [SFTP] Login failed to {$host}:{$port}");
+            return null;
         }
-
-        $remotePath = "{$remoteDir}/{$fileName}";
-        Log::info("⬆️ [SFTP] Uploading file to: {$remotePath}");
-
-        return $sftp->put($remotePath, file_get_contents($localPath));
+        return $sftp;
     }
 
-    /**
-     * ⚙️ Run mg_xtsf_sub.sh remotely via SSH and validate success from output
-     */
-    private static function runRemoteShellScript(): array
+    /** ⚙️ Run RIB script and check logs for success indicators */
+    private static function runRemoteShellScript(string $fileName): array
     {
-        $host       = env('ORACLE_RIB_SFTP_HOST');
-        $port       = (int) env('ORACLE_RIB_SFTP_PORT', 22);
-        $username   = env('ORACLE_RIB_SFTP_USER');
-        $password   = env('ORACLE_RIB_SFTP_PASSWORD');
-        $basePath   = env('ORACLE_RIB_BASE_PATH');   // e.g. /usr01/app/oracle/product/rib/.../OFININTF
-        $scriptPath = env('ORACLE_RIB_SCRIPT_PATH'); // e.g. /usr01/app/oracle/.../scripts/mg_xtsf_sub.sh
+        set_time_limit(600);
 
-        try {
-            Log::info("🛰 [SSH] Connecting to {$host} to execute {$scriptPath}");
+        $host = env('ORACLE_RIB_SFTP_HOST');
+        $port = (int) env('ORACLE_RIB_SFTP_PORT', 22);
+        $user = env('ORACLE_RIB_SFTP_USER');
+        $pass = env('ORACLE_RIB_SFTP_PASSWORD');
+        $script = env('ORACLE_RIB_SCRIPT_PATH');
+        $logDir = rtrim(env('ORACLE_RIB_LOG_DIR'), '/');
+        $logFile = sprintf('%s/mg_xtsf_sub_%s.log', $logDir, date('dM') . strtoupper(date('Y')));
 
-            $ssh = new SSH2($host, $port);
-            if (!$ssh->login($username, $password)) {
-                Log::error("❌ [SSH] Authentication failed on {$host}");
-                return ['success' => false, 'message' => 'SSH authentication failed.'];
-            }
+        $ssh = new SSH2($host, $port);
+        if (!$ssh->login($user, $pass)) {
+            return ['success' => false, 'message' => 'SSH authentication failed'];
+        }
 
-            // ✅ Always ensure the script has execute permissions
-            $ssh->exec("chmod +x {$scriptPath}");
+        $ssh->setTimeout(300);
+        $ssh->exec("chmod +x {$script}");
+        $ssh->exec("ksh {$script}");
+        Log::info("🚀 [SSH] Script Executed");
 
-            // ✅ Go to the scripts directory, then execute using ./ syntax
-            $command = "cd {$basePath}/scripts && ./mg_xtsf_sub.sh";
-            Log::info("🚀 [SSH] Executing: {$command}");
+        $maxWait = 300; 
+        $interval = 10; 
+        $elapsed = 0;
+        $successIndicators = ['PROCESSED', 'Publishing Complete', 'Done.', 'STOP'];
 
-            $output = trim($ssh->exec($command));
-            Log::info("📜 [SSH OUTPUT] Initial output: " . substr($output, 0, 500));
+        while ($elapsed < $maxWait) {
+            sleep($interval);
+            $elapsed += $interval;
 
-            // ✅ Known Oracle RIB success markers
-            $successIndicators = [
-                'Publishing Complete',
-                'File moved to PROCESSED',
-                'STOP',
-                'Done.',
-                'XTsf_sub_1 Subscriber Status : UP and Running'
-            ];
-
-            // 🕒 Retry for delayed success markers (up to 5 retries)
-            $maxRetries = 5;
-            for ($i = 0; $i < $maxRetries; $i++) {
-                foreach ($successIndicators as $keyword) {
-                    if (stripos($output, $keyword) !== false) {
-                        Log::info("✅ [SSH] Oracle success detected: {$keyword}");
-                        return [
-                            'success' => true,
-                            'message' => "Oracle RIB confirmed success ({$keyword})."
-                        ];
+            $tail = trim($ssh->exec("tail -n 100 {$logFile}"));
+            if ($tail) {
+                foreach ($successIndicators as $kw) {
+                    if (stripos($tail, $kw) !== false) {
+                        Log::info("✅ [RIB SUCCESS] {$kw} found in the Logfile. ");
+                        return ['success' => true, 'message' => "RIB confirmed processing after {$elapsed}s"];
                     }
                 }
-
-                sleep(2);
-                $newOutput = trim($ssh->read());
-                if (!empty($newOutput)) {
-                    $output .= "\n" . $newOutput;
-                    Log::debug("🔁 [SSH] Additional output: " . substr($newOutput, 0, 300));
-                }
             }
-
-            // ❌ No Oracle confirmation found after retries
-            Log::error("❌ [SSH] Script executed but no Oracle completion confirmation found.");
-            return [
-                'success' => false,
-                'message' => 'Script executed but no Oracle completion confirmation found.'
-            ];
-
-        } catch (Exception $e) {
-            Log::error("🔥 [SSH ERROR] " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
         }
+
+        return ['success' => false, 'message' => "Timeout: no success message found after {$maxWait}s"];
     }
-
-
-
 }
