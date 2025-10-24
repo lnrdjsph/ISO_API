@@ -20,7 +20,7 @@ use App\Http\Controllers\OracleTransferController;
 |
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard'); // protected home
 
     Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard.view');
@@ -170,3 +170,7 @@ Route::post('/oracle/transfer', [OracleTransferController::class, 'send'])
 // unauthorized route
 Route::view('/403', 'errors.403');
 
+
+Route::middleware(['auth', 'session.expired'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});

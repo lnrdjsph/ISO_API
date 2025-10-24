@@ -4,7 +4,7 @@ namespace App\Models\ISO_B2B;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Http\Controllers\ProductController;
+// use App\Http\Controllers\ProductController;
 use App\Models\User;
 
 class Order extends Model
@@ -17,6 +17,7 @@ class Order extends Model
     protected $fillable = [
         'sof_id',
         'channel_order',
+        'warehouse',
         'time_order',
         'payment_center',
         'mode_payment',
@@ -47,16 +48,16 @@ class Order extends Model
 public function approver()
 {
     $map = [
-        'f2'  => 1,
-        's10' => 1,
-        's17' => 1,
-        's19' => 1,
-        'f18' => 1,
-        'f19' => 1,
-        's8'  => 1,
-        'h9'  => 1,
-        'h10' => 1,
-        'h8'  => 2,
+        '4002'  => 1,
+        '2010' => 1,
+        '2017' => 1,
+        '2019' => 1,
+        '3018' => 1,
+        '3019' => 1,
+        '2008'  => 1,
+        '6009'  => 1,
+        '6010' => 1,
+        '6012'  => 2,
     ];
 
     $storeCode = strtolower($this->requesting_store);

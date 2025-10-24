@@ -33,7 +33,7 @@ return new class extends Migration {
                 'completed',
                 'cancelled',
                 'restored',
-                'TSF GENERATED'
+                'updated'
             ])->nullable();
 
             $table->text('note')->nullable();

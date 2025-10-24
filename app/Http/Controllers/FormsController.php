@@ -72,6 +72,7 @@ class FormsController extends Controller
     public function sof_submit(Request $request){
         $validated = $request->validate([
             'channel_order' => 'required|string',
+            'warehouse' => 'required|string',  //added 23-10-2025
             'time_order' => 'required',
             'payment_center' => 'required|string',
             'mode_payment' => 'required|string',
@@ -161,6 +162,7 @@ class FormsController extends Controller
             $order = Order::create([
                 'sof_id' => $nextSofId, // <-- add this
                 'channel_order' => $validated['channel_order'],
+                'warehouse' => $validated['warehouse'], //added 23-10-2025
                 'time_order' => $validated['time_order'],
                 'payment_center' => $validated['payment_center'],
                 'mode_payment' => $validated['mode_payment'],
