@@ -21,7 +21,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Biboy',
                 'password' => Hash::make('BIBOY'),
                 'role' => 'super admin',
-                'user_location' => 'f2', 
+                'user_location' => '4002', 
             ]
         );
 
@@ -31,7 +31,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Gene',
                 'password' => Hash::make('GENE'),
                 'role' => 'super admin',
-                'user_location' => 'h8', 
+                'user_location' => '6012', 
             ]
         );
         User::updateOrCreate(
@@ -40,7 +40,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Akehide',
                 'password' => Hash::make('AKEHIDE'),
                 'role' => 'super admin',
-                'user_location' => 'f2', 
+                'user_location' => '4002', 
             ]
         );
         User::updateOrCreate(
@@ -49,7 +49,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Store Personnel',
                 'password' => Hash::make('test1'),
                 'role' => 'store personnel',
-                'user_location' => 'f2', 
+                'user_location' => '4002', 
             ]
         );
         User::updateOrCreate(

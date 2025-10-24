@@ -912,7 +912,7 @@ class ProductController extends Controller
     {
         try {
             // 1. Get user's location
-            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $userLocation = strtolower(auth()->user()->user_location);
             $tableName = "products_{$userLocation}";
 
             // 2. Check if table exists
@@ -1156,7 +1156,7 @@ class ProductController extends Controller
 
         try {
             // 1. Determine location-specific products table
-            $userLocation = strtolower(auth()->user()->user_location); // e.g. 'f2'
+            $userLocation = strtolower(auth()->user()->user_location); 
             $tableName = "products_{$userLocation}";
 
             // Optional: check if table exists before proceeding

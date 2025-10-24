@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     protected array $storeCodes = [
-        'f2',
-        's10',
-        's17',
-        's19',
-        'f18',
-        'f19',
-        's8',
-        'h8',
-        'h9',
-        'h10',
+        '4002',
+        '2010',
+        '2017',
+        '2019',
+        '3018',
+        '3019',
+        '2008',
+        '6012',
+        '6009',
+        '6010',
     ];
 
     public function up()

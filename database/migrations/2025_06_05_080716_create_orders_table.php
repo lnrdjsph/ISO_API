@@ -18,6 +18,7 @@ class CreateOrdersTable extends Migration
             $table->string('contact_number')->nullable(); // ✅ Added
 
             $table->string('channel_order');
+            $table->string('warehouse')->nullable();
             $table->string('time_order'); // Using string for flexibility
             $table->string('payment_center')->nullable();
             $table->string('mode_payment')->nullable();

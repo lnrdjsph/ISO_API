@@ -1,0 +1,37 @@
+cells:
+  - kind: 2
+    value: "SELECT \r
+
+      *\r
+
+      -- wh, wh_name, primary_vwh \r
+
+      FROM WH \r
+
+      WHERE wh LIKE '%01' \r
+
+      ;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT store_name3, store_name10, store_name, store\r
+
+      FROM STORE\r
+
+      WHERE store_name10 IN
+      ('F2','S10','S17','S19','F18','F19','S8','H8','H9','H10')\r
+
+      \   OR store_name3 IN
+      ('F2','S10','S17','S19','F18','F19','S8','H8','H9','H10');"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT *\r
+
+      FROM STORE \r
+
+      WHERE STORE_NAME LIKE '%BAY%' \r
+
+      ;"
+    languageId: oracle-sql
+  - kind: 2
+    value: ""
+    languageId: oracle-sql

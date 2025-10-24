@@ -15,16 +15,16 @@ use Illuminate\Support\Facades\DB;
 class ReportsController extends Controller
 {
     private array $allStoreLocations = [
-        'f2'  => 'F2 - Metro Wholesalemart Colon',
-        's10' => 'S10 - Metro Maasin',
-        's17' => 'S17 - Metro Tacloban',
-        's19' => 'S19 - Metro Bay-Bay',
-        'f18' => 'F18 - Metro Alang-Alang',
-        'f19' => 'F19 - Metro Hilongos',
-        's8'  => 'S8 - Metro Toledo',
-        'h8'  => 'H8 - Super Metro Antipolo',
-        'h9'  => 'H9 - Super Metro Carcar',
-        'h10' => 'H10 - Super Metro Bogo',
+        '4002'  =>  'F2 - Metro Wholesalemart Colon',
+        '2010'  =>  'S10 - Metro Maasin',
+        '2017'  =>  'S17 - Metro Tacloban',
+        '2019'   =>  'S19 - Metro Bay-Bay',
+        '3018'   =>  'F18 - Metro Alang-Alang',
+        '3019'   =>  'F19 - Metro Hilongos',
+        '2008'    =>  'S8 - Metro Toledo',
+        '6012'    =>  'H8 - Super Metro Antipolo',
+        '6009'    =>  'H9 - Super Metro Carcar',
+        '6010'   =>  'H10 - Super Metro Bogo',
     ];
 
     /**
@@ -664,8 +664,8 @@ public function ordersReport(Request $request)
 
     // 🗺️ Region -> stores mapping
     $storeMapping = [
-        'lz' => ['h8'],
-        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'],
+        'lz' => ['6012'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas = everything EXCEPT Antipolo
     ];
 
     $allowedStatuses = null;
@@ -756,16 +756,16 @@ public function ordersReport(Request $request)
     $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
     $allStoreLocations = [
-        'f2'  => 'F2 - Metro Wholesalemart Colon',
-        's10' => 'S10 - Metro Maasin',
-        's17' => 'S17 - Metro Tacloban',
-        's19' => 'S19 - Metro Bay-Bay',
-        'f18' => 'F18 - Metro Alang-Alang',
-        'f19' => 'F19 - Metro Hilongos',
-        's8'  => 'S8 - Metro Toledo',
-        'h8'  => 'H8 - Super Metro Antipolo',
-        'h9'  => 'H9 - Super Metro Carcar',
-        'h10' => 'H10 - Super Metro Bogo',
+        '4002'  =>  'F2 - Metro Wholesalemart Colon',
+        '2010'  =>  'S10 - Metro Maasin',
+        '2017'  =>  'S17 - Metro Tacloban',
+        '2019'   =>  'S19 - Metro Bay-Bay',
+        '3018'   =>  'F18 - Metro Alang-Alang',
+        '3019'   =>  'F19 - Metro Hilongos',
+        '2008'    =>  'S8 - Metro Toledo',
+        '6012'    =>  'H8 - Super Metro Antipolo',
+        '6009'    =>  'H9 - Super Metro Carcar',
+        '6010'   =>  'H10 - Super Metro Bogo',
     ];
 
     if ($user->role === 'manager') {
@@ -795,8 +795,8 @@ public function exportOrdersReport(Request $request)
     $query = Order::query()->with('items');
 
     $storeMapping = [
-        'lz' => ['h8'],
-        'vs' => ['f2', 's10', 's17', 's19', 'f18', 'f19', 's8', 'h9', 'h10'],
+        'lz' => ['6012'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], 
     ];
 
     $allowedStatuses = null;
@@ -1119,16 +1119,16 @@ public function exportOrdersReport(Request $request)
 
         // Store mapping
         $stores = [
-            'f2'  => 'F2 - Metro Wholesalemart Colon',
-            's10' => 'S10 - Metro Maasin',
-            's17' => 'S17 - Metro Tacloban',
-            's19' => 'S19 - Metro Bay-Bay',
-            'f18' => 'F18 - Metro Alang-Alang',
-            'f19' => 'F19 - Metro Hilongos',
-            's8'  => 'S8 - Metro Toledo',
-            'h8'  => 'H8 - Super Metro Antipolo',
-            'h9'  => 'H9 - Super Metro Carcar',
-            'h10' => 'H10 - Super Metro Bogo',
+            '4002'  =>  'F2 - Metro Wholesalemart Colon',
+            '2010'  =>  'S10 - Metro Maasin',
+            '2017'  =>  'S17 - Metro Tacloban',
+            '2019'   =>  'S19 - Metro Bay-Bay',
+            '3018'   =>  'F18 - Metro Alang-Alang',
+            '3019'   =>  'F19 - Metro Hilongos',
+            '2008'    =>  'S8 - Metro Toledo',
+            '6012'    =>  'H8 - Super Metro Antipolo',
+            '6009'    =>  'H9 - Super Metro Carcar',
+            '6010'   =>  'H10 - Super Metro Bogo',
         ];
 
         // Dynamic filename based on range
