@@ -171,6 +171,6 @@ Route::post('/oracle/transfer', [OracleTransferController::class, 'send'])
 Route::view('/403', 'errors.403');
 
 
-Route::middleware(['auth', 'session.expired'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
+// Route::middleware(['auth', 'session.expired'])->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// });
