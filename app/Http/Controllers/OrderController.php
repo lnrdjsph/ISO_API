@@ -42,7 +42,7 @@ public function index(Request $request)
             $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
         }
 
-    } elseif ($user->role === 'super_admin') {
+    } elseif ($user->role === 'super admin') {
         // 🔓 Super admin sees all — no restrictions
         $allowedStatuses = null;
 
@@ -117,7 +117,7 @@ public function index(Request $request)
     ];
 
     // 🎯 Dropdown restriction
-    if ($user->role === 'super_admin') {
+    if ($user->role === 'super admin') {
         $storeLocations = $allStoreLocations; // show all stores
     } elseif ($user->role === 'manager') {
         if ($user->user_location && isset($storeMapping[$user->user_location])) {
