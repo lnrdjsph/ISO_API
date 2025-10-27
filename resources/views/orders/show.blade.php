@@ -2002,96 +2002,107 @@
 
 
 
-            document.getElementById('generateSOButton').addEventListener('click', async () => {
-                const sofId = "{{ $order->sof_id }}";
-                const url = "{{ route('oracle.transfer') }}";
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+document.getElementById('generateSOButton').addEventListener('click', async () => {
+    const sofId = "{{ $order->sof_id }}";
+    const url = "{{ route('oracle.transfer') }}";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                const executeTransfer = async () => {
-                    Swal.fire({
-                        title: 'Processing...',
-                        text: 'Sending order to Oracle RIB. Please wait.',
-                        allowOutsideClick: false,
-                        didOpen: () => Swal.showLoading()
-                    });
+    const executeTransfer = async () => {
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Sending order to Oracle RIB per department. Please wait...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                sof_id: sofId
-                            })
-                        });
-
-                        const text = await response.text();
-                        console.log('Raw response:', text);
-
-                        let data = {};
-                        try {
-                            data = JSON.parse(text);
-                        } catch {
-                            console.warn('Response not JSON formatted.');
-                        }
-
-                        Swal.close();
-
-                        if (response.ok && data.generated_tsf_no) {
-                            await Swal.fire({
-                                icon: 'success',
-                                title: 'SO# Generated!',
-                                text: data.generated_tsf_no
-                            });
-                            location.reload();
-                        } else {
-                            // Handle "No items to process" with only OK button
-                            if (data.message && data.message.toLowerCase().includes('no items to process')) {
-                                await Swal.fire({
-                                    icon: 'info',
-                                    title: 'No Items Found',
-                                    text: data.message,
-                                    confirmButtonText: 'OK'
-                                });
-                            } else {
-                                // Other warnings get retry option
-                                const retry = await Swal.fire({
-                                    icon: 'warning',
-                                    title: 'Transfer Warning',
-                                    text: data.message || 'No TSF generated.',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'Retry',
-                                    cancelButtonText: 'Cancel',
-                                    reverseButtons: true
-                                });
-
-                                if (retry.isConfirmed) await executeTransfer();
-                            }
-                        }
-
-                    } catch (err) {
-                        Swal.close();
-                        console.error('Transfer failed:', err);
-
-                        const retry = await Swal.fire({
-                            icon: 'error',
-                            title: 'Connection Failed',
-                            text: err.message || 'Server unreachable or timeout.',
-                            showCancelButton: true,
-                            confirmButtonText: 'Retry',
-                            cancelButtonText: 'Cancel',
-                            reverseButtons: true
-                        });
-
-                        if (retry.isConfirmed) await executeTransfer();
-                    }
-                };
-
-                await executeTransfer();
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ sof_id: sofId })
             });
+
+            const text = await response.text();
+            console.log('Raw response:', text);
+
+            let data = {};
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.warn('Response not JSON formatted.');
+            }
+
+            Swal.close();
+
+            // ✅ Handle grouped response
+            if (response.ok && data.success && data.payloads) {
+                let summary = '';
+
+                data.payloads.forEach(p => {
+                    const dept = p.dept || 'N/A';
+                    const tsf = p.tsf_no || 'N/A';
+                    const status = data.responses?.[dept]?.success ? '✅ Success' : '⚠️ Failed';
+                    summary += `Dept: ${dept}\nTSF#: ${tsf}\nStatus: ${status}\n\n`;
+                });
+
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Transfer Summary',
+                    html: `<pre style="text-align:left">${summary}</pre>`,
+                    confirmButtonText: 'OK'
+                });
+
+                location.reload();
+            } 
+            else if (data.message && data.message.toLowerCase().includes('no items to process')) {
+                // ℹ️ No items to process
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'No Items Found',
+                    text: data.message,
+                    confirmButtonText: 'OK'
+                });
+            } 
+            else {
+                // ⚠️ Warning or failure
+                const retry = await Swal.fire({
+                    icon: 'warning',
+                    title: 'Transfer Warning',
+                    text: data.message || 'RIB did not confirm processing.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Retry',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                });
+
+                if (retry.isConfirmed) await executeTransfer();
+            }
+
+        } catch (err) {
+            Swal.close();
+            console.error('Transfer failed:', err);
+
+            const retry = await Swal.fire({
+                icon: 'error',
+                title: 'Connection Failed',
+                text: err.message || 'Server unreachable or timeout.',
+                showCancelButton: true,
+                confirmButtonText: 'Retry',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (retry.isConfirmed) await executeTransfer();
+        }
+    };
+
+    await executeTransfer();
+});
+
         </script>
 
         <!-- Enhanced CSS for better visual feedback -->
