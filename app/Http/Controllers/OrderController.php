@@ -18,122 +18,123 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class OrderController extends Controller
 {
 
-    public function index(Request $request)
-    {
-        $user = auth()->user();
-        $query = Order::query()->with('items');
+public function index(Request $request)
+{
+    $user = auth()->user();
+    $query = Order::query()->with('items');
 
-        // 🗺️ Define region -> stores mapping
-        $storeMapping = [
-            'lz' => ['6012'], // Luzon = only Antipolo
-            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas = everything EXCEPT Antipolo
-        ];
+    // 🗺️ Region -> store mapping
+    $storeMapping = [
+        'lz' => ['6012'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
+    ];
 
-        // Default statuses list
+    // Default
+    $allowedStatuses = null;
+
+    // 👔 Role-based filters
+    if ($user->role === 'manager') {
+        $allowedStatuses = ['for approval', 'approved', 'rejected'];
+        $query->whereIn('order_status', $allowedStatuses);
+
+        // Restrict managers by region
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+        }
+
+    } elseif ($user->role === 'super_admin') {
+        // 🔓 Super admin sees all — no restrictions
         $allowedStatuses = null;
 
-        // 👔 Manager role restrictions
-        if ($user->role === 'manager') {
-            $allowedStatuses = ['for approval', 'approved', 'rejected'];
-            $query->whereIn('order_status', $allowedStatuses);
-
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
-            }
-
-        } elseif ($user->role === 'super_admin') {
-            // 🔓 Super admin: no restrictions
-            $allowedStatuses = null;
-
-        } else {
-            if ($user->user_location) {
-                $query->where('requesting_store', $user->user_location);
-            }
+    } else {
+        // Regular user → single store restriction
+        if ($user->user_location) {
+            $query->where('requesting_store', $user->user_location);
         }
+    }
 
-        // 🔎 Search
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('customer_name', 'like', "%{$search}%")
-                ->orWhere('sof_id', 'like', "%{$search}%")
-                ->orWhere('requesting_store', 'like', "%{$search}%");
-            });
-        }
+    // 🔍 Search filter
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('customer_name', 'like', "%{$search}%")
+              ->orWhere('sof_id', 'like', "%{$search}%")
+              ->orWhere('requesting_store', 'like', "%{$search}%");
+        });
+    }
 
-        // 📦 Channel filter
-        if ($channel = $request->input('channel')) {
-            $query->where('channel_order', $channel);
-        }
+    // 📦 Channel filter
+    if ($channel = $request->input('channel')) {
+        $query->where('channel_order', $channel);
+    }
 
-        // 🏬 Store filter
-        if ($storeCode = $request->input('store_code')) {
-            $query->where('requesting_store', $storeCode);
-        }
+    // 🏬 Store filter
+    if ($storeCode = $request->input('store_code')) {
+        $query->where('requesting_store', $storeCode);
+    }
 
-        // ✅ Status filter
-        if ($status = $request->input('status')) {
-            if ($allowedStatuses) {
-                if (in_array($status, $allowedStatuses)) {
-                    $query->where('order_status', $status);
-                }
-            } else {
+    // ✅ Status filter
+    if ($status = $request->input('status')) {
+        if ($allowedStatuses) {
+            if (in_array($status, $allowedStatuses)) {
                 $query->where('order_status', $status);
             }
-        }
-
-        // 📅 Date range filter
-        if ($startDate = $request->input('start_date')) {
-            $query->whereDate('time_order', '>=', $startDate);
-        }
-        if ($endDate = $request->input('end_date')) {
-            $query->whereDate('time_order', '<=', $endDate);
-        }
-
-        // ✅ Pagination
-        $perPage = $request->input('per_page', 10);
-
-        $orders = $query->orderByDesc('created_at')
-            ->paginate($perPage)
-            ->withQueryString();
-
-        // Dropdown data
-        $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
-        $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
-
-        // All store names
-        $allStoreLocations = [
-            '4002'  =>  'F2 - Metro Wholesalemart Colon',
-            '2010'  =>  'S10 - Metro Maasin',
-            '2017'  =>  'S17 - Metro Tacloban',
-            '2019'   =>  'S19 - Metro Bay-Bay',
-            '3018'   =>  'F18 - Metro Alang-Alang',
-            '3019'   =>  'F19 - Metro Hilongos',
-            '2008'    =>  'S8 - Metro Toledo',
-            '6012'    =>  'H8 - Super Metro Antipolo',
-            '6009'    =>  'H9 - Super Metro Carcar',
-            '6010'   =>  'H10 - Super Metro Bogo',
-        ];
-
-        // 🎯 Restrict dropdown options
-        if ($user->role === 'manager') {
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                // Manager → only their region’s stores
-                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
-            } else {
-                // Manager with no region restriction
-                $storeLocations = $allStoreLocations;
-            }
         } else {
-            if ($user->user_location) {
-                // Non-manager → only their store
-                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
+            $query->where('order_status', $status);
         }
-
-        return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
     }
+
+    // 📅 Date range filter
+    if ($startDate = $request->input('start_date')) {
+        $query->whereDate('time_order', '>=', $startDate);
+    }
+    if ($endDate = $request->input('end_date')) {
+        $query->whereDate('time_order', '<=', $endDate);
+    }
+
+    // ✅ Pagination
+    $perPage = $request->input('per_page', 10);
+
+    $orders = $query->orderByDesc('created_at')
+        ->paginate($perPage)
+        ->withQueryString();
+
+    // Dropdown data
+    $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+    $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
+
+    // 🏪 All store names
+    $allStoreLocations = [
+        '4002' => 'F2 - Metro Wholesalemart Colon',
+        '2010' => 'S10 - Metro Maasin',
+        '2017' => 'S17 - Metro Tacloban',
+        '2019' => 'S19 - Metro Bay-Bay',
+        '3018' => 'F18 - Metro Alang-Alang',
+        '3019' => 'F19 - Metro Hilongos',
+        '2008' => 'S8 - Metro Toledo',
+        '6012' => 'H8 - Super Metro Antipolo',
+        '6009' => 'H9 - Super Metro Carcar',
+        '6010' => 'H10 - Super Metro Bogo',
+    ];
+
+    // 🎯 Dropdown restriction
+    if ($user->role === 'super_admin') {
+        $storeLocations = $allStoreLocations; // show all stores
+    } elseif ($user->role === 'manager') {
+        if ($user->user_location && isset($storeMapping[$user->user_location])) {
+            $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+        } else {
+            $storeLocations = $allStoreLocations;
+        }
+    } else {
+        if ($user->user_location) {
+            $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
+        } else {
+            $storeLocations = $allStoreLocations;
+        }
+    }
+
+    return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
+}
 
 
 
