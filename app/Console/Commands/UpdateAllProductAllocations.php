@@ -70,6 +70,8 @@ class UpdateAllProductAllocations extends Command
                 ON ci.facility_id = c.facility_id
                 AND ci.container_id = c.container_id
                 WHERE ci.item_id IN ({$inClause})
+                AND ci.facility_id = '80051'
+
                 GROUP BY ci.item_id
             ");
             foreach ($inventoryRows as $row) {
