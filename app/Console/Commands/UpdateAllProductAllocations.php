@@ -33,7 +33,7 @@ class UpdateAllProductAllocations extends Command
         if ($location) {
             $productTables = ["products_{$location}"];
         } else {
-            $productTables = ['products_f2', 'products_h8']; // fallback default
+            $productTables = ['products_4002', 'products_6012']; // fallback default
         }
 
         $this->log($logFile, "Tables to process: " . implode(', ', $productTables));
