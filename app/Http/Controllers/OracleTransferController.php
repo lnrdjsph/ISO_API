@@ -78,7 +78,7 @@ class OracleTransferController extends Controller
                     'delivery_date' => $order->delivery_date,
                     'dept' => $dept,
                     'freight_code' => 'N',
-                    'tsf_type' => 'EG',
+                    'tsf_type' => 'AIP',
                     'status' => 'A',
                     'user_id' => 'External',
                     'comment_desc' => "Generated from SOF# {$order->sof_id} (Dept: {$dept})",

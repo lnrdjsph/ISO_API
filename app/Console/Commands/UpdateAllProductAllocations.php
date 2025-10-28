@@ -33,7 +33,7 @@ class UpdateAllProductAllocations extends Command
         if ($location) {
             $productTables = ["products_{$location}"];
         } else {
-            $productTables = ['products_4002', 'products_6012']; // fallback default
+            $productTables = ['products_4002']; // fallback default
         }
 
         $this->log($logFile, "Tables to process: " . implode(', ', $productTables));
@@ -69,8 +69,9 @@ class UpdateAllProductAllocations extends Command
                 JOIN rwms.container c
                 ON ci.facility_id = c.facility_id
                 AND ci.container_id = c.container_id
-                WHERE ci.item_id IN ({$inClause})
-                AND ci.facility_id = '80051'
+                WHERE ci.facility_id = 'SI'
+                AND ci.item_id IN ({$inClause})
+                
 
                 GROUP BY ci.item_id
             ");
@@ -92,7 +93,8 @@ class UpdateAllProductAllocations extends Command
                     SELECT ci.item_id, ci.unit_qty,
                         ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
                     FROM rwms.container_item ci
-                    WHERE ci.item_id IN ({$inClause})
+                    WHERE ci.facility_id = 'SI'
+                    AND ci.item_id IN ({$inClause})
                 )
                 WHERE rn <= 5
             ");
