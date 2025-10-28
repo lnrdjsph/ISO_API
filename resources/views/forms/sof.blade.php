@@ -173,6 +173,7 @@
 
                             @php
                                 $warehouseMap = [
+                                    '80141' => 'Silangan Warehouse',
                                     '80001' => 'Central Warehouse',
                                     '80041' => 'Procter Warehouse',
                                     '80051' => 'Opao-ISO Warehouse',
