@@ -215,7 +215,7 @@ class OracleTransferController extends Controller
                         'order_id' => $order->id,
                         'user_id' => auth()->id() ?? null,
                         'status' => 'failed',
-                        'note' => "⚠️ RIB errors for Dept {$dept} (TSF: {$nextTsf}):\n{$errorSummary}",
+                        'note' => "⚠️ RIB errors for Dept {$dept}:\n{$errorSummary}",
                     ]);
 
                     Log::warning("⚠️ Oracle RIB errors for Dept {$dept}. TSF#: {$nextTsf}");

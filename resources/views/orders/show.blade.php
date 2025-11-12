@@ -2164,7 +2164,7 @@
                             </div>
                             
                             <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                                <p style="margin: 3px 0;"><strong>TSF Number:</strong> <code>${tsfNo}</code></p>
+                                
                                 <p style="margin: 3px 0;"><strong>Items:</strong> ${itemCount}</p>
                             </div>
                     `;
