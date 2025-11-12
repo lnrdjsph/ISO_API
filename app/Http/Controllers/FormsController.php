@@ -367,7 +367,7 @@ public function sof_submit(Request $request){
         // Get order with items
         $order = Order::with('items')->findOrFail($orderId);
 
-        foreach ($order->items as $item) {
+        foreach ($order->getRelation('items') as $item) {
             // Find product by SKU in location-specific table
             $product = DB::connection('mysql')
                 ->table($tableName)
