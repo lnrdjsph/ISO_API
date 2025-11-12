@@ -28,6 +28,7 @@ class OrderItem extends Model
         'remarks',
         'store_order_no',
         'item_type',
+        'time_order',
     ];
 
 

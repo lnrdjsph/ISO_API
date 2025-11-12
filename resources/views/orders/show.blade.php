@@ -622,14 +622,14 @@
                                 @empty
                                 @endforelse
 
-                                @if ($hasStoreOrderNo)
+                                {{-- @if ($hasStoreOrderNo)
                                     <button
                                         type="button"
                                         id="compareBOLButton"
                                         class="items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50">
                                         Compare to BOL
                                     </button>
-                                @endif
+                                @endif --}}
 
 
                                 @if ($order->order_status === 'approved')

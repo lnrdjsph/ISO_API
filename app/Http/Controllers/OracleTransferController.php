@@ -75,20 +75,21 @@ class OracleTransferController extends Controller
                 // 🔄 Group by SKU and sum quantities
                 $skuGroups = [];
                 foreach ($deptItems as $item) {
-                    $sku = $item->sku;
+                    $item = (object) $item;
+                    $sku = (string) ($item->sku ?? '');
                     
                     if (!isset($skuGroups[$sku])) {
                         // First occurrence: store the item
                         $skuGroups[$sku] = [
                             'item' => $sku,
-                            'tsf_qty' => (float) $item->qty_per_pc * (float) $item->total_qty,
-                            'supp_pack_size' => (float) $item->total_qty,
-                            'qty_per_pc' => $item->qty_per_pc, // Keep first qty_per_pc for subsequent items
+                            'tsf_qty' => floatval($item->qty_per_pc ?? 0) * floatval($item->total_qty ?? 0),
+                            'supp_pack_size' => floatval($item->total_qty ?? 0),
+                            'qty_per_pc' => floatval($item->qty_per_pc ?? 0), // Keep first qty_per_pc for subsequent items
                         ];
                     } else {
                         // Subsequent occurrences: add to both tsf_qty and supp_pack_size
-                        $skuGroups[$sku]['tsf_qty'] += (float) $skuGroups[$sku]['qty_per_pc'] * (float) $item->total_qty;
-                        $skuGroups[$sku]['supp_pack_size'] += (float) $item->total_qty;
+                        $skuGroups[$sku]['tsf_qty'] += floatval($skuGroups[$sku]['qty_per_pc']) * floatval($item->total_qty ?? 0);
+                        $skuGroups[$sku]['supp_pack_size'] += floatval($item->total_qty ?? 0);
                     }
                 }
 
@@ -102,6 +103,7 @@ class OracleTransferController extends Controller
                 }, $skuGroups));
 
                 $data = [
+                    'create_date' => $order->time_order,
                     'from_loc_type' => 'W',
                     'from_loc' => $order->warehouse,
                     'to_loc_type' => 'S',

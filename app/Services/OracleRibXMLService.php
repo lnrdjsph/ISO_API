@@ -165,7 +165,7 @@ class OracleRibXMLService
             'tsf_no', 'from_loc_type', 'from_loc',
             'to_loc_type', 'to_loc', 'delivery_date',
             'dept', 'freight_code', 'tsf_type',
-            'status', 'user_id', 'comment_desc'
+            'status', 'user_id', 'comment_desc', 'create_date'
         ];
 
         $xmlBody = '';
