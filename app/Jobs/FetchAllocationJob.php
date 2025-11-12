@@ -28,7 +28,7 @@ class FetchAllocationJob implements ShouldQueue
             SELECT SUM(ci.unit_qty) AS total_unit_qty
             FROM rwms.container c
             JOIN rwms.container_item ci ON c.facility_id = ci.facility_id AND c.container_id = ci.container_id
-            WHERE c.container_status NOT IN ('S','D','A')
+            WHERE c.container_status NOT IN ('X', 'T')
             AND ci.item_id = ?
         ", [$this->sku]);
 

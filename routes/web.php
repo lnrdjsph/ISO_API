@@ -174,3 +174,6 @@ Route::view('/403', 'errors.403');
 // Route::middleware(['auth', 'session.expired'])->group(function () {
 //     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 // });
+Route::get('/check-session', function () {
+    return response()->json(['authenticated' => Auth::check()]);
+})->name('check.session');

@@ -28,7 +28,8 @@ class OracleTransferController extends Controller
             if ($items->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No items to process.'
+                    'message' => 'No items to process.',
+                    'error_type' => 'no_items'
                 ], 400);
             }
 
@@ -64,11 +65,41 @@ class OracleTransferController extends Controller
 
             $payloads = [];
             $responses = [];
+            $overallSuccess = true;
 
             // 🔁 Process each department group
             foreach ($grouped as $dept => $deptItems) {
                 $nextTsf = str_pad($nextTsfBase, 10, '0', STR_PAD_LEFT);
                 $nextTsfBase++;
+
+                // 🔄 Group by SKU and sum quantities
+                $skuGroups = [];
+                foreach ($deptItems as $item) {
+                    $sku = $item->sku;
+                    
+                    if (!isset($skuGroups[$sku])) {
+                        // First occurrence: store the item
+                        $skuGroups[$sku] = [
+                            'item' => $sku,
+                            'tsf_qty' => (float) $item->qty_per_pc * (float) $item->total_qty,
+                            'supp_pack_size' => (float) $item->total_qty,
+                            'qty_per_pc' => $item->qty_per_pc, // Keep first qty_per_pc for subsequent items
+                        ];
+                    } else {
+                        // Subsequent occurrences: add to both tsf_qty and supp_pack_size
+                        $skuGroups[$sku]['tsf_qty'] += (float) $skuGroups[$sku]['qty_per_pc'] * (float) $item->total_qty;
+                        $skuGroups[$sku]['supp_pack_size'] += (float) $item->total_qty;
+                    }
+                }
+
+                // Convert to array and format quantities as strings
+                $consolidatedItems = array_values(array_map(function($group) {
+                    return [
+                        'item' => $group['item'],
+                        'tsf_qty' => (string) $group['tsf_qty'],
+                        'supp_pack_size' => (string) $group['supp_pack_size'],
+                    ];
+                }, $skuGroups));
 
                 $data = [
                     'from_loc_type' => 'W',
@@ -81,22 +112,75 @@ class OracleTransferController extends Controller
                     'tsf_type' => 'AIP',
                     'status' => 'A',
                     'user_id' => 'External',
-                    'comment_desc' => "Generated from SOF# {$order->sof_id} (Dept: {$dept})",
+                    'comment_desc' => "Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
                     'tsf_no' => $nextTsf,
-                    'details' => $deptItems->map(fn($i) => [
-                        'item' => $i->sku,
-                        'tsf_qty' => (string) $i->total_qty,
-                        'supp_pack_size' => (string) $i->qty_per_pc,
-                    ])->toArray(),
+                    'details' => $consolidatedItems,
                 ];
 
                 $payloads[] = $data;
 
-                // 🚀 Send each payload
+                // 🚀 Send payload to Oracle RIB
                 $response = OracleRibXMLService::sendTransfer($data);
-                $responses[$dept] = $response;
 
-                if ($response['success']) {
+                // 📊 Build detailed response structure
+                $deptResponse = [
+                    'tsf_no' => $nextTsf,
+                    'department' => $dept,
+                    'item_count' => count($consolidatedItems), // Count unique SKUs
+                    'original_item_count' => $deptItems->count(), // Original count before consolidation
+                    'success' => $response['success'],
+                    'status' => 'unknown',
+                    'details' => [],
+                    'errors' => [],
+                    'verification' => null
+                ];
+
+                $warehouseMap = [
+                    '80141' => 'Silangan Warehouse',
+                    '80001' => 'Central Warehouse',
+                    '80041' => 'Procter Warehouse',
+                    '80051' => 'Opao-ISO Warehouse',
+                    '80071' => 'Big Blue Warehouse',
+                    '80131' => 'Lower Tingub Warehouse',
+                    '80211' => 'Sta. Rosa Warehouse',
+                    '80181' => 'Bacolod Depot',
+                    '80191' => 'Tacloban Depot',
+                ];
+
+            
+                $allStoreLocations = [
+                    '4002' => 'F2 - Metro Wholesalemart Colon',
+                    '2010' => 'S10 - Metro Maasin',
+                    '2017' => 'S17 - Metro Tacloban',
+                    '2019' => 'S19 - Metro Bay-Bay',
+                    '3018' => 'F18 - Metro Alang-Alang',
+                    '3019' => 'F19 - Metro Hilongos',
+                    '2008' => 'S8 - Metro Toledo',
+                    '6012' => 'H8 - Super Metro Antipolo',
+                    '6009' => 'H9 - Super Metro Carcar',
+                    '6010' => 'H10 - Super Metro Bogo',
+                ];
+                
+
+                // ⚠️ Check for various failure types
+                $hasRibErrors = !empty($response['errors']) && is_array($response['errors']);
+                $hasVerification = isset($response['verification']);
+                $verificationPassed = $hasVerification && ($response['verification']['exists'] ?? false);
+
+                if ($response['success'] && !$hasRibErrors && $verificationPassed) {
+                    // ✅ Complete Success
+                    $deptResponse['status'] = 'success';
+                    $deptResponse['verification'] = $response['verification'];
+                    
+                    if (isset($response['verification']['tsf_data'])) {
+                        $tsfData = $response['verification']['tsf_data'];
+                        $deptResponse['details'][] = "TSF created in Oracle database";
+                        $deptResponse['details'][] = "From: {$tsfData['from_loc']} → To: {$tsfData['to_loc']}";
+                        $deptResponse['details'][] = "Status: {$tsfData['status']}";
+                        $deptResponse['details'][] = "Verified in TSFHEAD table";
+                    }
+
+                    // Update order items - update ALL items with matching SKUs
                     DB::table('order_items')
                         ->where('order_id', $order->id)
                         ->whereIn('sku', $deptItems->pluck('sku')->toArray())
@@ -106,20 +190,113 @@ class OracleTransferController extends Controller
                         'order_id' => $order->id,
                         'user_id' => auth()->id() ?? null,
                         'status' => 'updated',
-                        'note' => "Transfer successfully sent to Oracle RIB for Dept {$dept} with SO#: {$nextTsf}",
+                        'note' => "✅ Transfer successfully sent to Oracle RIB for Dept {$dept} with TSF#: {$nextTsf}.",
                     ]);
 
                     Log::info("✅ Oracle RIB success for Dept {$dept}. TSF#: {$nextTsf}");
+
+                } elseif ($hasRibErrors) {
+                    // ⚠️ RIB Message Failures
+                    $deptResponse['status'] = 'rib_errors';
+                    $overallSuccess = false;
+                    
+                    foreach ($response['errors'] as $err) {
+                        $errorMsg = $err['CLEAN_ERROR'] ?? $err['message'] ?? 'Unknown RIB error';
+                        $deptResponse['errors'][] = [
+                            'type' => 'rib_failure',
+                            'message' => $errorMsg,
+                            'timestamp' => $err['TIME'] ?? null
+                        ];
+                    }
+
+                    $errorSummary = implode("\n", array_map(fn($e) => "- " . $e['message'], $deptResponse['errors']));
+
+                    OrderNote::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id() ?? null,
+                        'status' => 'failed',
+                        'note' => "⚠️ RIB errors for Dept {$dept} (TSF: {$nextTsf}):\n{$errorSummary}",
+                    ]);
+
+                    Log::warning("⚠️ Oracle RIB errors for Dept {$dept}. TSF#: {$nextTsf}");
+
+                } elseif (!$verificationPassed) {
+                    // ⚠️ Verification Failed (TSF not in database)
+                    $deptResponse['status'] = 'verification_failed';
+                    $overallSuccess = false;
+
+                    // Get user-friendly message
+                    $verifyMsg = 'TSF could not be verified in Oracle database';
+                    $attempts = $response['verification']['attempt'] ?? 0;
+                    
+                    // Check if it's a database error vs not found
+                    if (isset($response['verification']['error'])) {
+                        $verifyMsg = 'Database verification error occurred';
+                        // Log full error for debugging
+                        Log::error("🔥 [VERIFICATION ERROR] TSF {$nextTsf}: " . $response['verification']['error']);
+                    } elseif (isset($response['verification']['message'])) {
+                        $verifyMsg = 'TSF not found in TSFHEAD table after multiple attempts';
+                    }
+
+                    $deptResponse['errors'][] = [
+                        'type' => 'verification_failure',
+                        'message' => $verifyMsg,
+                        'attempts' => $attempts
+                    ];
+
+                    // Don't include verification details in response if there was an error
+                    if (!isset($response['verification']['error'])) {
+                        $deptResponse['verification'] = [
+                            'exists' => false,
+                            'attempt' => $attempts
+                        ];
+                    }
+
+                    OrderNote::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id() ?? null,
+                        'status' => 'failed',
+                        'note' => "⚠️ Verification failed for Dept {$dept} (TSF: {$nextTsf}). {$verifyMsg} ({$attempts} attempts)",
+                    ]);
+
+                    Log::warning("⚠️ Verification failed for Dept {$dept}. TSF#: {$nextTsf}. {$verifyMsg}");
+
                 } else {
-                    Log::warning("⚠️ Oracle RIB failed for Dept {$dept}.");
+                    // ⚠️ Other failure (SFTP, script execution, etc.)
+                    $deptResponse['status'] = 'processing_failed';
+                    $overallSuccess = false;
+
+                    $errorMsg = $response['message'] ?? 'Unknown error during processing';
+                    $deptResponse['errors'][] = [
+                        'type' => 'processing_failure',
+                        'message' => $errorMsg
+                    ];
+
+                    OrderNote::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id() ?? null,
+                        'status' => 'failed',
+                        'note' => "⚠️ Processing failed for Dept {$dept} (TSF: {$nextTsf}). {$errorMsg}",
+                    ]);
+
+                    Log::warning("⚠️ Processing failed for Dept {$dept}. TSF#: {$nextTsf}");
                 }
+
+                $responses[$dept] = $deptResponse;
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Transfers processed per department.',
+                'success' => $overallSuccess,
+                'message' => $overallSuccess 
+                    ? 'All transfers completed successfully.' 
+                    : 'Some transfers encountered issues. See details below.',
                 'payloads' => $payloads,
                 'responses' => $responses,
+                'summary' => [
+                    'total_departments' => count($responses),
+                    'successful' => count(array_filter($responses, fn($r) => $r['status'] === 'success')),
+                    'failed' => count(array_filter($responses, fn($r) => $r['status'] !== 'success')),
+                ]
             ]);
 
         } catch (Exception $e) {
@@ -127,7 +304,8 @@ class OracleTransferController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'error_type' => 'exception'
             ], 500);
         }
     }

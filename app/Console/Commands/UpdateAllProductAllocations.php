@@ -63,16 +63,15 @@ class UpdateAllProductAllocations extends Command
         try {
             $inventoryRows = DB::connection('oracle_wms')->select("
                 SELECT ci.item_id,
-                    SUM(CASE WHEN c.container_status NOT IN ('S','D','A') 
+                    SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S') 
                                 THEN ci.unit_qty ELSE 0 END) AS total_qty
                 FROM rwms.container_item ci
                 JOIN rwms.container c
                 ON ci.facility_id = c.facility_id
                 AND ci.container_id = c.container_id
-                WHERE ci.facility_id = 'SI'
+                WHERE ci.facility_id = 'BD'
                 AND ci.item_id IN ({$inClause})
                 
-
                 GROUP BY ci.item_id
             ");
             foreach ($inventoryRows as $row) {
@@ -93,7 +92,7 @@ class UpdateAllProductAllocations extends Command
                     SELECT ci.item_id, ci.unit_qty,
                         ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
                     FROM rwms.container_item ci
-                    WHERE ci.facility_id = 'SI'
+                    WHERE ci.facility_id = 'BD'
                     AND ci.item_id IN ({$inClause})
                 )
                 WHERE rn <= 5
