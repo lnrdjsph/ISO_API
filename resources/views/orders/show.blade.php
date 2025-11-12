@@ -2070,7 +2070,7 @@
                     <p>🔄 Processing departments...</p>
                     <p>⏳ Please wait, this may take a few moments</p>
                 </div>
-            `,
+                `,
                         allowOutsideClick: false,
                         didOpen: () => Swal.showLoading()
                     });
@@ -2164,10 +2164,10 @@
                             </div>
                             
                             <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                                
+                                ${status === 'success' ? `<p style="margin: 3px 0;"><strong>TSF Number:</strong> <code>${tsfNo}</code></p>` : ''}
                                 <p style="margin: 3px 0;"><strong>Items:</strong> ${itemCount}</p>
                             </div>
-                    `;
+                        `;
 
                                 // Success details
                                 if (status === 'success' && resp.details && resp.details.length > 0) {
