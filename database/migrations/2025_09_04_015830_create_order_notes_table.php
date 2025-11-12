@@ -33,7 +33,8 @@ return new class extends Migration {
                 'completed',
                 'cancelled',
                 'restored',
-                'updated'
+                'updated',
+                'failed',
             ])->nullable();
 
             $table->text('note')->nullable();

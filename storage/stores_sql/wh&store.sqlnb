@@ -2,13 +2,17 @@ cells:
   - kind: 2
     value: "SELECT \r
 
-      *\r
+      -- *\r
 
-      -- wh, wh_name, primary_vwh \r
+      wh, wh_name, primary_vwh \r
 
       FROM WH \r
 
-      WHERE wh LIKE '%01' \r
+      -- WHERE wh LIKE '%01' \r
+
+      WHERE primary_vwh is not NULL\r
+
+      \r
 
       ;"
     languageId: oracle-sql

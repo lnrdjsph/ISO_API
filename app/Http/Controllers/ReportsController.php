@@ -56,7 +56,7 @@ class ReportsController extends Controller
         // ✅ Sales Totals
         $totals = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('orders.time_order', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie')
+            ->where('order_items.item_type', '!=', 'FREEBIE')
             ->when($store, $storeFilter)
             ->selectRaw('
                 COALESCE(SUM(order_items.amount), 0) as total_sales,
@@ -73,7 +73,7 @@ class ReportsController extends Controller
         // ✅ Sales by day
         $sales = Order::join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('orders.time_order', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
+            ->where('order_items.item_type', '!=', 'FREEBIE') // 🚫 exclude freebies
             ->when($store, $storeFilter)
             ->selectRaw('DATE(orders.time_order) as day, SUM(order_items.amount) as sales')
             ->groupBy('day')
@@ -92,7 +92,7 @@ class ReportsController extends Controller
         // ✅ Sales by Store Over Time
         $salesByStoreOverTime = Order::join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('orders.time_order', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
+            ->where('order_items.item_type', '!=', 'FREEBIE') // 🚫 exclude freebies
             ->selectRaw('
                 DATE(orders.time_order) as day,
                 COALESCE(orders.requesting_store, "Unknown Store") as store,
@@ -117,8 +117,8 @@ class ReportsController extends Controller
             }
 
             // 🔑 Map store code -> store name if found in $allStoreLocations
-            $storeName = $this->allStoreLocations[strtolower($storeCode)] ?? $storeCode;
-
+            // FIX: The allStoreLocations array keys are NOT lowercase, so don't lowercase the lookup
+            $storeName = $this->allStoreLocations[$storeCode] ?? $storeCode;
 
             return [$storeName => $dailyData];
         });
@@ -127,7 +127,7 @@ class ReportsController extends Controller
         // ✅ Top products
         $topProducts = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('orders.time_order', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
+            ->where('order_items.item_type', '!=', 'FREEBIE') // 🚫 exclude freebies
             ->when($store, $storeFilter)
             ->selectRaw('
                 order_items.sku, 
@@ -152,7 +152,7 @@ class ReportsController extends Controller
         // ✅ Sales by store (ignore store filter for comparison)
         $byStore = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereBetween('orders.time_order', [$from, $to])
-            ->where('order_items.item_type', '!=', 'Freebie') // 🚫 exclude freebies
+            ->where('order_items.item_type', '!=', 'FREEBIE') // 🚫 exclude freebies
             ->selectRaw('
                 COALESCE(orders.requesting_store, "Unknown Store") as store,
                 CAST(SUM(order_items.amount) AS DECIMAL(15,2)) as total_sales

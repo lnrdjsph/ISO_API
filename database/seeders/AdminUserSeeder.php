@@ -79,5 +79,14 @@ class AdminUserSeeder extends Seeder
                 'user_location' => '6012', 
             ]
         );
+        User::updateOrCreate(
+            ['email' =>  'johnny.storepersonnel@metroretail.ph'],
+            [
+                'name' => 'Johnny - Store Personnel',
+                'password' => Hash::make('johnnytest'),
+                'role' => 'store personnel',
+                'user_location' => '4002', 
+            ]
+        );
     }
 }

@@ -470,7 +470,7 @@ public function archive(Request $request)
         $recipients = [];
 
         if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
-            $recipients[] = 'gene.catarina@metroretail.ph';
+            $recipients[] = 'leonard.tomalon@metroretail.ph';
         }
 
         if ($order->requesting_store === '6012') {
