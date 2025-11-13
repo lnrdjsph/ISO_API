@@ -335,7 +335,7 @@ public function getItemStatus($storeOrderNo)
         }
 
         // If found in tsfhead, default status is Pending
-        $status = 'Pending';
+        $status = 'Processing';
 
         // Step 2: Check oracle_wms database - container_item table with rwms schema
         $containerItem = DB::connection('oracle_wms')
