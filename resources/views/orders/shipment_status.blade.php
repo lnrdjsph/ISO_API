@@ -125,8 +125,6 @@
 
 
             <div class="space-y-6 rounded-xl bg-white shadow-lg">
-                <!-- Search Bar -->
-
 
                 <!-- Table -->
                 <div class="overflow-x-auto rounded-xl">
@@ -184,7 +182,7 @@
                                         @php
                                             $status = ucwords(strtolower($order->order_status ?? 'New Order'));
                                             $statusClass = match ($status) {
-                                                'Completed' => 'bg-green-100 text-green-800',
+                                                'Delivered' => 'bg-green-100 text-green-800',
                                                 'Archived' => 'bg-gray-200 text-gray-800',
                                                 'Cancelled' => 'bg-red-200 text-red-800',
                                                 'Pending' => 'bg-yellow-200 text-yellow-800',

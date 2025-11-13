@@ -377,28 +377,28 @@ public function index(Request $request)
     }
     }
 
-public function archive(Request $request)
-{
-    $request->validate([
-        'id' => 'required|exists:orders,id',
-    ]);
+    public function archive(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
 
-    $order = Order::findOrFail($request->id);
-    $this->revertAllocationStock($order->id);
+        $order = Order::findOrFail($request->id);
+        $this->revertAllocationStock($order->id);
 
-    $order->order_status = 'archived';
-    $order->save();
+        $order->order_status = 'archived';
+        $order->save();
 
-    $order->notes()->create([
-        'user_id' => auth()->id(),
-        'status'  => 'archived',
-        'note'    => 'Order archived',
-    ]);
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'archived',
+            'note'    => 'Order archived',
+        ]);
 
-    return redirect()
-        ->route('orders.show', $order->id)
-        ->with('success', 'Order archived successfully.');
-}
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order archived successfully.');
+    }
 
     public function cancel(Request $request)
     {
@@ -448,6 +448,28 @@ public function archive(Request $request)
             ->with('success', 'Order restored successfully.');
     }
 
+    //complete order
+    public function complete(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->id);
+        $order->order_status = 'completed';
+        $this->deductAllocationStock($order->id);
+        $order->save();
+
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'completed',
+            'note'    => 'Order completed',
+        ]);
+
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order completed successfully.');
+    }
 
     public function forApproval(Request $request)
     {

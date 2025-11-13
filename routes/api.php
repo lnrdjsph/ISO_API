@@ -11,7 +11,7 @@ use App\Http\Controllers\RMSCommerceSynchronizationController;
 use App\Http\Controllers\MRCTenderController;
 use App\Http\Controllers\ECRController;
 use App\Http\Controllers\OracleRmsController;
-// use App\Http\Controllers\OracleTransferController;
+use App\Http\Controllers\OracleTransferController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -96,3 +96,6 @@ Route::get('/test-iso', function () {
         ], 500);
     }
 });
+
+Route::get('/order-status/{storeOrderNo}', [OracleTransferController::class, 'getItemStatus']);
+

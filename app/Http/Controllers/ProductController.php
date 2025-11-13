@@ -551,8 +551,8 @@ class ProductController extends Controller
 
                 // CSV header
                 fputcsv($handle, [
-                    'SKU', 'Description', 'Department', 'Case Pack', 'SRP',
-                    'Allocation per Case', 'Cash/Bank/Card Scheme',
+                    'SKU', 'Description', 'Allocation per Case', 'Case Pack', 'SRP',
+                     'Cash/Bank/Card Scheme',
                     'PO15 Scheme', 'Discount Scheme', 'Freebie SKU'
                 ]);
 
@@ -561,10 +561,9 @@ class ProductController extends Controller
                     fputcsv($handle, [
                         $product->sku,
                         $product->description,
-                        $product->department,
+                        $product->allocation_per_case,
                         $product->case_pack,
                         $product->srp,
-                        $product->allocation_per_case,
                         $product->cash_bank_card_scheme,
                         $product->po15_scheme,
                         $product->discount_scheme,
