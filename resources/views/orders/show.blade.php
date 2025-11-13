@@ -418,19 +418,9 @@
                                         <th
                                             rowspan="2"
                                             class="border px-2 py-1">Store Order No. (SO#)</th>
-                                        @php
-                                            $hasStoreOrderNo = false;
-                                        @endphp
 
-                                        @forelse ($order->items as $item)
-                                            @if (!empty($item->store_order_no))
-                                                @php $hasStoreOrderNo = true; @endphp
-                                            @endif
-                                        @empty
-                                        @endforelse
-                                        @if ($hasStoreOrderNo)
-                                            <th rowspan="2" class="border px-2 py-1">Item Status</th>
-                                        @endif
+                                        <th rowspan="2" class="border px-2 py-1">Item Status</th>
+
                                     </tr>
                                     <tr>
                                         <th class="border p-1 text-center">QTY/PC</th>
@@ -611,8 +601,7 @@
                                                 contenteditable="false"
                                                 data-field="store_order_no"
                                                 data-item-index="{{ $loop->index }}"
-                                                @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}"
-        data-load-status="true" @endif>
+                                                @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" data-load-status="true" @endif>
                                                 @if (!empty($item->store_order_no))
                                                     <span class="inline-flex items-center px-3 py-1 text-xs font-medium">
                                                         <svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -627,12 +616,13 @@
                                                             N/A
                                                         </div>
                                                         <div
-                                                            class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max -translate-x-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                            class="pointer-events-none absolute right-full top-1/2 z-50 mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                                             No store order number available
                                                         </div>
                                                     </div>
                                                 @endif
                                             </td>
+
 
                                         </tr>
                                     @empty
@@ -674,7 +664,7 @@
                                                             description = 'Order is currently in transit to the store';
                                                         } else if (status === 'Processing') {
                                                             badgeClass = 'bg-yellow-100 text-yellow-800';
-                                                            description = 'Order is being processed';
+                                                            description = 'Order is being processed for shipment';
                                                         } else if (status === 'Pending') {
                                                             badgeClass = 'bg-orange-100 text-orange-800';
                                                             description = 'Order is pending for shipment';
