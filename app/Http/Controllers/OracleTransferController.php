@@ -311,4 +311,65 @@ class OracleTransferController extends Controller
             ], 500);
         }
     }
+
+public function getItemStatus($storeOrderNo)
+{
+    try {
+        // Check if store order number is blank or null
+        if (empty($storeOrderNo)) {
+            return response()->json([
+                'status' => 'N/A'
+            ], 200);
+        }
+
+        // Step 1: Check oracle_rms database - tsfhead table
+        $tsfHead = DB::connection('oracle_rms')
+            ->table('tsfhead')
+            ->where('tsf_no', $storeOrderNo)
+            ->first();
+
+        if (!$tsfHead) {
+            return response()->json([
+                'status' => 'Not Found'
+            ], 404);
+        }
+
+        // If found in tsfhead, default status is Pending
+        $status = 'Pending';
+
+        // Step 2: Check oracle_wms database - container_item table with rwms schema
+        $containerItem = DB::connection('oracle_wms')
+            ->table('rwms.container_item')
+            ->where('distro_nbr', $storeOrderNo)
+            ->first();
+
+        // If found in container_item, status becomes Shipped
+        if ($containerItem) {
+            $status = 'Shipped';
+            
+            // Step 3: Check oracle_rms database - shipsku table for received qty
+            $shipSku = DB::connection('oracle_rms')
+                ->table('shipsku')
+                ->where('distro_no', $storeOrderNo)
+                ->where('qty_received', '>', 0)
+                ->first();
+
+            // If qty_received > 0, status becomes Received
+            if ($shipSku) {
+                $status = 'Received';
+            }
+        }
+
+        return response()->json([
+            'status' => $status,
+            'store_order_no' => $storeOrderNo
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'Error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
 }

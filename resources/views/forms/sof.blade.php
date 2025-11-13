@@ -182,10 +182,22 @@
                                     '80211' => 'Sta. Rosa Warehouse',
                                     '80181' => 'Bacolod Depot',
                                     '80191' => 'Tacloban Depot',
-                                    // '80???' => 'Arellano Warehouse',
                                 ];
 
+                                // Map user locations to warehouse codes
+                                $locationToWarehouse = [
+                                    '4002' => '80051', // Example: Opao-ISO
+                                    '6012' => '80211', // Example: Silangan
+                                    // Add more mappings as needed...
+                                ];
+
+                                // Default selection
                                 $selectedWarehouse = old('warehouse') ?? '';
+
+                                // Auto-map user location to warehouse if available
+                                if (isset($locationToWarehouse[$userLocation])) {
+                                    $selectedWarehouse = $locationToWarehouse[$userLocation];
+                                }
                             @endphp
 
                             <div class="relative mb-6 w-full">
@@ -209,9 +221,10 @@
 
 
 
+
                             <div class="relative w-full">
                                 <input
-                                    value="{{ old('time_order') }}"
+                                    value="{{ old('time_order', date('Y-m-d\TH:i')) }}"
                                     type="datetime-local"
                                     name="time_order"
                                     class="datepicker required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
@@ -222,21 +235,8 @@
                                 </label>
                             </div>
 
-                            {{-- <script>
-																flatpickr("#time_order", {
-																		enableTime: true,
-																		dateFormat: "Y-m-d H:i",
-																		allowInput: true,
-																		onReady: (selectedDates, dateStr, instance) => {
-																				const btn = document.createElement("button");
-																				btn.innerText = "OK";
-																				btn.className = "flatpickr-ok";
-																				btn.style.margin = "5px";
-																				btn.onclick = () => instance.close();
-																				instance.calendarContainer.appendChild(btn);
-																		}
-																});
-														</script> --}}
+
+
                         </div>
                     </section>
 

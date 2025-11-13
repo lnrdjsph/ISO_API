@@ -418,6 +418,19 @@
                                         <th
                                             rowspan="2"
                                             class="border px-2 py-1">Store Order No. (SO#)</th>
+                                        @php
+                                            $hasStoreOrderNo = false;
+                                        @endphp
+
+                                        @forelse ($order->items as $item)
+                                            @if (!empty($item->store_order_no))
+                                                @php $hasStoreOrderNo = true; @endphp
+                                            @endif
+                                        @empty
+                                        @endforelse
+                                        @if ($hasStoreOrderNo)
+                                            <th rowspan="2" class="border px-2 py-1">Item Status</th>
+                                        @endif
                                     </tr>
                                     <tr>
                                         <th class="border p-1 text-center">QTY/PC</th>
@@ -593,10 +606,33 @@
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
                                                 data-field="store_order_no">{{ $item->store_order_no }}</td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][store_order_no]"
-                                                value="{{ $item->store_order_no }}">
+                                            {{-- Store Order No Column with API call --}}
+                                            <td class="relative border p-2 text-center"
+                                                contenteditable="false"
+                                                data-field="store_order_no"
+                                                data-item-index="{{ $loop->index }}"
+                                                @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}"
+        data-load-status="true" @endif>
+                                                @if (!empty($item->store_order_no))
+                                                    <span class="inline-flex items-center px-3 py-1 text-xs font-medium">
+                                                        <svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    </span>
+                                                @else
+                                                    <div class="relative inline-block">
+                                                        <div class="peer inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                                                            N/A
+                                                        </div>
+                                                        <div
+                                                            class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max -translate-x-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                            No store order number available
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </td>
 
                                         </tr>
                                     @empty
@@ -606,12 +642,87 @@
                                                 class="border px-4 py-4 text-center text-gray-500">No items found for this order.</td>
                                         </tr>
                                     @endforelse
+                                    <script>
+                                        (function() {
+                                            // Get all TDs with store order numbers
+                                            const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
+
+                                            tds.forEach(td => {
+                                                const storeOrderNo = td.dataset.storeOrderNo;
+
+                                                // Call your API
+                                                fetch(`/api/order-status/${storeOrderNo}`, {
+                                                        method: 'GET',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                                        }
+                                                    })
+                                                    .then(response => response.json())
+                                                    .then(data => {
+                                                        const status = data.status || 'Shipped';
+
+                                                        // Determine badge color and description based on status
+                                                        let badgeClass = 'bg-green-100 text-green-800';
+                                                        let description = '';
+
+                                                        if (status === 'Received') {
+                                                            badgeClass = 'bg-green-100 text-green-800';
+                                                            description = 'Order has been received by the store';
+                                                        } else if (status === 'Shipped') {
+                                                            badgeClass = 'bg-blue-100 text-blue-800';
+                                                            description = 'Order is currently in transit to the store';
+                                                        } else if (status === 'Processing') {
+                                                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                                                            description = 'Order is being processed';
+                                                        } else if (status === 'Pending') {
+                                                            badgeClass = 'bg-orange-100 text-orange-800';
+                                                            description = 'Order is pending for shipment';
+                                                        } else if (status === 'Not Found') {
+                                                            badgeClass = 'bg-red-100 text-red-800';
+                                                            description = 'Order not found in the system';
+                                                        } else if (status === 'Error') {
+                                                            badgeClass = 'bg-red-100 text-red-800';
+                                                            description = 'An error occurred while checking the order status';
+                                                        } else {
+                                                            badgeClass = 'bg-gray-100 text-gray-800';
+                                                            description = 'Order status is unknown';
+                                                        }
+
+                                                        // Replace loading with badge and tooltip
+                                                        td.innerHTML = `
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                                ${status}
+                            </div>
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                ${description}
+                            </div>
+                        </div>
+                    `;
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Error:', error);
+                                                        td.innerHTML = `
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                                Error loading
+                            </div>
+                            <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max -translate-x-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                Failed to load order status. Please try again later.
+                            </div>
+                        </div>
+                    `;
+                                                    });
+                                            });
+                                        })();
+                                    </script>
                                 </tbody>
 
                             </table>
 
-                            <div class="mb-4 mt-4 flex items-center justify-end gap-2">
-                                @php
+                            <div class="my-4 flex items-center justify-end gap-2">
+                                {{-- @php
                                     $hasStoreOrderNo = false;
                                 @endphp
 
@@ -620,7 +731,7 @@
                                         @php $hasStoreOrderNo = true; @endphp
                                     @endif
                                 @empty
-                                @endforelse
+                                @endforelse --}}
 
                                 {{-- @if ($hasStoreOrderNo)
                                     <button
@@ -681,6 +792,10 @@
 
                                             @if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
                                                 <option value="for approval">Request For Approval</option>
+                                            @endif
+
+                                            @if ($order->order_status === 'approved')
+                                                <option value="complete">Complete Order</option>
                                             @endif
 
                                             {{-- @if ($order->order_status !== 'processing')
@@ -871,6 +986,12 @@
                                                 actionText = 'This order will be cancelled!';
                                                 confirmColor = '#B91C1C';
                                                 break;
+                                                // complete
+                                            case 'complete':
+                                                actionText = 'This order will be marked as Completed!';
+                                                confirmColor = '#16A34A';
+                                                break;
+
                                             case 'restore':
                                                 actionText = 'This order will be restored!';
                                                 confirmColor = '#16A34A';
@@ -1044,6 +1165,9 @@
                                                     noteInput.value = note;
                                                     form.appendChild(noteInput);
                                                 }
+                                                break;
+                                            case 'complete':
+                                                form.action = "{{ route('orders.complete') }}";
                                                 break;
 
                                             case 'restore':
@@ -1942,6 +2066,7 @@
             document.addEventListener('DOMContentLoaded', function() {
                 const cancelBtn = document.getElementById('cancelButton');
                 const restoreBtn = document.getElementById('restoreButton');
+                const completeBtn = document.getElementById('completeButton');
 
                 if (cancelBtn) {
                     cancelBtn.addEventListener('click', function() {
@@ -2023,11 +2148,52 @@
                         });
                     });
                 }
+
+                if (completeBtn) {
+                    completeBtn.addEventListener('click', function() {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "This order will be marked as Complete!",
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonColor: '#10B981',
+                            cancelButtonColor: '#aaa',
+                            cancelButtonText: 'No, go back',
+                            confirmButtonText: 'Yes, complete it!',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '{{ route('orders.complete') }}';
+                                form.style.display = 'none';
+
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                                const inputCsrf = document.createElement('input');
+                                inputCsrf.type = 'hidden';
+                                inputCsrf.name = '_token';
+                                inputCsrf.value = csrfToken;
+                                form.appendChild(inputCsrf);
+
+                                const existingIdInput = document.querySelector('input[name="id"]');
+                                const orderId = existingIdInput ? existingIdInput.value : '';
+
+                                const orderIdInput = document.createElement('input');
+                                orderIdInput.type = 'hidden';
+                                orderIdInput.name = 'id';
+                                orderIdInput.value = orderId;
+                                form.appendChild(orderIdInput);
+
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        });
+                    });
+                }
             });
 
 
             function lockFieldsByStatus(orderStatus) {
-                const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'rejected'];
+                const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'rejected', 'completed'];
 
                 if (lockStatuses.includes(orderStatus)) {
                     // Lock all inputs

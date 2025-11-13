@@ -51,6 +51,7 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/archive', [OrderController::class, 'archive'])->name('archive');
         Route::post('/cancel', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/restore', [OrderController::class, 'restore'])->name('restore');
+        Route::post('/complete', [OrderController::class, 'complete'])->name('complete');
         Route::post('/for_approval', [OrderController::class, 'forApproval'])->name('for_approval');
         Route::post('/approve', [OrderController::class, 'approveOrder'])->name('approve');
         Route::post('/reject', [OrderController::class, 'rejectOrder'])->name('reject');
