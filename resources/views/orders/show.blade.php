@@ -637,22 +637,45 @@
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
 
-                                            tds.forEach(td => {
+                                            console.log('Found TDs to process:', tds.length);
+
+                                            tds.forEach((td, index) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
+                                                console.log(`Processing TD ${index + 1}:`, storeOrderNo);
 
                                                 // Call your API
                                                 fetch(`/api/order-status/${storeOrderNo}`)
                                                     .then(async response => {
-                                                        console.log('HTTP status:', response.status);
+                                                        console.log(`[${storeOrderNo}] HTTP status:`, response.status);
+                                                        console.log(`[${storeOrderNo}] Response OK:`, response.ok);
+                                                        console.log(`[${storeOrderNo}] Response headers:`, [...response.headers.entries()]);
+
                                                         const text = await response.text();
-                                                        console.log('Raw response:', text);
-                                                        return JSON.parse(text); // parse JSON once
+                                                        console.log(`[${storeOrderNo}] Raw response:`, text);
+
+                                                        // Check if response is empty
+                                                        if (!text) {
+                                                            throw new Error('Empty response from server');
+                                                        }
+
+                                                        // Try to parse JSON
+                                                        let data;
+                                                        try {
+                                                            data = JSON.parse(text);
+                                                        } catch (parseError) {
+                                                            console.error(`[${storeOrderNo}] JSON parse error:`, parseError);
+                                                            throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+                                                        }
+
+                                                        return data;
                                                     })
                                                     .then(data => {
+                                                        console.log(`[${storeOrderNo}] Parsed data:`, data);
+
                                                         const status = data?.status ?? 'Unknown';
 
                                                         // Determine badge color and description
-                                                        let badgeClass = 'bg-green-100 text-green-800';
+                                                        let badgeClass = 'bg-gray-100 text-gray-800';
                                                         let description = '';
 
                                                         if (status === 'Received') {
@@ -670,39 +693,47 @@
                                                         } else if (status === 'Not Found') {
                                                             badgeClass = 'bg-red-100 text-red-800';
                                                             description = 'Order not found in the system';
+                                                        } else if (status === 'N/A') {
+                                                            badgeClass = 'bg-gray-100 text-gray-800';
+                                                            description = 'No order number provided';
                                                         } else if (status === 'Error') {
                                                             badgeClass = 'bg-red-100 text-red-800';
-                                                            description = 'An error occurred while checking the order status';
+                                                            description = data.message || 'An error occurred while checking the order status';
                                                         } else {
                                                             badgeClass = 'bg-gray-100 text-gray-800';
                                                             description = 'Order status is unknown';
                                                         }
 
                                                         td.innerHTML = `
-            <div class="relative inline-block">
-                <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                    ${status}
-                </div>
-                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                    ${description}
-                </div>
-            </div>
-        `;
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                            ${status}
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            ${description}
+                        </div>
+                    </div>
+                `;
+
+                                                        console.log(`[${storeOrderNo}] Status updated successfully:`, status);
                                                     })
                                                     .catch(error => {
-                                                        console.error('Error:', error);
-                                                        td.innerHTML = `
-            <div class="relative inline-block">
-                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                    Error loading
-                </div>
-                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                    Failed to load order status. Please try again later.
-                </div>
-            </div>
-        `;
-                                                    });
+                                                        console.error(`[${storeOrderNo}] Fetch Error:`, error);
+                                                        console.error(`[${storeOrderNo}] Error name:`, error.name);
+                                                        console.error(`[${storeOrderNo}] Error message:`, error.message);
+                                                        console.error(`[${storeOrderNo}] Error stack:`, error.stack);
 
+                                                        td.innerHTML = `
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                            Error
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            Failed to load: ${error.message}
+                        </div>
+                    </div>
+                `;
+                                                    });
                                             });
                                         })();
                                     </script>
