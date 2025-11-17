@@ -321,21 +321,21 @@ public function getItemStatus($storeOrderNo)
 
         // Check if store order number is blank or null
         if (empty($storeOrderNo)) {
-            \Log::warning('Empty store order number received');
+            Log::warning('Empty store order number received');
             return response()->json([
                 'status' => 'N/A'
             ], 200);
         }
 
         // Step 1: Check oracle_rms database - tsfhead table
-        \Log::info('Checking tsfhead table', ['store_order_no' => $storeOrderNo]);
+        Log::info('Checking tsfhead table', ['store_order_no' => $storeOrderNo]);
         $tsfHead = DB::connection('oracle_rms')
             ->table('tsfhead')
             ->where('tsf_no', $storeOrderNo)
             ->first();
 
         if (!$tsfHead) {
-            \Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
+            Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
             return response()->json([
                 'status' => 'Not Found'
             ], 200);
@@ -343,10 +343,10 @@ public function getItemStatus($storeOrderNo)
 
         // If found in tsfhead, default status is Processing
         $status = 'Processing';
-        \Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
+        Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
         // Step 2: Check oracle_wms database - container_item table with rwms schema
-        \Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
+        Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
         $containerItem = DB::connection('oracle_wms')
             ->table('rwms.container_item')
             ->where('distro_nbr', $storeOrderNo)
@@ -355,10 +355,10 @@ public function getItemStatus($storeOrderNo)
         // If found in container_item, status becomes Shipped
         if ($containerItem) {
             $status = 'Shipped';
-            \Log::info('Order found in container_item, status: Shipped', ['store_order_no' => $storeOrderNo]);
+            Log::info('Order found in container_item, status: Shipped', ['store_order_no' => $storeOrderNo]);
             
             // Step 3: Check oracle_rms database - shipsku table for received qty
-            \Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
+            Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
             $shipSku = DB::connection('oracle_rms')
                 ->table('shipsku')
                 ->where('distro_no', $storeOrderNo)
@@ -368,11 +368,11 @@ public function getItemStatus($storeOrderNo)
             // If qty_received > 0, status becomes Received
             if ($shipSku) {
                 $status = 'Received';
-                \Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
+                Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
             }
         }
 
-        \Log::info('Final status determined', [
+        Log::info('Final status determined', [
             'store_order_no' => $storeOrderNo,
             'status' => $status
         ]);
@@ -383,7 +383,7 @@ public function getItemStatus($storeOrderNo)
         ], 200);
 
     } catch (\Exception $e) {
-        \Log::error('Order status error', [
+        Log::error('Order status error', [
             'store_order_no' => $storeOrderNo,
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
@@ -393,9 +393,8 @@ public function getItemStatus($storeOrderNo)
 
         return response()->json([
             'status' => 'Error',
-            'message' => $e->getMessage(),
             'store_order_no' => $storeOrderNo
-        ], 500); // Changed to 500 to indicate server error
+        ], 500);
     }
 }
 }
