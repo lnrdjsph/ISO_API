@@ -650,7 +650,7 @@
                                                     })
                                                     .then(response => response.json())
                                                     .then(data => {
-                                                        const status = data.status || 'Shipped';
+                                                        const status = data?.status ?? 'Unknown';
 
                                                         // Determine badge color and description based on status
                                                         let badgeClass = 'bg-green-100 text-green-800';

@@ -331,7 +331,7 @@ class OracleTransferController extends Controller
             if (!$tsfHead) {
                 return response()->json([
                     'status' => 'Not Found'
-                ], 404);
+                ], 200);
             }
 
             // If found in tsfhead, default status is Pending
@@ -369,7 +369,7 @@ class OracleTransferController extends Controller
             return response()->json([
                 'status' => 'Error',
                 'message' => $e->getMessage()
-            ], 500);
+            ], 200);
         }
     }
 }

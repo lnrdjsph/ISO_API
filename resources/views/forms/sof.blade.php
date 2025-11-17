@@ -186,7 +186,7 @@
 
                                 // Map user locations to warehouse codes
                                 $locationToWarehouse = [
-                                    '4002' => '80051', // Example: Opao-ISO
+                                    '4002' => '80181', // Example: Opao-ISO
                                     '6012' => '80211', // Example: Silangan
                                     // Add more mappings as needed...
                                 ];
