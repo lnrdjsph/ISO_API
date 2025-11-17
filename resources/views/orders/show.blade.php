@@ -698,7 +698,7 @@
                             <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
                                 Error loading
                             </div>
-                            <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max -translate-x-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                 Failed to load order status. Please try again later.
                             </div>
                         </div>
