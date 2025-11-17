@@ -641,18 +641,17 @@
                                                 const storeOrderNo = td.dataset.storeOrderNo;
 
                                                 // Call your API
-                                                fetch(`/api/order-status/${storeOrderNo}`, {
-                                                        method: 'GET',
-                                                        headers: {
-                                                            'Content-Type': 'application/json',
-                                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                                        }
+                                                fetch(`/api/order-status/${storeOrderNo}`)
+                                                    .then(async response => {
+                                                        console.log('HTTP status:', response.status);
+                                                        const text = await response.text();
+                                                        console.log('Raw response:', text);
+                                                        return JSON.parse(text); // parse JSON once
                                                     })
-                                                    .then(response => response.json())
                                                     .then(data => {
                                                         const status = data?.status ?? 'Unknown';
 
-                                                        // Determine badge color and description based on status
+                                                        // Determine badge color and description
                                                         let badgeClass = 'bg-green-100 text-green-800';
                                                         let description = '';
 
@@ -679,31 +678,31 @@
                                                             description = 'Order status is unknown';
                                                         }
 
-                                                        // Replace loading with badge and tooltip
                                                         td.innerHTML = `
-                        <div class="relative inline-block">
-                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                                ${status}
-                            </div>
-                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                ${description}
-                            </div>
-                        </div>
-                    `;
+            <div class="relative inline-block">
+                <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                    ${status}
+                </div>
+                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                    ${description}
+                </div>
+            </div>
+        `;
                                                     })
                                                     .catch(error => {
                                                         console.error('Error:', error);
                                                         td.innerHTML = `
-                        <div class="relative inline-block">
-                            <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                                Error loading
-                            </div>
-                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                Failed to load order status. Please try again later.
-                            </div>
-                        </div>
-                    `;
+            <div class="relative inline-block">
+                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                    Error loading
+                </div>
+                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                    Failed to load order status. Please try again later.
+                </div>
+            </div>
+        `;
                                                     });
+
                                             });
                                         })();
                                     </script>
