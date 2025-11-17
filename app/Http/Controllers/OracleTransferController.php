@@ -10,6 +10,7 @@ use App\Models\ISO_B2B\OrderNote;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
+
 class OracleTransferController extends Controller
 {
     public function send(Request $request)
@@ -316,7 +317,7 @@ public function getItemStatus($storeOrderNo)
 {
     try {
         // Log the incoming request
-        \Log::info('Order status request received', ['store_order_no' => $storeOrderNo]);
+        Log::info('Order status request received', ['store_order_no' => $storeOrderNo]);
 
         // Check if store order number is blank or null
         if (empty($storeOrderNo)) {
