@@ -640,8 +640,10 @@
                                             tds.forEach((td) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
 
-                                                // Call your API
-                                                fetch(`/api/order-status/${storeOrderNo}`)
+                                                // Use Laravel route helper
+                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__']) }}".replace('__STORE_ORDER_NO__', storeOrderNo);
+
+                                                fetch(url)
                                                     .then(async response => {
                                                         const text = await response.text();
 
