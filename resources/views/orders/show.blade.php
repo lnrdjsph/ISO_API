@@ -637,21 +637,13 @@
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
 
-                                            console.log('Found TDs to process:', tds.length);
-
-                                            tds.forEach((td, index) => {
+                                            tds.forEach((td) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
-                                                console.log(`Processing TD ${index + 1}:`, storeOrderNo);
 
                                                 // Call your API
                                                 fetch(`/api/order-status/${storeOrderNo}`)
                                                     .then(async response => {
-                                                        console.log(`[${storeOrderNo}] HTTP status:`, response.status);
-                                                        console.log(`[${storeOrderNo}] Response OK:`, response.ok);
-                                                        console.log(`[${storeOrderNo}] Response headers:`, [...response.headers.entries()]);
-
                                                         const text = await response.text();
-                                                        console.log(`[${storeOrderNo}] Raw response:`, text);
 
                                                         // Check if response is empty
                                                         if (!text) {
@@ -663,15 +655,12 @@
                                                         try {
                                                             data = JSON.parse(text);
                                                         } catch (parseError) {
-                                                            console.error(`[${storeOrderNo}] JSON parse error:`, parseError);
-                                                            throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+                                                            throw new Error('Invalid response format');
                                                         }
 
                                                         return data;
                                                     })
                                                     .then(data => {
-                                                        console.log(`[${storeOrderNo}] Parsed data:`, data);
-
                                                         const status = data?.status ?? 'Unknown';
 
                                                         // Determine badge color and description
@@ -698,7 +687,7 @@
                                                             description = 'No order number provided';
                                                         } else if (status === 'Error') {
                                                             badgeClass = 'bg-red-100 text-red-800';
-                                                            description = data.message || 'An error occurred while checking the order status';
+                                                            description = 'An error occurred while checking the order status';
                                                         } else {
                                                             badgeClass = 'bg-gray-100 text-gray-800';
                                                             description = 'Order status is unknown';
@@ -714,22 +703,15 @@
                         </div>
                     </div>
                 `;
-
-                                                        console.log(`[${storeOrderNo}] Status updated successfully:`, status);
                                                     })
                                                     .catch(error => {
-                                                        console.error(`[${storeOrderNo}] Fetch Error:`, error);
-                                                        console.error(`[${storeOrderNo}] Error name:`, error.name);
-                                                        console.error(`[${storeOrderNo}] Error message:`, error.message);
-                                                        console.error(`[${storeOrderNo}] Error stack:`, error.stack);
-
                                                         td.innerHTML = `
                     <div class="relative inline-block">
                         <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
                             Error
                         </div>
                         <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            Failed to load: ${error.message}
+                            Failed to load order status. Please try again later.
                         </div>
                     </div>
                 `;
