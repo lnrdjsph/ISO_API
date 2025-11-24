@@ -1,0 +1,669 @@
+cells:
+  - kind: 2
+    value: "SELECT *\r
+
+      FROM (\r
+
+      \    SELECT *\r
+
+      \    FROM TSFHEAD\r
+
+      \    ORDER BY TSF_NO DESC\r
+
+      )\r
+
+      WHERE ROWNUM <= 5;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT *\r
+
+      FROM (\r
+
+      \    SELECT *\r
+
+      \    FROM RIB_MESSAGE_FAILURE\r
+
+      \    ORDER BY MESSAGE_NUM DESC\r
+
+      )\r
+
+      WHERE ROWNUM <= 5;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT *\r
+
+      FROM (\r
+
+      \    SELECT *\r
+
+      \    FROM RIB_MESSAGE\r
+
+      \    ORDER BY MESSAGE_NUM DESC\r
+
+      )\r
+
+      WHERE ROWNUM <= 5;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT DISTINCT\r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            REGEXP_REPLACE(\r
+
+      \                REGEXP_REPLACE(\r
+
+      \                    REGEXP_REPLACE(\r
+
+      \                        REGEXP_REPLACE(\r
+
+      \                            DESCRIPTION,\r
+
+      \                            'item [0-9]+|location [0-9]+|[0-9]+ units',\r
+
+      \                            '***'\r
+
+      \                        ),\r
+
+      \                        'line [0-9]+',\r
+
+      \                        ''\r
+
+      \                    ),\r
+
+      \                    'Caused by:.*',\r
+
+      \                    '',\r
+
+      \                    1,\r
+
+      \                    0,\r
+
+      \                    'n'\r
+
+      \                ),\r
+
+      \                'at .*',\r
+
+      \                '',\r
+
+      \                1,\r
+
+      \                0,\r
+
+      \                'n'\r
+
+      \            ),\r
+
+      \            '\\[E\\].*?(;|$)',   -- catch any [E] block up to semicolon
+      or end\r
+
+      \            1,\r
+
+      \            1,\r
+
+      \            'n'\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR\r
+
+      FROM \r
+
+      \    RIB_MESSAGE_FAILURE\r
+
+      WHERE \r
+
+      \    ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND DESCRIPTION LIKE '%[E]%'   -- only include error-marked
+      descriptions\r
+
+      \    AND TIME > SYSDATE - 7\r
+
+      ORDER BY \r
+
+      \    CLEAN_ERROR;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT DISTINCT\r
+
+      \    m.MESSAGE_ID,\r
+
+      \    m.ADAPTER_NAME,\r
+
+      \    m.MESSAGE_TYPE,\r
+
+      \    m.TIME_PUBLISHED,\r
+
+      \    m.PAYLOAD,\r
+
+      \    f.ADAPTER_CLASS_LOCATION,\r
+
+      \    f.TIME AS FAILURE_TIME,\r
+
+      \    f.DESCRIPTION AS ERROR_MESSAGE\r
+
+      FROM \r
+
+      \    RIB_MESSAGE m\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE_FAILURE f \r
+
+      \    ON m.MESSAGE_ID = f.MESSAGE_ID\r
+
+      WHERE \r
+
+      \    m.ADAPTER_NAME = 'rib-rms_XTsf_sub'\r
+
+      \    AND m.TIME_PUBLISHED > SYSDATE - 7\r
+
+      ORDER BY \r
+
+      \    f.TIME DESC;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT DISTINCT\r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            REGEXP_REPLACE(\r
+
+      \                REGEXP_REPLACE(\r
+
+      \                    REGEXP_REPLACE(\r
+
+      \                        REGEXP_REPLACE(\r
+
+      \                            DBMS_LOB.SUBSTR(F.DESCRIPTION, 4000, 1),  --
+      ✅ Convert CLOB to VARCHAR2\r
+
+      \                            'item [0-9]+|location [0-9]+|[0-9]+ units',\r
+
+      \                            '***'\r
+
+      \                        ),\r
+
+      \                        'line [0-9]+',\r
+
+      \                        ''\r
+
+      \                    ),\r
+
+      \                    'Caused by:.*',\r
+
+      \                    '',\r
+
+      \                    1,\r
+
+      \                    0,\r
+
+      \                    'n'\r
+
+      \                ),\r
+
+      \                'at .*',\r
+
+      \                '',\r
+
+      \                1,\r
+
+      \                0,\r
+
+      \                'n'\r
+
+      \            ),\r
+
+      \            '\\[E\\].*?(;|$)',\r
+
+      \            1,\r
+
+      \            1,\r
+
+      \            'n'\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR,\r
+
+      \r
+
+      \    -- Include some identifying data from rib_message\r
+
+      \    R.RIB_MESSAGE_ID,\r
+
+      \    R.MESSAGE_NUM,\r
+
+      \    R.TYPE,\r
+
+      \    R.TOPIC_NAME,\r
+
+      \    R.PUBLISH_TIME,\r
+
+      \    DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1) AS MESSAGE_DATA,  -- ✅
+      Convert message CLOB too\r
+
+      \    R.ADAPTER_CLASS_LOCATION\r
+
+      \r
+
+      FROM \r
+
+      \    RIB_MESSAGE_FAILURE F\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE R \r
+
+      \    ON F.MESSAGE_NUM = R.MESSAGE_NUM\r
+
+      \   AND F.ADAPTER_CLASS_LOCATION = R.ADAPTER_CLASS_LOCATION\r
+
+      WHERE \r
+
+      \    F.ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND DBMS_LOB.INSTR(F.DESCRIPTION, '[E]') > 0\r
+
+      \    AND F.TIME > SYSDATE - 7\r
+
+      ORDER BY \r
+
+      \    CLEAN_ERROR;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT DISTINCT\r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            REGEXP_REPLACE(\r
+
+      \                REGEXP_REPLACE(\r
+
+      \                    REGEXP_REPLACE(\r
+
+      \                        REGEXP_REPLACE(\r
+
+      \                            DBMS_LOB.SUBSTR(F.DESCRIPTION, 4000, 1),  --
+      ✅ Convert CLOB to VARCHAR2\r
+
+      \                            'item [0-9]+|location [0-9]+|[0-9]+ units',\r
+
+      \                            '***'\r
+
+      \                        ),\r
+
+      \                        'line [0-9]+',\r
+
+      \                        ''\r
+
+      \                    ),\r
+
+      \                    'Caused by:.*',\r
+
+      \                    '',\r
+
+      \                    1,\r
+
+      \                    0,\r
+
+      \                    'n'\r
+
+      \                ),\r
+
+      \                'at .*',\r
+
+      \                '',\r
+
+      \                1,\r
+
+      \                0,\r
+
+      \                'n'\r
+
+      \            ),\r
+
+      \            '\\[E\\].*?(;|$)',\r
+
+      \            1,\r
+
+      \            1,\r
+
+      \            'n'\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR,\r
+
+      \r
+
+      \    -- Include some identifying data from rib_message\r
+
+      \    R.RIB_MESSAGE_ID,\r
+
+      \    R.MESSAGE_NUM,\r
+
+      \    R.TYPE,\r
+
+      \    R.TOPIC_NAME,\r
+
+      \    R.PUBLISH_TIME,\r
+
+      \    DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1) AS MESSAGE_DATA,  -- ✅
+      Convert message CLOB too\r
+
+      \    R.ADAPTER_CLASS_LOCATION\r
+
+      \r
+
+      FROM \r
+
+      \    RIB_MESSAGE_FAILURE F\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE R \r
+
+      \    ON F.MESSAGE_NUM = R.MESSAGE_NUM\r
+
+      \   AND F.ADAPTER_CLASS_LOCATION = R.ADAPTER_CLASS_LOCATION\r
+
+      WHERE \r
+
+      \    F.ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND DBMS_LOB.INSTR(F.DESCRIPTION, '[E]') > 0\r
+
+      \    AND F.TIME > SYSDATE - 7\r
+
+      ORDER BY \r
+
+      \    CLEAN_ERROR;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT\r
+
+      \    R.MESSAGE_NUM,\r
+
+      \    REGEXP_SUBSTR(DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1),
+      '<tsf_no>(.*?)</tsf_no>', 1, 1, NULL, 1) AS TSF_NO,  -- ✅ Extract tsf_no
+      from XML\r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            REGEXP_REPLACE(\r
+
+      \                REGEXP_REPLACE(\r
+
+      \                    REGEXP_REPLACE(\r
+
+      \                        REGEXP_REPLACE(\r
+
+      \                            DBMS_LOB.SUBSTR(F.DESCRIPTION, 4000, 1),  --
+      ✅ convert CLOB to VARCHAR2\r
+
+      \                            'item [0-9]+|location [0-9]+|[0-9]+ units',\r
+
+      \                            '***'\r
+
+      \                        ),\r
+
+      \                        'line [0-9]+',\r
+
+      \                        ''\r
+
+      \                    ),\r
+
+      \                    'Caused by:.*',\r
+
+      \                    '',\r
+
+      \                    1,\r
+
+      \                    0,\r
+
+      \                    'n'\r
+
+      \                ),\r
+
+      \                'at .*',\r
+
+      \                '',\r
+
+      \                1,\r
+
+      \                0,\r
+
+      \                'n'\r
+
+      \            ),\r
+
+      \            '\\[E\\](.*?);',   -- ✅ get only the text between [E] and ;\r
+
+      \            1,\r
+
+      \            1,\r
+
+      \            'n'\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR\r
+
+      \r
+
+      FROM \r
+
+      \    RIB_MESSAGE R\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE_FAILURE F\r
+
+      \    ON R.MESSAGE_NUM = F.MESSAGE_NUM\r
+
+      \    AND R.ADAPTER_CLASS_LOCATION = F.ADAPTER_CLASS_LOCATION\r
+
+      \r
+
+      WHERE \r
+
+      \    R.ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND F.SEQ_NUMBER = 4\r
+
+      \    AND DBMS_LOB.INSTR(F.DESCRIPTION, '[E]') > 0\r
+
+      \    AND F.TIME > SYSDATE - 7\r
+
+      \r
+
+      ORDER BY \r
+
+      \    TSF_NO DESC;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT\r
+
+      \    R.MESSAGE_NUM,\r
+
+      \    REGEXP_SUBSTR(DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1),
+      '<tsf_no>([^<]+)</tsf_no>', 1, 1, NULL, 1) AS TSF_NO,\r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            REGEXP_REPLACE(\r
+
+      \                REGEXP_REPLACE(\r
+
+      \                    REGEXP_REPLACE(\r
+
+      \                        REGEXP_REPLACE(\r
+
+      \                            DBMS_LOB.SUBSTR(F.DESCRIPTION, 4000, 1),\r
+
+      \                            'Caused by:.*',\r
+
+      \                            ''\r
+
+      \                        ),\r
+
+      \                        'line [0-9]+',\r
+
+      \                        ''\r
+
+      \                    ),\r
+
+      \                    'at .*',\r
+
+      \                    ''\r
+
+      \                ),\r
+
+      \                '-- Nested exception:.*',\r
+
+      \                ''\r
+
+      \            ),\r
+
+      \            '\\[E\\][^;]+',\r
+
+      \            1,\r
+
+      \            1\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR,\r
+
+      \    F.SEQ_NUMBER,\r
+
+      \    R.ADAPTER_CLASS_LOCATION,\r
+
+      \    F.TIME\r
+
+      FROM \r
+
+      \    RIB_MESSAGE R\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE_FAILURE F\r
+
+      \    ON R.MESSAGE_NUM = F.MESSAGE_NUM\r
+
+      \    AND R.ADAPTER_CLASS_LOCATION = F.ADAPTER_CLASS_LOCATION\r
+
+      WHERE \r
+
+      \    R.ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND F.SEQ_NUMBER = 4\r
+
+      \    AND DBMS_LOB.INSTR(F.DESCRIPTION, '[E]') > 0\r
+
+      \    AND F.TIME > SYSDATE - 7\r
+
+      \    AND REGEXP_SUBSTR(DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1),
+      '<tsf_no>([^<]+)</tsf_no>', 1, 1, NULL, 1) = '3008609325'\r
+
+      ORDER BY \r
+
+      \    F.TIME DESC;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT\r
+
+      \    R.MESSAGE_NUM,\r
+
+      \    REGEXP_SUBSTR(\r
+
+      \        DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1),\r
+
+      \        '<tsf_no>([^<]+)</tsf_no>',\r
+
+      \        1, 1, NULL, 1\r
+
+      \    ) AS TSF_NO,\r
+
+      \r
+
+      \    TRIM(\r
+
+      \        REGEXP_SUBSTR(\r
+
+      \            DBMS_LOB.SUBSTR(F.DESCRIPTION, 4000, 1),\r
+
+      \            '\\[E\\](.*?);',\r
+
+      \            1, 1, NULL, 1\r
+
+      \        )\r
+
+      \    ) AS CLEAN_ERROR,\r
+
+      \r
+
+      \    F.SEQ_NUMBER,\r
+
+      \    R.ADAPTER_CLASS_LOCATION,\r
+
+      \    F.TIME\r
+
+      \r
+
+      FROM \r
+
+      \    RIB_MESSAGE R\r
+
+      JOIN \r
+
+      \    RIB_MESSAGE_FAILURE F\r
+
+      \    ON R.MESSAGE_NUM = F.MESSAGE_NUM\r
+
+      \    AND R.ADAPTER_CLASS_LOCATION = F.ADAPTER_CLASS_LOCATION\r
+
+      \r
+
+      WHERE \r
+
+      \    R.ADAPTER_CLASS_LOCATION = 'rib-rms_XTsf_sub'\r
+
+      \    AND F.SEQ_NUMBER = 0\r
+
+      \    AND DBMS_LOB.INSTR(F.DESCRIPTION, '[E]') > 0\r
+
+      \    AND F.TIME > SYSDATE - 7\r
+
+      \    AND REGEXP_SUBSTR(\r
+
+      \        DBMS_LOB.SUBSTR(R.MESSAGE_DATA, 4000, 1),\r
+
+      \        '<tsf_no>([^<]+)</tsf_no>',\r
+
+      \        1, 1, NULL, 1\r
+
+      \    ) = '3008651273'\r
+
+      \r
+
+      ORDER BY \r
+
+      \    F.TIME DESC;\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: ""
+    languageId: oracle-sql

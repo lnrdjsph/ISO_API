@@ -36,20 +36,18 @@ return [
         'connections' => [
 
         'oracle_mbc' => [
-            'driver'   => env('MBC_DB_CONNECTION', 'oracle'),
+            'driver'   => 'oracle',
             'host'     => env('MBC_DB_HOST', '10.128.0.23'),
             'port'     => env('MBC_DB_PORT', '1521'),
-            'database' => env('MBC_DB_SERVICE_NAME', 'orcl1'), 
+            'database' => env('MBC_DB_SERVICE_NAME', 'orcl1'),
             'username' => env('MBC_DB_USERNAME', 'crdappmgr'),
             'password' => env('MBC_DB_PASSWORD', 'crdappmgr'),
             'charset'  => 'AL32UTF8',
             'prefix'   => '',
         ],
 
-
         'oracle_rms' => [
             'driver'         => 'oracle',
-            'tns'            => '',
             'host'           => env('ORACLE_RMS_HOST', '172.100.20.141'),
             'port'           => env('ORACLE_RMS_PORT', '1521'),
             'database'       => env('ORACLE_RMS_DATABASE', 'MGRMST'),
@@ -62,10 +60,8 @@ return [
             'server_version' => env('DB_SERVER_VERSION', '11g'),
         ],
 
-
         'oracle_wms' => [
             'driver'         => 'oracle',
-            'tns'            => '',
             'host'           => env('ORACLE_WMS_HOST', 'sitwmsdb.metro.com.ph'),
             'port'           => env('ORACLE_WMS_PORT', '1521'),
             'database'       => env('ORACLE_WMS_DATABASE', 'MGMST'),
@@ -77,6 +73,7 @@ return [
             'edition'        => env('DB_EDITION', 'ora$base'),
             'server_version' => env('DB_SERVER_VERSION', '11g'),
         ],
+
 
         'sqlite' => [
             'driver' => 'sqlite',

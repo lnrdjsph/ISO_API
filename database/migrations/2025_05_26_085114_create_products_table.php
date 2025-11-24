@@ -32,7 +32,6 @@ return new class extends Migration {
                 // New columns
                 $table->string('case_pack')->nullable(); // Number of items per case
                 $table->decimal('srp', 10, 2); // Suggested Retail Price
-                $table->integer('wms_allocation_per_case')->nullable();
                 $table->integer('allocation_per_case')->nullable();
                 $table->string('cash_bank_card_scheme', 10)->nullable();
                 $table->string('po15_scheme', 10)->nullable();

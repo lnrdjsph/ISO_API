@@ -522,14 +522,16 @@
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
                                                 data-field="discount">
-                                                {{ $item->item_type === 'DISCOUNT' ? ($item->discount ?: 0) : 'N/A' }}
+
+                                                {{-- Always show numeric value only --}}
+                                                {{ $item->item_type === 'DISCOUNT' ? $item->discount ?? 0 : 0 }}
                                             </td>
 
-                                            </td>
                                             <input
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][discount]"
-                                                value="{{ $item->discount }}">
+                                                value="{{ $item->discount ?? 0 }}">
+
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="true"
@@ -596,6 +598,13 @@
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
                                                 data-field="store_order_no">{{ $item->store_order_no }}</td>
+
+                                            <input
+                                                type="hidden"
+                                                name="items[{{ $loop->index }}][store_order_no]"
+                                                value="{{ $item->store_order_no }}">
+
+
                                             {{-- Store Order No Column with API call --}}
                                             <td class="relative border p-2 text-center"
                                                 contenteditable="false"
@@ -2197,7 +2206,7 @@
 
 
             function lockFieldsByStatus(orderStatus) {
-                const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'rejected', 'completed'];
+                const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'completed'];
 
                 if (lockStatuses.includes(orderStatus)) {
                     // Lock all inputs

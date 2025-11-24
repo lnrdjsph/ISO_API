@@ -43,10 +43,8 @@
                                     <button
                                         type="submit"
                                         id="updateButton"
-                                        class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl">
-                                        <span
-                                            id="buttonText"
-                                            class="text-sm">Update Allocations</span>
+                                        class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50">
+                                        <span id="buttonText" class="text-sm">Update Allocations</span>
                                     </button>
                                 </form>
                             </div>
@@ -54,13 +52,13 @@
                             <!-- Full Page Loader -->
                             <div
                                 id="pageLoader"
-                                class="fixed inset-0 left-[-16px] z-50 flex hidden items-center justify-center bg-black/50">
-                                <div class="flex flex-col items-center rounded-2xl bg-white px-8 py-6 shadow-lg">
+                                class="fixed inset-0 left-[-16px] z-50 flex hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+                                <div class="mx-4 flex w-full max-w-md flex-col items-center rounded-2xl bg-white px-8 py-6 shadow-2xl">
                                     <!-- Spinner -->
                                     <div class="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
 
                                     <!-- Title -->
-                                    <p class="mt-4 text-lg font-semibold text-gray-700">
+                                    <p id="loaderTitle" class="mt-4 text-lg font-semibold text-gray-700">
                                         Updating the following fields:
                                     </p>
 
@@ -68,7 +66,11 @@
                                     <ul class="mt-3 space-y-1 text-gray-600">
                                         <li class="flex items-center gap-2">
                                             <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                                            WMS Inventory
+                                            WMS Actual Allocation
+                                        </li>
+                                        <li class="flex items-center gap-2">
+                                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                            WMS Virtual Allocation
                                         </li>
                                         <li class="flex items-center gap-2">
                                             <span class="h-2 w-2 rounded-full bg-blue-500"></span>
@@ -76,95 +78,272 @@
                                         </li>
                                     </ul>
 
-                                    <!-- Subtext -->
-                                    <p class="mt-3 text-sm text-gray-500">Please wait, this may take a few minutes...</p>
+                                    <!-- Progress Message -->
+                                    <div class="mt-4 w-full">
+                                        <p id="loaderMessage" class="text-center text-sm text-gray-600">
+                                            Please wait, this may take a few minutes...
+                                        </p>
+
+                                        <!-- Progress Details -->
+                                        <div id="progressDetails" class="mt-3 hidden rounded-lg bg-blue-50 p-3">
+                                            <p class="font-mono text-xs text-blue-800" id="progressText"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Bar (Optional) -->
+                                    <div class="mt-4 w-full">
+                                        <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200">
+                                            <div id="progressBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
+                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-                            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const form = document.getElementById('updateAllocationsForm');
+                                const button = document.getElementById('updateButton');
+                                const loader = document.getElementById('pageLoader');
+                                const loaderTitle = document.getElementById('loaderTitle');
+                                const loaderMessage = document.getElementById('loaderMessage');
+                                const progressDetails = document.getElementById('progressDetails');
+                                const progressText = document.getElementById('progressText');
+                                const progressBar = document.getElementById('progressBar');
 
-                            <script>
-                                document.getElementById('updateAllocationsForm').addEventListener('submit', function(e) {
+                                let checkStatusInterval = null;
+                                let progressPercentage = 0;
+
+                                form.addEventListener('submit', function(e) {
                                     e.preventDefault();
 
                                     Swal.fire({
                                         title: 'Warning',
-                                        text: 'This process may take a long time. Are you sure you want to proceed?',
+                                        html: '<p>This process may take several minutes and will update:</p>' +
+                                            '<ul class="text-left mt-2 space-y-1">' +
+                                            '<li>• WMS Actual Allocation</li>' +
+                                            '<li>• WMS Virtual Allocation</li>' +
+                                            '<li>• Case Pack Data</li>' +
+                                            '</ul>' +
+                                            '<p class="mt-2">Are you sure you want to proceed?</p>',
                                         icon: 'warning',
                                         showCancelButton: true,
                                         confirmButtonText: 'Yes, proceed',
-                                        cancelButtonText: 'Cancel'
+                                        cancelButtonText: 'Cancel',
+                                        confirmButtonColor: '#2563eb',
+                                        cancelButtonColor: '#6b7280'
                                     }).then((result) => {
                                         if (!result.isConfirmed) return;
 
-                                        const loader = document.getElementById('pageLoader');
-                                        const loaderMessage = loader.querySelector("p");
-                                        loader.classList.remove('hidden');
-                                        loaderMessage.textContent = "Starting allocations update...";
-
-                                        // Step 1: Trigger update
-                                        fetch(this.action, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                                    'Accept': 'application/json'
-                                                }
-                                            })
-                                            .then(res => res.json())
-                                            .then(data => {
-                                                loaderMessage.textContent = "Allocations update started. Checking progress...";
-
-                                                // Step 2: Poll status
-                                                const checkStatus = setInterval(() => {
-                                                    fetch("{{ route('update.allocations.status') }}") // <-- make sure you define this route
-                                                        .then(res => res.json())
-                                                        .then(statusData => {
-                                                            loaderMessage.textContent = statusData.message;
-
-                                                            if (statusData.status === 'done') {
-                                                                clearInterval(checkStatus);
-                                                                loader.classList.add('hidden');
-
-                                                                Swal.fire({
-                                                                    title: 'Completed',
-                                                                    text: 'Allocations update finished successfully.',
-                                                                    icon: 'success',
-                                                                    confirmButtonText: 'OK'
-                                                                }).then(() => {
-                                                                    window.location.reload();
-                                                                });
-                                                            }
-                                                        })
-                                                        .catch(err => {
-                                                            clearInterval(checkStatus);
-                                                            loader.classList.add('hidden');
-                                                            Swal.fire({
-                                                                title: 'Error',
-                                                                text: 'Failed to check status.',
-                                                                icon: 'error',
-                                                                confirmButtonText: 'OK'
-                                                            });
-                                                        });
-                                                }, 3000); // check every 3 seconds
-                                            })
-                                            .catch(err => {
-                                                loader.classList.add('hidden');
-                                                Swal.fire({
-                                                    title: 'Error',
-                                                    text: 'Error starting allocations update.',
-                                                    icon: 'error',
-                                                    confirmButtonText: 'OK'
-                                                });
-                                            });
+                                        startUpdate();
                                     });
                                 });
-                            </script>
 
+                                function startUpdate() {
+                                    // Disable button
+                                    button.disabled = true;
 
+                                    // Show loader
+                                    loader.classList.remove('hidden');
+                                    loaderTitle.textContent = 'Initializing Update...';
+                                    loaderMessage.textContent = 'Starting allocation update process...';
+                                    progressBar.style.width = '10%';
+                                    progressPercentage = 10;
 
-                            {{-- </div> --}}
-                        </div>
+                                    // Trigger update
+                                    fetch(form.action, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                'Accept': 'application/json',
+                                                'Content-Type': 'application/json'
+                                            }
+                                        })
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            if (data.status === 'started' || data.status === 'running') {
+                                                loaderTitle.textContent = 'Update in Progress';
+                                                loaderMessage.textContent = data.message || 'Processing...';
+                                                progressBar.style.width = '25%';
+                                                progressPercentage = 25;
+
+                                                // Start polling for status
+                                                startPolling();
+                                            } else if (data.status === 'error') {
+                                                showError(data.message);
+                                            }
+                                        })
+                                        .catch(err => {
+                                            console.error('Start error:', err);
+                                            showError('Failed to start allocation update. Please try again.');
+                                        });
+                                }
+
+                                function startPolling() {
+                                    // Poll every 3 seconds
+                                    checkStatusInterval = setInterval(checkStatus, 3000);
+                                }
+
+                                function stopPolling() {
+                                    if (checkStatusInterval) {
+                                        clearInterval(checkStatusInterval);
+                                        checkStatusInterval = null;
+                                    }
+                                }
+
+                                function checkStatus() {
+                                    fetch('{{ route('update.allocations.status') }}')
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            console.log('Status:', data);
+
+                                            if (data.status === 'done') {
+                                                stopPolling();
+                                                handleCompletion(data);
+                                            } else if (data.status === 'running') {
+                                                updateProgress(data);
+                                            } else if (data.status === 'pending') {
+                                                loaderMessage.textContent = data.message;
+                                                // Slowly increase progress while pending
+                                                if (progressPercentage < 30) {
+                                                    progressPercentage += 2;
+                                                    progressBar.style.width = progressPercentage + '%';
+                                                }
+                                            } else if (data.status === 'error') {
+                                                stopPolling();
+                                                showError(data.message);
+                                            }
+                                        })
+                                        .catch(err => {
+                                            console.error('Status check error:', err);
+                                            // Don't stop polling on network errors, might be temporary
+                                        });
+                                }
+
+                                function updateProgress(data) {
+                                    loaderMessage.textContent = data.message || 'Processing...';
+
+                                    // Show progress details if available
+                                    if (data.progress) {
+                                        if (data.progress.current_step) {
+                                            progressDetails.classList.remove('hidden');
+                                            progressText.textContent = data.progress.current_step;
+                                        }
+
+                                        // Use actual percentage if available
+                                        if (data.progress.percentage !== undefined) {
+                                            progressPercentage = data.progress.percentage;
+                                            progressBar.style.width = progrewms_allocation_per_casessPercentage + '%';
+
+                                            // Update title with percentage
+                                            loaderTitle.textContent = `Update in Progress (${Math.round(progressPercentage)}%)`;
+                                        } else {
+                                            // Fallback: Gradually increase progress bar
+                                            if (progressPercentage < 90) {
+                                                progressPercentage += Math.random() * 5;
+                                                progressBar.style.width = Math.min(progressPercentage, 90) + '%';
+                                            }
+                                        }
+                                    }
+                                }
+
+                                function handleCompletion(data) {
+                                    // Complete the progress bar
+                                    progressBar.style.width = '100%';
+                                    loaderTitle.textContent = 'Update in Progress (100%)';
+
+                                    // Hide loader after animation
+                                    setTimeout(() => {
+                                        loader.classList.add('hidden');
+                                        button.disabled = false;
+
+                                        // Build summary message
+                                        let summaryHtml = '<p class="mb-2">Update completed successfully!</p>';
+
+                                        if (data.summary) {
+                                            summaryHtml += '<div class="text-left bg-green-50 p-3 rounded-lg mt-3">';
+                                            summaryHtml += '<p class="text-sm font-semibold mb-2">Summary:</p>';
+                                            summaryHtml += '<ul class="text-sm space-y-1">';
+
+                                            if (data.summary.processed_skus || data.summary.total_skus) {
+                                                const processed = data.summary.processed_skus || data.summary.total_skus;
+                                                summaryHtml += `<li>✓ SKUs Processed: <strong>${processed}</strong></li>`;
+                                            }
+                                            if (data.summary.warehouse_code) {
+                                                summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_code}</strong></li>`;
+                                            }
+                                            if (data.summary.started_at && data.summary.completed_at) {
+                                                const start = new Date(data.summary.started_at);
+                                                const end = new Date(data.summary.completed_at);
+                                                const durationMs = end - start;
+                                                const minutes = Math.floor(durationMs / 60000);
+                                                const seconds = Math.floor((durationMs % 60000) / 1000);
+                                                summaryHtml += `<li>⏱ Duration: <strong>${minutes}m ${seconds}s</strong></li>`;
+                                            }
+
+                                            summaryHtml += '</ul></div>';
+                                        }
+
+                                        Swal.fire({
+                                            title: 'Completed!',
+                                            html: summaryHtml,
+                                            icon: 'success',
+                                            confirmButtonText: 'OK',
+                                            confirmButtonColor: '#10b981'
+                                        }).then(() => {
+                                            window.location.reload();
+                                        });
+
+                                        // Reset progress
+                                        progressPercentage = 0;
+                                        progressBar.style.width = '0%';
+                                        progressDetails.classList.add('hidden');
+                                        loaderTitle.textContent = 'Updating the following fields:';
+                                    }, 500);
+                                }
+
+                                function showError(message) {
+                                    loader.classList.add('hidden');
+                                    button.disabled = false;
+
+                                    Swal.fire({
+                                        title: 'Error',
+                                        text: message || 'Failed to update allocations.',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK',
+                                        confirmButtonColor: '#ef4444'
+                                    });
+
+                                    // Reset progress
+                                    progressPercentage = 0;
+                                    progressBar.style.width = '0%';
+                                    progressDetails.classList.add('hidden');
+                                }
+
+                                // Check if update is already running on page load
+                                checkStatus();
+                            });
+                        </script>
+
+                        <style>
+                            @keyframes shimmer {
+                                0% {
+                                    background-position: -1000px 0;
+                                }
+
+                                100% {
+                                    background-position: 1000px 0;
+                                }
+                            }
+
+                            #progressBar {
+                                background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #3b82f6 100%);
+                                background-size: 1000px 100%;
+                                animation: shimmer 2s infinite;
+                            }
+                        </style>
                     </div>
                 </div>
 
@@ -372,22 +551,22 @@
                             @endphp
                             <thead>
                                 <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                                    <th class="text-blue rounded-tl-3xl px-3 py-2 text-left text-sm font-bold uppercase">
+                                    <th class="rounded-tl-xl px-3 py-2 text-left text-sm uppercase">
                                         <div class="flex items-center">
                                             <input
                                                 type="checkbox"
                                                 id="select-all"
-                                                class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500">
+                                                class="h-4 w-4 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
                                         </div>
                                     </th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+                                    <th class="px-3 py-3 text-left text-xs uppercase">
                                         <a
                                             href="{{ sortRoute('sku') }}"
                                             class="group flex items-center space-x-2">
                                             <span>SKU</span>
                                             @if ($currentSort === 'sku')
                                                 <svg
-                                                    class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+                                                    class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -399,7 +578,7 @@
                                                 </svg>
                                             @else
                                                 <svg
-                                                    class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+                                                    class="group-hover:400 h-4 w-4 opacity-60"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -412,14 +591,14 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">
+                                    <th class="px-3 py-3 text-left text-xs uppercase">
                                         <a
                                             href="{{ sortRoute('description') }}"
                                             class="group flex items-center space-x-2">
                                             <span>Product description</span>
                                             @if ($currentSort === 'description')
                                                 <svg
-                                                    class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4 text-blue-400"
+                                                    class="{{ $currentDirection === 'asc' ? '' : 'rotate-180' }} h-4 w-4"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -431,7 +610,7 @@
                                                 </svg>
                                             @else
                                                 <svg
-                                                    class="h-4 w-4 opacity-60 group-hover:text-blue-400"
+                                                    class="group-hover:400 h-4 w-4 opacity-60"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24">
@@ -444,15 +623,15 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Sub-Department</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">WMS Inventory</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Store Inventory</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Case Pack</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">SRP</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">C/BC Scheme</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">PO15 Scheme</th>
-                                    <th class="text-blue px-3 py-3 text-left text-xs font-bold uppercase">Discount Scheme</th>
-                                    <th class="text-blue rounded-tr-3xl px-3 py-3 text-left text-xs font-bold uppercase">Freebie SKU</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">Sub-Department</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">WMS Virtual Inventory</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">Store Allocation</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">Case Pack</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">SRP</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">C/BC Scheme</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">PO15 Scheme</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">Discount Scheme</th>
+                                    <th class="rounded-tr-xl px-3 py-3 text-left text-xs uppercase">Freebie SKU</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100/60">
@@ -500,7 +679,7 @@
 
                                         <td class="whitespace-nowrap px-3 py-3">
                                             <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
-                                                {{ $product->wms_allocation_per_case ?? '-' }}
+                                                {{ $product->warehouse_allocation ?? '-' }}
                                             </span>
                                         </td>
 
@@ -603,7 +782,7 @@
                     </div>
 
                     <!-- Enhanced Pagination -->
-                    <div class="flex items-center justify-between rounded-b-3xl bg-white px-3 py-3 backdrop-blur-sm">
+                    <div class="flex items-center justify-between rounded-b-xl bg-white px-3 py-3 backdrop-blur-sm">
 
                         <!-- Rows per page -->
                         <form

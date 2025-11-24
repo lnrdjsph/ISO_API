@@ -136,6 +136,7 @@ Route::post('/update-allocations', [ProductController::class, 'wmsUpdate'])
 Route::get('/update-allocations/status', [ProductController::class, 'wmsStatus'])
     ->name('update.allocations.status');
 
+    
 Route::prefix('reports')->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
