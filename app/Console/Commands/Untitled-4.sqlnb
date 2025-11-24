@@ -1,0 +1,58 @@
+cells:
+  - kind: 2
+    value: "SELECT * FROM VDC_P_CRD.CRD_DM_CRD where NAME_ON_CARD LIKE
+      ('%TECILFRET%');\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: SELECT * FROM LOYALTY_MASTER WHERE IC_MRC_CARD_NO =
+      '8888721720495143'  AND IC_MRC_STAT_DESC = 'Active';
+    languageId: oracle-sql
+  - kind: 2
+    value: SELECT mp_cardno FROM LOYALTY_MASTER WHERE IC_MRC_CARD_NO =
+      '8888721720170605'  AND IC_MRC_STAT_DESC = 'Active';
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT \r
+
+      \  CASE \r
+
+      \    WHEN (MP_MOBILE LIKE '63%') THEN REPLACE(MP_MOBILE, '63', '0')\r
+
+      \    WHEN (MP_MOBILE LIKE '+63%') THEN REPLACE(MP_MOBILE, '+63', '0')\r
+
+      \    WHEN (MP_MOBILE LIKE '...%') THEN REPLACE(MP_MOBILE, '...', 'null')\r
+
+      \  END AS MP_MOBILE,\r
+
+      \  MP_CARDNO,\r
+
+      \  MP_FNAME,\r
+
+      \  MP_MNAME,\r
+
+      \  MP_LNAME,\r
+
+      \  MP_EMAIL,\r
+
+      \  IC_MRC_EXPIRY_DATE,\r
+
+      \  IC_MRC_PRODUCT_DESC,\r
+
+      \  IC_MRC_STAT_DESC\r
+
+      FROM LOYALTY_MASTER\r
+
+      WHERE IC_MRC_CARD_NO =  '8888721720495143'\r
+
+      \  AND IC_MRC_STAT_DESC = 'Active';"
+    languageId: oracle-sql
+  - kind: 2
+    value: "SELECT * \r
+
+      FROM LOYALTY_MASTER \r
+
+      WHERE TRIM(IC_MRC_CARD_NO) = '8888721720495143';"
+    languageId: oracle-sql
+  - kind: 2
+    value: ""
+    languageId: oracle-sql

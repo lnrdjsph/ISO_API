@@ -273,108 +273,104 @@ public function index(Request $request)
         ]);
 
 
-    try {
-        DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-        // Find the order
-        $order = Order::findOrFail($id);
+            // Find the order
+            $order = Order::findOrFail($id);
 
-        // Track changes for notes
-        $changes = [];
+            // Track changes for notes
+            $changes = [];
 
-        // === ORDER FIELDS CHANGES ===
-        $orderFields = [
-            'mbc_card_no',
-            'customer_name',
-            'contact_number',
-            'payment_center',
-            'mode_payment',
-            'payment_date',
-            'mode_dispatching',
-            'delivery_date',
-            'address',
-            'landmark',
-        ];
+            // === ORDER FIELDS CHANGES ===
+            $orderFields = [
+                'mbc_card_no',
+                'customer_name',
+                'contact_number',
+                'payment_center',
+                'mode_payment',
+                'payment_date',
+                'mode_dispatching',
+                'delivery_date',
+                'address',
+                'landmark',
+            ];
 
-        foreach ($orderFields as $field) {
-            $old = $order->$field;
-            $new = $validated[$field] ?? null;
+            foreach ($orderFields as $field) {
+                $old = $order->$field;
+                $new = $validated[$field] ?? null;
 
-            if ($old != $new) {
-                $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
-            }
-        }
-
-        // Update order fields
-        $order->update(Arr::only($validated, $orderFields));
-
-        // === ORDER ITEMS CHANGES ===
-        foreach ($validated['items'] as $itemData) {
-            $orderItem = OrderItem::findOrFail($itemData['id']);
-
-            $oldData = $orderItem->toArray();
-
-            // Calculate amount
-            $price = $itemData['price'];
-            $discount = $itemData['discount'] ?? 0;
-
-
-
-                    $price = $price - floatval($discount);
-
-
-            $calculatedAmount = $price * $itemData['total_qty'];
-
-            $orderItem->update([
-                'sku' => $itemData['sku'],
-                'item_description' => $itemData['item_description'],
-                'scheme' => $itemData['scheme'],
-                'price_per_pc' => $itemData['price_per_pc'],
-                'price' => $itemData['price'], // keep original price
-                'qty_per_pc' => $itemData['qty_per_pc'],
-                'total_qty' => $itemData['total_qty'],
-                'discount' => $itemData['discount'],
-                'amount' => $calculatedAmount,
-                'remarks' => $itemData['remarks'],
-                'store_order_no' => $itemData['store_order_no'],
-            ]);
-
-            // Compare old vs new for notes
-            foreach ($orderItem->getChanges() as $field => $newVal) {
-                if ($field == 'updated_at') continue;
-
-                $oldVal = $oldData[$field] ?? null;
-                if ($oldVal != $newVal) {
-                    $changes[] = "Item {$orderItem->sku} - " . ucfirst(str_replace('_', ' ', $field)) . " changed from '{$oldVal}' to '{$newVal}'";
+                if ($old != $new) {
+                    $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
                 }
             }
+
+            // Update order fields
+            $order->update(Arr::only($validated, $orderFields));
+
+            // === ORDER ITEMS CHANGES ===
+            foreach ($validated['items'] as $itemData) {
+                $orderItem = OrderItem::findOrFail($itemData['id']);
+
+                $oldData = $orderItem->toArray();
+
+                // Calculate amount
+                $price = $itemData['price'];
+                $discount = $itemData['discount'] ?? 0;
+
+
+
+                        $price = $price - floatval($discount);
+
+
+                $calculatedAmount = $price * $itemData['total_qty'];
+
+                $orderItem->update([
+                    'sku' => $itemData['sku'],
+                    'item_description' => $itemData['item_description'],
+                    'scheme' => $itemData['scheme'],
+                    'price_per_pc' => $itemData['price_per_pc'],
+                    'price' => $itemData['price'], // keep original price
+                    'qty_per_pc' => $itemData['qty_per_pc'],
+                    'total_qty' => $itemData['total_qty'],
+                    'discount' => $itemData['discount'],
+                    'amount' => $calculatedAmount,
+                    'remarks' => $itemData['remarks'],
+                    'store_order_no' => $itemData['store_order_no'],
+                ]);
+
+                // Compare old vs new for notes
+                foreach ($orderItem->getChanges() as $field => $newVal) {
+                    if ($field == 'updated_at') continue;
+
+                    $oldVal = $oldData[$field] ?? null;
+                    if ($oldVal != $newVal) {
+                        $changes[] = "Item {$orderItem->sku} - " . ucfirst(str_replace('_', ' ', $field)) . " changed from '{$oldVal}' to '{$newVal}'";
+                    }
+                }
+            }
+            
+            // === SAVE NOTES IF THERE ARE CHANGES ===
+            if (!empty($changes)) {
+                $order->notes()->create([
+                    'user_id' => auth()->id(),
+                    'status'  => $order->order_status, // use current order status
+                    'note'    => "• " . implode("\n• ", $changes), // bulleted list
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('orders.show', $order->id)
+                ->with('success', 'Order updated successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
         }
-
-        // === SAVE NOTES IF THERE ARE CHANGES ===
-        // === SAVE NOTES IF THERE ARE CHANGES ===
-// === SAVE NOTES IF THERE ARE CHANGES ===
-    if (!empty($changes)) {
-        $order->notes()->create([
-            'user_id' => auth()->id(),
-            'status'  => $order->order_status, // use current order status
-            'note'    => "• " . implode("\n• ", $changes), // bulleted list
-        ]);
-    }
-
-
-
-        DB::commit();
-
-        return redirect()->route('orders.show', $order->id)
-            ->with('success', 'Order updated successfully!');
-
-    } catch (\Exception $e) {
-        DB::rollback();
-
-        return redirect()->back()
-            ->withInput()
-            ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
-    }
     }
 
     public function archive(Request $request)
@@ -408,7 +404,11 @@ public function index(Request $request)
         ]);
 
         $order = Order::findOrFail($request->id);
-        $this->revertAllocationStock($order->id);
+
+        // Only revert allocation if the order was NOT already rejected
+        if ($order->order_status !== 'rejected') {
+            $this->revertAllocationStock($order->id);
+        }
 
         $order->order_status = 'cancelled';
         $order->save();
@@ -434,7 +434,7 @@ public function index(Request $request)
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'new order';
-        $this->deductAllocationStock($order->id);
+        // $this->deductAllocationStock($order->id);
         $order->save();
 
         $order->notes()->create([
@@ -457,7 +457,7 @@ public function index(Request $request)
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'completed';
-        $this->deductAllocationStock($order->id);
+        // $this->deductAllocationStock($order->id);
         $order->save();
 
         $order->notes()->create([
@@ -471,6 +471,14 @@ public function index(Request $request)
             ->with('success', 'Order completed successfully.');
     }
 
+    /**
+     * Sends an order for approval, updates status, logs a note, and notifies the appropriate recipients via email.
+     *
+     * @param \Illuminate\Http\Request $request The incoming HTTP request containing the order ID.
+     * @return \Illuminate\Http\RedirectResponse Redirects to the order details page with a success message.
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If the order is not found.
+     * @throws \Illuminate\Validation\ValidationException If validation fails.
+     */
     public function forApproval(Request $request)
     {
         $request->validate([
@@ -478,8 +486,13 @@ public function index(Request $request)
         ]);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
         $order->order_status = 'for approval';
-        $this->deductAllocationStock($order->id);
+        
+        if ($previousStatus === 'rejected') {
+            $this->deductAllocationStock($order->id);
+        }
+        
         $order->save();
 
         $order->notes()->create([
@@ -500,12 +513,23 @@ public function index(Request $request)
         }
 
         // If recipients found, send email
+        $recipients = array_unique($recipients);
         if (!empty($recipients)) {
             Mail::to($recipients)->send(new OrderApprovalRequestMail($order));
+        }
+        // Check if mail was attempted (Laravel's Mail::send does not throw unless there is a hard error)
+        $emailAttempted = !empty($recipients);
+
+        $successMsg = 'Order requested for approval successfully.';
+        if ($emailAttempted) {
+            $successMsg .= ' Email notification was attempted to be sent.';
+        } else {
+            $successMsg .= ' No email recipients found, so no email was sent.';
         }
 
         return redirect()
             ->route('orders.show', $order->id)
+            ->with('success', $successMsg)
             ->with('success', 'Order requested for approval successfully and email sent.');
     }
 
@@ -531,7 +555,7 @@ public function index(Request $request)
         // ✅ Update order
         $order->order_status = 'approved';
         $order->approval_document = $filePath; // make sure you add this column in DB (nullable string)
-        $this->deductAllocationStock($order->id);
+        // $this->deductAllocationStock($order->id);
         $order->save();
 
         // ✅ Add note
@@ -564,7 +588,7 @@ public function index(Request $request)
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'rejected';
-        $this->deductAllocationStock($order->id);
+        $this->revertAllocationStock($order->id);
         $order->save();
 
         // Log note with reason
@@ -591,70 +615,257 @@ public function index(Request $request)
     //     Log::info("Order {$order->id} status set to {$order->order_status}, allocations updated.");
     // }
 
-    public function deductAllocationStock($orderId)
-    {
-        $userLocation = strtolower(auth()->user()->user_location);
-        $tableName = 'products_' . $userLocation;
+    // public function deductAllocationStock($orderId)
+    // {
+    //     $userLocation = strtolower(auth()->user()->user_location);
+    //     $tableName = 'products_' . $userLocation;
 
-        // Get order with items
-        $order = Order::with('items')->findOrFail($orderId);
+    //     // Get order with items
+    //     $order = Order::with('items')->findOrFail($orderId);
 
-        foreach ($order->items as $item) {
-            // Find product by SKU in location-specific table
-            $product = DB::connection('mysql')
-                ->table($tableName)
-                ->where('sku', strtoupper($item->sku))
-                ->first();
+    //     foreach ($order->items as $item) {
+    //         // Find product by SKU in location-specific table
+    //         $product = DB::connection('mysql')
+    //             ->table($tableName)
+    //             ->where('sku', strtoupper($item->sku))
+    //             ->first();
 
-            if ($product) {
-                // Deduct grand total qty directly (no case conversion)
-                $newAllocation = max(0, ($product->allocation_per_case ?? 0) - $item->total_qty);
+    //         if ($product) {
+    //             // Deduct grand total qty directly (no case conversion)
+    //             $newAllocation = max(0, ($product->allocation_per_case ?? 0) - $item->total_qty);
 
-                DB::connection('mysql')
-                    ->table($tableName)
-                    ->where('id', $product->id)
-                    ->update([
-                        'allocation_per_case' => $newAllocation,
-                        'updated_at' => now(),
-                    ]);
-            }
-        }
+    //             DB::connection('mysql')
+    //                 ->table($tableName)
+    //                 ->where('id', $product->id)
+    //                 ->update([
+    //                     'allocation_per_case' => $newAllocation,
+    //                     'updated_at' => now(),
+    //                 ]);
+    //         }
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
 
 
     public function revertAllocationStock($orderId)
     {
-        $userLocation = strtolower(auth()->user()->user_location);
-        $tableName = 'products_' . $userLocation;
+        $userLocation = auth()->user()->user_location;
+        if (!$userLocation) return false;
 
-        // Get order with items
+        $tableName = 'products_' . strtolower($userLocation);
+        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+
+        // Load order with items
         $order = Order::with('items')->findOrFail($orderId);
 
-        foreach ($order->items as $item) {
-            $product = DB::connection('mysql')
-                ->table($tableName)
+        // Normalize items (if ever a collection of orders is passed)
+        if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
+            $items = $order->pluck('items')->flatten();
+        } else {
+            $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
+        }
+
+        foreach ($items as $item) {
+
+            /* -------------------------------
+            * 1) REVERT CASE ALLOCATION
+            * ------------------------------- */
+            $product = DB::table($tableName)
                 ->where('sku', strtoupper($item->sku))
                 ->first();
 
             if ($product) {
-                // Add back the total_qty that was deducted
-                $newAllocation = ($product->allocation_per_case ?? 0) + $item->total_qty;
 
-                DB::connection('mysql')
-                    ->table($tableName)
+                $casesToReturn = $item->total_qty;
+                $currentCaseAllocation = $product->allocation_per_case ?? 0;
+                $newCaseAllocation = $currentCaseAllocation + $casesToReturn;
+
+                // Update case allocation
+                DB::table($tableName)
                     ->where('id', $product->id)
                     ->update([
-                        'allocation_per_case' => $newAllocation,
+                        'allocation_per_case' => $newCaseAllocation,
                         'updated_at' => now(),
                     ]);
+
+                $itemType = $item->item_type ?? 'MAIN';
+                Log::info("Case Revert - SKU: {$item->sku}, Type: {$itemType}, Returned: {$casesToReturn}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
+
+
+                /* ---------------------------------------
+                * 2) REVERT WMS VIRTUAL ALLOCATION (PIECES)
+                * --------------------------------------- */
+
+                // get qty_per_pc from item (preferred), fallback to product
+                $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
+
+                if ($qtyPerPc == 0) {
+                    Log::warning("qty_per_pc is 0 for SKU: {$item->sku}. Cannot revert WMS pieces.");
+                    continue;
+                }
+
+                // pieces = total_qty × qty_per_pc
+                $piecesToReturn = $item->total_qty * $qtyPerPc;
+
+                $wmsAllocation = DB::table('product_wms_allocations')
+                    ->where('sku', strtoupper($item->sku))
+                    ->where('warehouse_code', $warehouseCode)
+                    ->first();
+
+                if (!$wmsAllocation) {
+                    Log::warning("WMS revert failed — record missing for SKU: {$item->sku}, Warehouse: {$warehouseCode}");
+                    continue;
+                }
+
+                $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+                $newWmsPieces = $currentWmsPieces + $piecesToReturn;
+
+                // Update WMS pieces
+                DB::table('product_wms_allocations')
+                    ->where('sku', strtoupper($item->sku))
+                    ->where('warehouse_code', $warehouseCode)
+                    ->update([
+                        'wms_virtual_allocation' => $newWmsPieces,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info("WMS Pieces Revert - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Pieces Returned: {$piecesToReturn}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}");
+            
+            } else {
+                Log::warning("Product not found in {$tableName} for SKU: {$item->sku}, cannot revert.");
             }
         }
 
         return true;
     }
+
+
+    public function deductAllocationStock($orderId)
+{
+    $userLocation = auth()->user()->user_location;
+    $tableName = 'products_' . strtolower($userLocation);
+    $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+
+    // Load order and items
+    $order = Order::with('items')->findOrFail($orderId);
+
+    // Normalize items: handle cases where $order might be a Collection of orders or a single model
+    if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
+        // $order is a collection of orders; collect all items across them
+        $items = $order->pluck('items')->flatten();
+    } else {
+        // $order is a single model; get relation collection safely
+        $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
+    }
+
+    foreach ($items as $item) {
+        // Find product in location table
+        $product = DB::connection('mysql')
+            ->table($tableName)
+            ->where('sku', strtoupper($item->sku))
+            ->first();
+
+        if ($product) {
+            /** --------------------------------------------
+             * 1) Deduct allocation_per_case by total_qty (number of cases or freebies)
+             * -------------------------------------------- */
+            $casesDeduction = $item->total_qty; // Number of cases/freebies to deduct
+            $currentCaseAllocation = $product->allocation_per_case ?? 0;
+            $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
+
+            // Update allocation_per_case
+            DB::connection('mysql')
+                ->table($tableName)
+                ->where('id', $product->id)
+                ->update([
+                    'allocation_per_case' => $newCaseAllocation,
+                    'updated_at' => now(),
+                ]);
+
+            $itemType = $item->item_type ?? 'MAIN';
+            Log::info("Case Deduction - SKU: {$item->sku}, Type: {$itemType}, Cases Deducted: {$casesDeduction}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
+
+            /** ----------------------------------------------------------
+             * 2) Deduct wms_virtual_allocation by (total_qty × qty_per_pc)
+             *    This converts cases/freebies to pieces for WMS tracking
+             * ---------------------------------------------------------- */
+            
+            // Get qty_per_pc from item, fallback to product
+            $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
+            
+            // If qty_per_pc is still 0, log warning and skip WMS deduction
+            if ($qtyPerPc == 0) {
+                Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Skipping WMS deduction.");
+                continue;
+            }
+
+            // Calculate pieces deduction: total_qty × pieces per case
+            $piecesDeduction = $item->total_qty * $qtyPerPc;
+
+            // Get current wms allocation
+            $wmsAllocation = DB::connection('mysql')
+                ->table('product_wms_allocations')
+                ->where('sku', strtoupper($item->sku))
+                ->where('warehouse_code', $warehouseCode)
+                ->first();
+
+            if (!$wmsAllocation) {
+                Log::warning("WMS allocation record not found for SKU: {$item->sku}, Warehouse: {$warehouseCode}, Type: {$itemType}");
+                continue;
+            }
+
+            $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+            $newWmsPieces = max(0, $currentWmsPieces - $piecesDeduction);
+
+            // Update wms_virtual_allocation
+            $updated = DB::connection('mysql')
+                ->table('product_wms_allocations')
+                ->where('sku', strtoupper($item->sku))
+                ->where('warehouse_code', $warehouseCode)
+                ->update([
+                    'wms_virtual_allocation' => $newWmsPieces,
+                    'updated_at' => now(),
+                ]);
+
+            Log::info("WMS Pieces Deduction - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Qty: {$item->total_qty}, Pieces/Unit: {$qtyPerPc}, Total Pieces Deducted: {$piecesDeduction}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}, Rows Updated: {$updated}");
+        } else {
+            Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Map user location to warehouse code
+ * 
+ * @param string $location
+ * @return string
+ */
+private function getWarehouseCodeByLocation(string $location): string
+{
+    $locationToWarehouse = [
+        '4002' => '80181',
+        '6012' => '80211',
+        '2010' => '80001',
+        '2017' => '80041',
+        '3018' => '80051',
+        '3019' => '80071',
+        '2008' => '80131',
+        '6009' => '80141',
+        '6010' => '80191',
+    ];
+
+    $warehouseCode = $locationToWarehouse[$location] ?? null;
+
+    if (!$warehouseCode) {
+        throw new \Exception("Warehouse code not found for location: {$location}");
+    }
+
+    return $warehouseCode;
+}
 
 
 
