@@ -238,24 +238,28 @@ public function index(Request $request)
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        // Log incoming payload for debugging
+        Log::info('Order update request payload', $request->all());
+
+        // Use manual validator so we can log validation errors and return a friendly response
+        $validator = Validator::make($request->all(), [
             // 'id' => 'required|exists:orders,id',
             // Customer Info
             'mbc_card_no' => 'nullable|string|max:255',
             'customer_name' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:255',
-            
+
             // Payment Info
             'payment_center' => 'nullable|string',
             'mode_payment' => 'nullable|string',
             'payment_date' => 'nullable|date',
-            
+
             // Delivery Info
             'mode_dispatching' => 'nullable|string',
             'delivery_date' => 'nullable|date',
             'address' => 'nullable|string|max:500',
             'landmark' => 'nullable|string|max:255',
-            
+
             // Items validation
             'items' => 'required|array',
             'items.*.id' => 'required|exists:order_items,id',
@@ -271,6 +275,13 @@ public function index(Request $request)
             'items.*.remarks' => 'nullable|string|max:255',
             'items.*.store_order_no' => 'nullable|string|max:255',
         ]);
+
+        if ($validator->fails()) {
+            Log::warning('Order update validation failed', $validator->errors()->toArray());
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $validated = $validator->validated();
 
 
         try {
@@ -366,10 +377,11 @@ public function index(Request $request)
 
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Order update exception: ' . $e->getMessage(), ['exception' => $e]);
 
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['error' => 'Failed to update order: ' . $e->getMessage()]);
+                ->withErrors(['error' => 'An error occurred while updating the order. Please check the application logs.']);
         }
     }
 

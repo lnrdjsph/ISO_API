@@ -37,14 +37,14 @@ class UpdateAllProductAllocations extends Command
     // Warehouse code to facility ID mapping
     protected array $warehouseToFacility = [
         '80181' => 'BD', // Bacolod Depot
-        '80141' => '80141', // Silangan Warehouse
-        '80001' => '80001', // Central Warehouse
-        '80041' => '80041', // Procter Warehouse
-        '80051' => '80051', // Opao-ISO Warehouse
-        '80071' => '80071', // Big Blue Warehouse
-        '80131' => '80131', // Lower Tingub Warehouse
-        '80211' => '80211', // Sta. Rosa Warehouse
-        '80191' => '80191', // Tacloban Depot
+        '80141' => 'BD', // Silangan Warehouse
+        '80001' => 'BD', // Central Warehouse
+        '80041' => 'BD', // Procter Warehouse
+        '80051' => 'BD', // Opao-ISO Warehouse
+        '80071' => 'BD', // Big Blue Warehouse
+        '80131' => 'BD', // Lower Tingub Warehouse
+        '80211' => 'BD', // Sta. Rosa Warehouse
+        '80191' => 'BD', // Tacloban Depot
     ];
 
     public function handle()
@@ -201,7 +201,7 @@ class UpdateAllProductAllocations extends Command
         try {
             $inventoryRows = DB::connection('oracle_wms')->select("
                 SELECT ci.item_id,
-                    SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S') 
+                    SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S', 'D', 'A') 
                                 THEN ci.unit_qty ELSE 0 END) AS total_qty
                 FROM rwms.container_item ci
                 JOIN rwms.container c

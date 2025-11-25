@@ -489,11 +489,19 @@ public function checkAllocationStock(array $orders)
     $tableName = 'products_' . strtolower($userLocation);
     $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
 
-    // Group orders by SKU
+    // Group orders by SKU (include freebies if sale_type == 'Freebie')
     $skuTotals = [];
     foreach ($orders as $item) {
+        // Main item
         $sku = strtoupper($item['sku']);
         $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $item['total_qty'];
+
+        // Freebie item (if present and sale_type == 'Freebie')
+        if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
+            $freebieSku = strtoupper($item['freebie_sku'] ?? $item['sku']);
+            $freebieQty = $item['freebies_per_cs'];
+            $skuTotals[$freebieSku] = ($skuTotals[$freebieSku] ?? 0) + $freebieQty;
+        }
     }
 
     // Validate stock
@@ -514,7 +522,7 @@ public function checkAllocationStock(array $orders)
 
         // Check wms_virtual_allocation from product_wms_allocations table
         $requiredWmsQty = $requiredQty * ($product->qty_per_pc ?? 1);
-        
+
         $wmsAllocation = DB::connection('mysql')
             ->table('product_wms_allocations')
             ->where('sku', $sku)
@@ -522,7 +530,7 @@ public function checkAllocationStock(array $orders)
             ->first();
 
         $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
-        
+
         if ($availableWmsQty < $requiredWmsQty) {
             throw new \Exception("Insufficient stock for SKU {$sku} in warehouse {$warehouseCode}. Required: {$requiredWmsQty}, Available: {$availableWmsQty}");
         }
@@ -580,10 +588,10 @@ public function deductAllocationStock($orderId)
              * 2) Deduct wms_virtual_allocation by (total_qty × qty_per_pc)
              *    This converts cases/freebies to pieces for WMS tracking
              * ---------------------------------------------------------- */
-            
+
             // Get qty_per_pc from item, fallback to product
             $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
-            
+
             // If qty_per_pc is still 0, log warning and skip WMS deduction
             if ($qtyPerPc == 0) {
                 Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Skipping WMS deduction.");
