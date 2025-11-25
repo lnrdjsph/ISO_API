@@ -86,19 +86,8 @@ class OracleTransferController extends Controller
                         continue;
                     }
 
-                    // try to read supplier pack size from the store product table (multiple possible column names)
-                    $prod = DB::table($storeTable)->where('sku', $sku)->first();
-                    $suppPackSize = null;
-                    if ($prod) {
-                        $suppPackSize = $prod->supp_pack_size
-                                     ?? $prod->pack_size
-                                     ?? $prod->supplier_pack_size
-                                     ?? $prod->pack_qty
-                                     ?? null;
-                    }
-
-                    // fallback: use totalQty as pack size when product info missing
-                    $suppPackSize = floatval($suppPackSize ?? $totalQty);
+                    // supp_pack_size should be qty_per_pc
+                    $suppPackSize = $qtyPerPc;
 
                     if (!isset($skuGroups[$sku])) {
                         // first occurrence: initialize
@@ -110,8 +99,7 @@ class OracleTransferController extends Controller
                     } else {
                         // subsequent occurrences: accumulate quantities
                         $skuGroups[$sku]['tsf_qty'] += ($qtyPerPc * $totalQty);
-                        // accumulate pack sizes (sum of requested packs)
-                        $skuGroups[$sku]['supp_pack_size'] += $totalQty;
+                        // supp_pack_size remains qty_per_pc, do not accumulate
                     }
                 }
 
