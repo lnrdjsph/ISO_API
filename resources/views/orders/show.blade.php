@@ -540,6 +540,8 @@
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][qty_per_pc]"
                                                 value="{{ $item->qty_per_pc }}">
+
+
                                             <td
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
@@ -547,11 +549,10 @@
                                                 {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '-' : $item->qty_per_cs) : 'N/A' }}
                                             </td>
 
-
                                             <input
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][qty_per_cs]"
-                                                value="{{ $item->qty_per_cs }}">
+                                                value="{{ $item->item_type !== 'FREEBIE' ? $item->qty_per_cs : 0 }}" />
 
 
                                             <td
