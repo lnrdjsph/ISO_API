@@ -78,8 +78,8 @@ class OracleTransferController extends Controller
                 foreach ($deptItems as $item) {
                     $item = (object) $item;
                     $sku = (string) ($item->sku ?? '');
-                    $qtyPerPc = floatval($item->qty_per_pc ?? $item->qty_per_unit ?? 1);
-                    $totalQty = floatval($item->total_qty ?? $item->qty ?? 0);
+                    $qtyPerPc = floatval($item->qty_per_pc ?? 1);
+                    $totalQty = floatval($item->total_qty ?? 0);
 
                     // skip zero / invalid quantities
                     if ($totalQty <= 0 || $sku === '') {
