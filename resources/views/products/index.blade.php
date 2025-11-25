@@ -624,6 +624,7 @@
                                         </a>
                                     </th>
                                     <th class="px-3 py-3 text-left text-xs uppercase">Sub-Department</th>
+                                    <th class="px-3 py-3 text-left text-xs uppercase">WMS Actual Inventory</th>
                                     <th class="px-3 py-3 text-left text-xs uppercase">WMS Virtual Inventory</th>
                                     <th class="px-3 py-3 text-left text-xs uppercase">Store Allocation</th>
                                     <th class="px-3 py-3 text-left text-xs uppercase">Case Pack</th>
@@ -676,6 +677,11 @@
                                             </div>
                                         </td>
 
+                                        <td class="whitespace-nowrap px-3 py-3">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                                {{ $product->warehouse_actual_allocation ?? '-' }}
+                                            </span>
+                                        </td>
 
                                         <td class="whitespace-nowrap px-3 py-3">
                                             <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">

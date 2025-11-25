@@ -75,23 +75,24 @@ public function index(Request $request)
         $productsQuery = DB::connection('mysql')
             ->table($tableName)
             ->select(
-                "$tableName.id",
-                "$tableName.sku",
-                "$tableName.description",
-                "$tableName.department_code",
-                "$tableName.department",
-                "$tableName.allocation_per_case",
-                "$tableName.case_pack",
-                "$tableName.srp",
-                "$tableName.cash_bank_card_scheme",
-                "$tableName.po15_scheme",
-                "$tableName.discount_scheme",
-                "$tableName.freebie_sku",
-                "wms.wms_virtual_allocation AS warehouse_allocation" 
+            "$tableName.id",
+            "$tableName.sku",
+            "$tableName.description",
+            "$tableName.department_code",
+            "$tableName.department",
+            "$tableName.allocation_per_case",
+            "$tableName.case_pack",
+            "$tableName.srp",
+            "$tableName.cash_bank_card_scheme",
+            "$tableName.po15_scheme",
+            "$tableName.discount_scheme",
+            "$tableName.freebie_sku",
+            "wms.wms_virtual_allocation AS warehouse_allocation",
+            "wms.wms_actual_allocation AS warehouse_actual_allocation"
             )
             ->leftJoin('product_wms_allocations as wms', function ($join) use ($tableName, $currentWarehouse) {
-                $join->on("$tableName.sku", '=', 'wms.sku')
-                     ->where('wms.warehouse_code', '=', $currentWarehouse);
+            $join->on("$tableName.sku", '=', 'wms.sku')
+                 ->where('wms.warehouse_code', '=', $currentWarehouse);
             })
             ->whereNull("$tableName.archived_at");
 
