@@ -78,21 +78,40 @@ class OracleTransferController extends Controller
                 foreach ($deptItems as $item) {
                     $item = (object) $item;
                     $sku = (string) ($item->sku ?? '');
+                    $qtyPerPc = floatval($item->qty_per_pc ?? $item->qty_per_unit ?? 1);
+                    $totalQty = floatval($item->total_qty ?? $item->qty ?? 0);
 
-                    $qtyPerPc = floatval($item->qty_per_pc ?? 0);
-                    $totalQty = floatval($item->total_qty ?? 0);
+                    // skip zero / invalid quantities
+                    if ($totalQty <= 0 || $sku === '') {
+                        continue;
+                    }
+
+                    // try to read supplier pack size from the store product table (multiple possible column names)
+                    $prod = DB::table($storeTable)->where('sku', $sku)->first();
+                    $suppPackSize = null;
+                    if ($prod) {
+                        $suppPackSize = $prod->supp_pack_size
+                                     ?? $prod->pack_size
+                                     ?? $prod->supplier_pack_size
+                                     ?? $prod->pack_qty
+                                     ?? null;
+                    }
+
+                    // fallback: use totalQty as pack size when product info missing
+                    $suppPackSize = floatval($suppPackSize ?? $totalQty);
 
                     if (!isset($skuGroups[$sku])) {
-                        // First occurrence: set supp_pack_size = qty_per_pc, tsf_qty = total_qty
+                        // first occurrence: initialize
                         $skuGroups[$sku] = [
                             'item' => $sku,
-                            'tsf_qty' => $totalQty,
-                            'supp_pack_size' => $qtyPerPc,
+                            'tsf_qty' => $qtyPerPc * $totalQty,
+                            'supp_pack_size' => $suppPackSize,
                         ];
                     } else {
-                        // Subsequent occurrences: accumulate total_qty only
-                        $skuGroups[$sku]['tsf_qty'] += $totalQty;
-                        // keep supp_pack_size as the first encountered qty_per_pc
+                        // subsequent occurrences: accumulate quantities
+                        $skuGroups[$sku]['tsf_qty'] += ($qtyPerPc * $totalQty);
+                        // accumulate pack sizes (sum of requested packs)
+                        $skuGroups[$sku]['supp_pack_size'] += $totalQty;
                     }
                 }
 
