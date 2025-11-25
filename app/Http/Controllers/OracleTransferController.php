@@ -78,19 +78,21 @@ class OracleTransferController extends Controller
                 foreach ($deptItems as $item) {
                     $item = (object) $item;
                     $sku = (string) ($item->sku ?? '');
-                    
+
+                    $qtyPerPc = floatval($item->qty_per_pc ?? 0);
+                    $totalQty = floatval($item->total_qty ?? 0);
+
                     if (!isset($skuGroups[$sku])) {
-                        // First occurrence: store the item
+                        // First occurrence: set supp_pack_size = qty_per_pc, tsf_qty = total_qty
                         $skuGroups[$sku] = [
                             'item' => $sku,
-                            'tsf_qty' => floatval($item->qty_per_pc ?? 0) * floatval($item->total_qty ?? 0),
-                            'supp_pack_size' => floatval($item->total_qty ?? 0),
-                            'qty_per_pc' => floatval($item->qty_per_pc ?? 0), // Keep first qty_per_pc for subsequent items
+                            'tsf_qty' => $totalQty,
+                            'supp_pack_size' => $qtyPerPc,
                         ];
                     } else {
-                        // Subsequent occurrences: add to both tsf_qty and supp_pack_size
-                        $skuGroups[$sku]['tsf_qty'] += floatval($skuGroups[$sku]['qty_per_pc']) * floatval($item->total_qty ?? 0);
-                        $skuGroups[$sku]['supp_pack_size'] += floatval($item->total_qty ?? 0);
+                        // Subsequent occurrences: accumulate total_qty only
+                        $skuGroups[$sku]['tsf_qty'] += $totalQty;
+                        // keep supp_pack_size as the first encountered qty_per_pc
                     }
                 }
 

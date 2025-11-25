@@ -177,8 +177,8 @@ class OracleRibXMLService
         foreach ($data['details'] ?? [] as $d) {
             $xmlBody .= "    <XTsfDtl>\n";
             $xmlBody .= "        <item>" . htmlspecialchars($d['item'] ?? '', ENT_XML1, 'UTF-8') . "</item>\n";
-            $xmlBody .= "        <tsf_qty>" . htmlspecialchars($d['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8') . "</tsf_qty>\n";
-            $xmlBody .= "        <supp_pack_size>" . htmlspecialchars($d['tsf_qty'] ?? '', ENT_XML1, 'UTF-8') . "</supp_pack_size>\n";
+            $xmlBody .= "        <tsf_qty>" . htmlspecialchars($d['tsf_qty'] ?? '', ENT_XML1, 'UTF-8') . "</tsf_qty>\n";
+            $xmlBody .= "        <supp_pack_size>" . htmlspecialchars($d['supp_pack_size'] ?? '', ENT_XML1, 'UTF-8') . "</supp_pack_size>\n";
             $xmlBody .= "    </XTsfDtl>\n";
         }
 
