@@ -58,8 +58,24 @@ public function index(Request $request)
             '6010' => '80191',
         ];
 
-        $currentWarehouse = (string) ($locationToWarehouse[$userLocation] ?? null);
+        $warehouseMap = [
+            '80141' => 'Silangan Warehouse',
+            '80001' => 'Central Warehouse',
+            '80041' => 'Procter Warehouse',
+            '80051' => 'Opao-ISO Warehouse',
+            '80071' => 'Big Blue Warehouse',
+            '80131' => 'Lower Tingub Warehouse',
+            '80211' => 'Sta. Rosa Warehouse',
+            '80181' => 'Bacolod Depot',
+            '80191' => 'Tacloban Depot',
+        ];    
+        
+        
+        $currentWarehouse = $request->get('warehouse');
 
+        if (!$currentWarehouse) {
+            $currentWarehouse = (string) ($locationToWarehouse[$userLocation] ?? null);
+        }
         // Sorting
         $sort = $request->get('sort', 'description');
         $direction = $request->get('direction', 'asc');
@@ -113,7 +129,8 @@ public function index(Request $request)
         $products = $productsQuery
             ->orderBy($sort, $direction)
             ->paginate($perPage)
-            ->appends($request->query());
+            ->appends($request->query())
+            ->appends(['warehouse' => $currentWarehouse]);
 
         // Fetch freebie descriptions
         $freebieSkus = collect($products->items())
@@ -131,7 +148,11 @@ public function index(Request $request)
             $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
         }
 
-        return view('products.index', compact('products'));
+        return view('products.index', [
+            'products' => $products,
+            'warehouseMap' => $warehouseMap,
+            'currentWarehouse' => $currentWarehouse
+        ]);
 
     } catch (\Exception $e) {
         return view('errors.db_error', ['error' => $e->getMessage()]);

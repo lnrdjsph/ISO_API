@@ -9,24 +9,24 @@ class DashboardController extends Controller
     public function index()
     {
         // Total orders count
-        $ordersCount = Order::count();
+        // $ordersCount = Order::count();
 
         // Filtered counts
         $pendingCount   = Order::where('order_status', 'pending')->count();
         $cancelledCount = Order::where('order_status', 'cancelled')->count();
-        $completedCount = Order::where('order_status', 'completed')->count();
+        // $completedCount = Order::where('order_status', 'completed')->count();
         $newOrderCount = Order::where('order_status', 'new order')->count();
         $forApprovalCount = Order::where('order_status', 'for approval')->count();
-        $approvedCount = Order::where('order_status', 'approved')->count();
+        // $approvedCount = Order::where('order_status', 'approved')->count();
 
         return view('dashboard.index', compact(
-            'ordersCount',
+            // 'ordersCount',
             'pendingCount',
             'cancelledCount',
-            'completedCount',
+            // 'completedCount',
             'newOrderCount',
             'forApprovalCount',
-            'approvedCount'
+            // 'approvedCount'
 
             
         ));
