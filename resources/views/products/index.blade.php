@@ -14,10 +14,10 @@
                 <div class="mb-8">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
-                            <div class="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
+                            <div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4 text-white"
+                                    class="h-7 w-7 text-white"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -29,8 +29,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-lg font-bold text-gray-900">Product List</h1>
-                                <p class="text-sm text-gray-600">Manage and explore your product inventory</p>
+                                <h1 class="text-3xl font-bold text-gray-900">Product List</h1>
+                                <p class="text-gray-600">Manage and explore your product inventory</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-4">
@@ -86,7 +86,7 @@
 
                                         <!-- Progress Details -->
                                         <div id="progressDetails" class="mt-3 hidden rounded-lg bg-blue-50 p-3">
-                                            <p class="font-mono text-xs text-blue-800" id="progressText"></p>
+                                            <p class="font-mono text-[10px] text-blue-800" id="progressText"></p>
                                         </div>
                                     </div>
 
@@ -351,44 +351,92 @@
                 <div class="mb-4">
                     <div class="flex flex-nowrap items-start justify-between gap-4">
 
-                        <form
-                            method="GET"
-                            action="{{ route('products.index') }}"
-                            class="w-full max-w-lg">
-                            <div class="relative">
-                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                                    <svg
-                                        class="h-5 w-5 text-gray-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </div>
-                                <input
-                                    type="text"
-                                    name="query"
-                                    id="product-search"
-                                    value="{{ request('query') }}"
-                                    autocomplete="off"
-                                    class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-4 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                    placeholder="Search by SKU or product description..." />
-                                <ul
-                                    id="product-list"
-                                    class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"></ul>
+                        <div class="flex flex-1 gap-4">
+                            <form
+                                method="GET"
+                                action="{{ route('products.index') }}"
+                                class="max-w-sm flex-1">
+                                <div class="relative">
+                                    <div class="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-4">
+                                        <svg
+                                            class="h-5 w-5 text-gray-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
 
+                                    <input
+                                        type="text"
+                                        name="query"
+                                        id="product-search"
+                                        value="{{ request('query') }}"
+                                        autocomplete="off"
+                                        oninput="document.getElementById('clear-search-btn').classList.toggle('hidden', !this.value);"
+                                        class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-10 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        placeholder="Search by SKU or product description..." />
+
+                                    <!-- Clear (X) button: clears input and submits cleared query -->
+                                    <button
+                                        type="button"
+                                        id="clear-search-btn"
+                                        title="Clear search"
+                                        onclick="document.getElementById('product-search').value=''; this.closest('form').submit();"
+                                        class="{{ request('query') ? '' : 'hidden' }} absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/80 p-1 text-gray-500 hover:bg-gray-100 focus:outline-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+
+                                    <ul
+                                        id="product-list"
+                                        class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"></ul>
+
+                                </div>
+                            </form>
+
+                            <div class="relative w-64">
+                                <!-- Dropdown styled like the search input -->
+                                <style>
+                                    /* Remove default arrow for Chrome, Safari, Edge */
+                                    select::-ms-expand {
+                                        display: none;
+                                    }
+
+                                    select::-webkit-appearance {
+                                        -webkit-appearance: none;
+                                    }
+
+                                    select::-moz-appearance {
+                                        -moz-appearance: none;
+                                    }
+                                </style>
+
+                                <select
+                                    class="w-full appearance-none rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 font-medium text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
+                                    onchange="window.location.href='?warehouse=' + this.value"
+                                    style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
+                                    {{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'disabled' : '' }}>
+                                    @foreach ($warehouseMap as $code => $name)
+                                        <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
+                                            {{ $code }} - {{ $name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                        </form>
+                        </div>
+
 
                         <!-- Bulk Actions Bar -->
                         <div
                             id="bulk-actions-bar"
                             class="hidden">
-                            <div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 p-1">
+                            <div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600">
                                 <div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
 
                                     <!-- Count -->
@@ -407,7 +455,7 @@
                                         <span
                                             id="selected-count"
                                             class="font-semibold">0</span>
-                                        <span>items selected</span>
+                                        <span>items</span>
                                     </div>
 
                                     <!-- Buttons -->
@@ -471,7 +519,7 @@
                         <!-- Action Buttons -->
                         <div class="flex flex-shrink-0 items-center gap-3">
                             <!-- Filter -->
-                            <button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
+                            {{-- <button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
                                 <svg
                                     class="mr-2 h-5 w-5"
                                     fill="none"
@@ -484,7 +532,7 @@
                                         d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                 </svg>
                                 Filter
-                            </button>
+                            </button> --}}
 
                             <!-- Export -->
                             <a
@@ -507,7 +555,7 @@
                             <!-- Add Product -->
                             <a
                                 href="{{ route('products.create') }}"
-                                class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl">
+                                class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl">
                                 <svg
                                     class="mr-2 h-5 w-5"
                                     fill="none"
@@ -559,7 +607,7 @@
                                                 class="h-4 w-4 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
                                         </div>
                                     </th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">
                                         <a
                                             href="{{ sortRoute('sku') }}"
                                             class="group flex items-center space-x-2">
@@ -591,7 +639,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">
                                         <a
                                             href="{{ sortRoute('description') }}"
                                             class="group flex items-center space-x-2">
@@ -623,16 +671,16 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">Sub-Department</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">WMS Actual Inventory</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">WMS Virtual Inventory</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">Store Allocation</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">Case Pack</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">SRP</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">C/BC Scheme</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">PO15 Scheme</th>
-                                    <th class="px-3 py-3 text-left text-xs uppercase">Discount Scheme</th>
-                                    <th class="rounded-tr-xl px-3 py-3 text-left text-xs uppercase">Freebie SKU</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Sub-Department</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Actual Inventory</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Virtual Inventory</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Store Allocation (Case)</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Case Pack</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">SRP</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">C/BC Scheme</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">PO15 Scheme</th>
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Discount Scheme</th>
+                                    <th class="rounded-tr-xl px-2 py-2 text-left text-[10px] uppercase">Freebie SKU</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100/60">
@@ -640,99 +688,99 @@
                                     <tr
                                         class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-indigo-100/60"
                                         data-product-id="{{ $product->id }}">
-                                        <td class="whitespace-nowrap px-3 py-3">
+                                        <td class="whitespace-nowrap px-2 py-2">
                                             <input
                                                 type="checkbox"
                                                 class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
                                                 value="{{ $product->id }}"
                                                 id="product-{{ $product->id }}">
                                         </td>
-                                        <td class="whitespace-nowrap px-3 py-3">
+                                        <td class="whitespace-nowrap px-2 py-2">
                                             <div class="flex items-center">
-                                                <span class="font-mono text-xs font-semibold text-gray-800">
+                                                <span class="font-mono text-[10px] font-semibold text-gray-800">
                                                     {{ $product->sku }}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td class="px-3 py-3">
+                                        <td class="px-2 py-2">
                                             <div class="relative inline-block w-full">
-                                                <div class="peer block max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold text-gray-800">
+                                                <div class="peer block max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-semibold text-gray-800">
                                                     {{ $product->description }}
                                                 </div>
                                                 <div
-                                                    class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                                     {{ $product->description }}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-3 py-3">
+                                        <td class="px-2 py-2">
                                             <div class="relative inline-block w-full">
-                                                <div class="peer block max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap text-xs font-semibold text-gray-800">
+                                                <div class="peer block max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-semibold text-gray-800">
                                                     {{ $product->department_code }} - {{ $product->department }}
                                                 </div>
                                                 <div
-                                                    class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                                     {{ $product->department_code }} - {{ $product->department }}
                                                 </div>
                                             </div>
                                         </td>
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ $product->warehouse_actual_allocation ?? '-' }}
                                             </span>
                                         </td>
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ $product->warehouse_allocation ?? '-' }}
                                             </span>
                                         </td>
 
 
-                                        <td class="px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ $product->allocation_per_case ?? '-' }}
                                             </span>
                                         </td>
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ $product->case_pack ?? '-' }}
                                             </span>
                                         </td>
 
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 ₱{{ number_format($product->srp ?? 0, 2) }}
                                             </span>
                                         </td>
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
                                             </span>
                                         </td>
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
                                             </span>
                                         </td>
 
-                                        <td class="whitespace-nowrap px-3 py-3">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
                                             </span>
                                         </td>
-                                        <td class="px-3 py-3">
+                                        <td class="px-2 py-2">
                                             <div class="relative inline-block w-full">
                                                 <div
-                                                    class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-xs font-medium text-purple-800">
+                                                    class="peer inline-flex max-w-full items-center truncate rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                     {{ !empty($product->freebie_sku) ? $product->freebie_sku : '-' }}
                                                 </div>
                                                 <div
-                                                    class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    class="pointer-events-none absolute left-0 top-1/2 z-50 ml-2 w-max -translate-x-full -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                                     {{ !empty($product->freebie_description) ? $product->freebie_description : 'No description found' }}
                                                 </div>
                                             </div>
@@ -788,7 +836,7 @@
                     </div>
 
                     <!-- Enhanced Pagination -->
-                    <div class="flex items-center justify-between rounded-b-xl bg-white px-3 py-3 backdrop-blur-sm">
+                    <div class="flex items-center justify-between rounded-b-xl bg-white px-2 py-2 backdrop-blur-sm">
 
                         <!-- Rows per page -->
                         <form
@@ -978,7 +1026,7 @@
                         <label
                             for="archive-reason-input"
                             class="mb-1 block text-sm font-medium text-gray-700">
-                            Archive Reason <span class="text-xs text-gray-400">(optional)</span>
+                            Archive Reason <span class="text-[10px] text-gray-400">(optional)</span>
                         </label>
                         <textarea
                             id="archive-reason-input"
@@ -1218,7 +1266,7 @@
                     type === 'error' ? 'bg-red-500' : 'bg-blue-500';
 
                 const notification = $(`
-                                    <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-3 py-3 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
+                                    <div class="fixed top-4 right-4 z-50 ${bgColor} text-white px-2 py-2 rounded-2xl shadow-lg transform translate-x-full transition-transform duration-300">
                                         <div class="flex items-center">
                                             <span class="mr-3">${message}</span>
                                             <button class="ml-auto text-white hover:text-gray-200" onclick="$(this).closest('div').remove()">
@@ -1269,7 +1317,7 @@
                 list
                     .removeClass('hidden')
                     .html(`
-                                            <li class="px-3 py-3 text-gray-600 flex items-center">
+                                            <li class="px-2 py-2 text-gray-600 flex items-center">
                                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1299,10 +1347,10 @@
 
                             if (filtered.length === 0) {
                                 list.append(`
-                                                                    <li class="px-3 py-3 text-gray-500 flex items-center justify-center">
+                                                                    <li class="px-2 py-2 text-gray-500 flex items-center justify-center">
                                                                         <div class="text-center">
                                                                             <p class="text-sm">No products found</p>
-                                                                            <p class="text-xs text-gray-400 mt-1">Try adjusting your search terms</p>
+                                                                            <p class="text-[10px] text-gray-400 mt-1">Try adjusting your search terms</p>
                                                                         </div>
                                                                     </li>
                                                                 `);
@@ -1310,7 +1358,7 @@
                                 filtered.forEach((item, index) => {
                                     const listItem = $('<li>')
                                         .addClass(
-                                            'px-3 py-3 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0 opacity-0 translate-y-2'
+                                            'px-2 py-2 hover:bg-gray-50/80 cursor-pointer product-item transition-all duration-200 border-b border-gray-100/60 last:border-b-0 opacity-0 translate-y-2'
                                         )
                                         .attr('data-sku', item.sku)
                                         .attr('data-description', item.description)
@@ -1318,7 +1366,7 @@
                                                                                     <div class="flex items-center">
                                                                                         <div class="flex-1">
                                                                                             <div class="flex items-center">
-                                                                                                <span class="text-xs font-mono font-medium text-gray-500 px-2 py-1 bg-gray-100/60 rounded mr-3">${item.sku}</span>
+                                                                                                <span class="text-[10px] font-mono font-medium text-gray-500 px-2 py-1 bg-gray-100/60 rounded mr-3">${item.sku}</span>
                                                                                                 <span class="font-medium text-gray-800">
                                                                                                     ${highlightMatch(item.description, query)}
                                                                                                 </span>
@@ -1345,7 +1393,7 @@
                         error: function() {
                             searchInput.removeClass('animate-pulse');
                             list.html(`
-                            <li class="px-3 py-3 text-red-600 flex items-center">
+                            <li class="px-2 py-2 text-red-600 flex items-center">
                                 Search failed. Please try again.
                             </li>
                         `);
@@ -1439,7 +1487,6 @@
         /* Skeleton pulse animation */
         @keyframes pulse {
 
-            0%,
             100% {
                 opacity: 1;
             }
@@ -1450,7 +1497,7 @@
         }
 
         .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation: pulse 2s cubic-bezier(1, 0.6, 0.4, 0, 0.4) infinite;
         }
 
         /* Custom scrollbar for search results */

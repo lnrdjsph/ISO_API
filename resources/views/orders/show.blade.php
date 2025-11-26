@@ -453,7 +453,7 @@
                                             </td>
                                             <td
                                                 class="relative border p-2"
-                                                contenteditable="true"
+                                                contenteditable="false"
                                                 data-field="sku"
                                                 contenteditable-search="true"
                                                 style="position: relative;">

@@ -118,7 +118,7 @@
 																						</div>
 																				</div>
 																		@endif
-																		@if ($approvedCount > 0)
+																		{{-- @if ($approvedCount > 0)
 																				<div class="group relative">
 																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-xs font-semibold text-white shadow">
 																								{{ $approvedCount }}
@@ -127,9 +127,9 @@
 																								Approved Orders
 																						</div>
 																				</div>
-																		@endif
+																		@endif --}}
 
-																		@if ($cancelledCount > 0)
+																		{{-- @if ($cancelledCount > 0)
 																				<div class="group relative">
 																						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white shadow">
 																								{{ $cancelledCount }}
@@ -138,9 +138,9 @@
 																								Cancelled Orders
 																						</div>
 																				</div>
-																		@endif
+																		@endif --}}
 
-																		@if ($completedCount > 0)
+																		{{-- @if ($completedCount > 0)
 																				<div class="group relative">
 																						<span class="flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white shadow">
 																								{{ $completedCount }}
@@ -149,7 +149,7 @@
 																								Completed Orders
 																						</div>
 																				</div>
-																		@endif
+																		@endif --}}
 																</div>
 														@endif
 												</li>

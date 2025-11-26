@@ -368,7 +368,7 @@ public function index(Request $request)
                 $order->notes()->create([
                     'user_id' => auth()->id(),
                     'status'  => $order->order_status, // use current order status
-                    'note'    => "• " . implode("\n• ", $changes), // bulleted list
+                    'note'    => "\n• " . implode("\n• ", $changes), // bulleted list
                 ]);
             }
 
