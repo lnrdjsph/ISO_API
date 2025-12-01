@@ -191,21 +191,17 @@
                                     // Add more mappings as needed...
                                 ];
 
-                                // Default selection
-                                $selectedWarehouse = old('warehouse') ?? '';
+                                use Illuminate\Support\Str;
 
-                                // Auto-map user location to warehouse if available
-                                if (isset($locationToWarehouse[$userLocation])) {
+                                $isPersonnel = Str::contains(strtolower(Auth::user()->role), 'personnel');
+
+                                // Determine selected warehouse
+                                $selectedWarehouse = old('warehouse'); // old input takes priority
+
+                                if (!$selectedWarehouse && isset($locationToWarehouse[$userLocation])) {
+                                    // Fallback to user location mapping if no old input
                                     $selectedWarehouse = $locationToWarehouse[$userLocation];
                                 }
-                            @endphp
-
-                            @php
-                                use Illuminate\Support\Str;
-                            @endphp
-
-                            @php
-                                $isPersonnel = \Illuminate\Support\Str::contains(strtolower(Auth::user()->role), 'personnel');
                             @endphp
 
                             <div class="relative mb-6 w-full">
@@ -240,6 +236,7 @@
                                     Warehouse
                                 </label>
                             </div>
+
 
 
 
@@ -1355,10 +1352,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                         });
 
                         // Reset selects and update names
-                        // newRow.querySelectorAll('select').forEach(select => {
-                        //     select.value = '';
-                        //     select.name = select.name.replace(/\[\d+]/g, `[${rowIndex}]`);
-                        // });
 
                         // Reset output display spans
                         newRow.querySelector('.price-display').textContent = '0.00';
@@ -2016,8 +2009,23 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 }
             }
 
+            // === Reset fields based on type ===
             if (isFreebie) {
-                // ✅ FREEBIE item: never touch discount/scheme
+                // ONLY reset Freebie Price/PC and Freebie QTY/PC
+                row.find('[name*="[freebie_price_per_pc]"]').val('');
+                row.find('[name*="[freebie_qty_per_pc]"]').val('');
+            } else {
+                // Reset normal product fields
+                row.find('.sku-hidden').val('');
+                row.find('.desc-hidden').val('');
+                row.find('[name*="[price_per_pc]"]').val('');
+                row.find('[name*="[qty_per_pc]"]').val('');
+                row.find('[name*="[discount]"]').val('').prop('readonly', false);
+                row.find('[name*="[scheme]"]').val('');
+            }
+
+            if (isFreebie) {
+                // ✅ FREEBIE item
                 setValue(searchInput, `${sku} - ${description}`, true);
                 setValue(row.find('[name*="[freebie_sku]"]'), sku);
                 setValue(row.find('[name*="[freebie_description]"]'), description);
@@ -2026,19 +2034,18 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
                 // Lock discount fields
                 row.find('[name*="[discount]"]').val('').prop('readonly', true);
-
+                // row.find('[name*="[scheme]"]').val('');
 
             } else {
-                // ✅ Normal PRODUCT: never touch freebie fields
+                // ✅ Normal PRODUCT
                 setValue(searchInput, `${sku} - ${description}`, true);
-                setValue(row.find('.sku-hidden'), sku);
-                setValue(row.find('.desc-hidden'), description);
+                row.find('.sku-hidden').val(sku);
+                row.find('.desc-hidden').val(description);
                 setValue(row.find('[name*="[price_per_pc]"]'), pricePerPc);
                 setValue(row.find('[name*="[qty_per_pc]"]'), casePack);
 
                 const itemType = row.find('input[name*="[item_type]"]').val();
 
-                // Apply discount/scheme only if NOT FREEBIE
                 if (itemType !== 'FREEBIE') {
                     setValue(row.find('[name*="[discount]"]'), discount);
 
@@ -2052,7 +2059,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     setValue(row.find('[name*="[scheme]"]'), scheme);
 
                 } else {
-                    // If still marked FREEBIE, clear and lock discount
                     row.find('[name*="[discount]"]').val('').prop('readonly', true);
                     row.find('[name*="[scheme]"]').val('');
                 }
@@ -2072,6 +2078,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
             container.find('.search-results').empty().addClass('hidden');
         });
+
+
 
 
 
