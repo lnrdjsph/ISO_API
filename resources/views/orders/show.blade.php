@@ -1796,7 +1796,7 @@
                         const $element = $(this);
                         const originalValue = $element.val() || '';
                         $element.data('original', originalValue);
-                        console.log('Input original:', $element.attr('name'), originalValue); // Debug log
+                        console.log('Input original:', $element.attr('name'), originalValue);
                     });
 
                     // For contenteditable elements
@@ -1804,7 +1804,7 @@
                         const $element = $(this);
                         const originalValue = $element.text().trim();
                         $element.data('original-value', originalValue);
-                        console.log('Contenteditable original:', $element.data('field'), originalValue); // Debug log
+                        console.log('Contenteditable original:', $element.data('field'), originalValue);
                     });
                 }
 
@@ -1833,25 +1833,23 @@
                         currentValue = $element.text().trim();
                         originalValue = $element.data('original-value');
 
-                        // Handle undefined original value
                         if (originalValue === undefined) {
                             console.warn('Missing original value for contenteditable:', $element.data('field'));
-                            originalValue = currentValue; // Set it to current to avoid false positives
+                            originalValue = currentValue;
                             $element.data('original-value', originalValue);
                         }
                     } else {
                         currentValue = $element.val() || '';
                         originalValue = $element.data('original');
 
-                        // Handle undefined original value
                         if (originalValue === undefined) {
                             console.warn('Missing original value for input:', $element.attr('name'));
-                            originalValue = currentValue; // Set it to current to avoid false positives
+                            originalValue = currentValue;
                             $element.data('original', originalValue);
                         }
                     }
 
-                    // FIXED: Normalize values for comparison (handle empty, null, undefined)
+                    // Normalize values for comparison
                     const normalizeValue = (val) => {
                         if (val === null || val === undefined) return '';
                         if (typeof val === 'string') return val.trim();
@@ -1863,7 +1861,6 @@
 
                     const hasChanged = normalizedCurrent !== normalizedOriginal;
 
-                    // Debug logging
                     console.log('Checking change:', {
                         element: $element.attr('name') || $element.data('field'),
                         current: normalizedCurrent,
@@ -1900,7 +1897,7 @@
                                     $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
                                 }
                             }
-                            changesCount = Math.max(0, changesCount - 1); // Prevent negative count
+                            changesCount = Math.max(0, changesCount - 1);
                         }
                     }
 
@@ -1909,30 +1906,53 @@
                 }
 
                 function initializeChangeDetection() {
-                    // First, initialize all original values
+                    // Initialize all original values ONLY
                     initializeOriginalValues();
 
-                    // Wait a moment for DOM to settle, then check for any existing changes
-                    setTimeout(() => {
-                        // Reset all change indicators first
-                        trackableElements.each(function() {
-                            $(this).data('is-changed', false);
-                            $(this).removeClass('bg-yellow-100 border border-yellow-300 rounded');
-                        });
-
-                        changesCount = 0;
-                        hasChanges = false;
-
-                        // Now check each element - this should not trigger highlights if nothing changed
-                        // Only uncomment the line below if you want to check for pre-existing changes
-                        trackableElements.each(function() {
-                            checkElementChange(this);
-                        });
-
-                        updateSubmitButtonState();
-                        console.log('Change detection initialized');
-                    }, 100);
+                    // DO NOT reset change indicators or check for changes on initialization
+                    // This allows existing changes to persist
+                    console.log('Change detection initialized - ready to track changes');
                 }
+
+                // Event listeners for change detection
+                trackableElements.filter('input, select').on('change input keyup', function() {
+                    checkElementChange(this);
+                });
+
+                trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
+                    checkElementChange(this);
+
+                    const $this = $(this);
+                    const row = $this.closest('tr');
+
+                    // Update hidden input
+                    const index = row.data('index');
+                    const field = $this.data('field');
+                    if (index !== undefined && field) {
+                        const hiddenInput = $(`input[name="items[${index}][${field}]"]`);
+                        if (hiddenInput.length) {
+                            let value = $this.text().trim();
+                            if (value === '-') value = '0';
+                            hiddenInput.val(value);
+                        }
+                    }
+
+                    // Re-run row + total calculations
+                    orderCalculator.calculateRowTotals(row[0]);
+                    updateOrderTotal();
+                });
+
+                // Initialize on page load
+                $(document).ready(function() {
+                    // First initialize change detection
+                    initializeChangeDetection();
+
+                    // Then do calculations
+                    setTimeout(() => {
+                        orderCalculator.calculateAllRows();
+                        updateOrderTotal();
+                    }, 100);
+                });
 
 
                 function updateOrderTotal() {
@@ -2295,7 +2315,7 @@
 
 
             function lockFieldsByStatus(orderStatus) {
-                const lockStatuses = ["approved", "completed", "for approval", "cancelled", 'completed'];
+                const lockStatuses = ["approved", "completed", "for approval", "cancelled"];
 
                 if (lockStatuses.includes(orderStatus)) {
                     // Lock all inputs
