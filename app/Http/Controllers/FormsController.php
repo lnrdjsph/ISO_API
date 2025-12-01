@@ -278,7 +278,7 @@ public function sof_submit(Request $request){
 
         }
 
-        $this->deductAllocationStock($order->id);
+        $this->deductAllocationStock($order->id, $validated['warehouse']); // Pass warehouse
 
         DB::commit();
 
@@ -551,11 +551,11 @@ public function checkAllocationStock(array $orders, $warehouseName)
     return true; // all good
 }
 
-public function deductAllocationStock($orderId)
+public function deductAllocationStock($orderId, $warehouseName)
 {
     $userLocation = auth()->user()->user_location;
     $tableName = 'products_' . strtolower($userLocation);
-    $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+    $warehouseCode = $warehouseName;
 
     // Load order and items
     $order = Order::with('items')->findOrFail($orderId);
@@ -654,28 +654,28 @@ public function deductAllocationStock($orderId)
  * @param string $location
  * @return string
  */
-private function getWarehouseCodeByLocation(string $location): string
-{
-    $locationToWarehouse = [
-        '4002' => '80181',
-        '6012' => '80211',
-        '2010' => '80001',
-        '2017' => '80041',
-        '3018' => '80051',
-        '3019' => '80071',
-        '2008' => '80131',
-        '6009' => '80141',
-        '6010' => '80191',
-    ];
+// private function getWarehouseCodeByLocation(string $location): string
+// {
+//     $locationToWarehouse = [
+//         '4002' => '80181',
+//         '6012' => '80211',
+//         '2010' => '80001',
+//         '2017' => '80041',
+//         '3018' => '80051',
+//         '3019' => '80071',
+//         '2008' => '80131',
+//         '6009' => '80141',
+//         '6010' => '80191',
+//     ];
 
-    $warehouseCode = $locationToWarehouse[$location] ?? null;
+//     $warehouseCode = $locationToWarehouse[$location] ?? null;
 
-    if (!$warehouseCode) {
-        throw new \Exception("Warehouse code not found for location: {$location}");
-    }
+//     if (!$warehouseCode) {
+//         throw new \Exception("Warehouse code not found for location: {$location}");
+//     }
 
-    return $warehouseCode;
-}
+//     return $warehouseCode;
+// }
 
 
 
