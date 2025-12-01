@@ -133,7 +133,7 @@ public function sof_submit(Request $request){
     try{
         DB::beginTransaction();
         // Save main order info
-        $this->checkAllocationStock($validated['orders']);
+        $this->checkAllocationStock($validated['orders'], $validated['warehouse']);
         // === Generate SOF ID ===
         $today = now()->format('Ymd');
         $latest = Order::where('sof_id', 'like', "SOF{$today}-%")
@@ -495,11 +495,11 @@ public function search(Request $request)
 // }
 
 // Freebies included
-public function checkAllocationStock(array $orders)
+public function checkAllocationStock(array $orders, $warehouseName)
 {
     $userLocation = auth()->user()->user_location;
     $tableName = 'products_' . strtolower($userLocation);
-    $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+    $warehouseCode =  $warehouseName;
 
     // Group orders by SKU (include freebies if sale_type == 'Freebie')
     $skuTotals = [];
@@ -697,6 +697,17 @@ private function getWarehouseCodeByLocation(string $location): string
                         'name_on_card' => 'test biboy',
                         'mobile_1' => '09999999999',
                         'email_1' => 'test.biboy@test.com'
+                    ]
+                ]);
+            }
+            if ($cardNo === '1111111111111111') {
+                return response()->json([
+                    "message" => "success",
+                    "status" => "200",
+                    "data" => [
+                        'name_on_card' => 'test gene',
+                        'mobile_1' => '09111111111',
+                        'email_1' => 'test.gene@test.com'
                     ]
                 ]);
             }

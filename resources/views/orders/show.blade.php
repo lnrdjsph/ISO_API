@@ -822,49 +822,49 @@
                                         Order Actions
                                     </label>
 
+                                    @if ($order->order_status !== 'completed')
+                                        <select
+                                            id="orderAction"
+                                            class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            <option value="">-- Select Action --</option>
 
-                                    <select
-                                        id="orderAction"
-                                        class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                        <option value="">-- Select Action --</option>
+                                            @if (Auth::user()->role !== 'manager')
+                                                @if ($order->order_status !== 'cancelled')
+                                                    <option value="cancel">Cancel Order</option>
+                                                @endif
 
-                                        @if (Auth::user()->role !== 'manager')
-                                            @if ($order->order_status !== 'cancelled')
-                                                <option value="cancel">Cancel Order</option>
-                                            @endif
+                                                @if ($order->order_status === 'cancelled')
+                                                    <option value="restore">Restore Order</option>
+                                                @endif
 
-                                            @if ($order->order_status === 'cancelled')
-                                                <option value="restore">Restore Order</option>
-                                            @endif
+                                                @if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                    <option value="for approval">Request For Approval</option>
+                                                @endif
 
-                                            @if (!in_array($order->order_status, ['for approval', 'approved', 'rejected']))
-                                                <option value="for approval">Request For Approval</option>
-                                            @endif
+                                                @if ($order->order_status === 'approved')
+                                                    <option value="complete">Complete Order</option>
+                                                @endif
 
-                                            @if ($order->order_status === 'approved')
-                                                <option value="complete">Complete Order</option>
-                                            @endif
-
-                                            {{-- @if ($order->order_status !== 'processing')
+                                                {{-- @if ($order->order_status !== 'processing')
 																								<option value="processing">Mark as Processing</option>
 																						@endif
 
 																						@if ($order->order_status !== 'completed')
 																								<option value="completed">Mark as Completed</option>
 																						@endif --}}
-                                        @endif
-
-                                        @if (in_array(Auth::user()->role, ['manager', 'super admin']))
-                                            @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
-                                                <option value="approve">Approve Order</option>
                                             @endif
 
-                                            @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
-                                                <option value="rejected">Reject Order</option>
-                                            @endif
-                                        @endif
-                                    </select>
+                                            @if (in_array(Auth::user()->role, ['manager', 'super admin']))
+                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                    <option value="approve">Approve Order</option>
+                                                @endif
 
+                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                    <option value="rejected">Reject Order</option>
+                                                @endif
+                                            @endif
+                                        </select>
+                                    @endif
                                     @if ($order->approval_document)
                                         <div class="mt-4 rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
                                             <h3 class="mb-2 text-sm font-semibold text-gray-700">Approval Document</h3>
