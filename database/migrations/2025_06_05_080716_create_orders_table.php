@@ -16,6 +16,7 @@ class CreateOrdersTable extends Migration
             $table->string('mbc_card_no')->nullable(); // ✅ Added
             $table->string('customer_name')->nullable(); // ✅ Added
             $table->string('contact_number')->nullable(); // ✅ Added
+            $table->string('email')->nullable(); // ✅ Added
 
             $table->string('channel_order');
             $table->string('warehouse')->nullable();

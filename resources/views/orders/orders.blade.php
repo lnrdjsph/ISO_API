@@ -184,7 +184,7 @@
                                         @php
                                             $status = ucwords(strtolower($order->order_status ?? 'New Order'));
                                             $statusClass = match ($status) {
-                                                'Completed' => 'bg-green-100 text-green-800',
+                                                'Completed' => 'bg-green-200 text-green-800',
                                                 'Archived' => 'bg-gray-200 text-gray-800',
                                                 'Cancelled' => 'bg-red-200 text-red-800',
                                                 'Pending' => 'bg-yellow-200 text-yellow-800',

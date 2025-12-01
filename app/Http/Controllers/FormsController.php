@@ -62,6 +62,7 @@ public function sof_submit(Request $request){
         'mbc_card_no' => 'required|digits:16',
         'customer_name' => 'required|string',
         'contact_number' => 'required|string|regex:/^[0-9]{11,12}$/',
+        'email' => 'required|email',
         
 
         // Order items
@@ -167,6 +168,7 @@ public function sof_submit(Request $request){
             'mbc_card_no' => $validated['mbc_card_no'],
             'customer_name' => $validated['customer_name'],
             'contact_number' => $validated['contact_number'],
+            'email' => $validated['email'],
             'order_status' => 'new order',
         ]);
 
@@ -290,40 +292,50 @@ public function sof_submit(Request $request){
 }
 
     
-    public function search(Request $request)
-    {
-        $query = strtolower($request->query('query'));
-        $keywords = preg_split('/\s+/', $query, -1, PREG_SPLIT_NO_EMPTY);
+public function search(Request $request)
+{
+    // normalize query
+    $query = strtolower($request->query('query'));
 
-        $userLocation = strtolower(auth()->user()->user_location);
-        $tableName = 'products_' . $userLocation;
+    // treat "/" as space
+    $query = str_replace(['/', '|', ','], ' ', $query);
 
-        $results = DB::connection('mysql')
-            ->table($tableName)
-            ->select(
-                'sku',
-                'description',
-                'srp',
-                'case_pack',
-                'allocation_per_case',
-                'cash_bank_card_scheme',
-                'po15_scheme',
-                'freebie_sku',
-                'discount_scheme'
-            )
-            ->where(function ($q) use ($keywords) {
-                foreach ($keywords as $word) {
-                    $q->orWhere(function ($subQ) use ($word) {
-                        $subQ->whereRaw('LOWER(description) LIKE ?', ["%{$word}%"])
-                            ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$word}%"]);
-                    });
-                }
-            })
-            ->whereNull('archived_at')
-            ->get();
+    // split into keywords
+    $keywords = preg_split('/\s+/', $query, -1, PREG_SPLIT_NO_EMPTY);
 
-        return response()->json($results);
-    }
+    $userLocation = strtolower(auth()->user()->user_location);
+    $tableName = 'products_' . $userLocation;
+
+    $results = DB::connection('mysql')
+        ->table($tableName)
+        ->select(
+            'sku',
+            'description',
+            'department',
+            'department_code',
+            'srp',
+            'case_pack',
+            'allocation_per_case',
+            'cash_bank_card_scheme',
+            'po15_scheme',
+            'freebie_sku',
+            'discount_scheme'
+        )
+        ->where(function ($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $q->orWhere(function ($subQ) use ($word) {
+                    $subQ->whereRaw('LOWER(description) LIKE ?', ["%{$word}%"])
+                        ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$word}%"])
+                        ->orWhereRaw('LOWER(department) LIKE ?', ["%{$word}%"])
+                        ->orWhereRaw('LOWER(department_code) LIKE ?', ["%{$word}%"]);
+                });
+            }
+        })
+        ->whereNull('archived_at')
+        ->get();
+
+    return response()->json($results);
+}
 
 
     public function rof()
@@ -684,6 +696,7 @@ private function getWarehouseCodeByLocation(string $location): string
                     "data" => [
                         'name_on_card' => 'test biboy',
                         'mobile_1' => '09999999999',
+                        'email_1' => 'test.biboy@test.com'
                     ]
                 ]);
             }
@@ -702,11 +715,21 @@ private function getWarehouseCodeByLocation(string $location): string
                 ->map(function ($items) {
                     $first = $items->first();
                     $mobile = null;
+                    $email = null;
 
                     foreach ($items as $item) {
                         $itemArr = array_change_key_case((array) $item, CASE_LOWER);
+
                         if (($itemArr['cnct_line_typ'] ?? null) === 'MOBILE_1') {
                             $mobile = $itemArr['cnct_val'] ?? null;
+                        }
+
+                        if (($itemArr['cnct_line_typ'] ?? null) === 'EMAIL_1') {
+                            $email = $itemArr['cnct_val'] ?? null;
+                        }
+
+                        // Stop early if both found
+                        if ($mobile && $email) {
                             break;
                         }
                     }
@@ -716,9 +739,11 @@ private function getWarehouseCodeByLocation(string $location): string
                     return [
                         'name_on_card' => $firstArr['name_on_card'] ?? null,
                         'mobile_1' => $mobile,
+                        'email_1' => $email,
                     ];
                 })
                 ->first();
+
 
             if (!$user) {
                 return response()->json([

@@ -23,7 +23,7 @@ class UpdateAllProductAllocations extends Command
         '80051', // Opao-ISO Warehouse
         '80071', // Big Blue Warehouse
         '80131', // Lower Tingub Warehouse
-        '80211', // Sta. Rosa Warehouse
+        '80201', // Sta. Rosa Warehouse
         '80181', // Bacolod Depot
         '80191', // Tacloban Depot
     ];
@@ -31,19 +31,21 @@ class UpdateAllProductAllocations extends Command
     // Store code to warehouse facility ID mapping
     protected array $locationToWarehouse = [
         '4002' => 'BD', // Bacolod Depot (80181)
+        '6012' => 'SI', // Silangan Warehouse (80141)
+
         // Add more mappings as needed...
     ];
 
     // Warehouse code to facility ID mapping
     protected array $warehouseToFacility = [
         '80181' => 'BD', // Bacolod Depot
-        '80141' => 'BD', // Silangan Warehouse
+        '80141' => 'SI', // Silangan Warehouse
         '80001' => 'BD', // Central Warehouse
         '80041' => 'BD', // Procter Warehouse
         '80051' => 'BD', // Opao-ISO Warehouse
         '80071' => 'BD', // Big Blue Warehouse
         '80131' => 'BD', // Lower Tingub Warehouse
-        '80211' => 'BD', // Sta. Rosa Warehouse
+        '80201' => 'SL', // Sta. Rosa Warehouse
         '80191' => 'BD', // Tacloban Depot
     ];
 

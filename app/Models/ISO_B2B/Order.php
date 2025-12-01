@@ -31,6 +31,7 @@ class Order extends Model
         'mbc_card_no',
         'customer_name',
         'contact_number',
+        'email',
         'order_status', // 👈 make sure this is included
         'approval_document',
     ];

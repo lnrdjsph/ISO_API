@@ -20,7 +20,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Artisan;
-
+use Symfony\Component\Process\Process;
 
 
 
@@ -48,34 +48,43 @@ public function index(Request $request)
         // Map store_code -> warehouse_code
         $locationToWarehouse = [
             '4002' => '80181',
-            '6012' => '80211',
+            '6012' => '80141',
             '2010' => '80001',
             '2017' => '80041',
             '3018' => '80051',
             '3019' => '80071',
             '2008' => '80131',
-            '6009' => '80141',
+            '6009' => '80201',
             '6010' => '80191',
         ];
 
         $warehouseMap = [
             '80141' => 'Silangan Warehouse',
-            '80001' => 'Central Warehouse',
-            '80041' => 'Procter Warehouse',
-            '80051' => 'Opao-ISO Warehouse',
-            '80071' => 'Big Blue Warehouse',
-            '80131' => 'Lower Tingub Warehouse',
-            '80211' => 'Sta. Rosa Warehouse',
+            // '80001' => 'Central Warehouse',
+            // '80041' => 'Procter Warehouse',
+            // '80051' => 'Opao-ISO Warehouse',
+            // '80071' => 'Big Blue Warehouse',
+            // '80131' => 'Lower Tingub Warehouse',
+            // '80201' => 'Sta. Rosa Warehouse',
             '80181' => 'Bacolod Depot',
-            '80191' => 'Tacloban Depot',
+            // '80191' => 'Tacloban Depot',
         ];    
-        
-        
-        $currentWarehouse = $request->get('warehouse');
 
-        if (!$currentWarehouse) {
-            $currentWarehouse = (string) ($locationToWarehouse[$userLocation] ?? null);
+        $isPersonnel = str_contains(strtolower(auth()->user()->role ?? ''), 'personnel');
+        if ($isPersonnel) {
+            // Personnel cannot change warehouse — force based on their assigned location
+            $currentWarehouse = $locationToWarehouse[$userLocation] ?? null;
+        } else {
+            // Admin/Supervisor can choose warehouse
+            $currentWarehouse = $request->get('warehouse') ?: ($locationToWarehouse[$userLocation] ?? null);
+
+            // Extra: Check if warehouse exists in warehouseMap
+            if (!array_key_exists($currentWarehouse, $warehouseMap)) {
+                $currentWarehouse = $locationToWarehouse[$userLocation] ?? null;
+            }
         }
+
+
         // Sorting
         $sort = $request->get('sort', 'description');
         $direction = $request->get('direction', 'asc');
@@ -87,28 +96,28 @@ public function index(Request $request)
         // Search query
         $search = strtolower($request->get('query', ''));
 
-        // Main query
+        // Base query
         $productsQuery = DB::connection('mysql')
             ->table($tableName)
             ->select(
-            "$tableName.id",
-            "$tableName.sku",
-            "$tableName.description",
-            "$tableName.department_code",
-            "$tableName.department",
-            "$tableName.allocation_per_case",
-            "$tableName.case_pack",
-            "$tableName.srp",
-            "$tableName.cash_bank_card_scheme",
-            "$tableName.po15_scheme",
-            "$tableName.discount_scheme",
-            "$tableName.freebie_sku",
-            "wms.wms_virtual_allocation AS warehouse_allocation",
-            "wms.wms_actual_allocation AS warehouse_actual_allocation"
+                "$tableName.id",
+                "$tableName.sku",
+                "$tableName.description",
+                "$tableName.department_code",
+                "$tableName.department",
+                "$tableName.allocation_per_case",
+                "$tableName.case_pack",
+                "$tableName.srp",
+                "$tableName.cash_bank_card_scheme",
+                "$tableName.po15_scheme",
+                "$tableName.discount_scheme",
+                "$tableName.freebie_sku",
+                "wms.wms_virtual_allocation AS warehouse_allocation",
+                "wms.wms_actual_allocation AS warehouse_actual_allocation"
             )
             ->leftJoin('product_wms_allocations as wms', function ($join) use ($tableName, $currentWarehouse) {
-            $join->on("$tableName.sku", '=', 'wms.sku')
-                 ->where('wms.warehouse_code', '=', $currentWarehouse);
+                $join->on("$tableName.sku", '=', 'wms.sku')
+                     ->where('wms.warehouse_code', '=', $currentWarehouse);
             })
             ->whereNull("$tableName.archived_at");
 
@@ -123,6 +132,9 @@ public function index(Request $request)
                 }
             });
         }
+
+        // Get total count
+        $totalProducts = (clone $productsQuery)->count();
 
         $perPage = $request->get('per_page', 10);
 
@@ -151,13 +163,15 @@ public function index(Request $request)
         return view('products.index', [
             'products' => $products,
             'warehouseMap' => $warehouseMap,
-            'currentWarehouse' => $currentWarehouse
+            'currentWarehouse' => $currentWarehouse,
+            'totalProducts' => $totalProducts
         ]);
 
     } catch (\Exception $e) {
         return view('errors.db_error', ['error' => $e->getMessage()]);
     }
 }
+
 
 
 
@@ -518,25 +532,38 @@ public function index(Request $request)
 
 
 
-    public function search(Request $request)
-    {
-        $query = strtolower($request->query('query'));
+public function search(Request $request)
+{
+    $query = trim($request->query('query', ''));
 
-        $userLocation = strtolower(auth()->user()->user_location);
-        $tableName = 'products_' . $userLocation;
-
-        $results = DB::connection('mysql')
-            ->table($tableName)
-            ->select('sku', 'description')
-            ->where(function ($q) use ($query) {
-                $q->whereRaw('LOWER(description) LIKE ?', ["%{$query}%"])
-                ->orWhereRaw('LOWER(sku) LIKE ?', ["%{$query}%"]);
-            })
-            ->whereNull('archived_at')
-            ->get();
-
-        return response()->json($results);
+    if (!$query) {
+        return response()->json([]);
     }
+
+    $userLocation = strtolower(auth()->user()->user_location);
+    $tableName = 'products_' . $userLocation;
+
+    if (!Schema::connection('mysql')->hasTable($tableName)) {
+        return response()->json([]);
+    }
+
+    $results = DB::connection('mysql')
+        ->table($tableName)
+        ->select('sku', 'description', 'department', 'department_code')
+        ->where(function ($q) use ($query) {
+            $q->where('description', 'LIKE', "%{$query}%")
+            ->orWhere('sku', 'LIKE', "%{$query}%")
+            ->orWhereRaw("TRIM(IFNULL(department, '')) LIKE ?", ["%{$query}%"])
+            ->orWhereRaw("TRIM(IFNULL(department_code, '')) LIKE ?", ["%{$query}%"]);
+        })
+        ->whereNull('archived_at')
+        ->limit(10)
+        ->get();
+
+
+    return response()->json($results);
+}
+
 
 
 
@@ -1296,9 +1323,9 @@ public function index(Request $request)
             ], 400);
         }
 
-        // Check if an update is already running for this location
         $cacheKey = "wms_update_running_{$location}";
-        
+
+        // If already running
         if (Cache::has($cacheKey)) {
             return response()->json([
                 'status'  => 'running',
@@ -1307,48 +1334,66 @@ public function index(Request $request)
         }
 
         try {
-            // Map store_code -> warehouse_code
+            // Location to warehouse mapping
             $locationToWarehouse = [
                 '4002' => '80181',
-                '6012' => '80211',
+                '6012' => '80141',
                 '2010' => '80001',
                 '2017' => '80041',
                 '3018' => '80051',
                 '3019' => '80071',
                 '2008' => '80131',
-                '6009' => '80141',
+                '6009' => '80201',
                 '6010' => '80191',
             ];
 
-            // Map warehouse_code -> facility_id (for Oracle queries)
+            // Warehouse to facility mapping
             $warehouseToFacility = [
-                '80181' => 'BD',      // Bacolod Depot
-                '80211' => '80211',   // Sta. Rosa Warehouse
-                '80001' => '80001',   // Central Warehouse
-                '80041' => '80041',   // Procter Warehouse
-                '80051' => '80051',   // Opao-ISO Warehouse
-                '80071' => '80071',   // Big Blue Warehouse
-                '80131' => '80131',   // Lower Tingub Warehouse
-                '80141' => '80141',   // Silangan Warehouse
-                '80191' => '80191',   // Tacloban Depot
+                '80181' => 'BD',
+                '80201' => 'SL',
+                '80001' => '80001',
+                '80041' => '80041',
+                '80051' => '80051',
+                '80071' => '80071',
+                '80131' => '80131',
+                '80141' => 'SI',
+                '80191' => '80191',
             ];
 
             $warehouseCode = $locationToWarehouse[$location] ?? null;
-            
+
             if (!$warehouseCode) {
                 throw new \Exception("No warehouse mapping defined for location '{$location}'.");
             }
 
-            // Get facility ID for Oracle queries
             $facilityId = $warehouseToFacility[$warehouseCode] ?? $warehouseCode;
-
             $tableName = "products_{$location}";
 
+            // Validate connections
+            try {
+                DB::connection('mysql')->getPdo();
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'MySQL connection failed: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            try {
+                DB::connection('oracle_wms')->getPdo();
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Oracle WMS connection failed: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            // Check table existence
             if (!Schema::connection('mysql')->hasTable($tableName)) {
                 throw new \Exception("Table '{$tableName}' does not exist for location '{$location}'.");
             }
 
-            // Get total count first
+            // Count SKUs
             $totalSkus = DB::connection('mysql')->table($tableName)
                 ->whereNull('archived_at')
                 ->distinct('sku')
@@ -1358,49 +1403,134 @@ public function index(Request $request)
                 throw new \Exception("No active SKUs found in '{$tableName}'.");
             }
 
-            // Mark as running with metadata
-            Cache::put($cacheKey, [
-                'started_at' => now()->toDateTimeString(),
-                'total_skus' => $totalSkus,
-                'warehouse_code' => $warehouseCode,
-                'facility_id' => $facilityId,
-            ], now()->addHours(2));
+            // ===================================
+            // 🚀 CHECK AND START QUEUE WORKER
+            // ===================================
+            $this->ensureQueueWorkerRunning();
 
-            // Dispatch jobs in chunks
-            $dispatchedCount = 0;
+            // Reset progress counters
+            Cache::forget("wms_processed_{$location}_{$warehouseCode}");
+            Cache::forget("wms_failed_{$location}_{$warehouseCode}");
+            Cache::put("wms_processed_{$location}_{$warehouseCode}", 0, now()->addHours(3));
+            Cache::put("wms_failed_{$location}_{$warehouseCode}", 0, now()->addHours(3));
+
+            // Mark update as running
+            Cache::put($cacheKey, [
+                'started_at'     => now()->toDateTimeString(),
+                'total_skus'     => $totalSkus,
+                'warehouse_code' => $warehouseCode,
+                'facility_id'    => $facilityId,
+            ], now()->addHours(3));
+
+            // Dispatch jobs
+            $dispatched = 0;
+
             DB::connection('mysql')->table($tableName)
                 ->whereNull('archived_at')
                 ->select('sku')
                 ->distinct()
                 ->orderBy('sku')
-                ->chunk(100, function ($rows) use (&$dispatchedCount, $facilityId, $warehouseCode) {
+                ->chunk(100, function ($rows) use (&$dispatched, $facilityId, $warehouseCode) {
                     foreach ($rows as $row) {
-                        $sku = strtoupper($row->sku);
-                        FetchAllocationJob::dispatch($sku, $facilityId, $warehouseCode);
-                        $dispatchedCount++;
+                        FetchAllocationJob::dispatch(
+                            strtoupper($row->sku), 
+                            $facilityId, 
+                            $warehouseCode
+                        )->onQueue('default');
+                        
+                        $dispatched++;
                     }
                 });
 
-            Log::info("Queued {$dispatchedCount} FetchAllocationJob(s) for location: {$location}, warehouse: {$warehouseCode}, facility: {$facilityId}");
+            Log::info("✓ Queued {$dispatched} FetchAllocationJob(s) for {$location} ({$warehouseCode})");
 
             return response()->json([
-                'status'  => 'started',
-                'message' => "Queued {$dispatchedCount} allocation updates.",
-                'location' => $location,
-                'total_skus' => $dispatchedCount,
+                'status'      => 'started',
+                'message'     => "Queued {$dispatched} allocation updates. Queue worker is running.",
+                'location'    => $location,
+                'total_skus'  => $dispatched,
             ]);
+
         } catch (\Exception $e) {
-            // Clear cache on error
             Cache::forget($cacheKey);
-            
-            Log::error("Failed to queue WMS allocation update for {$location}: " . $e->getMessage());
-            
+
+            Log::error("✗ Failed to start WMS update for {$location}: " . $e->getMessage());
+
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Failed to start allocation update: ' . $e->getMessage(),
             ], 500);
         }
     }
+
+    /**
+     * Ensure queue worker is running, start if not
+     */
+    protected function ensureQueueWorkerRunning(): void
+    {
+        if ($this->isQueueWorkerRunning()) {
+            Log::info('✓ Queue worker is already running');
+            return;
+        }
+
+        Log::warning('⚠ Queue worker not running, attempting to start...');
+        
+        $this->startQueueWorker();
+    }
+
+    /**
+     * Check if queue worker is running
+     */
+    protected function isQueueWorkerRunning(): bool
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows: check full command line of php.exe
+            $output = shell_exec('wmic process where "name=\'php.exe\'" get CommandLine 2>nul');
+
+            return $output && 
+                (stripos($output, 'queue:work') !== false ||
+                stripos($output, 'queue:listen') !== false);
+        } else {
+            // Linux: normal ps aux check
+            $output = shell_exec('ps aux | grep "queue:work\|queue:listen" | grep -v grep');
+            return !empty($output);
+        }
+    }
+        /**
+     * Start queue worker in background
+     */
+    protected function startQueueWorker(): void
+    {
+        $basePath = base_path();
+        $phpBinary = PHP_BINARY;
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+
+            // Make sure paths are escaped properly
+            $artisanPath = str_replace('/', '\\', "{$basePath}\\artisan");
+
+            // Windows: start queue worker using PowerShell
+            $command = "powershell -Command \"Start-Process '{$phpBinary}' -ArgumentList '{$artisanPath} queue:work --queue=default --tries=3 --timeout=300' -WindowStyle Hidden\"";
+
+            pclose(popen($command, 'r'));
+
+        } else {
+            // Linux: nohup background
+            $logPath = storage_path('logs/queue-worker.log');
+            $command = "nohup {$phpBinary} {$basePath}/artisan queue:work --queue=default --tries=3 --timeout=300 > {$logPath} 2>&1 &";
+            exec($command);
+        }
+
+        sleep(2);
+
+        if ($this->isQueueWorkerRunning()) {
+            Log::info('✓ Queue worker started successfully');
+        } else {
+            Log::error('✗ Failed to start queue worker automatically');
+            throw new \Exception('Queue worker could not be started. Please start it manually: php artisan queue:work');
+        }
+    }
+
 
     public function wmsStatus(Request $request)
     {
@@ -1409,133 +1539,91 @@ public function index(Request $request)
             ? strtolower($user->user_location)
             : $request->input('location');
 
-        $cacheKey = "wms_update_running_{$location}";
-
-        // Check cache for active update
-        $cacheData = Cache::get($cacheKey);
-        
-        if (!$cacheData) {
+        if (!$location) {
             return response()->json([
                 'status' => 'idle',
+                'message' => 'Location is required.',
+            ], 400);
+        }
+
+        $cacheKey = "wms_update_running_{$location}";
+        $cache = Cache::get($cacheKey);
+
+        if (!$cache) {
+            return response()->json([
+                'status'  => 'idle',
                 'message' => 'No update in progress.',
                 'location' => $location,
             ]);
         }
 
         try {
-            $warehouseCode = $cacheData['warehouse_code'] ?? null;
-            $totalSkus = $cacheData['total_skus'] ?? 0;
-            $startedAt = $cacheData['started_at'] ?? now()->subMinutes(5)->toDateTimeString();
-            
-            if (!$warehouseCode) {
-                return response()->json([
-                    'status' => 'pending',
-                    'message' => 'Update queued, waiting to start...',
-                    'location' => $location,
-                ]);
+            $warehouseCode = $cache['warehouse_code'];
+            $totalSkus     = $cache['total_skus'];
+            $startedAt     = $cache['started_at'];
+
+            // Get processed and failed counts from cache
+            $processed = (int) Cache::get("wms_processed_{$location}_{$warehouseCode}", 0);
+            $failed = (int) Cache::get("wms_failed_{$location}_{$warehouseCode}", 0);
+
+            $percent = $totalSkus > 0
+                ? round(($processed / $totalSkus) * 100, 1)
+                : 0;
+
+            // Check if queue worker is still running
+            if (!$this->isQueueWorkerRunning()) {
+                Log::warning('⚠ Queue worker stopped during processing, restarting...');
+                try {
+                    $this->startQueueWorker();
+                } catch (\Exception $e) {
+                    // Continue with status response even if restart fails
+                    Log::error('Failed to restart queue worker: ' . $e->getMessage());
+                }
             }
 
-            // Count how many SKUs have been processed
-            // IMPORTANT: Count ALL records for this warehouse, not just recent ones
-            // because jobs may have finished before we started checking
-            $processedCount = DB::connection('mysql')
-                ->table('product_wms_allocations')
-                ->where('warehouse_code', $warehouseCode)
-                ->count();
-
-            // Calculate progress percentage
-            $progressPercentage = $totalSkus > 0 ? round(($processedCount / $totalSkus) * 100, 1) : 0;
-
             // Check if completed
-            if ($processedCount >= $totalSkus && $totalSkus > 0) {
-                // Clear cache
+            if (($processed + $failed) >= $totalSkus && $totalSkus > 0) {
                 Cache::forget($cacheKey);
+                Cache::forget("wms_processed_{$location}_{$warehouseCode}");
+                Cache::forget("wms_failed_{$location}_{$warehouseCode}");
 
                 return response()->json([
                     'status'  => 'done',
-                    'message' => 'Allocation update completed successfully.',
+                    'message' => 'Allocation update completed.',
                     'summary' => [
-                        'total_skus' => $totalSkus,
-                        'processed_skus' => $processedCount,
-                        'warehouse_code' => $warehouseCode,
-                        'started_at' => $startedAt,
-                        'completed_at' => now()->toDateTimeString(),
+                        'total_skus'      => $totalSkus,
+                        'processed_skus'  => $processed,
+                        'failed_skus'     => $failed,
+                        'warehouse_code'  => $warehouseCode,
+                        'started_at'      => $startedAt,
+                        'completed_at'    => now()->toDateTimeString(),
                     ],
                     'location' => $location,
                 ]);
             }
 
-            // Still running
             return response()->json([
                 'status'  => 'running',
-                'message' => "Processing allocations: {$processedCount} of {$totalSkus} SKUs completed ({$progressPercentage}%)",
+                'message' => "Processing {$processed} / {$totalSkus} SKUs ({$percent}%)",
                 'progress' => [
                     'current_step' => 'Fetching allocations from Oracle WMS',
-                    'processed' => $processedCount,
-                    'total' => $totalSkus,
-                    'percentage' => $progressPercentage,
+                    'processed'    => $processed,
+                    'failed'       => $failed,
+                    'total'        => $totalSkus,
+                    'percentage'   => $percent,
                 ],
                 'location' => $location,
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error checking WMS status for {$location}: " . $e->getMessage());
-            
+            Log::error("✗ Status check failed for {$location}: ".$e->getMessage());
+
             return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to check status: ' . $e->getMessage(),
+                'status'  => 'error',
+                'message' => 'Failed to check update status: '.$e->getMessage(),
                 'location' => $location,
             ], 500);
         }
-    }
-
-    private function extractSummary($lines)
-    {
-        $summary = [
-            'allocations_updated' => 0,
-            'allocations_inserted' => 0,
-            'case_packs_updated' => 0,
-            'duration' => '',
-        ];
-
-        foreach (array_reverse($lines) as $line) {
-            if (preg_match('/Total allocations updated: (\d+)/', $line, $matches)) {
-                $summary['allocations_updated'] = (int) $matches[1];
-            }
-            if (preg_match('/Total allocations inserted: (\d+)/', $line, $matches)) {
-                $summary['allocations_inserted'] = (int) $matches[1];
-            }
-            if (preg_match('/Total case packs updated: (\d+)/', $line, $matches)) {
-                $summary['case_packs_updated'] = (int) $matches[1];
-            }
-            if (preg_match('/Process completed in (.+)/', $line, $matches)) {
-                $summary['duration'] = $matches[1];
-            }
-        }
-
-        return $summary;
-    }
-
-    private function extractProgress($lines)
-    {
-        $progress = [
-            'current_step' => 'Processing...',
-            'details' => [],
-        ];
-
-        $recentLines = array_slice($lines, -10);
-
-        foreach ($recentLines as $line) {
-            if (str_contains($line, 'Processing facility:')) {
-                $progress['current_step'] = 'Querying warehouse allocations';
-            } elseif (str_contains($line, 'Updating case pack')) {
-                $progress['current_step'] = 'Updating case pack information';
-            } elseif (str_contains($line, 'Retrieved allocations')) {
-                $progress['details'][] = trim(strip_tags($line));
-            }
-        }
-
-        return $progress;
     }
 
 }

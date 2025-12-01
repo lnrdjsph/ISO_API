@@ -11,7 +11,7 @@
                 id="actual-content"
                 class="">
                 <!-- Header Section -->
-                <div class="mb-8">
+                <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
                             <div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
@@ -33,21 +33,11 @@
                                 <p class="text-gray-600">Manage and explore your product inventory</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-4">
-                            <div class="mx-auto w-full max-w-md rounded-lg">
-                                <form
-                                    id="updateAllocationsForm"
-                                    action="{{ route('update.allocations') }}"
-                                    method="POST">
-                                    @csrf
-                                    <button
-                                        type="submit"
-                                        id="updateButton"
-                                        class="mt-2 flex transform items-center rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50">
-                                        <span id="buttonText" class="text-sm">Update Allocations</span>
-                                    </button>
-                                </form>
-                            </div>
+                        <div class="mt-4 flex items-center space-x-4">
+                            <span class="inline-flex items-center rounded-xl border border-pink-200/60 bg-pink-100/60 px-4 py-2 text-[12px] font-medium text-pink-800">
+                                Total products: {{ $totalProducts }}
+                            </span>
+
 
                             <!-- Full Page Loader -->
                             <div
@@ -116,8 +106,50 @@
                                 let checkStatusInterval = null;
                                 let progressPercentage = 0;
 
-                                form.addEventListener('submit', function(e) {
+                                // -----------------------------------
+                                // 🔍 CHECK SERVER CONNECTION FIRST
+                                // -----------------------------------
+                                async function checkConnection() {
+                                    try {
+                                        const res = await fetch(`{{ route('update.allocations.status') }}`, {
+                                            method: 'GET',
+                                            headers: {
+                                                'Accept': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
+                                            },
+                                            cache: 'no-store'
+                                        });
+
+                                        if (!res.ok) {
+                                            console.error('Connection check failed:', res.status, res.statusText);
+                                            return false;
+                                        }
+
+                                        const data = await res.json();
+                                        console.log('Connection check response:', data);
+                                        return data ? true : false;
+
+                                    } catch (err) {
+                                        console.error('Connection check error:', err);
+                                        return false;
+                                    }
+                                }
+
+                                form.addEventListener('submit', async function(e) {
                                     e.preventDefault();
+
+                                    // 🔍 Check connection before anything
+                                    const alive = await checkConnection();
+
+                                    if (!alive) {
+                                        Swal.fire({
+                                            title: 'Connection Error',
+                                            text: 'Unable to reach the server. Please check your network or server status.',
+                                            icon: 'error',
+                                            confirmButtonColor: '#ef4444'
+                                        });
+                                        return;
+                                    }
 
                                     Swal.fire({
                                         title: 'Warning',
@@ -135,54 +167,67 @@
                                         confirmButtonColor: '#2563eb',
                                         cancelButtonColor: '#6b7280'
                                     }).then((result) => {
-                                        if (!result.isConfirmed) return;
-
-                                        startUpdate();
+                                        if (result.isConfirmed) startUpdate();
                                     });
                                 });
 
+                                // -----------------------------------
+                                // 🚀 START ALLOCATION UPDATE
+                                // -----------------------------------
                                 function startUpdate() {
-                                    // Disable button
                                     button.disabled = true;
 
-                                    // Show loader
                                     loader.classList.remove('hidden');
                                     loaderTitle.textContent = 'Initializing Update...';
                                     loaderMessage.textContent = 'Starting allocation update process...';
                                     progressBar.style.width = '10%';
                                     progressPercentage = 10;
 
-                                    // Trigger update
                                     fetch(form.action, {
                                             method: 'POST',
                                             headers: {
                                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                                 'Accept': 'application/json',
-                                                'Content-Type': 'application/json'
-                                            }
+                                                'Content-Type': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
+                                            },
+                                            body: JSON.stringify({}) // Empty body for POST request
                                         })
-                                        .then(res => res.json())
+                                        .then(res => {
+                                            console.log('Start update response status:', res.status);
+                                            if (!res.ok) {
+                                                return res.json().then(data => {
+                                                    throw new Error(data.message || 'Server returned error');
+                                                });
+                                            }
+                                            return res.json();
+                                        })
                                         .then(data => {
+                                            console.log('Start update data:', data);
+
                                             if (data.status === 'started' || data.status === 'running') {
                                                 loaderTitle.textContent = 'Update in Progress';
                                                 loaderMessage.textContent = data.message || 'Processing...';
                                                 progressBar.style.width = '25%';
                                                 progressPercentage = 25;
 
-                                                // Start polling for status
                                                 startPolling();
                                             } else if (data.status === 'error') {
                                                 showError(data.message);
+                                            } else {
+                                                showError('Unexpected response: ' + data.status);
                                             }
                                         })
                                         .catch(err => {
                                             console.error('Start error:', err);
-                                            showError('Failed to start allocation update. Please try again.');
+                                            showError(err.message || 'Failed to start allocation update. Please try again.');
                                         });
                                 }
 
+                                // -----------------------------------
+                                // 🔁 POLLING
+                                // -----------------------------------
                                 function startPolling() {
-                                    // Poll every 3 seconds
                                     checkStatusInterval = setInterval(checkStatus, 3000);
                                 }
 
@@ -194,23 +239,46 @@
                                 }
 
                                 function checkStatus() {
-                                    fetch('{{ route('update.allocations.status') }}')
-                                        .then(res => res.json())
+                                    fetch(`{{ route('update.allocations.status') }}`, {
+                                            method: 'GET',
+                                            headers: {
+                                                'Accept': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
+                                            }
+                                        })
+                                        .then(res => {
+                                            if (!res.ok) {
+                                                console.error('Status check failed:', res.status);
+                                                return null;
+                                            }
+                                            return res.json();
+                                        })
                                         .then(data => {
-                                            console.log('Status:', data);
+                                            if (!data) return; // Skip if response failed
+
+                                            console.log('Status:', data.status, data);
 
                                             if (data.status === 'done') {
                                                 stopPolling();
                                                 handleCompletion(data);
+
                                             } else if (data.status === 'running') {
                                                 updateProgress(data);
+
                                             } else if (data.status === 'pending') {
                                                 loaderMessage.textContent = data.message;
-                                                // Slowly increase progress while pending
                                                 if (progressPercentage < 30) {
                                                     progressPercentage += 2;
                                                     progressBar.style.width = progressPercentage + '%';
                                                 }
+
+                                            } else if (data.status === 'idle') {
+                                                // Still waiting for jobs to start processing
+                                                if (progressPercentage < 35) {
+                                                    progressPercentage += 0.5;
+                                                    progressBar.style.width = progressPercentage + '%';
+                                                }
+
                                             } else if (data.status === 'error') {
                                                 stopPolling();
                                                 showError(data.message);
@@ -218,48 +286,49 @@
                                         })
                                         .catch(err => {
                                             console.error('Status check error:', err);
-                                            // Don't stop polling on network errors, might be temporary
+                                            // Don't stop polling on temporary network issues
                                         });
                                 }
 
+                                // -----------------------------------
+                                // 📊 PROGRESS UPDATE
+                                // -----------------------------------
                                 function updateProgress(data) {
                                     loaderMessage.textContent = data.message || 'Processing...';
 
-                                    // Show progress details if available
                                     if (data.progress) {
+
                                         if (data.progress.current_step) {
                                             progressDetails.classList.remove('hidden');
                                             progressText.textContent = data.progress.current_step;
                                         }
 
-                                        // Use actual percentage if available
                                         if (data.progress.percentage !== undefined) {
                                             progressPercentage = data.progress.percentage;
-                                            progressBar.style.width = progrewms_allocation_per_casessPercentage + '%';
+                                            progressBar.style.width = progressPercentage + '%';
 
-                                            // Update title with percentage
                                             loaderTitle.textContent = `Update in Progress (${Math.round(progressPercentage)}%)`;
                                         } else {
-                                            // Fallback: Gradually increase progress bar
+                                            // Simulate progress if no percentage
                                             if (progressPercentage < 90) {
-                                                progressPercentage += Math.random() * 5;
+                                                progressPercentage += Math.random() * 3;
                                                 progressBar.style.width = Math.min(progressPercentage, 90) + '%';
                                             }
                                         }
                                     }
                                 }
 
+                                // -----------------------------------
+                                // ✅ COMPLETION
+                                // -----------------------------------
                                 function handleCompletion(data) {
-                                    // Complete the progress bar
                                     progressBar.style.width = '100%';
                                     loaderTitle.textContent = 'Update in Progress (100%)';
 
-                                    // Hide loader after animation
                                     setTimeout(() => {
                                         loader.classList.add('hidden');
                                         button.disabled = false;
 
-                                        // Build summary message
                                         let summaryHtml = '<p class="mb-2">Update completed successfully!</p>';
 
                                         if (data.summary) {
@@ -267,9 +336,11 @@
                                             summaryHtml += '<p class="text-sm font-semibold mb-2">Summary:</p>';
                                             summaryHtml += '<ul class="text-sm space-y-1">';
 
-                                            if (data.summary.processed_skus || data.summary.total_skus) {
-                                                const processed = data.summary.processed_skus || data.summary.total_skus;
-                                                summaryHtml += `<li>✓ SKUs Processed: <strong>${processed}</strong></li>`;
+                                            if (data.summary.processed_skus !== undefined) {
+                                                summaryHtml += `<li>✓ SKUs Processed: <strong>${data.summary.processed_skus}</strong></li>`;
+                                            }
+                                            if (data.summary.failed_skus !== undefined && data.summary.failed_skus > 0) {
+                                                summaryHtml += `<li>⚠ SKUs Failed: <strong>${data.summary.failed_skus}</strong></li>`;
                                             }
                                             if (data.summary.warehouse_code) {
                                                 summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_code}</strong></li>`;
@@ -277,9 +348,10 @@
                                             if (data.summary.started_at && data.summary.completed_at) {
                                                 const start = new Date(data.summary.started_at);
                                                 const end = new Date(data.summary.completed_at);
-                                                const durationMs = end - start;
-                                                const minutes = Math.floor(durationMs / 60000);
-                                                const seconds = Math.floor((durationMs % 60000) / 1000);
+                                                const duration = Math.floor((end - start) / 1000);
+                                                const minutes = Math.floor(duration / 60);
+                                                const seconds = duration % 60;
+
                                                 summaryHtml += `<li>⏱ Duration: <strong>${minutes}m ${seconds}s</strong></li>`;
                                             }
 
@@ -296,15 +368,18 @@
                                             window.location.reload();
                                         });
 
-                                        // Reset progress
                                         progressPercentage = 0;
                                         progressBar.style.width = '0%';
                                         progressDetails.classList.add('hidden');
-                                        loaderTitle.textContent = 'Updating the following fields:';
+
                                     }, 500);
                                 }
 
+                                // -----------------------------------
+                                // ❌ ERROR HANDLING
+                                // -----------------------------------
                                 function showError(message) {
+                                    stopPolling();
                                     loader.classList.add('hidden');
                                     button.disabled = false;
 
@@ -312,17 +387,17 @@
                                         title: 'Error',
                                         text: message || 'Failed to update allocations.',
                                         icon: 'error',
-                                        confirmButtonText: 'OK',
                                         confirmButtonColor: '#ef4444'
                                     });
 
-                                    // Reset progress
                                     progressPercentage = 0;
                                     progressBar.style.width = '0%';
                                     progressDetails.classList.add('hidden');
                                 }
 
-                                // Check if update is already running on page load
+                                // -----------------------------------
+                                // 📡 AUTO-CHECK IF ALREADY RUNNING
+                                // -----------------------------------
                                 checkStatus();
                             });
                         </script>
@@ -348,7 +423,7 @@
                 </div>
 
                 <!-- Search and Actions Bar -->
-                <div class="mb-4">
+                <div class="">
                     <div class="flex flex-nowrap items-start justify-between gap-4">
 
                         <div class="flex flex-1 gap-4">
@@ -378,8 +453,8 @@
                                         value="{{ request('query') }}"
                                         autocomplete="off"
                                         oninput="document.getElementById('clear-search-btn').classList.toggle('hidden', !this.value);"
-                                        class="w-full rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-10 text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        placeholder="Search by SKU or product description..." />
+                                        class="w-full max-w-lg rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-10 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        placeholder="Search by SKU, Description, or Sub-Department" />
 
                                     <!-- Clear (X) button: clears input and submits cleared query -->
                                     <button
@@ -418,7 +493,7 @@
                                 </style>
 
                                 <select
-                                    class="w-full appearance-none rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 font-medium text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
+                                    class="w-full appearance-none rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
                                     onchange="window.location.href='?warehouse=' + this.value"
                                     style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
                                     {{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'disabled' : '' }}>
@@ -437,7 +512,7 @@
                             id="bulk-actions-bar"
                             class="hidden">
                             <div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600">
-                                <div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-white">
+                                <div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-xs text-white">
 
                                     <!-- Count -->
                                     <div class="flex items-center gap-2">
@@ -517,7 +592,7 @@
                             </div>
                         </div>
                         <!-- Action Buttons -->
-                        <div class="flex flex-shrink-0 items-center gap-3">
+                        <div class="py-auto flex flex-shrink-0 items-center">
                             <!-- Filter -->
                             {{-- <button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
                                 <svg
@@ -534,48 +609,71 @@
                                 Filter
                             </button> --}}
 
+
+
                             <!-- Export -->
-                            <a
-                                href="{{ route('products.export', request()->query()) }}"
-                                class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
-                                <svg
-                                    class="mr-2 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <a href="{{ route('products.export', request()->query()) }}"
+                                class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <!-- Arrow -->
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4" />
+                                    <!-- Horizontal line at bottom -->
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
                                 </svg>
-                                Export
+
+
+                                <span class="text-sm font-medium">Export</span>
                             </a>
 
-                            <!-- Add Product -->
-                            <a
-                                href="{{ route('products.create') }}"
-                                class="flex transform items-center rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2 font-semibold text-white transition-all hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl">
-                                <svg
-                                    class="mr-2 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Add Product
-                            </a>
+                            <!-- Add Products -->
+                            <div class="relative inline-flex items-center">
+                                <div
+                                    class="flex cursor-pointer items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
+
+                                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4" />
+                                    </svg>
+
+                                    <span class="text-sm font-medium">Add Products</span>
+
+                                    <select
+                                        id="no-products-action"
+                                        onchange="if(this.value) window.location.href=this.value"
+                                        class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+                                        <option value="" selected disabled>Select Action</option>
+                                        <option value="{{ route('products.create') }}">Add New Product</option>
+                                        <option value="{{ route('products.import.show') }}">Import Products</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Update Allocations -->
+                            <form id="updateAllocationsForm" action="{{ route('update.allocations') }}" method="POST">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    id="updateButton"
+                                    class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50">
+
+                                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0112-3.464M20 15a8 8 0 01-12 3.464" />
+                                    </svg>
+
+
+
+                                    <span id="buttonText" class="text-sm font-medium">Update Allocations</span>
+                                </button>
+                            </form>
+
                         </div>
 
                     </div>
                 </div>
 
                 <!-- Modern Product Table -->
-                <div class="overflow-hidden rounded-xl border border-white/20 bg-white shadow-lg backdrop-blur-sm">
+                <div class="my-4 overflow-hidden rounded-xl border border-white/20 bg-white shadow-sm backdrop-blur-sm">
                     <div class="overflow-x-auto">
                         <table class="table-sm w-full table-auto">
                             @php
@@ -599,12 +697,12 @@
                             @endphp
                             <thead>
                                 <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                                    <th class="rounded-tl-xl px-3 py-2 text-left text-sm uppercase">
+                                    <th class="rounded-tl-xl px-2 py-2 text-left text-sm uppercase">
                                         <div class="flex items-center">
                                             <input
                                                 type="checkbox"
                                                 id="select-all"
-                                                class="h-4 w-4 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
+                                                class="h-3 w-3 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
                                         </div>
                                     </th>
                                     <th class="px-2 py-2 text-left text-[10px] uppercase">
@@ -691,7 +789,7 @@
                                         <td class="whitespace-nowrap px-2 py-2">
                                             <input
                                                 type="checkbox"
-                                                class="product-checkbox h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                                class="product-checkbox h-3 w-3 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
                                                 value="{{ $product->id }}"
                                                 id="product-{{ $product->id }}">
                                         </td>
@@ -729,6 +827,7 @@
                                             <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
                                                 {{ $product->warehouse_actual_allocation ?? '-' }}
                                             </span>
+
                                         </td>
 
                                         <td class="whitespace-nowrap px-2 py-2">
@@ -739,37 +838,37 @@
 
 
                                         <td class="px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ $product->allocation_per_case ?? '-' }}
                                             </span>
                                         </td>
 
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ $product->case_pack ?? '-' }}
                                             </span>
                                         </td>
 
 
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 ₱{{ number_format($product->srp ?? 0, 2) }}
                                             </span>
                                         </td>
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}
                                             </span>
                                         </td>
 
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ !empty($product->po15_scheme) ? $product->po15_scheme : '-' }}
                                             </span>
                                         </td>
 
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ !empty($product->discount_scheme) ? $product->discount_scheme : '-' }}
                                             </span>
                                         </td>
@@ -1022,7 +1121,7 @@
                     </p>
 
                     <!-- Optional archive reason -->
-                    <div class="mb-4">
+                    <div class="">
                         <label
                             for="archive-reason-input"
                             class="mb-1 block text-sm font-medium text-gray-700">
@@ -1337,13 +1436,26 @@
                             list.removeClass('hidden');
                             list.empty();
 
-                            let cleanedQuery = query.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                            // Clean query and remove special chars once
+                            const cleanedQuery = query.replace(/[^a-z0-9]/gi, '').toLowerCase();
 
                             let filtered = data.filter(item => {
-                                let cleanSku = item.sku.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                                let cleanDescription = item.description.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                                return cleanSku.includes(cleanedQuery) || cleanDescription.includes(cleanedQuery);
+                                const cleanQuery = cleanedQuery;
+
+                                const cleanSku = (item.sku || "").replace(/[^a-z0-9]/gi, '').toLowerCase();
+                                const cleanDesc = (item.description || "").replace(/[^a-z0-9]/gi, '').toLowerCase();
+                                const cleanDept = (item.department || "").replace(/[^a-z0-9]/gi, '').toLowerCase();
+                                const cleanDeptCode = (item.department_code || "").replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+                                return (
+                                    cleanSku.includes(cleanQuery) ||
+                                    cleanDesc.includes(cleanQuery) ||
+                                    cleanDept.includes(cleanQuery) ||
+                                    cleanDeptCode.includes(cleanQuery)
+                                );
                             });
+
+
 
                             if (filtered.length === 0) {
                                 list.append(`
@@ -1363,7 +1475,7 @@
                                         .attr('data-sku', item.sku)
                                         .attr('data-description', item.description)
                                         .html(`
-                                                                                    <div class="flex items-center">
+                                                                                    <div class="flex items-center max-h-10">
                                                                                         <div class="flex-1">
                                                                                             <div class="flex items-center">
                                                                                                 <span class="text-[10px] font-mono font-medium text-gray-500 px-2 py-1 bg-gray-100/60 rounded mr-3">${item.sku}</span>

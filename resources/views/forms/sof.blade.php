@@ -100,7 +100,7 @@
                                 ];
 
                                 $userLocation = auth()->user()->user_location ?? null;
-                                $mappedLocation = $locationMap[$userLocation] ?? 'Personnel Sample';
+                                $mappedLocation = $locationMap[$userLocation] ?? null;
                             @endphp
                             <div class="relative mb-6 w-full">
                                 <input
@@ -174,20 +174,20 @@
                             @php
                                 $warehouseMap = [
                                     '80141' => 'Silangan Warehouse',
-                                    '80001' => 'Central Warehouse',
-                                    '80041' => 'Procter Warehouse',
-                                    '80051' => 'Opao-ISO Warehouse',
-                                    '80071' => 'Big Blue Warehouse',
-                                    '80131' => 'Lower Tingub Warehouse',
-                                    '80211' => 'Sta. Rosa Warehouse',
+                                    // '80001' => 'Central Warehouse',
+                                    // '80041' => 'Procter Warehouse',
+                                    // '80051' => 'Opao-ISO Warehouse',
+                                    // '80071' => 'Big Blue Warehouse',
+                                    // '80131' => 'Lower Tingub Warehouse',
+                                    // '80201' => 'Sta. Rosa Warehouse',
                                     '80181' => 'Bacolod Depot',
-                                    '80191' => 'Tacloban Depot',
+                                    // '80191' => 'Tacloban Depot',
                                 ];
 
                                 // Map user locations to warehouse codes
                                 $locationToWarehouse = [
                                     '4002' => '80181', // Example: Opao-ISO
-                                    '6012' => '80211', // Example: Silangan
+                                    '6012' => '80141', // Example: Silangan
                                     // Add more mappings as needed...
                                 ];
 
@@ -200,24 +200,49 @@
                                 }
                             @endphp
 
+                            @php
+                                use Illuminate\Support\Str;
+                            @endphp
+
+                            @php
+                                $isPersonnel = \Illuminate\Support\Str::contains(strtolower(Auth::user()->role), 'personnel');
+                            @endphp
+
                             <div class="relative mb-6 w-full">
-                                <select
-                                    id="warehouse"
-                                    name="warehouse"
-                                    class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-                                    <option value="" disabled {{ $selectedWarehouse == '' ? 'selected' : '' }}>Select Warehouse</option>
-                                    @foreach ($warehouseMap as $code => $name)
-                                        <option value="{{ $code }}" {{ $selectedWarehouse == $code ? 'selected' : '' }}>
-                                            {{ $code }} - {{ $name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                @if ($isPersonnel)
+                                    <!-- Readonly input for personnel -->
+                                    <input
+                                        id="warehouse"
+                                        name="warehouse"
+                                        value="{{ $selectedWarehouse ? $warehouseMap[$selectedWarehouse] ?? $selectedWarehouse : '' }}"
+                                        type="text"
+                                        readonly
+                                        class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                        placeholder="Warehouse" />
+                                @else
+                                    <!-- Default select for non-personnel -->
+                                    <select
+                                        id="warehouse"
+                                        name="warehouse"
+                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                        <option value="" disabled {{ $selectedWarehouse == '' ? 'selected' : '' }}>Select Warehouse</option>
+                                        @foreach ($warehouseMap as $code => $name)
+                                            <option value="{{ $code }}" {{ $selectedWarehouse == $code ? 'selected' : '' }}>
+                                                {{ $code }} - {{ $name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
+
                                 <label
                                     for="warehouse"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
                                     Warehouse
                                 </label>
                             </div>
+
+
+
 
 
 
@@ -243,7 +268,7 @@
                     <!-- Customer Info -->
                     <section class="bg-white p-4">
                         <h2 class="mb-4 text-lg font-semibold">Customer Information</h2>
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div class="relative">
                                 <input
                                     id="mbc_card_no"
@@ -272,7 +297,8 @@
                                     type="text"
                                     required
                                     class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                                    placeholder="Customer Name">
+                                    placeholder="Customer Name"
+                                    maxlength="100">
                                 <label
                                     for="customer_name"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
@@ -299,6 +325,22 @@
                                 </label>
                             </div>
 
+                            <!-- Email -->
+                            <div class="relative">
+                                <input
+                                    id="email"
+                                    name="email"
+                                    value="{{ old('email') }}"
+                                    type="email"
+                                    required
+                                    class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                                    placeholder="Customer Email">
+                                <label
+                                    for="email"
+                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                    Cutomer Email
+                                </label>
+                            </div>
                         </div>
                     </section>
                     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -307,6 +349,8 @@
                             const mbcInput = document.getElementById('mbc_card_no');
                             const customerName = document.getElementById('customer_name');
                             const contactNumber = document.getElementById('contact_number');
+                            const emailInput = document.getElementById('email');
+
 
                             mbcInput.addEventListener('input', async function() {
                                 const cardNo = mbcInput.value.trim();
@@ -328,11 +372,20 @@
                                         const data = await response.json();
 
                                         if (response.ok && data.status === "200") {
+                                            // Fill values
                                             customerName.value = data.data.name_on_card ?? '';
                                             contactNumber.value = data.data.mobile_1 ?? '';
+                                            emailInput.value = data.data.email_1 ?? '';
 
-                                            customerName.classList.add('bg-indigo-50');
-                                            contactNumber.classList.add('bg-indigo-50');
+                                            // Conditionally apply background highlight
+                                            if (customerName.value) customerName.classList.add('bg-indigo-50');
+                                            else customerName.classList.remove('bg-indigo-50');
+
+                                            if (contactNumber.value) contactNumber.classList.add('bg-indigo-50');
+                                            else contactNumber.classList.remove('bg-indigo-50');
+
+                                            if (emailInput.value) emailInput.classList.add('bg-indigo-50');
+                                            else emailInput.classList.remove('bg-indigo-50');
 
                                             Swal.fire({
                                                 icon: 'success',
@@ -342,10 +395,13 @@
                                                 showConfirmButton: false
                                             });
                                         } else {
+                                            // Clear values and remove highlight
                                             customerName.value = '';
                                             contactNumber.value = '';
+                                            emailInput.value = '';
                                             customerName.classList.remove('bg-indigo-50');
                                             contactNumber.classList.remove('bg-indigo-50');
+                                            emailInput.classList.remove('bg-indigo-50');
 
                                             Swal.fire({
                                                 icon: 'error',
@@ -353,6 +409,7 @@
                                                 text: data.message || `Error ${response.status}: ${response.statusText}`,
                                             });
                                         }
+
 
                                     } catch (err) {
                                         console.error(err);
@@ -716,7 +773,7 @@
                                                             </svg>
 
                                                             <span
-                                                                class="absolute left-full top-1/2 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block">
+                                                                class="absolute left-full top-1/2 z-20 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block">
                                                                 <b>How to select a product:</b><br><br>
                                                                 • Start typing the <b>SKU</b> (e.g., <code>12345</code>) or <b>description</b> (e.g., <code>Coke 1.5L</code>).<br>
                                                                 • A dropdown list will appear with matching registered products.<br>
@@ -732,7 +789,7 @@
                                                         x-model="value"
                                                         :class="value === '' ? 'bg-yellow-50' : 'bg-white'"
                                                         class="product-search w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-                                                        placeholder="Enter SKU or Description"
+                                                        placeholder="Enter SKU, Description, or Sub-Department"
                                                         autocomplete="off"
                                                         name="orders[{{ $i }}][display]"
                                                         value="{{ old("orders.$i.display") }}">
@@ -828,7 +885,7 @@
                                                             </svg>
 
                                                             <span
-                                                                class="absolute left-full top-1/2 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block">
+                                                                class="z-100 absolute left-full top-1/2 ml-2 hidden w-72 -translate-y-1/2 whitespace-normal rounded bg-white px-3 py-2 text-sm text-gray-800 shadow-lg group-hover:block">
                                                                 <b>How to apply discount:</b><br><br>
                                                                 • Enter a number <b>without %</b> → Deducts that <u>exact amount</u>.<br>
                                                                 &nbsp;&nbsp;Example: <code>100</code> = ₱100 off<br><br>
@@ -950,33 +1007,41 @@
 
 
 
-                                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                            <div class="grid grid-cols-1 gap-4 md:grid-cols-1">
 
                                                 <!-- Remarks Dropdown -->
                                                 <div>
                                                     <label class="mb-1 block text-sm font-medium">Remarks</label>
+                                                    @php
+                                                        // Default now set to "For SO (Special Order)"
+                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? 'For SO (Special Order)');
+                                                    @endphp
+
                                                     <select
                                                         name="orders[{{ $i }}][remarks]"
                                                         class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900">
-                                                        @php
-                                                            $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? '');
-                                                        @endphp
-                                                        <option
-                                                            value=""
-                                                            disabled
-                                                            {{ $selectedRemarks === '' ? 'selected' : '' }}>Select remarks</option>
-                                                        <option
-                                                            value="For SO (Special Order)"
-                                                            {{ $selectedRemarks === 'For SO (Special Order)' ? 'selected' : '' }}>For SO (Special Order)</option>
-                                                        <option
-                                                            value="For RMS Approval"
-                                                            {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>For RMS Approval</option>
+
+                                                        <option value="" disabled {{ $selectedRemarks === '' ? 'selected' : '' }}>
+                                                            Select remarks
+                                                        </option>
+
+                                                        <option value="For SO (Special Order)"
+                                                            {{ $selectedRemarks === 'For SO (Special Order)' ? 'selected' : '' }}>
+                                                            For SO (Special Order)
+                                                        </option>
+
+                                                        <option value="For RMS Approval"
+                                                            {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>
+                                                            For RMS Approval
+                                                        </option>
+
                                                     </select>
+
 
                                                 </div>
 
                                                 <!-- Store Order No. -->
-                                                <div>
+                                                {{-- <div>
                                                     <label class="mb-1 block text-sm font-medium">Store Order No. (SO#)</label>
                                                     <input
                                                         type="number"
@@ -988,13 +1053,13 @@
                                                         pattern="\d*"
                                                         min="0"
                                                         step="0" />
-                                                </div>
+                                                </div> --}}
                                             </div>
                                         </div>
 
                                         <!-- RIGHT SIDE: Readonly Invoice Style -->
                                         <div
-                                            class="readonly-side flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 transition-all duration-300 md:col-span-1">
+                                            class="readonly-side mt-6 flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1">
                                             <div class="space-y-2">
 
                                                 <!-- Price -->
@@ -1037,8 +1102,12 @@
 																										</div>
 																								</div> --}}
 
+
+
+                                            </div>
+                                            <div>
                                                 <!-- Freebie Amount -->
-                                                <div class="flex items-start justify-between">
+                                                <div class="freebie-block mx-[-1rem] flex items-start justify-between bg-green-50 px-4 py-2">
                                                     <label class="block text-sm text-green-600">Freebie Amount</label>
                                                     <div class="text-right font-medium text-black">
                                                         <span class="freebie-amount-display block text-green-600">0.00</span>
@@ -1050,19 +1119,47 @@
                                                     </div>
                                                 </div>
 
-                                            </div>
+                                                <script>
+                                                    document.addEventListener('DOMContentLoaded', function() {
+                                                        document.querySelectorAll('.freebie-block').forEach(function(container) {
+                                                            const input = container.querySelector('.computed-freebie-amount');
+                                                            const span = container.querySelector('.freebie-amount-display');
 
-                                            <!-- Total Amount -->
-                                            <div class="flex items-start justify-between pt-2">
-                                                <label class="block text-sm text-indigo-600">Total Amount</label>
-                                                <div class="text-right font-bold text-black text-blue-600">
-                                                    <span class="amount-display">0.00</span>
-                                                    <input
-                                                        type="hidden"
-                                                        name="orders[{{ $i }}][amount]"
-                                                        value="{{ old("orders.$i.amount") }}"
-                                                        class="computed-amount" />
-                                                    <div class="breakdown-amount text-xs text-gray-500"></div>
+                                                            // Function to toggle visibility
+                                                            function toggleVisibility() {
+                                                                const amount = parseFloat(input.value) || parseFloat(span.textContent) || 0;
+                                                                container.classList.toggle('hidden', amount === 0);
+                                                            }
+
+                                                            // Initial check
+                                                            toggleVisibility();
+
+                                                            // Listen for input changes
+                                                            input.addEventListener('input', toggleVisibility);
+
+                                                            // Observe changes in span text
+                                                            const observer = new MutationObserver(toggleVisibility);
+                                                            observer.observe(span, {
+                                                                childList: true,
+                                                                characterData: true,
+                                                                subtree: true
+                                                            });
+                                                        });
+                                                    });
+                                                </script>
+
+                                                <!-- Total Amount -->
+                                                <div class="mx-[-1rem] flex items-start justify-between bg-blue-50 px-4 py-2">
+                                                    <label class="block text-sm text-indigo-600">Total Amount</label>
+                                                    <div class="text-right font-bold text-black text-blue-600">
+                                                        <span class="amount-display">0.00</span>
+                                                        <input
+                                                            type="hidden"
+                                                            name="orders[{{ $i }}][amount]"
+                                                            value="{{ old("orders.$i.amount") }}"
+                                                            class="computed-amount" />
+                                                        <div class="breakdown-amount text-xs text-gray-500"></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1258,10 +1355,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                         });
 
                         // Reset selects and update names
-                        newRow.querySelectorAll('select').forEach(select => {
-                            select.value = '';
-                            select.name = select.name.replace(/\[\d+]/g, `[${rowIndex}]`);
-                        });
+                        // newRow.querySelectorAll('select').forEach(select => {
+                        //     select.value = '';
+                        //     select.name = select.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+                        // });
 
                         // Reset output display spans
                         newRow.querySelector('.price-display').textContent = '0.00';
@@ -1848,8 +1945,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                             const queryWords = cleanedQuery.split(/\s+/);
 
                             const filtered = data.filter(item => {
-                                const combined = `${item.sku} ${item.description}`.replace(/[^a-z0-9]/gi, ' ')
-                                    .toLowerCase();
+                                const combined = `
+                                    ${item.sku}
+                                    ${item.description}
+                                    ${item.department ?? ''}
+                                    ${item.department_code ?? ''}
+                                `.replace(/[^a-z0-9]/gi, ' ').toLowerCase();
+
                                 return queryWords.some(word => combined.includes(word));
                             });
 
