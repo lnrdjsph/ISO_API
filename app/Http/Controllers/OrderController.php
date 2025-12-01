@@ -245,9 +245,10 @@ public function index(Request $request)
         $validator = Validator::make($request->all(), [
             // 'id' => 'required|exists:orders,id',
             // Customer Info
-            'mbc_card_no' => 'nullable|string|max:255',
-            'customer_name' => 'nullable|string|max:255',
-            'contact_number' => 'nullable|string|max:255',
+            'mbc_card_no' => 'nullable|string|max:16',
+            'customer_name' => 'nullable|string|max:100',
+            'contact_number' => 'nullable|string|max:12',
+            'email' => 'nullable|email|max:100',
 
             // Payment Info
             'payment_center' => 'nullable|string',
@@ -299,6 +300,7 @@ public function index(Request $request)
                 'mbc_card_no',
                 'customer_name',
                 'contact_number',
+                'email',
                 'payment_center',
                 'mode_payment',
                 'payment_date',
@@ -552,7 +554,7 @@ public function index(Request $request)
     {
         $request->validate([
             'id' => 'required|exists:orders,id',
-            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
         ]);
 
         $order = Order::findOrFail($request->id);
@@ -586,9 +588,14 @@ public function index(Request $request)
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
+        $successMessage = $filePath
+            ? 'Order approved successfully with document attached, and requester notified.'
+            : 'Order approved successfully without an attachment. Requester notified.';
+
         return redirect()
             ->route('orders.show', $order->id)
-            ->with('success', 'Order approved successfully, document saved, and requester notified.');
+            ->with('success', $successMessage);
+
     }
 
 
@@ -1057,6 +1064,7 @@ private function getWarehouseCodeByLocation(string $location): string
             'date'           => optional($orderInfo->time_order)->format('F j, Y') ?? now()->format('F j, Y'),
             'address'        => $orderInfo->address ?? '',
             'telephone'      => $orderInfo->contact_number ?? '',
+            'email'          => $orderInfo->email ?? '',
             'payment_mode'   => $orderInfo->mode_payment ?? '',
             'scheme'         => $schemeDisplay ?? '',
             'cashier'        => $orderInfo->cashier ?? '',

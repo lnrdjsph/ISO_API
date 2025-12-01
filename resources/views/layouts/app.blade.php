@@ -117,9 +117,10 @@
             z-index: 50;
         }
 
-        .sidebar-collapsed .nav-item:hover .tooltip,
-        .sidebar-collapsed .logout-btn:hover .tooltip,
-        .sidebar-collapsed .toggle-btn:hover .tooltip {
+        /* Show tooltip on hover for all buttons, independent of sidebar state */
+        .nav-item:hover .tooltip,
+        .logout-btn:hover .tooltip,
+        .toggle-btn:hover .tooltip {
             opacity: 1;
         }
 

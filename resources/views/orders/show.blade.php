@@ -132,7 +132,8 @@
                                             value="{{ $order->mbc_card_no ?? '' }}"
                                             data-original="{{ $order->mbc_card_no ?? '' }}"
                                             class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            autocomplete="off">
+                                            autocomplete="off"
+                                            maxlength="16">
                                     </div>
 
                                     <div>
@@ -143,7 +144,8 @@
                                             value="{{ $order->customer_name ?? '' }}"
                                             data-original="{{ $order->customer_name ?? '' }}"
                                             class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            autocomplete="off">
+                                            autocomplete="off"
+                                            maxlength="100">
                                     </div>
 
                                     <div>
@@ -154,7 +156,22 @@
                                             value="{{ $order->contact_number ?? '' }}"
                                             data-original="{{ $order->contact_number ?? '' }}"
                                             class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            autocomplete="off">
+                                            autocomplete="off"
+                                            placeholder="-"
+                                            maxlength="12">
+                                    </div>
+
+                                    <div>
+                                        <p class="mb-0.5 text-xs text-gray-600">Email</p>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value="{{ $order->email ?? '' }}"
+                                            data-original="{{ $order->email ?? '' }}"
+                                            class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
+                                            autocomplete="off"
+                                            placeholder="-"
+                                            maxlength="100">
                                     </div>
 
                                 </div>
@@ -494,21 +511,22 @@
                                                 @if (in_array($item->scheme, ['Freebie', 'Discount'])) contenteditable="false" @else contenteditable="true" @endif
                                                 data-field="scheme">
                                                 {{ $item->scheme }}
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][scheme]"
+                                                    value="{{ $item->scheme }}">
                                             </td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][scheme]"
-                                                value="{{ $item->scheme }}">
 
 
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="true"
-                                                data-field="price_per_pc">{{ number_format($item->price_per_pc, 2) }}</td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][price_per_pc]"
-                                                value="{{ $item->price_per_pc }}">
+                                                data-field="price_per_pc">{{ number_format($item->price_per_pc, 2) }}
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][price_per_pc]"
+                                                    value="{{ $item->price_per_pc }}">
+                                            </td>
 
                                             <td
                                                 class="border p-2 text-center"
@@ -525,12 +543,13 @@
 
                                                 {{-- Always show numeric value only --}}
                                                 {{ $item->item_type === 'DISCOUNT' ? $item->discount ?? 0 : 0 }}
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][discount]"
+                                                    value="{{ $item->discount ?? 0 }}">
                                             </td>
 
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][discount]"
-                                                value="{{ $item->discount ?? 0 }}">
+
 
                                             <td
                                                 class="border p-2 text-center"
@@ -547,12 +566,13 @@
                                                 @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
                                                 data-field="qty_per_cs">
                                                 {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '-' : $item->qty_per_cs) : 'N/A' }}
+
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][qty_per_cs]"
+                                                    value="{{ $item->item_type !== 'FREEBIE' ? $item->qty_per_cs : 0 }}" />
                                             </td>
 
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][qty_per_cs]"
-                                                value="{{ $item->item_type !== 'FREEBIE' ? $item->qty_per_cs : 0 }}" />
 
 
                                             <td
@@ -586,14 +606,27 @@
                                                 name="items[{{ $loop->index }}][amount]"
                                                 value="{{ $item->amount }}">
 
-                                            <td
-                                                class="border p-2 text-center"
-                                                contenteditable="true"
-                                                data-field="remarks">{{ $item->remarks }}</td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][remarks]"
-                                                value="{{ $item->remarks }}">
+                                            <td class="remark-cell border p-2 text-center">
+                                                <div class="relative">
+                                                    <select
+                                                        name="items[{{ $loop->index }}][remarks]"
+                                                        class="w-full cursor-pointer appearance-none border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0"
+                                                        style="-webkit-appearance:none; -moz-appearance:none; appearance:none; background-image:none;">
+
+                                                        <option value="For SO (Special Order)"
+                                                            {{ $item->remarks === 'For SO (Special Order)' ? 'selected' : '' }}>
+                                                            For SO (Special Order)
+                                                        </option>
+
+                                                        <option value="For RMS Approval"
+                                                            {{ $item->remarks === 'For RMS Approval' ? 'selected' : '' }}>
+                                                            For RMS Approval
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                            </td>
+
+
 
                                             <td
                                                 class="border p-2 text-center"
@@ -1019,24 +1052,37 @@
                                                     title: 'Approve Order',
                                                     html: `
             <div style="text-align:center; font-size:14px; color:#444;">
-                <p style="margin-bottom:12px;">Upload approval document (PDF, Word, or Image):</p>
-                
-                <div id="uploadBox" 
-                     style="border:2px dashed #2563EB; border-radius:8px; 
-                            padding:20px; background:#f9fafb; cursor:pointer; 
-                            transition:0.2s ease-in-out;">
-                    <input type="file" id="approvalFile" 
-                           accept=".pdf,.doc,.docx,image/*" 
-                           style="display:none;" />
-                    
-                    <label for="approvalFile" 
-                           style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
-                        Click to select a file
+
+                <!-- Checkbox -->
+                <div style="margin-bottom:15px; text-align:left;">
+                    <label style="font-size:13px; cursor:pointer;">
+                        <input type="checkbox" id="noDocumentCheckbox" style="margin-right:6px;">
+                        No approval document needed
                     </label>
-                    <p id="fileName" 
-                       style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
-                       No file chosen
-                    </p>
+                </div>
+
+                <!-- Upload Section -->
+                <div id="uploadSection">
+                    <p style="margin-bottom:12px;">Upload approval document (PDF, Word, or Image):</p>
+
+                    <div id="uploadBox"
+                        style="border:2px dashed #2563EB; border-radius:8px;
+                               padding:20px; background:#f9fafb; cursor:pointer;
+                               transition:0.2s ease-in-out;">
+                        <input type="file" id="approvalFile"
+                            accept=".pdf,.doc,.docx,image/*"
+                            style="display:none;" />
+
+                        <label for="approvalFile"
+                            style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
+                            Click to select a file
+                        </label>
+
+                        <p id="fileName"
+                            style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
+                            No file chosen
+                        </p>
+                    </div>
                 </div>
             </div>
         `,
@@ -1045,13 +1091,21 @@
                                                     confirmButtonColor: '#16A34A',
                                                     cancelButtonColor: '#aaa',
                                                     confirmButtonText: 'Approve',
+
                                                     didOpen: () => {
+                                                        const noDocCheckbox = document.getElementById('noDocumentCheckbox');
+                                                        const uploadSection = document.getElementById('uploadSection');
                                                         const uploadBox = document.getElementById('uploadBox');
                                                         const fileInput = document.getElementById('approvalFile');
                                                         const fileName = document.getElementById('fileName');
 
+                                                        // Toggle upload section
+                                                        noDocCheckbox.addEventListener('change', () => {
+                                                            uploadSection.style.display = noDocCheckbox.checked ? 'none' : 'block';
+                                                        });
+
                                                         // Clicking the box opens file picker
-                                                        uploadBox.addEventListener('click', () => fileInput.click());
+                                                        uploadBox.addEventListener('click', () => !noDocCheckbox.checked && fileInput.click());
 
                                                         // Show selected file name
                                                         fileInput.addEventListener('change', () => {
@@ -1060,10 +1114,12 @@
                                                                 'No file chosen';
                                                         });
 
-                                                        // Drag & drop support
+                                                        // Drag & drop
                                                         uploadBox.addEventListener('dragover', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.style.background = "#eef2ff";
+                                                            if (!noDocCheckbox.checked) {
+                                                                e.preventDefault();
+                                                                uploadBox.style.background = "#eef2ff";
+                                                            }
                                                         });
 
                                                         uploadBox.addEventListener('dragleave', () => {
@@ -1071,31 +1127,51 @@
                                                         });
 
                                                         uploadBox.addEventListener('drop', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.style.background = "#f9fafb";
-                                                            if (e.dataTransfer.files.length) {
-                                                                fileInput.files = e.dataTransfer.files;
-                                                                fileName.textContent = e.dataTransfer.files[0].name;
+                                                            if (!noDocCheckbox.checked) {
+                                                                e.preventDefault();
+                                                                uploadBox.style.background = "#f9fafb";
+                                                                if (e.dataTransfer.files.length) {
+                                                                    fileInput.files = e.dataTransfer.files;
+                                                                    fileName.textContent = e.dataTransfer.files[0].name;
+                                                                }
                                                             }
                                                         });
                                                     },
+
                                                     preConfirm: () => {
+                                                        const noDocCheckbox = document.getElementById('noDocumentCheckbox');
                                                         const file = document.getElementById('approvalFile').files[0];
+
+                                                        // If checkbox is checked → skip validation
+                                                        if (noDocCheckbox.checked) {
+                                                            return {
+                                                                skip: true,
+                                                                file: null
+                                                            };
+                                                        }
+
+                                                        // Otherwise require a file
                                                         if (!file) {
-                                                            Swal.showValidationMessage('Please upload a document before approving.');
+                                                            Swal.showValidationMessage('Please upload a document or check the box.');
                                                             return false;
                                                         }
-                                                        return file;
+
+                                                        return {
+                                                            skip: false,
+                                                            file: file
+                                                        };
                                                     }
                                                 }).then((result) => {
-                                                    if (result.isConfirmed && result.value) {
-                                                        submitForm('approve', null, result.value);
+                                                    if (result.isConfirmed) {
+                                                        const file = result.value.file ?? null;
+                                                        submitForm('approve', null, file);
                                                     } else {
-                                                        actionSelect.value = ''; // reset select if cancelled
+                                                        actionSelect.value = '';
                                                     }
                                                 });
 
                                                 return;
+
 
 
 
@@ -1120,6 +1196,7 @@
                                             let title = action === 'rejected' ? 'Reject Order' : 'Cancel Order';
                                             let confirmBtn = action === 'rejected' ? 'Reject' : 'Cancel Order';
 
+
                                             Swal.fire({
                                                 title: title,
                                                 text: actionText,
@@ -1135,6 +1212,7 @@
                                                 showCancelButton: true,
                                                 confirmButtonColor: confirmColor,
                                                 cancelButtonColor: '#aaa',
+                                                cancelButtonText: 'Close',
                                                 confirmButtonText: confirmBtn
                                             }).then((result) => {
                                                 if (result.isConfirmed) {
@@ -1152,7 +1230,7 @@
                                                 showCancelButton: true,
                                                 confirmButtonColor: confirmColor,
                                                 cancelButtonColor: '#aaa',
-                                                confirmButtonText: 'Yes, confirm it!',
+                                                confirmButtonText: 'Yes, Proceed',
                                             }).then((result) => {
                                                 if (result.isConfirmed) {
                                                     submitForm(action);
@@ -1709,7 +1787,7 @@
 
                 // Track all form elements for changes
                 const trackableElements = $(
-                    'input[type="text"], input[type="date"], select:not(#orderAction), td[contenteditable="true"]'
+                    'input[type="text"], input[type="date"], input[type="email"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
                 function initializeOriginalValues() {
@@ -1800,7 +1878,12 @@
                             if ($element.is('[contenteditable]')) {
                                 $element.addClass('bg-yellow-100 border border-yellow-300 rounded');
                             } else {
-                                $element.removeClass('bg-transparent').addClass('bg-yellow-100 rounded');
+                                if ($element.is('select')) {
+                                    const td = $element.closest('td');
+                                    td.addClass('bg-yellow-100 border border-yellow-300 rounded');
+                                } else {
+                                    $element.removeClass('bg-transparent').addClass('bg-yellow-100 rounded');
+                                }
                             }
                             changesCount++;
                         }
@@ -1810,7 +1893,12 @@
                             if ($element.is('[contenteditable]')) {
                                 $element.removeClass('bg-yellow-100 border border-yellow-300 rounded');
                             } else {
-                                $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
+                                if ($element.is('select')) {
+                                    const td = $element.closest('td');
+                                    td.removeClass('bg-yellow-100 border border-yellow-300 rounded');
+                                } else {
+                                    $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
+                                }
                             }
                             changesCount = Math.max(0, changesCount - 1); // Prevent negative count
                         }
@@ -2079,10 +2167,8 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 const cancelBtn = document.getElementById('cancelButton');
-                const restoreBtn = document.getElementById('restoreButton');
-                const completeBtn = document.getElementById('completeButton');
-
-                if (cancelBtn) {
+                if (cancelBtn && !cancelBtn.dataset.swalBound) {
+                    cancelBtn.dataset.swalBound = true; // prevent double binding
                     cancelBtn.addEventListener('click', function() {
                         Swal.fire({
                             title: 'Are you sure?',
@@ -2122,87 +2208,89 @@
                         });
                     });
                 }
+            });
 
-                if (restoreBtn) {
-                    restoreBtn.addEventListener('click', function() {
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: "This order will be restored!",
-                            icon: 'info',
-                            showCancelButton: true,
-                            confirmButtonColor: '#3085d6',
-                            cancelButtonColor: '#aaa',
-                            confirmButtonText: 'Yes, restore it!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = '{{ route('orders.restore') }}';
-                                form.style.display = 'none';
 
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                                const inputCsrf = document.createElement('input');
-                                inputCsrf.type = 'hidden';
-                                inputCsrf.name = '_token';
-                                inputCsrf.value = csrfToken;
-                                form.appendChild(inputCsrf);
+            if (restoreBtn) {
+                restoreBtn.addEventListener('click', function() {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This order will be restored!",
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#aaa',
+                        confirmButtonText: 'Yes, restore it!',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '{{ route('orders.restore') }}';
+                            form.style.display = 'none';
 
-                                const existingIdInput = document.querySelector('input[name="id"]');
-                                const orderId = existingIdInput ? existingIdInput.value : '';
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                            const inputCsrf = document.createElement('input');
+                            inputCsrf.type = 'hidden';
+                            inputCsrf.name = '_token';
+                            inputCsrf.value = csrfToken;
+                            form.appendChild(inputCsrf);
 
-                                const orderIdInput = document.createElement('input');
-                                orderIdInput.type = 'hidden';
-                                orderIdInput.name = 'id';
-                                orderIdInput.value = orderId;
-                                form.appendChild(orderIdInput);
+                            const existingIdInput = document.querySelector('input[name="id"]');
+                            const orderId = existingIdInput ? existingIdInput.value : '';
 
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
-                        });
+                            const orderIdInput = document.createElement('input');
+                            orderIdInput.type = 'hidden';
+                            orderIdInput.name = 'id';
+                            orderIdInput.value = orderId;
+                            form.appendChild(orderIdInput);
+
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
                     });
-                }
+                });
+            }
 
-                if (completeBtn) {
-                    completeBtn.addEventListener('click', function() {
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: "This order will be marked as Complete!",
-                            icon: 'success',
-                            showCancelButton: true,
-                            confirmButtonColor: '#10B981',
-                            cancelButtonColor: '#aaa',
-                            cancelButtonText: 'No, go back',
-                            confirmButtonText: 'Yes, complete it!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = '{{ route('orders.complete') }}';
-                                form.style.display = 'none';
+            if (completeBtn) {
+                completeBtn.addEventListener('click', function() {
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "This order will be marked as Complete!",
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10B981',
+                        cancelButtonColor: '#aaa',
+                        cancelButtonText: 'No, go back',
+                        confirmButtonText: 'Yes, complete it!',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '{{ route('orders.complete') }}';
+                            form.style.display = 'none';
 
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                                const inputCsrf = document.createElement('input');
-                                inputCsrf.type = 'hidden';
-                                inputCsrf.name = '_token';
-                                inputCsrf.value = csrfToken;
-                                form.appendChild(inputCsrf);
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                            const inputCsrf = document.createElement('input');
+                            inputCsrf.type = 'hidden';
+                            inputCsrf.name = '_token';
+                            inputCsrf.value = csrfToken;
+                            form.appendChild(inputCsrf);
 
-                                const existingIdInput = document.querySelector('input[name="id"]');
-                                const orderId = existingIdInput ? existingIdInput.value : '';
+                            const existingIdInput = document.querySelector('input[name="id"]');
+                            const orderId = existingIdInput ? existingIdInput.value : '';
 
-                                const orderIdInput = document.createElement('input');
-                                orderIdInput.type = 'hidden';
-                                orderIdInput.name = 'id';
-                                orderIdInput.value = orderId;
-                                form.appendChild(orderIdInput);
+                            const orderIdInput = document.createElement('input');
+                            orderIdInput.type = 'hidden';
+                            orderIdInput.name = 'id';
+                            orderIdInput.value = orderId;
+                            form.appendChild(orderIdInput);
 
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
-                        });
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
                     });
-                }
+                });
+            }
             });
 
 
