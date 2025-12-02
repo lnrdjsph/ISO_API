@@ -65,13 +65,13 @@ public function index(Request $request)
         $warehouseMap = [
             '80141' => 'Silangan Warehouse',
             '80181' => 'Bacolod Depot',
-            '80001' => 'Central Warehouse',
-            '80041' => 'Procter Warehouse',
-            '80051' => 'Opao-ISO Warehouse',
-            '80071' => 'Big Blue Warehouse',
-            '80131' => 'Lower Tingub Warehouse',
-            '80201' => 'Sta. Rosa Warehouse',
-            '80191' => 'Tacloban Depot',
+            // '80001' => 'Central Warehouse',
+            // '80041' => 'Procter Warehouse',
+            // '80051' => 'Opao-ISO Warehouse',
+            // '80071' => 'Big Blue Warehouse',
+            // '80131' => 'Lower Tingub Warehouse',
+            // '80201' => 'Sta. Rosa Warehouse',
+            // '80191' => 'Tacloban Depot',
         ];
 
         $isPersonnel = str_contains(strtolower($user->role ?? ''), 'personnel');
