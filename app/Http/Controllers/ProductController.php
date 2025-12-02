@@ -118,7 +118,10 @@ public function index(Request $request)
         if ($search) {
             $productsQuery->where(function($q) use ($search, $tableName) {
                 $q->whereRaw("LOWER($tableName.description) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER($tableName.sku) LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw("LOWER($tableName.sku) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER($tableName.department) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER($tableName.department_code) LIKE ?", ["%{$search}%"]);
+                  
 
                 if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
                     $q->orWhereRaw("LOWER($tableName.sku) = ?", [$search]);
