@@ -585,6 +585,7 @@ public function search(Request $request)
                 ->select(
                     'sku',
                     'description',
+                    'department_code',
                     'department',
                     'allocation_per_case',
                     'case_pack',
@@ -625,7 +626,7 @@ public function search(Request $request)
 
                 // CSV header
                 fputcsv($handle, [
-                    'SKU', 'Description', 'Allocation per Case', 'Case Pack', 'SRP',
+                    'SKU', 'Description','Sub-Department Code', 'Sub-Department Name', 'Allocation per Case', 'Case Pack', 'SRP',
                      'Cash/Bank/Card Scheme',
                     'PO15 Scheme', 'Discount Scheme', 'Freebie SKU'
                 ]);
@@ -638,6 +639,8 @@ public function search(Request $request)
                     fputcsv($handle, [
                         $row['sku'] ?? '',
                         $row['description'] ?? '',
+                        $row['department_code'] ?? '',
+                        $row['department'] ?? '',
                         $row['allocation_per_case'] ?? '',
                         $row['case_pack'] ?? '',
                         $row['srp'] ?? '',
