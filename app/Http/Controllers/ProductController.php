@@ -1754,16 +1754,28 @@ protected function startWindowsQueueWorker(): void
  */
 protected function startLinuxQueueWorker(): void
 {
-    $phpBinary = PHP_BINARY;
     $projectPath = "/var/www/html/ISO_API";
+    $phpBinary = trim(shell_exec("which php")) ?: PHP_BINARY;
     $logPath = "{$projectPath}/storage/logs/queue-worker.log";
 
-    $command = "nohup {$phpBinary} {$projectPath}/artisan queue:work "
-        . "--queue=default --tries=3 --timeout=300 "
-        . "> {$logPath} 2>&1 &";
+    // ensure log file is writable
+    if (!file_exists($logPath)) {
+        touch($logPath);
+    }
+    chmod($logPath, 0777);
 
-    exec($command);
+    // run queue worker inside project directory
+    $command = "cd {$projectPath} && nohup {$phpBinary} artisan queue:work "
+        . "--queue=default --tries=3 --timeout=300 --sleep=1 "
+        . ">> {$logPath} 2>&1 & echo $!";
+
+    $pid = exec($command);
+
+    if (!$pid) {
+        throw new \Exception("Queue worker failed to start using: php artisan queue:work");
+    }
 }
+
 
 /**
  * Validate database connections
