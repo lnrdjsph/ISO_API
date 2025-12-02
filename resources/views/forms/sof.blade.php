@@ -1011,7 +1011,7 @@
                                                     <label class="mb-1 block text-sm font-medium">Remarks</label>
                                                     @php
                                                         // Default now set to "For SO (Special Order)"
-                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? 'For SO (Special Order)');
+                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? 'For RMS Approval');
                                                     @endphp
 
                                                     <select
@@ -1021,16 +1021,16 @@
                                                         <option value="" disabled {{ $selectedRemarks === '' ? 'selected' : '' }}>
                                                             Select remarks
                                                         </option>
+                                                        <option value="For RMS Approval"
+                                                            {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>
+                                                            For RMS Approval
+                                                        </option>
 
                                                         <option value="For SO (Special Order)"
                                                             {{ $selectedRemarks === 'For SO (Special Order)' ? 'selected' : '' }}>
                                                             For SO (Special Order)
                                                         </option>
 
-                                                        <option value="For RMS Approval"
-                                                            {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>
-                                                            For RMS Approval
-                                                        </option>
 
                                                     </select>
 
