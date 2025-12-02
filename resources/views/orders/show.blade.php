@@ -43,7 +43,7 @@
             overflow: visible !important;
         }
 
-        <style>.search-results {
+        .search-results {
             position: absolute;
             z-index: 9999;
             top: 100%;
@@ -56,7 +56,6 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             white-space: nowrap;
         }
-    </style>
     </style>
     <form
         method="POST"
@@ -1400,7 +1399,14 @@
         <!-- Enhanced JavaScript System -->
         <script>
             $(document).ready(function() {
-                // Change Detection System
+                // ========================================
+                // CONSTANTS & CONFIGURATION
+                // ========================================
+                const LOCK_STATUSES = ["approved", "completed", "for approval", "cancelled"];
+                const ORDER_STATUS = "{{ $order->order_status }}".toLowerCase();
+                const IS_LOCKED = LOCK_STATUSES.includes(ORDER_STATUS);
+
+                // Change Detection Variables
                 let hasChanges = false;
                 let changesCount = 0;
                 const submitButton = $('#submitButton');
@@ -1408,10 +1414,18 @@
                 const changesCounter = $('#changesCounter');
                 const changesCountElement = $('#changesCount');
 
-                // Order Calculation System
+                console.log('🚀 Initializing order page');
+                console.log('📊 Order Status:', ORDER_STATUS);
+                console.log('🔒 Is Locked:', IS_LOCKED);
+
+                // ========================================
+                // ORDER CALCULATION SYSTEM
+                // ========================================
                 class OrderCalculationSystem {
                     constructor() {
-                        this.initializeEventListeners();
+                        if (!IS_LOCKED) {
+                            this.initializeEventListeners();
+                        }
                         this.calculateAllRows();
                     }
 
@@ -1427,6 +1441,7 @@
                                 'td[data-field="discount"]'
                             ].join(","),
                             (e) => {
+                                if (IS_LOCKED) return;
                                 const row = e.target.closest("tr");
                                 this.calculateRowTotals(row);
                                 setTimeout(() => updateOrderTotal(), 50);
@@ -1437,6 +1452,7 @@
                             "focus",
                             'td[data-field="qty_per_cs"], td[data-field="freebies_per_cs"]',
                             function() {
+                                if (IS_LOCKED) return;
                                 if ($(this).text().trim() === "-") {
                                     $(this).text("0");
                                 }
@@ -1447,6 +1463,7 @@
                             "blur",
                             'td[data-field="qty_per_cs"], td[data-field="freebies_per_cs"]',
                             function() {
+                                if (IS_LOCKED) return;
                                 const value = $(this).text().trim();
                                 if (value === "" || value === "0") {
                                     $(this).text("-");
@@ -1468,7 +1485,6 @@
                             const itemType = itemTypeInput?.value || "MAIN";
 
                             if (itemType === "MAIN") {
-                                // ... existing MAIN calculation logic ...
                                 const schemeInput = row.querySelector(`input[name="items[${index}][scheme]"]`);
                                 const schemeValue = schemeInput?.value || "1+0";
 
@@ -1497,21 +1513,13 @@
                                 const values = this.extractValues(cells);
                                 const calculations = this.performCalculations(values, schemeValue);
 
-                                // Update MAIN row display with total qty = qty_per_cs (exclude freebies here)
-                                // calculations.totalQty = values.qtyPerCs;
-
                                 this.updateRowDisplay(cells, inputs, calculations);
-
-
                                 pendingFreebieQty = calculations.freebies;
                             } else if (itemType === "FREEBIE") {
-                                // For FREEBIE rows: Do NOT modify anything, keep as original
-                                // So skip updating any fields, including freebiesPerCs and totalQty
-                                pendingFreebieQty = 0; // clear pending freebies to avoid incorrect assign
+                                pendingFreebieQty = 0;
                             }
                         }
                     }
-
 
                     calculateRowTotals(row) {
                         if (!row) return;
@@ -1521,7 +1529,6 @@
                         const itemTypeInput = row.querySelector(`input[name="items[${index}][item_type]"]`);
                         const itemType = itemTypeInput?.value || "MAIN";
 
-                        // Common cells & inputs
                         const cells = {
                             pricePerPc: row.querySelector('[data-field="price_per_pc"]'),
                             qtyPerPc: row.querySelector('[data-field="qty_per_pc"]'),
@@ -1547,16 +1554,13 @@
                         const values = this.extractValues(cells);
 
                         if (itemType === "FREEBIE") {
-                            // Force qty_per_cs = freebies_per_cs for calculation
                             values.qtyPerCs = values.freebiesPerCs;
-                            values.freebiesPerCs = 0; // avoid double counting
+                            values.freebiesPerCs = 0;
                         }
 
                         const calculations = this.performCalculations(values);
-
                         this.updateRowDisplay(cells, inputs, calculations);
                     }
-
 
                     extractValues(cells) {
                         return {
@@ -1582,7 +1586,6 @@
                         return isNaN(num) ? 0 : num;
                     }
 
-
                     performCalculations(values) {
                         const calculations = {
                             price: 0,
@@ -1591,10 +1594,8 @@
                             freebies: 0
                         };
 
-                        // --- 1. Base price per case ---
                         const basePrice = values.pricePerPc * values.qtyPerPc;
 
-                        // --- 2. Discount parsing ---
                         let discountValue = 0;
                         if (values.discount) {
                             if (values.discount.toString().endsWith("%")) {
@@ -1607,29 +1608,15 @@
                             }
                         }
 
-                        // Final discounted price per case
                         calculations.price = basePrice - discountValue;
-
-                        // --- 3. total_qty = qty_per_cs + freebies_per_cs ---
                         calculations.totalQty = 0;
                         if (!isNaN(values.qtyPerCs)) calculations.totalQty += values.qtyPerCs;
                         if (!isNaN(values.freebiesPerCs)) calculations.totalQty += values.freebiesPerCs;
-
-                        // --- 4. amount = discounted price * total_qty ---
                         calculations.amount = calculations.price * calculations.totalQty;
-
-                        // freebies tracking (optional)
                         calculations.freebies = values.freebiesPerCs;
 
                         return calculations;
                     }
-
-
-
-
-
-
-
 
                     updateRowDisplay(cells, inputs, calc) {
                         const safeFixed = (num) => (isNaN(num) ? "0.00" : num.toFixed(2));
@@ -1639,13 +1626,9 @@
                         if (cells.amount) cells.amount.textContent = safeFixed(calc.amount);
 
                         if (cells.freebiesPerCs) {
-                            const currentText = cells.freebiesPerCs.textContent.trim();
-                            // Only update if freebies > 0
                             if (calc.freebies > 0) {
                                 cells.freebiesPerCs.textContent = calc.freebies;
                                 if (inputs.freebiesPerCs) inputs.freebiesPerCs.value = calc.freebies;
-                            } else {
-                                // Leave as is if blank or '-'
                             }
                         }
 
@@ -1654,63 +1637,6 @@
                         if (inputs.amount) inputs.amount.value = safeFixed(calc.amount);
                         if (inputs.discount) inputs.discount.value = cells.discount?.textContent.trim() || "";
                     }
-
-                    updateFreebieRow(row, freebieQty) {
-                        const index = $(row).data("index");
-                        if (index === undefined) return;
-
-                        const pricePerPcCell = row.querySelector('[data-field="price_per_pc"]');
-                        const pricePerPcInput = row.querySelector(`input[name="items[${index}][price_per_pc]"]`);
-                        const freebiesPerCsCell = row.querySelector('[data-field="freebies_per_cs"]');
-                        const freebiesPerCsInput = row.querySelector(`input[name="items[${index}][freebies_per_cs]"]`);
-                        const totalQtyCell = row.querySelector('[data-field="total_qty"]');
-                        const totalQtyInput = row.querySelector(`input[name="items[${index}][total_qty]"]`);
-
-                        let unitPrice = 0;
-                        if (pricePerPcCell) unitPrice = this.parseNumeric(pricePerPcCell.textContent);
-                        else if (pricePerPcInput) unitPrice = parseFloat(pricePerPcInput.value) || 0;
-
-                        // Update freebies qty
-                        if (freebieQty > 0) {
-                            if (freebiesPerCsCell) freebiesPerCsCell.textContent = freebieQty;
-                            if (freebiesPerCsInput) freebiesPerCsInput.value = freebieQty;
-                            if (totalQtyCell) totalQtyCell.textContent = freebieQty;
-                            if (totalQtyInput) totalQtyInput.value = freebieQty;
-                        }
-
-                        // --- Calculate amount for freebies ---
-                        const freebieAmount = unitPrice * freebieQty;
-
-                        const amountCell = row.querySelector('[data-field="amount"]');
-                        const amountInput = row.querySelector(`input[name="items[${index}][amount]"]`);
-                        if (amountCell) amountCell.textContent = freebieAmount.toFixed(2);
-                        if (amountInput) amountInput.value = freebieAmount.toFixed(2);
-
-                        const priceCell = row.querySelector('[data-field="price"]');
-                        const priceInput = row.querySelector(`input[name="items[${index}][price]"]`);
-                        if (priceCell) priceCell.textContent = unitPrice.toFixed(2);
-                        if (priceInput) priceInput.value = unitPrice.toFixed(2);
-                    }
-
-
-
-
-                    handleFreebieItem(row, index) {
-                        const freebiesPerCsCell = row.querySelector('[data-field="freebies_per_cs"]');
-                        const freebieQty = this.parseInteger(freebiesPerCsCell?.textContent);
-
-                        const pricePerPcCell = row.querySelector('[data-field="price_per_pc"]');
-                        const unitPrice = this.parseNumeric(pricePerPcCell?.textContent);
-
-                        const freebieAmount = unitPrice * freebieQty;
-
-                        const amountCell = row.querySelector('[data-field="amount"]');
-                        const amountInput = row.querySelector(`input[name="items[${index}][amount]"]`);
-                        if (amountCell) amountCell.textContent = freebieAmount.toFixed(2);
-                        if (amountInput) amountInput.value = freebieAmount.toFixed(2);
-                    }
-
-
 
                     getMainAmountTotal() {
                         let total = 0;
@@ -1727,6 +1653,7 @@
                         });
                         return total;
                     }
+
                     getDiscountTotal() {
                         let totalSavings = 0;
 
@@ -1744,7 +1671,6 @@
                             const originalPrice = price;
                             let discountedPrice = originalPrice;
 
-                            // Apply discount
                             if (discount.endsWith("%")) {
                                 const percent = parseFloat(discount.replace("%", "")) || 0;
                                 discountedPrice = originalPrice * (1 - percent / 100);
@@ -1753,15 +1679,12 @@
                                 discountedPrice = originalPrice - flat;
                             }
 
-                            // Savings = (original - discounted) × total qty
                             const savings = (originalPrice - discountedPrice) * totalQty;
                             totalSavings += savings;
                         });
 
                         return totalSavings;
                     }
-
-
 
                     getFreebieAmountTotal() {
                         let total = 0;
@@ -1780,46 +1703,106 @@
                     }
                 }
 
-
-
-
-                // Initialize calculation system
+                // ========================================
+                // INITIALIZE ORDER CALCULATOR
+                // ========================================
                 const orderCalculator = new OrderCalculationSystem();
 
-                // Track all form elements for changes
+                // ========================================
+                // LOCK FUNCTION
+                // ========================================
+                function lockFieldsByStatus() {
+                    if (!IS_LOCKED) return;
+
+                    console.log('🔒 Locking all fields...');
+
+                    // Lock all inputs except hidden - keep normal appearance
+                    $('input:not([type="hidden"])').each(function() {
+                        $(this).prop('readonly', true)
+                            .css({
+                                'pointer-events': 'none',
+                                'user-select': 'none',
+                                'cursor': 'default'
+                            });
+                    });
+
+                    // Lock all selects except #orderAction - keep normal appearance
+                    $('select').not('#orderAction').each(function() {
+                        $(this).prop('disabled', true)
+                            .css({
+                                'pointer-events': 'none',
+                                'cursor': 'default',
+                                'opacity': '1',
+                                'background-color': 'transparent'
+                            });
+                    });
+
+                    // Lock contenteditable cells - keep normal appearance
+                    $('td[contenteditable="true"]').each(function() {
+                        $(this).attr('contenteditable', 'false')
+                            .css({
+                                'pointer-events': 'none',
+                                'user-select': 'none',
+                                'cursor': 'default'
+                            })
+                            .off(); // Remove all event listeners
+                    });
+
+                    // Disable search functionality - keep normal appearance
+                    $('td[contenteditable-search="true"]').each(function() {
+                        $(this).removeAttr('contenteditable-search')
+                            .attr('contenteditable', 'false')
+                            .css({
+                                'pointer-events': 'none',
+                                'user-select': 'none',
+                                'cursor': 'default'
+                            })
+                            .off();
+                    });
+
+                    // Hide submit button
+                    submitButton.prop('disabled', true).addClass('hidden');
+                    changesCounter.addClass('hidden');
+
+                    console.log('✅ All fields locked (read-only mode)');
+                }
+
+                // ========================================
+                // CHANGE DETECTION FUNCTIONS
+                // ========================================
                 const trackableElements = $(
                     'input[type="text"], input[type="date"], input[type="email"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
                 function initializeOriginalValues() {
-                    // For regular form inputs
+                    if (IS_LOCKED) return;
+
                     trackableElements.filter('input, select').each(function() {
                         const $element = $(this);
                         const originalValue = $element.val() || '';
                         $element.data('original', originalValue);
-                        console.log('Input original:', $element.attr('name'), originalValue); // Debug log
                     });
 
-                    // For contenteditable elements
                     trackableElements.filter('[contenteditable]').each(function() {
                         const $element = $(this);
                         const originalValue = $element.text().trim();
                         $element.data('original-value', originalValue);
-                        console.log('Contenteditable original:', $element.data('field'), originalValue); // Debug log
                     });
                 }
 
                 function updateSubmitButtonState() {
+                    if (IS_LOCKED) return;
+
                     if (hasChanges && changesCount > 0) {
-                        submitButton.prop('disabled', false);
-                        submitButton.removeClass('bg-blue-600 hover:bg-blue-700')
+                        submitButton.prop('disabled', false)
+                            .removeClass('bg-blue-600 hover:bg-blue-700')
                             .addClass('bg-green-600 hover:bg-green-700');
-                        submitButtonText.text(`Update`);
+                        submitButtonText.text('Update');
                         changesCounter.removeClass('hidden');
                         changesCountElement.text(changesCount);
                     } else {
-                        submitButton.prop('disabled', true);
-                        submitButton.removeClass('bg-green-600 hover:bg-green-700')
+                        submitButton.prop('disabled', true)
+                            .removeClass('bg-green-600 hover:bg-green-700')
                             .addClass('bg-blue-600 hover:bg-blue-700');
                         submitButtonText.text('Update');
                         changesCounter.addClass('hidden');
@@ -1827,32 +1810,35 @@
                 }
 
                 function checkElementChange(element) {
+                    if (IS_LOCKED) return;
+
                     const $element = $(element);
+
+                    if ($element.prop('readonly') || $element.prop('disabled') ||
+                        $element.attr('contenteditable') === 'false') {
+                        return;
+                    }
+
                     let currentValue, originalValue;
 
                     if ($element.is('[contenteditable]')) {
                         currentValue = $element.text().trim();
                         originalValue = $element.data('original-value');
 
-                        // Handle undefined original value
                         if (originalValue === undefined) {
-                            console.warn('Missing original value for contenteditable:', $element.data('field'));
-                            originalValue = currentValue; // Set it to current to avoid false positives
+                            originalValue = currentValue;
                             $element.data('original-value', originalValue);
                         }
                     } else {
                         currentValue = $element.val() || '';
                         originalValue = $element.data('original');
 
-                        // Handle undefined original value
                         if (originalValue === undefined) {
-                            console.warn('Missing original value for input:', $element.attr('name'));
-                            originalValue = currentValue; // Set it to current to avoid false positives
+                            originalValue = currentValue;
                             $element.data('original', originalValue);
                         }
                     }
 
-                    // FIXED: Normalize values for comparison (handle empty, null, undefined)
                     const normalizeValue = (val) => {
                         if (val === null || val === undefined) return '';
                         if (typeof val === 'string') return val.trim();
@@ -1861,30 +1847,17 @@
 
                     const normalizedCurrent = normalizeValue(currentValue);
                     const normalizedOriginal = normalizeValue(originalValue);
-
                     const hasChanged = normalizedCurrent !== normalizedOriginal;
-
-                    // Debug logging
-                    console.log('Checking change:', {
-                        element: $element.attr('name') || $element.data('field'),
-                        current: normalizedCurrent,
-                        original: normalizedOriginal,
-                        hasChanged: hasChanged,
-                        wasMarkedChanged: $element.data('is-changed')
-                    });
 
                     if (hasChanged) {
                         if (!$element.data('is-changed')) {
                             $element.data('is-changed', true);
                             if ($element.is('[contenteditable]')) {
                                 $element.addClass('bg-yellow-100 border border-yellow-300 rounded');
+                            } else if ($element.is('select')) {
+                                $element.closest('td').addClass('bg-yellow-100 border border-yellow-300 rounded');
                             } else {
-                                if ($element.is('select')) {
-                                    const td = $element.closest('td');
-                                    td.addClass('bg-yellow-100 border border-yellow-300 rounded');
-                                } else {
-                                    $element.removeClass('bg-transparent').addClass('bg-yellow-100 rounded');
-                                }
+                                $element.removeClass('bg-transparent').addClass('bg-yellow-100 rounded');
                             }
                             changesCount++;
                         }
@@ -1893,15 +1866,12 @@
                             $element.data('is-changed', false);
                             if ($element.is('[contenteditable]')) {
                                 $element.removeClass('bg-yellow-100 border border-yellow-300 rounded');
+                            } else if ($element.is('select')) {
+                                $element.closest('td').removeClass('bg-yellow-100 border border-yellow-300 rounded');
                             } else {
-                                if ($element.is('select')) {
-                                    const td = $element.closest('td');
-                                    td.removeClass('bg-yellow-100 border border-yellow-300 rounded');
-                                } else {
-                                    $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
-                                }
+                                $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
                             }
-                            changesCount = Math.max(0, changesCount - 1); // Prevent negative count
+                            changesCount = Math.max(0, changesCount - 1);
                         }
                     }
 
@@ -1910,12 +1880,15 @@
                 }
 
                 function initializeChangeDetection() {
-                    // First, initialize all original values
+                    if (IS_LOCKED) {
+                        console.log('⏭️  Skipping change detection - order is locked');
+                        return;
+                    }
+
+                    console.log('🔍 Initializing change detection');
                     initializeOriginalValues();
 
-                    // Wait a moment for DOM to settle, then check for any existing changes
                     setTimeout(() => {
-                        // Reset all change indicators first
                         trackableElements.each(function() {
                             $(this).data('is-changed', false);
                             $(this).removeClass('bg-yellow-100 border border-yellow-300 rounded');
@@ -1923,18 +1896,9 @@
 
                         changesCount = 0;
                         hasChanges = false;
-
-                        // Now check each element - this should not trigger highlights if nothing changed
-                        // Only uncomment the line below if you want to check for pre-existing changes
-                        trackableElements.each(function() {
-                            checkElementChange(this);
-                        });
-
                         updateSubmitButtonState();
-                        console.log('Change detection initialized');
                     }, 100);
                 }
-
 
                 function updateOrderTotal() {
                     const mainTotal = Number(orderCalculator.getMainAmountTotal() || 0);
@@ -1968,167 +1932,149 @@
                     }
                 }
 
+                // ========================================
+                // EVENT LISTENERS (Only if NOT locked)
+                // ========================================
+                if (!IS_LOCKED) {
+                    trackableElements.filter('input, select').on('change input keyup', function() {
+                        checkElementChange(this);
+                    });
 
+                    trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
+                        checkElementChange(this);
 
+                        const $this = $(this);
+                        const row = $this.closest('tr');
+                        const index = row.data('index');
+                        const field = $this.data('field');
 
-                // Initialize original values for contenteditable elements
-                $('td[contenteditable="true"]').each(function() {
-                    $(this).data('original-value', $(this).text().trim());
-                });
-
-                // Listen for changes on regular form inputs
-                trackableElements.filter('input, select').on('change input keyup', function() {
-                    checkElementChange(this);
-                });
-
-                // Listen for changes on contenteditable elements
-                trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
-                    checkElementChange(this);
-
-                    const $this = $(this);
-                    const row = $this.closest('tr');
-
-                    // Update hidden input
-                    const index = row.data('index');
-                    const field = $this.data('field');
-                    if (index !== undefined && field) {
-                        const hiddenInput = $(`input[name="items[${index}][${field}]"]`);
-                        if (hiddenInput.length) {
-                            let value = $this.text().trim();
-                            if (value === '-') value = '0';
-                            hiddenInput.val(value);
+                        if (index !== undefined && field) {
+                            const hiddenInput = $(`input[name="items[${index}][${field}]"]`);
+                            if (hiddenInput.length) {
+                                let value = $this.text().trim();
+                                if (value === '-') value = '0';
+                                hiddenInput.val(value);
+                            }
                         }
-                    }
 
-                    // 🔥 Re-run row + total calculations
-                    orderCalculator.calculateRowTotals(row[0]);
-                    updateOrderTotal();
-                });
+                        orderCalculator.calculateRowTotals(row[0]);
+                        updateOrderTotal();
+                    });
 
+                    // Product search functionality
+                    $(document).on('keyup focus', '[contenteditable-search="true"]', function() {
+                        const inputCell = $(this);
+                        clearTimeout(inputCell.data('debounceTimeout'));
 
-                // Handle product search functionality (from your existing code)
-                let debounceTimeout;
+                        const query = inputCell.text().trim().toLowerCase();
+                        const resultList = inputCell.children('.search-results').first();
 
-                $(document).on('keyup focus', '[contenteditable-search="true"]', function() {
-                    const inputCell = $(this);
-                    clearTimeout(inputCell.data('debounceTimeout'));
+                        if (query.length >= 2) {
+                            const timer = setTimeout(() => {
+                                inputCell.addClass('animate-pulse');
+                                resultList.removeClass('hidden').html(`
+                        <li class="px-6 py-4 text-gray-600 flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Searching...
+                        </li>
+                    `);
 
-                    const query = inputCell.text().trim().toLowerCase();
-                    const resultList = inputCell.children('.search-results').first();
+                                $.ajax({
+                                    url: '{{ route('forms.sof_search') }}',
+                                    data: {
+                                        query
+                                    },
+                                    success: function(data) {
+                                        inputCell.removeClass('animate-pulse');
+                                        resultList.empty();
 
-                    if (query.length >= 2) {
-                        const timer = setTimeout(() => {
-                            inputCell.addClass('animate-pulse');
-                            resultList.removeClass('hidden').html(`
-                    <li class="px-6 py-4 text-gray-600 flex items-center">
-                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Searching...
-                    </li>
-                `);
+                                        if (!data.length) {
+                                            resultList.append('<li class="px-6 py-4 text-gray-500 text-center">No products found</li>');
+                                            return;
+                                        }
 
-                            $.ajax({
-                                url: '{{ route('forms.sof_search') }}',
-                                data: {
-                                    query
-                                },
-                                success: function(data) {
-                                    inputCell.removeClass('animate-pulse');
-                                    resultList.empty();
-
-                                    if (!data.length) {
-                                        resultList.append('<li class="px-6 py-4 text-gray-500 text-center">No products found</li>');
-                                        return;
+                                        data.forEach(product => {
+                                            resultList.append(`
+                                    <li class="product-item px-4 py-2 hover:bg-gray-100 cursor-pointer transition-all"
+                                        data-sku="${product.sku}"
+                                        data-description="${product.description}">
+                                        <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
+                                        ${product.description}
+                                    </li>
+                                `);
+                                        });
+                                    },
+                                    error: function() {
+                                        inputCell.removeClass('animate-pulse');
+                                        resultList.html('<li class="px-6 py-4 text-red-600 text-center">Search failed</li>');
                                     }
+                                });
+                            }, 300);
 
-                                    data.forEach(product => {
-                                        resultList.append(`
-                                <li class="product-item px-4 py-2 hover:bg-gray-100 cursor-pointer transition-all"
-                                    data-sku="${product.sku}"
-                                    data-description="${product.description}">
-                                    <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
-                                    ${product.description}
-                                </li>
-                            `);
-                                    });
-                                },
-                                error: function() {
-                                    inputCell.removeClass('animate-pulse');
-                                    resultList.html('<li class="px-6 py-4 text-red-600 text-center">Search failed</li>');
-                                }
-                            });
-                        }, 300);
+                            inputCell.data('debounceTimeout', timer);
+                        } else {
+                            resultList.empty().addClass('hidden');
+                        }
+                    });
 
-                        inputCell.data('debounceTimeout', timer);
-                    } else {
+                    $(document).on('click', '.product-item', function() {
+                        const selected = $(this);
+                        const sku = selected.data('sku');
+                        const description = selected.data('description');
+
+                        const resultList = selected.closest('.search-results');
+                        const inputCell = resultList.parent();
+                        const currentRow = inputCell.closest('tr');
+
+                        const skuCell = currentRow.find('[data-field="sku"]');
+                        skuCell.text(sku);
+                        currentRow.find('.sku-hidden').val(sku);
+
+                        const descCell = currentRow.find('[data-field="item_description"]');
+                        descCell.text(description);
+                        currentRow.find('.desc-hidden').val(description);
+
                         resultList.empty().addClass('hidden');
-                    }
-                });
 
-                $(document).on('click', '.product-item', function() {
-                    const selected = $(this);
-                    const sku = selected.data('sku');
-                    const description = selected.data('description');
+                        checkElementChange(skuCell[0]);
+                        checkElementChange(descCell[0]);
 
-                    const resultList = selected.closest('.search-results');
-                    const inputCell = resultList.parent();
-                    const currentRow = inputCell.closest('tr');
+                        inputCell.focus();
+                    });
 
-                    // Update SKU
-                    const skuCell = currentRow.find('[data-field="sku"]');
-                    skuCell.text(sku);
-                    currentRow.find('.sku-hidden').val(sku);
+                    $(document).on('click', function(e) {
+                        if (!$(e.target).closest('[contenteditable-search="true"], .search-results').length) {
+                            $('.search-results').empty().addClass('hidden');
+                        }
+                    });
 
-                    // Update Description
-                    const descCell = currentRow.find('[data-field="item_description"]');
-                    descCell.text(description);
-                    currentRow.find('.desc-hidden').val(description);
+                    window.addEventListener('beforeunload', function(e) {
+                        if (hasChanges) {
+                            e.preventDefault();
+                            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                            return e.returnValue;
+                        }
+                    });
+                }
 
-                    resultList.empty().addClass('hidden');
-
-                    // Trigger change detection for updated fields
-                    checkElementChange(skuCell[0]);
-                    checkElementChange(descCell[0]);
-
-                    inputCell.focus();
-                });
-
-                // Hide dropdown when clicking outside
-                $(document).on('click', function(e) {
-                    if (!$(e.target).closest('[contenteditable-search="true"], .search-results').length) {
-                        $('.search-results').empty().addClass('hidden');
-                    }
-                });
-
-
-                // Confirm navigation away with unsaved changes
-                window.addEventListener('beforeunload', function(e) {
-                    if (hasChanges) {
-                        e.preventDefault();
-                        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                        return e.returnValue;
-                    }
-                });
-
-                // Handle form submission
-                // Simple fix - just add this to your existing form submit handler
-
+                // ========================================
+                // FORM SUBMISSION
+                // ========================================
                 $('form').on('submit', function(e) {
+                    if (IS_LOCKED) return true;
+
                     if (!hasChanges) {
                         e.preventDefault();
                         alert('No changes detected to save.');
                         return false;
                     }
 
-                    // SIMPLE FIX: Remove the beforeunload event listener during submission
                     window.onbeforeunload = null;
-
-                    // Also clear hasChanges to be extra safe
                     hasChanges = false;
 
-                    // Show loading state
                     submitButton.prop('disabled', true);
                     submitButtonText.text('Saving...');
                     submitButton.prepend(
@@ -2138,199 +2084,48 @@
                     return true;
                 });
 
-                // Reset changes tracking after successful submission
+                // ========================================
+                // RESET AFTER SUCCESSFUL SUBMISSION
+                // ========================================
                 @if (session('success'))
                     hasChanges = false;
                     changesCount = 0;
                     updateSubmitButtonState();
 
                     trackableElements.each(function() {
-                        const $element = $(this);
-                        $element.data('is-changed', false);
-                        if ($element.is('[contenteditable]')) {
-                            $element.removeClass('bg-yellow-100 border border-yellow-300 rounded');
-                        } else {
-                            $element.removeClass('bg-yellow-100 rounded').addClass('bg-transparent');
-                        }
+                        $(this).data('is-changed', false)
+                            .removeClass('bg-yellow-100 border border-yellow-300 rounded');
                     });
                 @endif
 
-                // Initial calculations and change detection
+                // ========================================
+                // INITIALIZATION SEQUENCE
+                // ========================================
                 setTimeout(() => {
+                    console.log('⚙️ Running initialization sequence...');
+
+                    // Step 1: Calculate everything
                     orderCalculator.calculateAllRows();
                     updateOrderTotal();
 
-                    trackableElements.each(function() {
-                        checkElementChange(this);
-                    });
-                }, 100);
-            });
+                    // Step 2: Either lock OR enable change detection
+                    if (IS_LOCKED) {
+                        lockFieldsByStatus();
+                    } else {
+                        initializeChangeDetection();
 
-            document.addEventListener('DOMContentLoaded', function() {
-                const cancelBtn = document.getElementById('cancelButton');
-                const completeBtn = document.getElementById('completeButton');
-                if (cancelBtn && !cancelBtn.dataset.swalBound) {
-                    cancelBtn.dataset.swalBound = true; // prevent double binding
-                    cancelBtn.addEventListener('click', function() {
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: "This order will be Cancelled!",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#B91C1C',
-                            cancelButtonColor: '#aaa',
-                            cancelButtonText: 'No, keep it',
-                            confirmButtonText: 'Yes, cancel it!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = '{{ route('orders.cancel') }}';
-                                form.style.display = 'none';
-
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                                const inputCsrf = document.createElement('input');
-                                inputCsrf.type = 'hidden';
-                                inputCsrf.name = '_token';
-                                inputCsrf.value = csrfToken;
-                                form.appendChild(inputCsrf);
-
-                                const existingIdInput = document.querySelector('input[name="id"]');
-                                const orderId = existingIdInput ? existingIdInput.value : '';
-
-                                const orderIdInput = document.createElement('input');
-                                orderIdInput.type = 'hidden';
-                                orderIdInput.name = 'id';
-                                orderIdInput.value = orderId;
-                                form.appendChild(orderIdInput);
-
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
+                        trackableElements.each(function() {
+                            checkElementChange(this);
                         });
-                    });
-                }
+                    }
+
+                    console.log('✅ Initialization complete');
+                }, 150);
             });
 
-
-            if (restoreBtn) {
-                restoreBtn.addEventListener('click', function() {
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "This order will be restored!",
-                        icon: 'info',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#aaa',
-                        confirmButtonText: 'Yes, restore it!',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = '{{ route('orders.restore') }}';
-                            form.style.display = 'none';
-
-                            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                            const inputCsrf = document.createElement('input');
-                            inputCsrf.type = 'hidden';
-                            inputCsrf.name = '_token';
-                            inputCsrf.value = csrfToken;
-                            form.appendChild(inputCsrf);
-
-                            const existingIdInput = document.querySelector('input[name="id"]');
-                            const orderId = existingIdInput ? existingIdInput.value : '';
-
-                            const orderIdInput = document.createElement('input');
-                            orderIdInput.type = 'hidden';
-                            orderIdInput.name = 'id';
-                            orderIdInput.value = orderId;
-                            form.appendChild(orderIdInput);
-
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
-                    });
-                });
-            }
-
-            if (completeBtn) {
-                completeBtn.addEventListener('click', function() {
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "This order will be marked as Complete!",
-                        icon: 'success',
-                        showCancelButton: true,
-                        confirmButtonColor: '#10B981',
-                        cancelButtonColor: '#aaa',
-                        cancelButtonText: 'No, go back',
-                        confirmButtonText: 'Yes, complete it!',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = '{{ route('orders.complete') }}';
-                            form.style.display = 'none';
-
-                            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                            const inputCsrf = document.createElement('input');
-                            inputCsrf.type = 'hidden';
-                            inputCsrf.name = '_token';
-                            inputCsrf.value = csrfToken;
-                            form.appendChild(inputCsrf);
-
-                            const existingIdInput = document.querySelector('input[name="id"]');
-                            const orderId = existingIdInput ? existingIdInput.value : '';
-
-                            const orderIdInput = document.createElement('input');
-                            orderIdInput.type = 'hidden';
-                            orderIdInput.name = 'id';
-                            orderIdInput.value = orderId;
-                            form.appendChild(orderIdInput);
-
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
-                    });
-                });
-            }
-
-
-            function lockFieldsByStatus(orderStatus) {
-                const lockStatuses = ["approved", "completed", "for approval", "cancelled"];
-
-                if (lockStatuses.includes(orderStatus)) {
-                    // Lock all inputs
-                    $('input').each(function() {
-                        $(this).attr('readonly', true)
-                            .addClass('pointer-events-none opacity-100');
-                    });
-
-                    // Lock all selects EXCEPT #orderAction
-                    $('select').not('#orderAction').each(function() {
-                        $(this).addClass('pointer-events-none opacity-100');
-                    });
-
-                    // Lock contenteditable fields
-                    $('[contenteditable="true"]').each(function() {
-                        $(this).attr('contenteditable', 'false')
-                            .addClass('pointer-events-none opacity-100');
-                    });
-
-                    // ✅ Hide or disable submit button
-                    $('#submitButton').prop('disabled', true).addClass('hidden');
-                }
-            }
-
-            // ✅ Call it when document is ready
-            $(document).ready(function() {
-                lockFieldsByStatus("{{ $order->order_status }}");
-
-                // ... rest of your code
-            });
-
-
-
-
+            // ========================================
+            // GENERATE SO BUTTON (Outside document.ready - uses addEventListener)
+            // ========================================
             document.getElementById('generateSOButton').addEventListener('click', async () => {
                 const sofId = "{{ $order->sof_id }}";
                 const url = "{{ route('oracle.transfer') }}";
