@@ -103,15 +103,20 @@
                                 const progressText = document.getElementById('progressText');
                                 const progressBar = document.getElementById('progressBar');
 
+                                // Get warehouse dynamically each time
+                                const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]').value;
+
                                 let checkStatusInterval = null;
                                 let progressPercentage = 0;
+                                let consecutiveIdleCount = 0; // Track how long we've been idle
 
                                 // -----------------------------------
                                 // 🔍 CHECK SERVER CONNECTION FIRST
                                 // -----------------------------------
                                 async function checkConnection() {
                                     try {
-                                        const res = await fetch(`{{ route('update.allocations.status') }}`, {
+                                        const warehouse = getSelectedWarehouse();
+                                        const res = await fetch(`{{ route('update.allocations.status') }}?warehouse=${warehouse}`, {
                                             method: 'GET',
                                             headers: {
                                                 'Accept': 'application/json',
@@ -127,7 +132,7 @@
 
                                         const data = await res.json();
                                         console.log('Connection check response:', data);
-                                        return data ? true : false;
+                                        return true;
 
                                     } catch (err) {
                                         console.error('Connection check error:', err);
@@ -176,12 +181,15 @@
                                 // -----------------------------------
                                 function startUpdate() {
                                     button.disabled = true;
+                                    consecutiveIdleCount = 0;
 
                                     loader.classList.remove('hidden');
                                     loaderTitle.textContent = 'Initializing Update...';
                                     loaderMessage.textContent = 'Starting allocation update process...';
                                     progressBar.style.width = '10%';
                                     progressPercentage = 10;
+
+                                    const warehouse = getSelectedWarehouse();
 
                                     fetch(form.action, {
                                             method: 'POST',
@@ -191,7 +199,9 @@
                                                 'Content-Type': 'application/json',
                                                 'X-Requested-With': 'XMLHttpRequest'
                                             },
-                                            body: JSON.stringify({}) // Empty body for POST request
+                                            body: JSON.stringify({
+                                                warehouse: warehouse
+                                            })
                                         })
                                         .then(res => {
                                             console.log('Start update response status:', res.status);
@@ -239,23 +249,24 @@
                                 }
 
                                 function checkStatus() {
-                                    fetch(`{{ route('update.allocations.status') }}`, {
+                                    const warehouse = getSelectedWarehouse();
+
+                                    fetch(`{{ route('update.allocations.status') }}?warehouse=${warehouse}`, {
                                             method: 'GET',
                                             headers: {
                                                 'Accept': 'application/json',
                                                 'X-Requested-With': 'XMLHttpRequest'
-                                            }
+                                            },
+                                            cache: 'no-store' // Prevent caching
                                         })
                                         .then(res => {
                                             if (!res.ok) {
                                                 console.error('Status check failed:', res.status);
-                                                return null;
+                                                throw new Error(`HTTP ${res.status}`);
                                             }
                                             return res.json();
                                         })
                                         .then(data => {
-                                            if (!data) return; // Skip if response failed
-
                                             console.log('Status:', data.status, data);
 
                                             if (data.status === 'done') {
@@ -263,17 +274,27 @@
                                                 handleCompletion(data);
 
                                             } else if (data.status === 'running') {
+                                                consecutiveIdleCount = 0; // Reset idle counter
                                                 updateProgress(data);
 
                                             } else if (data.status === 'pending') {
-                                                loaderMessage.textContent = data.message;
+                                                loaderMessage.textContent = data.message || 'Jobs queued, waiting to start...';
                                                 if (progressPercentage < 30) {
                                                     progressPercentage += 2;
                                                     progressBar.style.width = progressPercentage + '%';
                                                 }
 
                                             } else if (data.status === 'idle') {
-                                                // Still waiting for jobs to start processing
+                                                consecutiveIdleCount++;
+
+                                                // If idle for too long after starting, something might be wrong
+                                                if (consecutiveIdleCount > 10) {
+                                                    console.warn('Process idle for too long, possible queue worker issue');
+                                                    loaderMessage.textContent = '⚠️ Waiting for queue worker... (check logs if this persists)';
+                                                } else {
+                                                    loaderMessage.textContent = 'Waiting for jobs to start processing...';
+                                                }
+
                                                 if (progressPercentage < 35) {
                                                     progressPercentage += 0.5;
                                                     progressBar.style.width = progressPercentage + '%';
@@ -286,7 +307,13 @@
                                         })
                                         .catch(err => {
                                             console.error('Status check error:', err);
-                                            // Don't stop polling on temporary network issues
+                                            // Don't stop polling on temporary network issues, but log them
+                                            consecutiveIdleCount++;
+
+                                            if (consecutiveIdleCount > 20) {
+                                                stopPolling();
+                                                showError('Lost connection to server. Please check your network and try again.');
+                                            }
                                         });
                                 }
 
@@ -297,21 +324,31 @@
                                     loaderMessage.textContent = data.message || 'Processing...';
 
                                     if (data.progress) {
-
+                                        // Show detailed progress
                                         if (data.progress.current_step) {
                                             progressDetails.classList.remove('hidden');
                                             progressText.textContent = data.progress.current_step;
                                         }
 
+                                        // Update based on actual percentage from server
                                         if (data.progress.percentage !== undefined) {
-                                            progressPercentage = data.progress.percentage;
+                                            progressPercentage = Math.max(progressPercentage, data.progress.percentage);
                                             progressBar.style.width = progressPercentage + '%';
 
                                             loaderTitle.textContent = `Update in Progress (${Math.round(progressPercentage)}%)`;
+
+                                            // Show detailed counts if available
+                                            if (data.progress.processed !== undefined && data.progress.total !== undefined) {
+                                                progressText.textContent = `Processing: ${data.progress.processed} / ${data.progress.total} SKUs`;
+
+                                                if (data.progress.failed > 0) {
+                                                    progressText.textContent += ` (${data.progress.failed} failed)`;
+                                                }
+                                            }
                                         } else {
-                                            // Simulate progress if no percentage
+                                            // Fallback: simulate progress if no percentage
                                             if (progressPercentage < 90) {
-                                                progressPercentage += Math.random() * 3;
+                                                progressPercentage += Math.random() * 2;
                                                 progressBar.style.width = Math.min(progressPercentage, 90) + '%';
                                             }
                                         }
@@ -342,8 +379,8 @@
                                             if (data.summary.failed_skus !== undefined && data.summary.failed_skus > 0) {
                                                 summaryHtml += `<li>⚠ SKUs Failed: <strong>${data.summary.failed_skus}</strong></li>`;
                                             }
-                                            if (data.summary.warehouse_code) {
-                                                summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_code}</strong></li>`;
+                                            if (data.summary.warehouse_name) {
+                                                summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_name}</strong></li>`;
                                             }
                                             if (data.summary.started_at && data.summary.completed_at) {
                                                 const start = new Date(data.summary.started_at);
@@ -493,9 +530,13 @@
                                 </style>
 
                                 <select
+                                    name="warehouse"
                                     class="w-full appearance-none rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
-                                    onchange="window.location.href='?warehouse=' + this.value"
-                                    style="-webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: none;"
+                                    onchange="
+                                        const params = new URLSearchParams(window.location.search);
+                                        params.set('warehouse', this.value);
+                                        window.location.href = window.location.pathname + '?' + params.toString();
+                                    "
                                     {{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'disabled' : '' }}>
                                     @foreach ($warehouseMap as $code => $name)
                                         <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
