@@ -15,8 +15,9 @@ class FetchAllocationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 300; // 5 minutes per SKU
-    public int $tries = 3;
+    public int $timeout = 30; // 30 seconds max per SKU
+    public int $tries = 1; // No retries, skip and move on
+    public int $maxExceptions = 1; // Don't retry on exception
 
     protected string $sku;
     protected string $facilityId;
@@ -29,7 +30,6 @@ class FetchAllocationJob implements ShouldQueue
         $this->facilityId = $facilityId;
         $this->warehouseCode = $warehouseCode;
         
-        // Derive location from warehouse code
         $warehouseToLocation = [
             '80181' => '4002',
             '80141' => '6012',
@@ -47,104 +47,145 @@ class FetchAllocationJob implements ShouldQueue
 
     public function handle(): void
     {
-        $processedSuccessfully = false;
-        
+        $startTime = microtime(true);
+        $processedKey = "wms_processed_{$this->warehouseCode}";
+        $failedKey = "wms_failed_{$this->warehouseCode}";
+
         try {
+            // Quick connection check with short timeout
             $mysql = DB::connection('mysql');
             $oracle = DB::connection('oracle_wms');
 
-            // Fetch allocation from Oracle
-            $oracleRows = $oracle->select("
-                SELECT ci.item_id,
-                    SUM(CASE WHEN c.container_status NOT IN ('X','T','S','D','A') 
-                        THEN ci.unit_qty ELSE 0 END) AS total_qty
-                FROM rwms.container_item ci
-                JOIN rwms.container c
-                    ON ci.facility_id = c.facility_id
-                    AND ci.container_id = c.container_id
-                WHERE ci.facility_id = ?
-                AND ci.item_id = ?
-                GROUP BY ci.item_id
-            ", [$this->facilityId, $this->sku]);
-
-            $allocationValue = 0;
-            if (!empty($oracleRows)) {
-                $allocationValue = (int) $oracleRows[0]->total_qty;
+            try {
+                $mysql->getPdo();
+                $oracle->getPdo();
+            } catch (\Exception $e) {
+                Log::error("[FetchAllocationJob] DB Connection failed for SKU {$this->sku}: " . $e->getMessage());
+                $this->markAsFailed($failedKey, $processedKey);
+                return;
             }
 
-            // Update/Insert allocation (even if 0 - this marks it as processed)
-            $mysql->table('product_wms_allocations')->updateOrInsert(
-                [
-                    'sku' => $this->sku, 
-                    'warehouse_code' => $this->warehouseCode
-                ],
-                [
-                    'wms_actual_allocation'  => $allocationValue,
-                    'wms_virtual_allocation' => $allocationValue,
-                    'updated_at' => now(),
-                    'created_at' => now(), // For insert case
-                ]
-            );
+            // Set statement timeout for Oracle queries (5 seconds max per query)
+            try {
+                $oracle->statement("ALTER SESSION SET QUERY_TIMEOUT = 5");
+            } catch (\Exception $e) {
+                // Ignore if not supported
+            }
 
-            // Fetch case pack data
-            $caseRows = $oracle->select("
-                SELECT item_id, unit_qty
-                FROM (
-                    SELECT ci.item_id, ci.unit_qty,
-                        ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+            // Fetch allocation from Oracle with timeout
+            $allocationValue = 0;
+            try {
+                $oracleRows = $oracle->select("
+                    SELECT ci.item_id,
+                        SUM(CASE WHEN c.container_status NOT IN ('X','T','S','D','A') 
+                            THEN ci.unit_qty ELSE 0 END) AS total_qty
                     FROM rwms.container_item ci
+                    JOIN rwms.container c
+                        ON ci.facility_id = c.facility_id
+                        AND ci.container_id = c.container_id
                     WHERE ci.facility_id = ?
                     AND ci.item_id = ?
-                )
-                WHERE rn <= 5
-            ", [$this->facilityId, $this->sku]);
+                    GROUP BY ci.item_id
+                ", [$this->facilityId, $this->sku]);
 
-            // Update case pack (MATCH handleBatch behavior)
-            if (!empty($caseRows) && $this->location) {
+                if (!empty($oracleRows)) {
+                    $allocationValue = (int) $oracleRows[0]->total_qty;
+                }
+            } catch (\Exception $e) {
+                Log::warning("[FetchAllocationJob] Oracle query failed for SKU {$this->sku}, skipping: " . $e->getMessage());
+                $this->markAsFailed($failedKey, $processedKey);
+                return;
+            }
 
-                // Extract unit_qty values exactly like handleBatch
-                $casePacks = array_unique(array_map(
-                    fn($row) => $row->unit_qty,
-                    $caseRows
-                ));
+            // Update allocation in MySQL
+            try {
+                $mysql->table('product_wms_allocations')->updateOrInsert(
+                    [
+                        'sku' => $this->sku, 
+                        'warehouse_code' => $this->warehouseCode
+                    ],
+                    [
+                        'wms_actual_allocation'  => $allocationValue,
+                        'wms_virtual_allocation' => $allocationValue,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::warning("[FetchAllocationJob] Failed to update allocation for SKU {$this->sku}, skipping: " . $e->getMessage());
+                $this->markAsFailed($failedKey, $processedKey);
+                return;
+            }
 
-                $tableName = "products_{$this->location}";
+            // Update case pack data (optional, don't fail if this errors)
+            if ($this->location) {
+                try {
+                    $caseRows = $oracle->select("
+                        SELECT item_id, unit_qty
+                        FROM (
+                            SELECT ci.item_id, ci.unit_qty,
+                                ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+                            FROM rwms.container_item ci
+                            WHERE ci.facility_id = ?
+                            AND ci.item_id = ?
+                        )
+                        WHERE rn <= 5
+                    ", [$this->facilityId, $this->sku]);
 
-                if ($mysql->getSchemaBuilder()->hasTable($tableName)) {
-                    $mysql->table($tableName)
-                        ->where('sku', $this->sku)
-                        ->update([
-                            'case_pack'  => implode(' | ', $casePacks),
-                            'updated_at' => now()
-                        ]);
+                    if (!empty($caseRows)) {
+                        $casePacks = array_unique(array_map(
+                            fn($row) => $row->unit_qty,
+                            $caseRows
+                        ));
+
+                        $tableName = "products_{$this->location}";
+
+                        if ($mysql->getSchemaBuilder()->hasTable($tableName)) {
+                            $mysql->table($tableName)
+                                ->where('sku', $this->sku)
+                                ->update([
+                                    'case_pack'  => implode(' | ', $casePacks),
+                                    'updated_at' => now()
+                                ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Don't fail the job for case pack errors
+                    Log::debug("[FetchAllocationJob] Case pack update failed for SKU {$this->sku}: " . $e->getMessage());
                 }
             }
 
-            // Mark as successfully processed
-            $processedSuccessfully = true;
-
-            Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | Allocation: {$allocationValue}");
+            // SUCCESS: Mark as processed
+            Cache::increment($processedKey);
+            
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+            
+            // Log differently for SKUs not in warehouse vs actual data
+            if ($allocationValue > 0) {
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Allocation: {$allocationValue} | {$duration}ms");
+            } else {
+                Log::debug("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Not in warehouse (0) | {$duration}ms");
+            }
 
         } catch (\Throwable $e) {
-            Log::error("[FetchAllocationJob] ✗ SKU {$this->sku}: " . $e->getMessage());
-            throw $e; // Let queue retry
-        } finally {
-            // ALWAYS increment processed count if we made it through without exception
-            // This ensures progress tracking is accurate even if no data found
-            if ($processedSuccessfully) {
-                $cacheKey = "wms_processed_{$this->location}_{$this->warehouseCode}";
-                Cache::increment($cacheKey);
-            }
+            Log::error("[FetchAllocationJob] ✗ Unexpected error for SKU {$this->sku} | WH: {$this->warehouseCode}: " . $e->getMessage());
+            $this->markAsFailed($failedKey, $processedKey);
+            return;
         }
+    }
+
+    protected function markAsFailed(string $failedKey, string $processedKey): void
+    {
+        Cache::increment($failedKey);
+        Cache::increment($processedKey);
     }
 
     public function failed(\Throwable $exception): void
     {
-        Log::error("[FetchAllocationJob] FINAL FAILURE SKU {$this->sku}: {$exception->getMessage()}");
+        Log::error("[FetchAllocationJob] FINAL FAILURE (timeout/exception) SKU {$this->sku} | WH: {$this->warehouseCode}: " . $exception->getMessage());
         
-        // Increment both failed AND processed count so total adds up correctly
-        $failedKey = "wms_failed_{$this->location}_{$this->warehouseCode}";
-        $processedKey = "wms_processed_{$this->location}_{$this->warehouseCode}";
+        $failedKey = "wms_failed_{$this->warehouseCode}";
+        $processedKey = "wms_processed_{$this->warehouseCode}";
         
         Cache::increment($failedKey);
         Cache::increment($processedKey);
