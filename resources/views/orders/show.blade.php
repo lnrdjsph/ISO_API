@@ -1788,7 +1788,7 @@
 
                 // Track all form elements for changes
                 const trackableElements = $(
-                    'input[type="text"], input[type="date"], select:not(#orderAction), td[contenteditable="true"]'
+                    'input[type="text"], input[type="date"], input[type="email"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
                 function initializeOriginalValues() {
@@ -2168,6 +2168,7 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 const cancelBtn = document.getElementById('cancelButton');
+                const completeBtn = document.getElementById('completeButton');
                 if (cancelBtn && !cancelBtn.dataset.swalBound) {
                     cancelBtn.dataset.swalBound = true; // prevent double binding
                     cancelBtn.addEventListener('click', function() {
@@ -2314,11 +2315,17 @@
                         $(this).attr('contenteditable', 'false')
                             .addClass('pointer-events-none opacity-100');
                     });
+
+                    // ✅ Hide or disable submit button
+                    $('#submitButton').prop('disabled', true).addClass('hidden');
                 }
             }
 
+            // ✅ Call it when document is ready
             $(document).ready(function() {
                 lockFieldsByStatus("{{ $order->order_status }}");
+
+                // ... rest of your code
             });
 
 
