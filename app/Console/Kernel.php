@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('products:update-allocations')->dailyAt('06:00')->timezone('Asia/Manila');
         $schedule->command('products:update-allocations')->dailyAt('10:00')->timezone('Asia/Manila');
         $schedule->command('products:update-allocations')->dailyAt('12:00')->timezone('Asia/Manila');
+        $schedule->command('products:update-allocations')->dailyAt('15:30')->timezone('Asia/Manila');
 
         $schedule->command('products:update-allocations')
             ->cron('0 10 * * *')      // 1:35 PM
