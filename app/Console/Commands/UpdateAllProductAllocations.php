@@ -10,43 +10,22 @@ use Illuminate\Support\Facades\File;
 class UpdateAllProductAllocations extends Command
 {
     protected $signature = 'products:update-allocations 
-                            {--location= : Specific location to process}
+                            {--warehouse= : Specific warehouse code to process (e.g., 80181, 80141)}
                             {--async : Use async job queue instead of batch processing}';
     
     protected $description = 'Update product_wms_allocations table (wms_actual_allocation and wms_virtual_allocation) and case pack using oracle_wms config';
 
-    // Warehouse facility codes
-    protected array $warehouses = [
-        '80141', // Silangan Warehouse
-        '80001', // Central Warehouse
-        '80041', // Procter Warehouse
-        '80051', // Opao-ISO Warehouse
-        '80071', // Big Blue Warehouse
-        '80131', // Lower Tingub Warehouse
-        '80201', // Sta. Rosa Warehouse
-        '80181', // Bacolod Depot
-        '80191', // Tacloban Depot
-    ];
-
-    // Store code to warehouse facility ID mapping
-    protected array $locationToWarehouse = [
-        '4002' => 'BD', // Bacolod Depot (80181)
-        '6012' => 'SI', // Silangan Warehouse (80141)
-
-        // Add more mappings as needed...
-    ];
-
-    // Warehouse code to facility ID mapping
-    protected array $warehouseToFacility = [
-        '80181' => 'BD', // Bacolod Depot
-        '80141' => 'SI', // Silangan Warehouse
-        '80001' => 'BD', // Central Warehouse
-        '80041' => 'BD', // Procter Warehouse
-        '80051' => 'BD', // Opao-ISO Warehouse
-        '80071' => 'BD', // Big Blue Warehouse
-        '80131' => 'BD', // Lower Tingub Warehouse
-        '80201' => 'SL', // Sta. Rosa Warehouse
-        '80191' => 'BD', // Tacloban Depot
+    // Master mapping: Warehouse Code => [Facility Label, Store Codes]
+    protected array $warehouseConfig = [
+        '80181' => ['facility' => 'BD', 'stores' => ['4002']],                    // Bacolod Depot
+        '80141' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
+        '80001' => ['facility' => 'BD', 'stores' => ['2010']],                    // Central Warehouse
+        '80041' => ['facility' => 'BD', 'stores' => ['2017']],                    // Procter Warehouse
+        '80051' => ['facility' => 'BD', 'stores' => ['2019']],                    // Opao-ISO Warehouse
+        '80071' => ['facility' => 'BD', 'stores' => ['3018']],                    // Big Blue Warehouse
+        '80131' => ['facility' => 'BD', 'stores' => ['3019']],                    // Lower Tingub Warehouse
+        '80201' => ['facility' => 'SL', 'stores' => ['2008']],                    // Sta. Rosa Warehouse
+        '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
     ];
 
     public function handle()
@@ -82,51 +61,44 @@ class UpdateAllProductAllocations extends Command
      */
     protected function handleAsync($logFile)
     {
-        $location = strtolower($this->option('location'));
+        $warehouseCode = $this->option('warehouse');
 
-        if (!$location) {
-            $this->log($logFile, "Location is required for async mode. Exiting.");
+        if (!$warehouseCode) {
+            $this->log($logFile, "Warehouse code is required for async mode. Exiting.");
             return Command::FAILURE;
         }
 
-        /**
-         * Step 1: Store location → warehouse label (BD)
-         */
-        $facilityLabel = $this->locationToWarehouse[$location] ?? null;
-
-        if (!$facilityLabel) {
-            $this->log($logFile, "No warehouse mapping found for location {$location}. Exiting.");
+        // Get warehouse configuration
+        $config = $this->warehouseConfig[$warehouseCode] ?? null;
+        
+        if (!$config) {
+            $this->log($logFile, "No configuration found for warehouse {$warehouseCode}. Exiting.");
             return Command::FAILURE;
         }
 
-        /**
-         * Step 2: Label (BD) → Oracle facility ID (80181)
-         */
-        $facilityId = array_search($facilityLabel, $this->warehouseToFacility, true);
+        $facilityId = $config['facility'];
+        $stores = $config['stores'];
 
-        if (!$facilityId) {
-            $this->log($logFile, "No Oracle facility ID found for warehouse label '{$facilityLabel}'. Exiting.");
-            return Command::FAILURE;
+        $this->log($logFile, "Resolved warehouse '{$warehouseCode}' → Facility '{$facilityId}' → Stores: " . implode(', ', $stores));
+
+        // Collect all SKUs from all stores using this warehouse
+        $allSkus = [];
+        foreach ($stores as $store) {
+            $tableName = "products_{$store}";
+            $skus = $this->collectSkusFromTable($tableName, $logFile);
+            $allSkus = array_merge($allSkus, $skus);
         }
+        
+        $allSkus = array_unique($allSkus);
 
-        /**
-         * Step 3: Warehouse code = facility ID
-         */
-        $warehouseCode = $facilityId;
-
-        $this->log($logFile, "Resolved location '{$location}' → label '{$facilityLabel}' → Oracle facility {$facilityId}");
-
-        /**
-         * Step 4: Collect all SKUs
-         */
-        $allProductTables = $this->getAllProductTables();
-        $allSkus = $this->collectAllSkus($allProductTables, $logFile);
+        if (empty($allSkus)) {
+            $this->log($logFile, "No SKUs found for warehouse {$warehouseCode}. Exiting.");
+            return Command::SUCCESS;
+        }
 
         $this->log($logFile, "Dispatching jobs for " . count($allSkus) . " SKUs...");
 
-        /**
-         * Step 5: Dispatch async jobs
-         */
+        // Dispatch async jobs
         foreach ($allSkus as $sku) {
             FetchAllocationJob::dispatch($sku, $facilityId, $warehouseCode)
                 ->onQueue('wms');
@@ -138,102 +110,100 @@ class UpdateAllProductAllocations extends Command
         return Command::SUCCESS;
     }
 
-
-
     /**
-     * Handle batch mode - process all SKUs synchronously in batches
+     * Handle batch mode - process all warehouses synchronously
      */
     protected function handleBatch($logFile, $startTime)
     {
-        $location = strtolower($this->option('location'));
+        $specificWarehouse = $this->option('warehouse');
         
-        // Define all product tables
-        $allProductTables = $this->getAllProductTables();
-
-        // Pick tables based on location option
-        if ($location) {
-            $productTables = ["products_{$location}"];
-            $storeCode = $location;
+        // Determine which warehouses to process
+        if ($specificWarehouse) {
+            if (!isset($this->warehouseConfig[$specificWarehouse])) {
+                $this->log($logFile, "Invalid warehouse code: {$specificWarehouse}. Exiting.");
+                return Command::FAILURE;
+            }
+            $warehousesToProcess = [$specificWarehouse];
         } else {
-            $productTables = $allProductTables;
-            preg_match('/products_(.+)$/', $productTables[0], $matches);
-            $storeCode = $matches[1] ?? null;
+            // Process all configured warehouses
+            $warehousesToProcess = array_keys($this->warehouseConfig);
         }
 
-        $this->log($logFile, "Tables to process: " . implode(', ', $productTables));
+        $this->log($logFile, "Warehouses to process: " . implode(', ', $warehousesToProcess));
 
-        // Get the mapped warehouse facility for the store
-        $facilityId = $this->locationToWarehouse[$storeCode] ?? null;
-        
-        if (!$facilityId) {
-            $this->log($logFile, "No warehouse facility mapping found for store {$storeCode}. Exiting.");
-            return Command::FAILURE;
-        }
+        $grandTotalUpdated = 0;
+        $grandTotalInserted = 0;
+        $grandTotalCasePack = 0;
 
-        // Map facility to warehouse code for storage (BD -> 80181)
-        $warehouseCode = array_search($facilityId, $this->warehouseToFacility) ?: $facilityId;
+        // Process each warehouse
+        foreach ($warehousesToProcess as $warehouseCode) {
+            $config = $this->warehouseConfig[$warehouseCode];
+            $facilityId = $config['facility'];
+            $stores = $config['stores'];
 
-        $this->log($logFile, "Using facility ID '{$facilityId}' (warehouse code: {$warehouseCode}) for store {$storeCode}");
+            $this->log($logFile, "---- Processing Warehouse: {$warehouseCode} (Facility: {$facilityId}, Stores: " . implode(', ', $stores) . ") ----");
 
-        // Step 1: Fetch all unique SKUs across ALL product tables
-        if ($location) {
-            $allSkus = $this->collectAllSkus($productTables, $logFile);
-        } else {
-            $allSkus = $this->collectAllSkus($allProductTables, $logFile);
-        }
-
-        if (empty($allSkus)) {
-            $this->log($logFile, "No SKUs found. Exiting.");
-            return Command::SUCCESS;
-        }
-
-        $inClause = "'" . implode("','", $allSkus) . "'";
-
-        $totalAllocationsProcessed = 0;
-        $totalAllocationsInserted = 0;
-        $totalCasePackProcessed = 0;
-
-        // Step 2: Query Oracle using the mapped facility ID
-        $this->log($logFile, "---- Processing facility: {$facilityId} ----");
-
-        // Query Oracle for allocations for this facility
-        $this->log($logFile, "Querying Oracle WMS for facility {$facilityId} allocations...");
-        $facilityAllocations = [];
-        
-        try {
-            $inventoryRows = DB::connection('oracle_wms')->select("
-                SELECT ci.item_id,
-                    SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S', 'D', 'A') 
-                                THEN ci.unit_qty ELSE 0 END) AS total_qty
-                FROM rwms.container_item ci
-                JOIN rwms.container c
-                ON ci.facility_id = c.facility_id
-                AND ci.container_id = c.container_id
-                WHERE ci.facility_id = '{$facilityId}'
-                AND ci.item_id IN ({$inClause})
-                GROUP BY ci.item_id
-            ");
-
-            foreach ($inventoryRows as $row) {
-                $facilityAllocations[$row->item_id] = (int) $row->total_qty;
+            // Collect all SKUs from all stores using this warehouse
+            $allSkus = [];
+            foreach ($stores as $store) {
+                $tableName = "products_{$store}";
+                
+                // Check if table exists
+                if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
+                    $this->log($logFile, "Table {$tableName} does not exist. Skipping.");
+                    continue;
+                }
+                
+                $skus = $this->collectSkusFromTable($tableName, $logFile);
+                $allSkus = array_merge($allSkus, $skus);
             }
             
-            $this->log($logFile, "Retrieved allocations for " . count($facilityAllocations) . " SKUs from facility {$facilityId}");
-        } catch (\Exception $e) {
-            $this->log($logFile, "Oracle query failed for facility {$facilityId}: " . $e->getMessage());
-        }
+            $allSkus = array_unique($allSkus);
+            
+            if (empty($allSkus)) {
+                $this->log($logFile, "No SKUs found for warehouse {$warehouseCode}. Skipping.");
+                continue;
+            }
 
-        // Update/Insert product_wms_allocations for this facility
-        $facilityUpdated = 0;
-        $facilityInserted = 0;
+            $inClause = "'" . implode("','", $allSkus) . "'";
 
-        foreach ($allSkus as $sku) {
-            if (isset($facilityAllocations[$sku])) {
-                $allocationValue = $facilityAllocations[$sku];
+            // Query Oracle for allocations
+            $this->log($logFile, "Querying Oracle WMS for facility {$facilityId} allocations...");
+            $allocations = [];
+            
+            try {
+                $inventoryRows = DB::connection('oracle_wms')->select("
+                    SELECT ci.item_id,
+                        SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S', 'D', 'A') 
+                                    THEN ci.unit_qty ELSE 0 END) AS total_qty
+                    FROM rwms.container_item ci
+                    JOIN rwms.container c
+                    ON ci.facility_id = c.facility_id
+                    AND ci.container_id = c.container_id
+                    WHERE ci.facility_id = '{$facilityId}'
+                    AND ci.item_id IN ({$inClause})
+                    GROUP BY ci.item_id
+                ");
+
+                foreach ($inventoryRows as $row) {
+                    $allocations[$row->item_id] = (int) $row->total_qty;
+                }
+                
+                $this->log($logFile, "Retrieved allocations for " . count($allocations) . " SKUs");
+            } catch (\Exception $e) {
+                $this->log($logFile, "Oracle query failed: " . $e->getMessage());
+                continue;
+            }
+
+            // Update/Insert allocations
+            $updated = 0;
+            $inserted = 0;
+
+            foreach ($allSkus as $sku) {
+                $allocationValue = $allocations[$sku] ?? 0;
                 
                 try {
-                    // Try to update existing record
-                    $updated = DB::connection('mysql')->table('product_wms_allocations')
+                    $exists = DB::connection('mysql')->table('product_wms_allocations')
                         ->where('sku', $sku)
                         ->where('warehouse_code', $warehouseCode)
                         ->update([
@@ -242,10 +212,9 @@ class UpdateAllProductAllocations extends Command
                             'updated_at' => now()
                         ]);
 
-                    if ($updated) {
-                        $facilityUpdated++;
+                    if ($exists) {
+                        $updated++;
                     } else {
-                        // Insert if doesn't exist
                         DB::connection('mysql')->table('product_wms_allocations')->insert([
                             'sku' => $sku,
                             'warehouse_code' => $warehouseCode,
@@ -254,137 +223,105 @@ class UpdateAllProductAllocations extends Command
                             'created_at' => now(),
                             'updated_at' => now()
                         ]);
-                        $facilityInserted++;
+                        $inserted++;
                     }
                 } catch (\Exception $e) {
-                    $this->log($logFile, "Failed to update/insert allocation for SKU {$sku} in warehouse {$warehouseCode}: " . $e->getMessage());
+                    $this->log($logFile, "Failed to update SKU {$sku}: " . $e->getMessage());
                 }
             }
-        }
 
-        $this->log($logFile, "Facility {$facilityId} (warehouse {$warehouseCode}): {$facilityUpdated} updated, {$facilityInserted} inserted");
-        $totalAllocationsProcessed = $facilityUpdated;
-        $totalAllocationsInserted = $facilityInserted;
+            $this->log($logFile, "Allocations: {$updated} updated, {$inserted} inserted");
+            $grandTotalUpdated += $updated;
+            $grandTotalInserted += $inserted;
 
-        // Step 3: Query Oracle for case pack data from the same facility
-        $this->log($logFile, "Querying Oracle WMS for case pack data from {$facilityId}...");
-        $caseMap = [];
-        try {
-            $caseRows = DB::connection('oracle_wms')->select("
-                SELECT item_id, unit_qty
-                FROM (
-                    SELECT ci.item_id, ci.unit_qty,
-                        ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-                    FROM rwms.container_item ci
-                    WHERE ci.facility_id = '{$facilityId}'
-                    AND ci.item_id IN ({$inClause})
-                )
-                WHERE rn <= 5
-            ");
-            foreach ($caseRows as $row) {
-                $caseMap[$row->item_id][] = $row->unit_qty;
+            // Query Oracle for case pack data
+            $this->log($logFile, "Querying Oracle WMS for case pack data...");
+            $caseMap = [];
+            try {
+                $caseRows = DB::connection('oracle_wms')->select("
+                    SELECT item_id, unit_qty
+                    FROM (
+                        SELECT ci.item_id, ci.unit_qty,
+                            ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+                        FROM rwms.container_item ci
+                        WHERE ci.facility_id = '{$facilityId}'
+                        AND ci.item_id IN ({$inClause})
+                    )
+                    WHERE rn <= 5
+                ");
+                foreach ($caseRows as $row) {
+                    $caseMap[$row->item_id][] = $row->unit_qty;
+                }
+            } catch (\Exception $e) {
+                $this->log($logFile, "Oracle case pack query failed: " . $e->getMessage());
             }
-            $this->log($logFile, "Case pack query returned " . count($caseRows) . " rows.");
-        } catch (\Exception $e) {
-            $this->log($logFile, "Oracle case pack query failed: " . $e->getMessage());
-        }
 
-        // Step 4: Update case_pack in each products table
-        foreach ($productTables as $tableName) {
-            $this->log($logFile, "---- Updating case pack for table: {$tableName} ----");
-
-            $tableStartTime = microtime(true);
+            // Update case pack in products tables for each store
             $casePackProcessed = 0;
-            $casePackSkipped = 0;
-
-            $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
-
-            foreach ($skus as $sku) {
-                if (isset($caseMap[$sku])) {
-                    try {
-                        DB::connection('mysql')->table($tableName)
-                            ->where('sku', $sku)
-                            ->update([
-                                'case_pack' => implode(' | ', array_unique($caseMap[$sku])),
-                                'updated_at' => now()
-                            ]);
-
-                        $casePackProcessed++;
-                    } catch (\Exception $e) {
-                        $this->log($logFile, "Case pack update failed for SKU {$sku}: " . $e->getMessage());
+            foreach ($stores as $store) {
+                $tableName = "products_{$store}";
+                
+                if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
+                    continue;
+                }
+                
+                $storeSkus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
+                
+                foreach ($storeSkus as $sku) {
+                    if (isset($caseMap[$sku])) {
+                        try {
+                            DB::connection('mysql')->table($tableName)
+                                ->where('sku', $sku)
+                                ->update([
+                                    'case_pack' => implode(' | ', array_unique($caseMap[$sku])),
+                                    'updated_at' => now()
+                                ]);
+                            $casePackProcessed++;
+                        } catch (\Exception $e) {
+                            $this->log($logFile, "Case pack update failed for SKU {$sku}: " . $e->getMessage());
+                        }
                     }
-                } else {
-                    $casePackSkipped++;
                 }
             }
 
-            $tableEndTime = microtime(true);
-            $duration = round($tableEndTime - $tableStartTime, 2);
-
-            $this->log($logFile, "Table {$tableName}: {$casePackProcessed} updated, {$casePackSkipped} skipped in {$duration}s");
-            $totalCasePackProcessed += $casePackProcessed;
+            $this->log($logFile, "Case packs: {$casePackProcessed} updated");
+            $grandTotalCasePack += $casePackProcessed;
         }
 
-        // Final log
+        // Final summary
         $endTime = microtime(true);
         $duration = $endTime - $startTime;
-
         $minutes = floor($duration / 60);
         $seconds = round($duration % 60);
 
-        $this->log($logFile, "=== All products updated ===");
-        $this->log($logFile, "Total allocations updated: {$totalAllocationsProcessed}");
-        $this->log($logFile, "Total allocations inserted: {$totalAllocationsInserted}");
-        $this->log($logFile, "Total case packs updated: {$totalCasePackProcessed}");
+        $this->log($logFile, "=== All warehouses processed ===");
+        $this->log($logFile, "Total allocations updated: {$grandTotalUpdated}");
+        $this->log($logFile, "Total allocations inserted: {$grandTotalInserted}");
+        $this->log($logFile, "Total case packs updated: {$grandTotalCasePack}");
         $this->log($logFile, "Process completed in {$minutes}m {$seconds}s");
 
         return Command::SUCCESS;
     }
 
     /**
-     * Get all product table names
+     * Collect SKUs from a specific table
      */
-    protected function getAllProductTables()
+    protected function collectSkusFromTable($tableName, $logFile)
     {
-        return [
-            'products_4002',
-            'products_2010',
-            'products_2017',
-            'products_2019',
-            'products_3018',
-            'products_3019',
-            'products_2008',
-            'products_6012',
-            'products_6009',
-            'products_6010',
-        ];
-    }
-
-    /**
-     * Collect all unique SKUs from given tables
-     */
-    protected function collectAllSkus($tables, $logFile)
-    {
-        $allSkus = [];
-        foreach ($tables as $tableName) {
-            try {
-                $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
-                $allSkus = array_merge($allSkus, $skus);
-                $this->log($logFile, "Fetched " . count($skus) . " SKUs from {$tableName}");
-            } catch (\Exception $e) {
-                $this->log($logFile, "Failed to fetch SKUs from {$tableName}: " . $e->getMessage());
-            }
+        try {
+            $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
+            $this->log($logFile, "Fetched " . count($skus) . " SKUs from {$tableName}");
+            return array_unique($skus);
+        } catch (\Exception $e) {
+            $this->log($logFile, "Failed to fetch SKUs from {$tableName}: " . $e->getMessage());
+            return [];
         }
-        
-        return array_unique($allSkus);
     }
 
     private function log(string $file, string $message)
     {
         $timestamp = now()->format('Y-m-d H:i:s');
         File::append($file, "[{$timestamp}] {$message}\n");
-
-        // Live console output
         $this->info("[{$timestamp}] {$message}");
         flush();
     }

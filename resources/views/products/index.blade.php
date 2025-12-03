@@ -706,7 +706,7 @@
 
 
 
-                                    <span id="buttonText" class="text-sm font-medium">Update Allocations</span>
+                                    <span id="buttonText" class="text-sm font-medium">Update WMS Inventory</span>
                                 </button>
                             </form>
 
