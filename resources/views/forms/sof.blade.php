@@ -1346,6 +1346,24 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                             input.removeAttribute('data-selected');
                         });
 
+                        newRow.querySelectorAll('select').forEach(select => {
+                            select.name = select.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+                        });
+
+                        // Reset remarks select to default
+                        const remarksSelect = newRow.querySelector('select[name^="orders"][name$="[remarks]"]');
+                        if (remarksSelect) {
+                            remarksSelect.value = "For RMS Approval";
+                            remarksSelect.name = remarksSelect.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+                        }
+
+                        // Reset sale type select
+                        const saleTypeSelect = newRow.querySelector('select[name^="orders"][name$="[sale_type]"]');
+                        if (saleTypeSelect) {
+                            saleTypeSelect.selectedIndex = 0; // Reset to first option
+                            saleTypeSelect.name = saleTypeSelect.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+                        }
+
                         // IMPORTANT: Update data-index attributes for new row
                         newRow.querySelectorAll('[data-index]').forEach(element => {
                             element.setAttribute('data-index', rowIndex);
@@ -1584,7 +1602,6 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 if (lastValue !== this.value) {
                     if (this.value !== 'Freebie') {
                         freebieSection.querySelectorAll('input').forEach(i => {
-                            // keep hidden values safe
                             if (i.type !== 'hidden') i.value = '';
                         });
                     }
@@ -1611,13 +1628,15 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     freebieSection.classList.add('hidden');
                 }
 
-                // update tracker
                 lastValue = this.value;
             });
 
-            // Fire once on attach
-            select.dispatchEvent(new Event('change'));
+            // 🔹 Only fire change if no value (new row)
+            if (!select.value) {
+                select.dispatchEvent(new Event('change'));
+            }
         }
+
 
 
 

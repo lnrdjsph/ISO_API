@@ -553,11 +553,12 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="true"
-                                                data-field="qty_per_pc">{{ $item->qty_per_pc }}</td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][qty_per_pc]"
-                                                value="{{ $item->qty_per_pc }}">
+                                                data-field="qty_per_pc">{{ $item->qty_per_pc }}
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][qty_per_pc]"
+                                                    value="{{ $item->qty_per_pc }}">
+                                            </td>
 
 
                                             <td
@@ -2126,59 +2127,62 @@
             // ========================================
             // GENERATE SO BUTTON (Outside document.ready - uses addEventListener)
             // ========================================
-            document.getElementById('generateSOButton').addEventListener('click', async () => {
-                const sofId = "{{ $order->sof_id }}";
-                const url = "{{ route('oracle.transfer') }}";
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            document.addEventListener('DOMContentLoaded', () => {
+                const generateBtn = document.getElementById('generateSOButton');
+                if (!generateBtn) return; // Button not rendered
+                generateBtn.addEventListener('click', async () => {
+                    const sofId = "{{ $order->sof_id }}";
+                    const url = "{{ route('oracle.transfer') }}";
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                const executeTransfer = async () => {
-                    Swal.fire({
-                        title: 'Processing Transfer...',
-                        html: `
+                    const executeTransfer = async () => {
+                        Swal.fire({
+                            title: 'Processing Transfer...',
+                            html: `
                 <div style="text-align: left;">
                     <p>📤 Sending order to Oracle RIB</p>
                     <p>🔄 Processing departments...</p>
                     <p>⏳ Please wait, this may take a few moments</p>
                 </div>
                 `,
-                        allowOutsideClick: false,
-                        didOpen: () => Swal.showLoading()
-                    });
-
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                sof_id: sofId
-                            })
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
                         });
 
-                        const text = await response.text();
-                        console.log('Raw response:', text);
-
-                        let data = {};
                         try {
-                            data = JSON.parse(text);
-                        } catch (parseError) {
-                            console.error('JSON parse error:', parseError);
-                            throw new Error('Invalid response from server');
-                        }
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                body: JSON.stringify({
+                                    sof_id: sofId
+                                })
+                            });
 
-                        Swal.close();
+                            const text = await response.text();
+                            console.log('Raw response:', text);
 
-                        // Handle success with detailed summary
-                        if (response.ok && data.responses) {
-                            const summary = data.summary || {};
-                            const responses = data.responses || {};
-                            const deptKeys = Object.keys(responses);
+                            let data = {};
+                            try {
+                                data = JSON.parse(text);
+                            } catch (parseError) {
+                                console.error('JSON parse error:', parseError);
+                                throw new Error('Invalid response from server');
+                            }
 
-                            // Build detailed HTML summary
-                            let htmlContent = `
+                            Swal.close();
+
+                            // Handle success with detailed summary
+                            if (response.ok && data.responses) {
+                                const summary = data.summary || {};
+                                const responses = data.responses || {};
+                                const deptKeys = Object.keys(responses);
+
+                                // Build detailed HTML summary
+                                let htmlContent = `
                     <div style="text-align: left; max-height: 500px; overflow-y: auto;">
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
                             <h4 style="margin: 0 0 10px 0;">📊 Transfer Summary</h4>
@@ -2188,41 +2192,41 @@
                         </div>
                 `;
 
-                            deptKeys.forEach(dept => {
-                                const resp = responses[dept];
-                                const status = resp.status || 'unknown';
-                                const tsfNo = resp.tsf_no || 'N/A';
-                                const itemCount = resp.item_count || 0;
+                                deptKeys.forEach(dept => {
+                                    const resp = responses[dept];
+                                    const status = resp.status || 'unknown';
+                                    const tsfNo = resp.tsf_no || 'N/A';
+                                    const itemCount = resp.item_count || 0;
 
-                                // Status styling
-                                let statusIcon = '❓';
-                                let statusColor = '#6c757d';
-                                let statusText = 'Unknown';
+                                    // Status styling
+                                    let statusIcon = '❓';
+                                    let statusColor = '#6c757d';
+                                    let statusText = 'Unknown';
 
-                                switch (status) {
-                                    case 'success':
-                                        statusIcon = '✅';
-                                        statusColor = '#28a745';
-                                        statusText = 'Success';
-                                        break;
-                                    case 'rib_errors':
-                                        statusIcon = '⚠️';
-                                        statusColor = '#ffc107';
-                                        statusText = 'RIB Errors';
-                                        break;
-                                    case 'verification_failed':
-                                        statusIcon = '❌';
-                                        statusColor = '#dc3545';
-                                        statusText = 'Verification Failed';
-                                        break;
-                                    case 'processing_failed':
-                                        statusIcon = '❌';
-                                        statusColor = '#dc3545';
-                                        statusText = 'Processing Failed';
-                                        break;
-                                }
+                                    switch (status) {
+                                        case 'success':
+                                            statusIcon = '✅';
+                                            statusColor = '#28a745';
+                                            statusText = 'Success';
+                                            break;
+                                        case 'rib_errors':
+                                            statusIcon = '⚠️';
+                                            statusColor = '#ffc107';
+                                            statusText = 'RIB Errors';
+                                            break;
+                                        case 'verification_failed':
+                                            statusIcon = '❌';
+                                            statusColor = '#dc3545';
+                                            statusText = 'Verification Failed';
+                                            break;
+                                        case 'processing_failed':
+                                            statusIcon = '❌';
+                                            statusColor = '#dc3545';
+                                            statusText = 'Processing Failed';
+                                            break;
+                                    }
 
-                                htmlContent += `
+                                    htmlContent += `
                         <div style="border: 2px solid ${statusColor}; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: white;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <h5 style="margin: 0; color: ${statusColor};">
@@ -2239,60 +2243,60 @@
                             </div>
                         `;
 
-                                // Success details
-                                if (status === 'success' && resp.details && resp.details.length > 0) {
-                                    htmlContent += `
+                                    // Success details
+                                    if (status === 'success' && resp.details && resp.details.length > 0) {
+                                        htmlContent += `
                             <div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; border-left: 4px solid #28a745;">
                                 <strong>✓ Verification Details:</strong>
                                 <ul style="margin: 5px 0; padding-left: 20px;">
                         `;
-                                    resp.details.forEach(detail => {
-                                        htmlContent += `<li style="font-size: 13px;">${detail}</li>`;
-                                    });
-                                    htmlContent += `</ul></div>`;
-                                }
+                                        resp.details.forEach(detail => {
+                                            htmlContent += `<li style="font-size: 13px;">${detail}</li>`;
+                                        });
+                                        htmlContent += `</ul></div>`;
+                                    }
 
-                                // Error details
-                                if (resp.errors && resp.errors.length > 0) {
-                                    htmlContent += `
+                                    // Error details
+                                    if (resp.errors && resp.errors.length > 0) {
+                                        htmlContent += `
                             <div style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px; border-left: 4px solid #dc3545;">
                                 <strong>⚠️ Issue Details:</strong>
                                 <ul style="margin: 5px 0; padding-left: 20px;">
                         `;
-                                    resp.errors.forEach(err => {
-                                        const errorMsg = err.message || 'Unknown error';
-                                        const attempts = err.attempts ? ` (${err.attempts} verification attempts)` : '';
+                                        resp.errors.forEach(err => {
+                                            const errorMsg = err.message || 'Unknown error';
+                                            const attempts = err.attempts ? ` (${err.attempts} verification attempts)` : '';
 
-                                        // Simplify error type labels for users
-                                        let typeLabel = '';
-                                        switch (err.type) {
-                                            case 'rib_failure':
-                                                typeLabel = 'Oracle Processing Error';
-                                                break;
-                                            case 'verification_failure':
-                                                typeLabel = 'Verification Issue';
-                                                break;
-                                            case 'processing_failure':
-                                                typeLabel = 'Processing Error';
-                                                break;
-                                            default:
-                                                typeLabel = 'Error';
-                                        }
+                                            // Simplify error type labels for users
+                                            let typeLabel = '';
+                                            switch (err.type) {
+                                                case 'rib_failure':
+                                                    typeLabel = 'Oracle Processing Error';
+                                                    break;
+                                                case 'verification_failure':
+                                                    typeLabel = 'Verification Issue';
+                                                    break;
+                                                case 'processing_failure':
+                                                    typeLabel = 'Processing Error';
+                                                    break;
+                                                default:
+                                                    typeLabel = 'Error';
+                                            }
 
-                                        htmlContent += `
+                                            htmlContent += `
                                 <li style="font-size: 13px; margin: 5px 0;">
                                     <strong>${typeLabel}:</strong> ${errorMsg}${attempts}
                                 </li>
                             `;
-                                    });
-                                    htmlContent += `</ul></div>`;
-                                }
+                                        });
+                                        htmlContent += `</ul></div>`;
+                                    }
 
-                                // Verification info (only show meaningful info)
-                                if (resp.verification && !resp.verification.exists && status === 'verification_failed') {
-                                    const verifyAttempts = resp.verification.attempt || 0;
+                                    // Verification info (only show meaningful info)
+                                    if (resp.verification && !resp.verification.exists && status === 'verification_failed') {
+                                        const verifyAttempts = resp.verification.attempt || 0;
 
-                                    htmlContent += `
+                                        htmlContent += `
                             <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
                                 <strong>🔍 Database Check:</strong>
                                 <p style="margin: 5px 0; font-size: 13px;">
@@ -2303,39 +2307,71 @@
                                 </p>
                             </div>
                         `;
-                                }
+                                    }
+
+                                    htmlContent += `</div>`;
+                                });
 
                                 htmlContent += `</div>`;
-                            });
 
-                            htmlContent += `</div>`;
+                                // Show appropriate dialog based on overall success
+                                if (data.success) {
+                                    await Swal.fire({
+                                        icon: 'success',
+                                        title: '✅ Transfer Complete',
+                                        html: htmlContent,
+                                        confirmButtonText: 'OK',
+                                        width: '800px',
+                                        customClass: {
+                                            popup: 'swal-wide'
+                                        }
+                                    });
+                                    location.reload();
+                                } else {
+                                    const result = await Swal.fire({
+                                        icon: 'warning',
+                                        title: '⚠️ Transfer Completed with Issues',
+                                        html: htmlContent,
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Retry Failed Items',
+                                        cancelButtonText: 'Close',
+                                        reverseButtons: true,
+                                        width: '800px',
+                                        customClass: {
+                                            popup: 'swal-wide'
+                                        }
+                                    });
 
-                            // Show appropriate dialog based on overall success
-                            if (data.success) {
+                                    if (result.isConfirmed) {
+                                        await executeTransfer();
+                                    }
+                                }
+
+                            } else if (data.error_type === 'no_items') {
+                                // No items to process
                                 await Swal.fire({
-                                    icon: 'success',
-                                    title: '✅ Transfer Complete',
-                                    html: htmlContent,
-                                    confirmButtonText: 'OK',
-                                    width: '800px',
-                                    customClass: {
-                                        popup: 'swal-wide'
-                                    }
+                                    icon: 'info',
+                                    title: 'No Items to Process',
+                                    text: data.message || 'All items have already been processed.',
+                                    confirmButtonText: 'OK'
                                 });
-                                location.reload();
+
                             } else {
+                                // General error
+                                const errorMsg = data.message || 'An unexpected error occurred.';
                                 const result = await Swal.fire({
-                                    icon: 'warning',
-                                    title: '⚠️ Transfer Completed with Issues',
-                                    html: htmlContent,
+                                    icon: 'error',
+                                    title: 'Transfer Failed',
+                                    html: `
+                        <div style="text-align: left;">
+                            <p><strong>Error:</strong></p>
+                            <pre style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap; word-wrap: break-word;">${errorMsg}</pre>
+                        </div>
+                    `,
                                     showCancelButton: true,
-                                    confirmButtonText: 'Retry Failed Items',
-                                    cancelButtonText: 'Close',
-                                    reverseButtons: true,
-                                    width: '800px',
-                                    customClass: {
-                                        popup: 'swal-wide'
-                                    }
+                                    confirmButtonText: 'Retry',
+                                    cancelButtonText: 'Cancel',
+                                    reverseButtons: true
                                 });
 
                                 if (result.isConfirmed) {
@@ -2343,46 +2379,14 @@
                                 }
                             }
 
-                        } else if (data.error_type === 'no_items') {
-                            // No items to process
-                            await Swal.fire({
-                                icon: 'info',
-                                title: 'No Items to Process',
-                                text: data.message || 'All items have already been processed.',
-                                confirmButtonText: 'OK'
-                            });
+                        } catch (err) {
+                            Swal.close();
+                            console.error('Transfer failed:', err);
 
-                        } else {
-                            // General error
-                            const errorMsg = data.message || 'An unexpected error occurred.';
                             const result = await Swal.fire({
                                 icon: 'error',
-                                title: 'Transfer Failed',
+                                title: '🔥 Connection Failed',
                                 html: `
-                        <div style="text-align: left;">
-                            <p><strong>Error:</strong></p>
-                            <pre style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap; word-wrap: break-word;">${errorMsg}</pre>
-                        </div>
-                    `,
-                                showCancelButton: true,
-                                confirmButtonText: 'Retry',
-                                cancelButtonText: 'Cancel',
-                                reverseButtons: true
-                            });
-
-                            if (result.isConfirmed) {
-                                await executeTransfer();
-                            }
-                        }
-
-                    } catch (err) {
-                        Swal.close();
-                        console.error('Transfer failed:', err);
-
-                        const result = await Swal.fire({
-                            icon: 'error',
-                            title: '🔥 Connection Failed',
-                            html: `
                     <div style="text-align: left;">
                         <p><strong>Error Type:</strong> Network/Connection Issue</p>
                         <p><strong>Message:</strong></p>
@@ -2397,20 +2401,21 @@
                         </p>
                     </div>
                 `,
-                            showCancelButton: true,
-                            confirmButtonText: 'Retry',
-                            cancelButtonText: 'Cancel',
-                            reverseButtons: true,
-                            width: '600px'
-                        });
+                                showCancelButton: true,
+                                confirmButtonText: 'Retry',
+                                cancelButtonText: 'Cancel',
+                                reverseButtons: true,
+                                width: '600px'
+                            });
 
-                        if (result.isConfirmed) {
-                            await executeTransfer();
+                            if (result.isConfirmed) {
+                                await executeTransfer();
+                            }
                         }
-                    }
-                };
+                    };
 
-                await executeTransfer();
+                    await executeTransfer();
+                });
             });
         </script>
 
