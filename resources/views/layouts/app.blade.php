@@ -312,7 +312,7 @@
         id="overlay"
         class="fixed inset-0 z-20 hidden bg-black bg-opacity-50 md:hidden"></div>
 
-    <div class="fixed left-0 right-0 top-0 z-[10000] flex h-8 items-center justify-between bg-gradient-to-r from-green-950 via-indigo-950 to-blue-950 px-4 shadow-sm">
+    <div class="fixed left-0 right-0 top-0 z-[10000] flex h-8 items-center justify-between bg-gradient-to-r from-green-900 via-black to-blue-900 px-4 shadow-sm">
         {{-- <div class="fixed left-0 right-0 top-0 z-40 flex h-8 items-center justify-between bg-gray-900 px-4 shadow-sm"> --}}
         <!-- Left -->
         <div class="flex items-center space-x-3">
@@ -690,102 +690,103 @@
                         </ul>
                     </li>
 
+                    @auth
+                        @if (auth()->user()->role === 'super admin')
+                            <!-- Products Group -->
+                            <li class="{{ request()->routeIs('products*') ? 'active' : '' }} group relative">
+                                @if (request()->routeIs('products*'))
+                                    <!-- Expanded Products Section -->
+                                    <div class="nav-item {{ request()->routeIs('products*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                                        <span class="icon-wrapper">
+                                            <svg
+                                                class="h-5 w-5 flex-shrink-0"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                            </svg>
+                                        </span>
+                                        <span class="nav-text ml-3 font-medium">Products</span>
+                                        <div class="tooltip">Products</div>
+                                    </div>
 
-                    <!-- Products Group -->
-                    <li class="{{ request()->routeIs('products*') ? 'active' : '' }} group relative">
-                        @if (request()->routeIs('products*'))
-                            <!-- Expanded Products Section -->
-                            <div class="nav-item {{ request()->routeIs('products*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                <span class="icon-wrapper">
-                                    <svg
-                                        class="h-5 w-5 flex-shrink-0"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                </span>
-                                <span class="nav-text ml-3 font-medium">Products</span>
-                                <div class="tooltip">Products</div>
-                            </div>
-
-                            <!-- Expanded Submenu -->
-                            <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                <li>
+                                    <!-- Expanded Submenu -->
+                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
+                                        <li>
+                                            <a
+                                                href="{{ route('products.index') }}"
+                                                class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">Product List</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('products.create') }}"
+                                                class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">Add New Product</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('products.import.show') }}"
+                                                class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">Import CSV</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                @else
+                                    <!-- Collapsed Products with Hover Flyout -->
                                     <a
                                         href="{{ route('products.index') }}"
-                                        class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Product List</span>
+                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                        <svg
+                                            class="h-5 w-5 flex-shrink-0"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                        <span class="nav-text ml-3">Products</span>
+                                        <div class="tooltip">Products</div>
                                     </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="{{ route('products.create') }}"
-                                        class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Add New Product</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="{{ route('products.import.show') }}"
-                                        class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Import CSV</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        @else
-                            <!-- Collapsed Products with Hover Flyout -->
-                            <a
-                                href="{{ route('products.index') }}"
-                                class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                <svg
-                                    class="h-5 w-5 flex-shrink-0"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                </svg>
-                                <span class="nav-text ml-3">Products</span>
-                                <div class="tooltip">Products</div>
-                            </a>
+                                @endif
+
+                                <!-- Hover Flyout Menu -->
+                                <ul class="flyout-menu absolute top-0 z-50 hidden w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                                    <li>
+                                        <a
+                                            href="{{ route('products.index') }}"
+                                            class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                            Product List
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="{{ route('products.create') }}"
+                                            class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                            Add New Product
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="{{ route('products.import.show') }}"
+                                            class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                            Import CSV
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         @endif
-
-                        <!-- Hover Flyout Menu -->
-                        <ul class="flyout-menu absolute top-0 z-50 hidden w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
-                            <li>
-                                <a
-                                    href="{{ route('products.index') }}"
-                                    class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                    Product List
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="{{ route('products.create') }}"
-                                    class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                    Add New Product
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="{{ route('products.import.show') }}"
-                                    class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                    Import CSV
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-
-                    </li>
+                    @endauth
+                    {{-- </li> --}}
                     @auth
                         @if (auth()->user()->role === 'super admin')
                             <!-- Users Group -->
