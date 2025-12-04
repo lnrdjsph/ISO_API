@@ -195,41 +195,78 @@ class UpdateAllProductAllocations extends Command
                 continue;
             }
 
-            // Update/Insert allocations
+            // Fetch existing allocations for comparison
+            $this->log($logFile, "Fetching existing allocations for comparison...");
+            $existingAllocations = DB::connection('mysql')
+                ->table('product_wms_allocations')
+                ->whereIn('sku', $allSkus)
+                ->where('warehouse_code', $warehouseCode)
+                ->get()
+                ->keyBy('sku');
+
+            // Update/Insert allocations with per-SKU logging
             $updated = 0;
             $inserted = 0;
 
+            $this->log($logFile, "");
+            $this->log($logFile, str_repeat("=", 120));
+            $this->log($logFile, "ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
+            $this->log($logFile, str_repeat("=", 120));
+            $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
+            $this->log($logFile, str_repeat("-", 120));
+
             foreach ($allSkus as $sku) {
-                $allocationValue = $allocations[$sku] ?? 0;
+                $newAllocation = $allocations[$sku] ?? 0;
+                $existing = $existingAllocations->get($sku);
                 
                 try {
-                    $exists = DB::connection('mysql')->table('product_wms_allocations')
-                        ->where('sku', $sku)
-                        ->where('warehouse_code', $warehouseCode)
-                        ->update([
-                            'wms_actual_allocation' => $allocationValue,
-                            'wms_virtual_allocation' => $allocationValue,
-                            'updated_at' => now()
-                        ]);
-
-                    if ($exists) {
+                    if ($existing) {
+                        $oldActual = $existing->wms_actual_allocation;
+                        $oldVirtual = $existing->wms_virtual_allocation;
+                        $before = sprintf("%d / %d", $oldActual, $oldVirtual);
+                        $after = sprintf("%d / %d", $newAllocation, $newAllocation);
+                        $status = "UPDATED";
+                        
+                        // Update
+                        DB::connection('mysql')->table('product_wms_allocations')
+                            ->where('sku', $sku)
+                            ->where('warehouse_code', $warehouseCode)
+                            ->update([
+                                'wms_actual_allocation' => $newAllocation,
+                                'wms_virtual_allocation' => $newAllocation,
+                                'updated_at' => now()
+                            ]);
+                        
                         $updated++;
                     } else {
+                        $before = "NULL / NULL";
+                        $after = sprintf("%d / %d", $newAllocation, $newAllocation);
+                        $status = "INSERTED";
+                        
+                        // Insert
                         DB::connection('mysql')->table('product_wms_allocations')->insert([
                             'sku' => $sku,
                             'warehouse_code' => $warehouseCode,
-                            'wms_actual_allocation' => $allocationValue,
-                            'wms_virtual_allocation' => $allocationValue,
+                            'wms_actual_allocation' => $newAllocation,
+                            'wms_virtual_allocation' => $newAllocation,
                             'created_at' => now(),
                             'updated_at' => now()
                         ]);
+                        
                         $inserted++;
                     }
+                    
+                    $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, $before, $after, $status));
+                    
                 } catch (\Exception $e) {
-                    $this->log($logFile, "Failed to update SKU {$sku}: " . $e->getMessage());
+                    $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, "ERROR", "ERROR", "FAILED: " . $e->getMessage()));
                 }
             }
 
+            $this->log($logFile, str_repeat("=", 120));
+            $this->log($logFile, sprintf("SUMMARY: %d Updated | %d Inserted | %d Total Processed", $updated, $inserted, count($allSkus)));
+            $this->log($logFile, str_repeat("=", 120));
+            $this->log($logFile, "");
             $this->log($logFile, "Allocations: {$updated} updated, {$inserted} inserted");
             $grandTotalUpdated += $updated;
             $grandTotalInserted += $inserted;
