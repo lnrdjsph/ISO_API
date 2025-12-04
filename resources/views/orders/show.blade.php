@@ -530,11 +530,12 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
-                                                data-field="price">{{ number_format($item->price, 2) }}</td>
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][price]"
-                                                value="{{ $item->price }}">
+                                                data-field="price">{{ number_format($item->price, 2) }}
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][price]"
+                                                    value="{{ $item->price }}">
+                                            </td>
                                             <td
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
