@@ -15,16 +15,16 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('products:update-allocations')->dailyAt('06:00')->timezone('Asia/Manila');
-        $schedule->command('products:update-allocations')->dailyAt('08:40')->timezone('Asia/Manila');
-        $schedule->command('products:update-allocations')->dailyAt('08:45')->timezone('Asia/Manila');
-        $schedule->command('products:update-allocations')->dailyAt('10:00')->timezone('Asia/Manila');
-        $schedule->command('products:update-allocations')->dailyAt('12:00')->timezone('Asia/Manila');
-        $schedule->command('products:update-allocations')->dailyAt('15:30')->timezone('Asia/Manila');
+        $schedule->command('products:update-allocations')->dailyAt('06:00');
+        $schedule->command('products:update-allocations')->dailyAt('08:50');
+        $schedule->command('products:update-allocations')->dailyAt('08:55');
+        $schedule->command('products:update-allocations')->dailyAt('10:00');
+        $schedule->command('products:update-allocations')->dailyAt('12:00');
+        $schedule->command('products:update-allocations')->dailyAt('15:30');
 
         $schedule->command('products:update-allocations')
             ->cron('0 10 * * *')      // 1:35 PM
-            ->timezone('Asia/Manila');
+            ;
     }
 
 
