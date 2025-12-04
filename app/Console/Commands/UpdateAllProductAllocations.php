@@ -165,35 +165,76 @@ class UpdateAllProductAllocations extends Command
                 continue;
             }
 
-            $inClause = "'" . implode("','", $allSkus) . "'";
+            $this->log($logFile, "Total unique SKUs collected: " . count($allSkus));
 
-            // Query Oracle for allocations
-            $this->log($logFile, "Querying Oracle WMS for facility {$facilityId} allocations...");
-            $allocations = [];
-            
+            // Test Oracle connection first
             try {
-                $inventoryRows = DB::connection('oracle_wms')->select("
-                    SELECT ci.item_id,
-                        SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S', 'D', 'A') 
-                                    THEN ci.unit_qty ELSE 0 END) AS total_qty
-                    FROM rwms.container_item ci
-                    JOIN rwms.container c
-                    ON ci.facility_id = c.facility_id
-                    AND ci.container_id = c.container_id
-                    WHERE ci.facility_id = '{$facilityId}'
-                    AND ci.item_id IN ({$inClause})
-                    GROUP BY ci.item_id
-                ");
-
-                foreach ($inventoryRows as $row) {
-                    $allocations[$row->item_id] = (int) $row->total_qty;
-                }
-                
-                $this->log($logFile, "Retrieved allocations for " . count($allocations) . " SKUs");
+                $this->log($logFile, "Testing Oracle connection...");
+                $testStart = microtime(true);
+                DB::connection('oracle_wms')->select("SELECT 1 FROM DUAL");
+                $testEnd = microtime(true);
+                $testDuration = round(($testEnd - $testStart) * 1000, 2);
+                $this->log($logFile, "Oracle connection successful (response time: {$testDuration}ms)");
             } catch (\Exception $e) {
-                $this->log($logFile, "Oracle query failed: " . $e->getMessage());
+                $this->log($logFile, "ERROR: Oracle connection failed - " . $e->getMessage());
+                $this->log($logFile, "Skipping warehouse {$warehouseCode}");
                 continue;
             }
+
+            // Process SKUs in chunks to avoid query issues
+            $chunkSize = 500; // Oracle IN clause limit consideration
+            $skuChunks = array_chunk($allSkus, $chunkSize);
+            $this->log($logFile, "Processing in " . count($skuChunks) . " chunks of {$chunkSize} SKUs each");
+
+            $allocations = [];
+            
+            foreach ($skuChunks as $chunkIndex => $skuChunk) {
+                $chunkNum = $chunkIndex + 1;
+                $this->log($logFile, "Processing chunk {$chunkNum}/" . count($skuChunks) . " (" . count($skuChunk) . " SKUs)");
+                
+                $inClause = "'" . implode("','", $skuChunk) . "'";
+
+                try {
+                    $queryStart = microtime(true);
+                    $this->log($logFile, "Executing Oracle query for chunk {$chunkNum}...");
+                    
+                    // Set query timeout (5 minutes)
+                    ini_set('default_socket_timeout', 300);
+                    
+                    $inventoryRows = DB::connection('oracle_wms')->select("
+                        SELECT /*+ PARALLEL(4) */ ci.item_id,
+                            SUM(CASE WHEN c.container_status NOT IN ('X', 'T', 'S', 'D', 'A') 
+                                        THEN ci.unit_qty ELSE 0 END) AS total_qty
+                        FROM rwms.container_item ci
+                        JOIN rwms.container c
+                        ON ci.facility_id = c.facility_id
+                        AND ci.container_id = c.container_id
+                        WHERE ci.facility_id = '{$facilityId}'
+                        AND ci.item_id IN ({$inClause})
+                        GROUP BY ci.item_id
+                    ");
+
+                    $this->log($logFile, "Query executed, processing results...");
+                    
+                    $queryEnd = microtime(true);
+                    $queryDuration = round($queryEnd - $queryStart, 2);
+                    
+                    $resultCount = 0;
+                    foreach ($inventoryRows as $row) {
+                        $allocations[$row->item_id] = (int) $row->total_qty;
+                        $resultCount++;
+                    }
+                    
+                    $this->log($logFile, "Chunk {$chunkNum} completed in {$queryDuration}s - Retrieved {$resultCount} allocations");
+                } catch (\Exception $e) {
+                    $this->log($logFile, "ERROR: Chunk {$chunkNum} failed - " . $e->getMessage());
+                    $this->log($logFile, "Error Code: " . $e->getCode());
+                    // Continue with next chunk instead of stopping entirely
+                    continue;
+                }
+            }
+
+            $this->log($logFile, "Total allocations retrieved: " . count($allocations) . " SKUs");
 
             // Fetch existing allocations for comparison
             $this->log($logFile, "Fetching existing allocations for comparison...");
@@ -209,11 +250,11 @@ class UpdateAllProductAllocations extends Command
             $inserted = 0;
 
             $this->log($logFile, "");
-            $this->log($logFile, str_repeat("=", 120));
-            $this->log($logFile, "ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
-            $this->log($logFile, str_repeat("=", 120));
-            $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
-            $this->log($logFile, str_repeat("-", 120));
+            $this->logRaw($logFile, str_repeat("=", 120));
+            $this->logRaw($logFile, "ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
+            $this->logRaw($logFile, str_repeat("=", 120));
+            $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
+            $this->logRaw($logFile, str_repeat("-", 120));
 
             foreach ($allSkus as $sku) {
                 $newAllocation = $allocations[$sku] ?? 0;
@@ -256,16 +297,16 @@ class UpdateAllProductAllocations extends Command
                         $inserted++;
                     }
                     
-                    $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, $before, $after, $status));
+                    $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, $before, $after, $status));
                     
                 } catch (\Exception $e) {
-                    $this->log($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, "ERROR", "ERROR", "FAILED: " . $e->getMessage()));
+                    $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, "ERROR", "ERROR", "FAILED: " . $e->getMessage()));
                 }
             }
 
-            $this->log($logFile, str_repeat("=", 120));
-            $this->log($logFile, sprintf("SUMMARY: %d Updated | %d Inserted | %d Total Processed", $updated, $inserted, count($allSkus)));
-            $this->log($logFile, str_repeat("=", 120));
+            $this->logRaw($logFile, str_repeat("=", 120));
+            $this->logRaw($logFile, sprintf("SUMMARY: %d Updated | %d Inserted | %d Total Processed", $updated, $inserted, count($allSkus)));
+            $this->logRaw($logFile, str_repeat("=", 120));
             $this->log($logFile, "");
             $this->log($logFile, "Allocations: {$updated} updated, {$inserted} inserted");
             $grandTotalUpdated += $updated;
@@ -274,24 +315,41 @@ class UpdateAllProductAllocations extends Command
             // Query Oracle for case pack data
             $this->log($logFile, "Querying Oracle WMS for case pack data...");
             $caseMap = [];
-            try {
-                $caseRows = DB::connection('oracle_wms')->select("
-                    SELECT item_id, unit_qty
-                    FROM (
-                        SELECT ci.item_id, ci.unit_qty,
-                            ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-                        FROM rwms.container_item ci
-                        WHERE ci.facility_id = '{$facilityId}'
-                        AND ci.item_id IN ({$inClause})
-                    )
-                    WHERE rn <= 5
-                ");
-                foreach ($caseRows as $row) {
-                    $caseMap[$row->item_id][] = $row->unit_qty;
+            
+            foreach ($skuChunks as $chunkIndex => $skuChunk) {
+                $chunkNum = $chunkIndex + 1;
+                $inClause = "'" . implode("','", $skuChunk) . "'";
+                
+                try {
+                    $queryStart = microtime(true);
+                    
+                    $caseRows = DB::connection('oracle_wms')->select("
+                        SELECT item_id, unit_qty
+                        FROM (
+                            SELECT ci.item_id, ci.unit_qty,
+                                ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+                            FROM rwms.container_item ci
+                            WHERE ci.facility_id = '{$facilityId}'
+                            AND ci.item_id IN ({$inClause})
+                        )
+                        WHERE rn <= 5
+                    ");
+                    
+                    $queryEnd = microtime(true);
+                    $queryDuration = round($queryEnd - $queryStart, 2);
+                    
+                    foreach ($caseRows as $row) {
+                        $caseMap[$row->item_id][] = $row->unit_qty;
+                    }
+                    
+                    $this->log($logFile, "Case pack chunk {$chunkNum} completed in {$queryDuration}s");
+                } catch (\Exception $e) {
+                    $this->log($logFile, "ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
+                    continue;
                 }
-            } catch (\Exception $e) {
-                $this->log($logFile, "Oracle case pack query failed: " . $e->getMessage());
             }
+            
+            $this->log($logFile, "Total case packs retrieved: " . count($caseMap) . " SKUs");
 
             // Update case pack in products tables for each store
             $casePackProcessed = 0;
@@ -355,11 +413,40 @@ class UpdateAllProductAllocations extends Command
         }
     }
 
-    private function log(string $file, string $message)
+    private function log(string $file, string $message, bool $consoleOnly = false)
     {
         $timestamp = now()->format('Y-m-d H:i:s');
-        File::append($file, "[{$timestamp}] {$message}\n");
-        $this->info("[{$timestamp}] {$message}");
-        flush();
+        $logMessage = "[{$timestamp}] {$message}";
+        
+        // Write to file (unless console only)
+        if (!$consoleOnly) {
+            File::append($file, $logMessage . "\n");
+        }
+        
+        // Output to console
+        $this->info($logMessage);
+        
+        // Force immediate write to disk and output buffer
+        if (function_exists('flush')) {
+            flush();
+        }
+        if (function_exists('ob_flush')) {
+            @ob_flush();
+        }
+    }
+    
+    private function logRaw(string $file, string $message)
+    {
+        // Log without timestamp for formatted tables
+        File::append($file, $message . "\n");
+        $this->line($message);
+        
+        // Force immediate write
+        if (function_exists('flush')) {
+            flush();
+        }
+        if (function_exists('ob_flush')) {
+            @ob_flush();
+        }
     }
 }
