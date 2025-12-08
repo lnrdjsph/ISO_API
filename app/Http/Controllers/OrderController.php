@@ -271,6 +271,7 @@ public function index(Request $request)
             'items.*.price' => 'required|numeric|min:0',
             'items.*.qty_per_pc' => 'required|integer|min:0',
             'items.*.qty_per_cs' => 'required|integer|min:0',
+            'items.*.freebies_per_cs' => 'nullable|integer|min:0',
             'items.*.total_qty' => 'required|integer|min:0',
             'items.*.discount' => 'required|string',
             'items.*.amount' => 'required|numeric|min:0',
@@ -347,6 +348,7 @@ public function index(Request $request)
                     'price' => $itemData['price'], // keep original price
                     'qty_per_pc' => $itemData['qty_per_pc'],
                     'qty_per_cs' => $itemData['qty_per_cs'],
+                    'freebies_per_cs' => $itemData['freebies_per_cs'],
                     'total_qty' => $itemData['total_qty'],
                     'discount' => $itemData['discount'],
                     'amount' => $calculatedAmount,

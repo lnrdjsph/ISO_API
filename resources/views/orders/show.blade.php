@@ -583,8 +583,12 @@
                                                 @if ($item->item_type === 'DISCOUNT')
                                                     N/A
                                                 @else
-                                                    {!! $item->freebies_per_cs == 0 ? '<span class="text-green-400">▼</span>' : $item->freebies_per_cs !!}
+                                                    {!! $item->freebies_per_cs == 0 ? 'N/A' : $item->freebies_per_cs !!}
                                                 @endif
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][freebies_per_cs]"
+                                                    value="{{ $item->item_type === 'FREEBIE' ? $item->freebies_per_cs : 0 }}">
                                             </td>
 
 
@@ -629,23 +633,24 @@
 
 
 
-                                            <td
-                                                class="border p-2 text-center"
+                                            <td class="border p-2 text-center"
                                                 contenteditable="false"
-                                                data-field="store_order_no">{{ $item->store_order_no }}</td>
+                                                data-field="store_order_no">
+                                                {{ $item->store_order_no }}
 
-                                            <input
-                                                type="hidden"
-                                                name="items[{{ $loop->index }}][store_order_no]"
-                                                value="{{ $item->store_order_no }}">
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{{ $loop->index }}][store_order_no]"
+                                                    value="{{ $item->store_order_no }}">
+                                            </td>
 
 
                                             {{-- Store Order No Column with API call --}}
                                             <td class="relative border p-2 text-center"
                                                 contenteditable="false"
-                                                data-field="store_order_no"
                                                 data-item-index="{{ $loop->index }}"
-                                                @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" data-load-status="true" @endif>
+                                                @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" 
+        data-load-status="true" @endif>
                                                 @if (!empty($item->store_order_no))
                                                     <span class="inline-flex items-center px-3 py-1 text-xs font-medium">
                                                         <svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1506,6 +1511,7 @@
                                     qtyPerPc: row.querySelector(`input[name="items[${index}][qty_per_pc]"]`),
                                     qtyPerCs: row.querySelector(`input[name="items[${index}][qty_per_cs]"]`),
                                     freebiesPerCs: row.querySelector(`input[name="items[${index}][freebies_per_cs]"]`),
+                                    freebiesPerCsNext: row.querySelector(`input[name="items[${index + 1}][freebies_per_cs]"]`),
                                     totalQty: row.querySelector(`input[name="items[${index}][total_qty]"]`),
                                     price: row.querySelector(`input[name="items[${index}][price]"]`),
                                     amount: row.querySelector(`input[name="items[${index}][amount]"]`),
@@ -1704,7 +1710,250 @@
                         return total;
                     }
                 }
+                // Standalone freebie calculator script
+                // ========================================
+                // FREEBIE CALCULATOR SYSTEM
+                // ========================================
+                function initializeFreebieCalculator() {
+                    console.log('🎯 Initializing Freebie Calculator');
 
+                    // Listen for ANY change on contenteditable cells in MAIN rows
+                    $(document).on('blur input keyup paste', 'td[contenteditable="true"]', function(e) {
+                        if (typeof IS_LOCKED !== 'undefined' && IS_LOCKED) return;
+
+                        const cell = $(this);
+                        const field = cell.data('field');
+                        const row = cell.closest("tr");
+                        const index = row.data("index");
+
+                        // Only proceed if it's scheme or qty_per_cs
+                        if (field !== 'scheme' && field !== 'qty_per_cs') return;
+                        if (index === undefined) return;
+
+                        // Check if this is a MAIN item
+                        const itemTypeInput = row[0].querySelector(`input[name="items[${index}][item_type]"]`);
+                        const itemType = itemTypeInput?.value || "MAIN";
+
+                        console.log(`🔍 Field changed: ${field}, Item Type: ${itemType}, Row Index: ${index}`);
+
+                        if (itemType === "MAIN") {
+                            // Update the hidden input first
+                            const hiddenInput = row.find(`input[name="items[${index}][${field}]"]`);
+                            if (hiddenInput.length) {
+                                let value = cell.text().trim();
+                                if (value === '-' || value === 'N/A') value = '0';
+                                hiddenInput.val(value);
+                                console.log(`✏️ Updated hidden input [${field}]: ${value}`);
+                            }
+
+                            // Trigger freebie update
+                            setTimeout(() => {
+                                updateFreebieRowFromMain(row[0]);
+                            }, 50);
+                        }
+                    });
+
+                    // ALSO listen to the Order Calculation System's changes
+                    $(document).on('DOMSubtreeModified', 'td[data-field="qty_per_cs"], td[data-field="scheme"]', function(e) {
+                        if (typeof IS_LOCKED !== 'undefined' && IS_LOCKED) return;
+
+                        const cell = $(this);
+                        const row = cell.closest("tr");
+                        const index = row.data("index");
+
+                        if (index === undefined) return;
+
+                        const itemTypeInput = row[0].querySelector(`input[name="items[${index}][item_type]"]`);
+                        const itemType = itemTypeInput?.value || "MAIN";
+
+                        if (itemType === "MAIN") {
+                            updateFreebieRowFromMain(row[0]);
+                        }
+                    });
+                }
+
+                function updateFreebieRowFromMain(mainRow) {
+                    const mainIndex = $(mainRow).data("index");
+                    if (mainIndex === undefined) {
+                        console.error('❌ Main row has no index');
+                        return;
+                    }
+
+                    console.log(`\n📦 Processing MAIN row index: ${mainIndex}`);
+
+                    // Get MAIN item values - try both from cell and hidden input
+                    const schemeCell = mainRow.querySelector(`td[data-field="scheme"]`);
+                    const qtyPerCsCell = mainRow.querySelector(`td[data-field="qty_per_cs"]`);
+
+                    const schemeInput = mainRow.querySelector(`input[name="items[${mainIndex}][scheme]"]`);
+                    const qtyPerCsInput = mainRow.querySelector(`input[name="items[${mainIndex}][qty_per_cs]"]`);
+
+                    // Get values from cell text, fallback to hidden input
+                    let schemeValue = schemeCell?.textContent.trim() || schemeInput?.value || "1+0";
+                    let qtyPerCsText = qtyPerCsCell?.textContent.trim() || qtyPerCsInput?.value || "0";
+
+                    // Handle "-" or "N/A"
+                    if (qtyPerCsText === '-' || qtyPerCsText === 'N/A') qtyPerCsText = '0';
+
+                    const qtyPerCsValue = parseInt(qtyPerCsText);
+
+                    console.log(`   Scheme: ${schemeValue}`);
+                    console.log(`   Qty/CS: ${qtyPerCsValue}`);
+
+                    // Calculate freebies
+                    const freebieCount = calculateFreebies(schemeValue, qtyPerCsValue);
+
+                    console.log(`   💎 Calculated Freebies: ${freebieCount}`);
+
+                    // Find the next FREEBIE row
+                    let nextRow = mainRow.nextElementSibling;
+
+                    if (!nextRow) {
+                        console.warn('⚠️ No next row found after MAIN row');
+                        return;
+                    }
+
+                    const nextIndex = $(nextRow).data("index");
+                    if (nextIndex === undefined) {
+                        console.error('❌ Next row has no index');
+                        return;
+                    }
+
+                    const nextItemTypeInput = nextRow.querySelector(`input[name="items[${nextIndex}][item_type]"]`);
+                    const nextItemType = nextItemTypeInput?.value || "MAIN";
+
+                    console.log(`   Next row index: ${nextIndex}, Type: ${nextItemType}`);
+
+                    if (nextItemType === "FREEBIE") {
+                        console.log(`   ✅ Found FREEBIE row, updating...`);
+
+                        // 1. Update freebies_per_cs hidden input
+                        const freebiesInput = nextRow.querySelector(`input[name="items[${nextIndex}][freebies_per_cs]"]`);
+                        if (freebiesInput) {
+                            const oldValue = freebiesInput.value;
+                            freebiesInput.value = freebieCount;
+                            console.log(`      freebies_per_cs input: ${oldValue} → ${freebieCount}`);
+                        } else {
+                            console.error('      ❌ freebies_per_cs input not found!');
+                        }
+
+                        // 2. Update freebies_per_cs cell display
+                        const freebiesCell = nextRow.querySelector('[data-field="freebies_per_cs"]');
+                        if (freebiesCell) {
+                            const oldText = freebiesCell.textContent;
+                            freebiesCell.textContent = freebieCount > 0 ? freebieCount : "-";
+                            console.log(`      freebies_per_cs cell: ${oldText} → ${freebiesCell.textContent}`);
+
+                            // Mark as changed
+                            if (typeof checkElementChange === 'function') {
+                                checkElementChange(freebiesCell);
+                            }
+                        } else {
+                            console.error('      ❌ freebies_per_cs cell not found!');
+                        }
+
+                        // 3. ✅ UPDATE TOTAL_QTY instead of qty_per_cs
+                        const totalQtyInput = nextRow.querySelector(`input[name="items[${nextIndex}][total_qty]"]`);
+                        if (totalQtyInput) {
+                            const oldValue = totalQtyInput.value;
+                            totalQtyInput.value = freebieCount;
+                            console.log(`      total_qty input: ${oldValue} → ${freebieCount}`);
+                        } else {
+                            console.error('      ❌ total_qty input not found!');
+                        }
+
+                        // 4. ✅ UPDATE TOTAL_QTY cell display
+                        const totalQtyCell = nextRow.querySelector('[data-field="total_qty"]');
+                        if (totalQtyCell) {
+                            const oldText = totalQtyCell.textContent;
+                            totalQtyCell.textContent = freebieCount;
+                            console.log(`      total_qty cell: ${oldText} → ${freebieCount}`);
+
+                            // Mark as changed
+                            if (typeof checkElementChange === 'function') {
+                                checkElementChange(totalQtyCell);
+                            }
+                        } else {
+                            console.error('      ❌ total_qty cell not found!');
+                        }
+
+                        // 5. Keep qty_per_cs as "N/A" for FREEBIE items (don't update it)
+                        console.log(`      ℹ️ Leaving qty_per_cs as "N/A" for FREEBIE item`);
+
+                        // 6. Recalculate row totals
+                        if (typeof window.orderCalcSystem !== 'undefined' && window.orderCalcSystem.calculateRowTotals) {
+                            console.log(`      🧮 Recalculating FREEBIE row amounts...`);
+                            window.orderCalcSystem.calculateRowTotals(nextRow);
+                        }
+
+                        // 7. Update order total
+                        setTimeout(() => {
+                            if (typeof updateOrderTotal === 'function') {
+                                updateOrderTotal();
+                                console.log(`      💰 Order total updated`);
+                            }
+                        }, 50);
+
+                        console.log(`   ✅ FREEBIE row update complete\n`);
+                    } else {
+                        console.warn(`   ⚠️ Next row is NOT a FREEBIE (it's ${nextItemType})\n`);
+                    }
+                }
+
+                function calculateFreebies(scheme, qty) {
+                    if (!scheme || qty <= 0) {
+                        console.log(`   ⚠️ Invalid input: scheme="${scheme}", qty=${qty}`);
+                        return 0;
+                    }
+
+                    // Parse scheme like "15+1"
+                    const match = scheme.toString().match(/(\d+)\+(\d+)/);
+                    if (!match) {
+                        console.log(`   ⚠️ Scheme "${scheme}" doesn't match pattern X+Y`);
+                        return 0;
+                    }
+
+                    const mainRatio = parseInt(match[1]); // 15
+                    const freebieRatio = parseInt(match[2]); // 1
+
+                    if (mainRatio <= 0) {
+                        console.log(`   ⚠️ Invalid mainRatio: ${mainRatio}`);
+                        return 0;
+                    }
+
+                    // Calculate: floor(35 / 15) * 1 = floor(2.33) * 1 = 2 * 1 = 2
+                    const result = Math.floor(qty / mainRatio) * freebieRatio;
+
+                    console.log(`   📊 Formula: floor(${qty} / ${mainRatio}) × ${freebieRatio} = ${result}`);
+
+                    return result;
+                }
+
+                // Initialize on page load
+                $(document).ready(function() {
+                    console.log('📅 Document ready - initializing freebie calculator');
+
+                    if (!IS_LOCKED) {
+                        initializeFreebieCalculator();
+
+                        // Initialize all freebies after a delay
+                        setTimeout(() => {
+                            console.log('🔄 Running initial freebie calculation for all MAIN rows...');
+                            $('tbody tr[data-index]').each(function() {
+                                const index = $(this).data("index");
+                                const itemTypeInput = this.querySelector(`input[name="items[${index}][item_type]"]`);
+                                const itemType = itemTypeInput?.value || "MAIN";
+
+                                if (itemType === "MAIN") {
+                                    updateFreebieRowFromMain(this);
+                                }
+                            });
+                            console.log('✅ Initial freebie calculation complete\n');
+                        }, 300);
+                    } else {
+                        console.log('🔒 Order is locked - skipping freebie calculator');
+                    }
+                });
                 // ========================================
                 // INITIALIZE ORDER CALCULATOR
                 // ========================================
@@ -2062,6 +2311,72 @@
                     });
                 }
 
+
+                function syncAllHiddenInputs() {
+                    console.log('🔄 Syncing all contenteditable cells to hidden inputs...');
+
+                    $("tbody tr[data-index]").each(function() {
+                        const row = $(this);
+                        const index = row.data('index');
+
+                        if (index === undefined) return;
+
+                        // List of fields to sync
+                        const fieldsToSync = [
+                            'sku',
+                            'item_description',
+                            'scheme',
+                            'price_per_pc',
+                            'price',
+                            'discount',
+                            'qty_per_pc',
+                            'qty_per_cs',
+                            'freebies_per_cs',
+                            'total_qty',
+                            'amount',
+                            'store_order_no'
+                        ];
+
+                        fieldsToSync.forEach(field => {
+                            const cell = row.find(`[data-field="${field}"]`);
+                            // Look for hidden input both inside the cell AND as a sibling
+                            let hiddenInput = cell.find(`input[name="items[${index}][${field}]"]`);
+                            if (!hiddenInput.length) {
+                                hiddenInput = row.find(`input[name="items[${index}][${field}]"]`);
+                            }
+
+                            if (cell.length) {
+                                // If hidden input doesn't exist, create it
+                                if (!hiddenInput.length) {
+                                    console.warn(`⚠️ Hidden input not found for ${field}[${index}], creating it...`);
+                                    hiddenInput = $(`<input type="hidden" name="items[${index}][${field}]" />`);
+                                    cell.append(hiddenInput);
+                                }
+
+                                // Get text content, excluding any child elements (like the hidden input)
+                                let value = cell.clone().children().remove().end().text().trim();
+
+                                // Handle special cases
+                                if (value === '-' || value === 'N/A') {
+                                    value = '0';
+                                }
+
+                                // Remove formatting from numbers
+                                if (['price_per_pc', 'price', 'amount'].includes(field)) {
+                                    value = value.replace(/[₱,\s]/g, '');
+                                }
+
+                                hiddenInput.val(value);
+                                console.log(`✓ Synced ${field}[${index}]: "${value}"`);
+                            } else {
+                                console.error(`❌ Cell not found for ${field}[${index}]`);
+                            }
+                        });
+                    });
+
+                    console.log('✅ All hidden inputs synced');
+                }
+
                 // ========================================
                 // FORM SUBMISSION
                 // ========================================
@@ -2072,6 +2387,18 @@
                         e.preventDefault();
                         alert('No changes detected to save.');
                         return false;
+                    }
+
+                    // CRITICAL: Sync all contenteditable values to hidden inputs
+                    syncAllHiddenInputs();
+
+                    // Log all form data for debugging
+                    console.log('📝 Form data being submitted:');
+                    const formData = new FormData(this);
+                    for (let pair of formData.entries()) {
+                        if (pair[0].includes('items[')) {
+                            console.log(pair[0] + ': ' + pair[1]);
+                        }
                     }
 
                     window.onbeforeunload = null;
@@ -2085,6 +2412,38 @@
 
                     return true;
                 });
+                // Add this temporarily right before your form submit handler
+                // $('form').on('submit', function(e) {
+                //     e.preventDefault(); // Prevent actual submission temporarily
+
+                //     console.log('=== FORM VALIDATION CHECK ===');
+                //     const itemsData = {};
+
+                //     $("tbody tr[data-index]").each(function() {
+                //         const row = $(this);
+                //         const index = row.data('index');
+
+                //         itemsData[index] = {
+                //             price: row.find(`input[name="items[${index}][price]"]`).val(),
+                //             price_per_pc: row.find(`input[name="items[${index}][price_per_pc]"]`).val(),
+                //             amount: row.find(`input[name="items[${index}][amount]"]`).val(),
+                //             sku: row.find(`input[name="items[${index}][sku]"]`).val(),
+                //             freebies_per_cs: row.find(`input[name="items[${index}][freebies_per_cs]"]`).val(),
+                //         };
+                //     });
+
+                //     console.table(itemsData);
+
+                //     // Check for missing required fields
+                //     Object.keys(itemsData).forEach(index => {
+                //         const item = itemsData[index];
+                //         if (!item.price) console.error(`❌ Item ${index} missing PRICE!`);
+                //         if (!item.price_per_pc) console.error(`❌ Item ${index} missing PRICE_PER_PC!`);
+                //         if (!item.sku) console.error(`❌ Item ${index} missing SKU!`);
+                //     });
+
+                //     // Remove this e.preventDefault() once you verify data is correct
+                // });
 
                 // ========================================
                 // RESET AFTER SUCCESSFUL SUBMISSION

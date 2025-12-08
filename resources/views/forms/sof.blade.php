@@ -2031,6 +2031,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             // === Reset fields based on type ===
             if (isFreebie) {
                 // ONLY reset Freebie Price/PC and Freebie QTY/PC
+                row.find('.freebie-sku-hidden').val('');
+                row.find('.freebie-desc-hidden').val('');
                 row.find('[name*="[freebie_price_per_pc]"]').val('');
                 row.find('[name*="[freebie_qty_per_pc]"]').val('');
             } else {
@@ -2044,10 +2046,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             }
 
             if (isFreebie) {
-                // ✅ FREEBIE item
-                setValue(searchInput, `${sku} - ${description}`, true);
-                setValue(row.find('[name*="[freebie_sku]"]'), sku);
-                setValue(row.find('[name*="[freebie_description]"]'), description);
+                // ✅ FREEBIE item - Force update the visible input
+                searchInput.val(`${sku} - ${description}`);
+                row.find('[name*="[freebie_sku]"]').val(sku);
+                row.find('[name*="[freebie_description]"]').val(description);
                 setValue(row.find('[name*="[freebie_price_per_pc]"]'), pricePerPc);
                 setValue(row.find('[name*="[freebie_qty_per_pc]"]'), casePack);
 
