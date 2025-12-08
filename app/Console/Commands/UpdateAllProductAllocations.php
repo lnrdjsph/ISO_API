@@ -170,13 +170,25 @@ class UpdateAllProductAllocations extends Command
             // Test Oracle connection first
             try {
                 $this->log($logFile, "Testing Oracle connection...");
+                $this->log($logFile, "Oracle Config: " . config('database.connections.oracle_wms.host'));
+                
                 $testStart = microtime(true);
-                DB::connection('oracle_wms')->select("SELECT 1 FROM DUAL");
+                
+                // Try to get PDO connection first
+                $pdo = DB::connection('oracle_wms')->getPdo();
+                $this->log($logFile, "PDO connection established");
+                
+                // Then test query
+                $result = DB::connection('oracle_wms')->select("SELECT 1 FROM DUAL");
+                
                 $testEnd = microtime(true);
                 $testDuration = round(($testEnd - $testStart) * 1000, 2);
                 $this->log($logFile, "Oracle connection successful (response time: {$testDuration}ms)");
             } catch (\Exception $e) {
                 $this->log($logFile, "ERROR: Oracle connection failed - " . $e->getMessage());
+                $this->log($logFile, "Error type: " . get_class($e));
+                $this->log($logFile, "Error code: " . $e->getCode());
+                $this->log($logFile, "Stack trace: " . $e->getTraceAsString());
                 $this->log($logFile, "Skipping warehouse {$warehouseCode}");
                 continue;
             }
