@@ -18,24 +18,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('products:update-allocations')->dailyAt('06:00');
         $schedule->command('products:update-allocations')->dailyAt('08:05');
         $schedule->command('products:update-allocations')->dailyAt('08:35');
-        $schedule   ->command('products:update-allocations')
-                    ->dailyAt('08:55')
-                    ->runInBackground();
-
-        $schedule->command('products:update-allocations')
-            ->dailyAt('09:55')
-            ->timeout(3600)              // ⭐ ADD THIS
-            ->runInBackground();
-
+        $schedule->command('products:update-allocations')->dailyAt('08:55');
         $schedule->command('products:update-allocations')->dailyAt('10:00');
+        $schedule->command('products:update-allocations')->dailyAt('10:05');
         $schedule->command('products:update-allocations')->dailyAt('12:00');
         $schedule->command('products:update-allocations')->dailyAt('16:20');
-
-        $schedule->command('products:update-allocations')
-            ->cron('0 10 * * *')      // 1:35 PM
-            ;
     }
-
 
     /**
      * Register the commands for the application.
