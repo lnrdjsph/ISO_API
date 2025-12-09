@@ -1395,7 +1395,7 @@ protected function getWmsCacheKeys(string $warehouseCode): array
 public function wmsUpdate(Request $request)
 {
     // Force execution time limit
-    set_time_limit(25); // 25 seconds (before nginx 30s timeout)
+    // set_time_limit(25); // 25 seconds (before nginx 30s timeout)
     
     $user = auth()->user();
     $userLocation = $user->user_location ?? null;
@@ -1595,7 +1595,7 @@ protected function dispatchAllocationJobsBatch(string $tableName, string $facili
 public function wmsStatus(Request $request)
 {
     // Force execution time limit
-    set_time_limit(15); // 15 seconds for status checks
+    // set_time_limit(15); // 15 seconds for status checks
     
     $user = auth()->user();
     $userLocation = $user && $user->user_location 
