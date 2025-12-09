@@ -22,11 +22,12 @@ class Kernel extends ConsoleKernel
                     ->dailyAt('08:55')
                     ->withoutOverlapping(180)
                     ->runInBackground();
-                    
-        $schedule   ->command('products:update-allocations')
-                    ->dailyAt('09:05')
-                    ->withoutOverlapping(180)
-                    ->runInBackground();
+
+        $schedule->command('products:update-allocations')
+            ->dailyAt('09:35')
+            ->withoutOverlapping(7200)
+            ->timeout(3600)              // ⭐ ADD THIS
+            ->runInBackground();
 
         $schedule->command('products:update-allocations')->dailyAt('10:00');
         $schedule->command('products:update-allocations')->dailyAt('12:00');
