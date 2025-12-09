@@ -24,7 +24,7 @@ class Kernel extends ConsoleKernel
                     ->runInBackground();
 
         $schedule->command('products:update-allocations')
-            ->dailyAt('09:35')
+            ->dailyAt('09:40')
             ->withoutOverlapping(7200)
             ->timeout(3600)              // ⭐ ADD THIS
             ->runInBackground();
