@@ -6,6 +6,7 @@ use App\Jobs\FetchAllocationJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use PDO;
 
 class UpdateAllProductAllocations extends Command
 {
@@ -30,9 +31,12 @@ class UpdateAllProductAllocations extends Command
 
     public function handle()
     {
+        // CRITICAL: Prevent script timeout and set network timeouts
         set_time_limit(0);
-        ini_set('max_execution_time', 0);
-        ini_set('memory_limit', '512M'); 
+        ini_set('max_execution_time', '0');
+        ini_set('memory_limit', '512M');
+        ini_set('default_socket_timeout', '120');  // 2 minutes for network operations
+        
         $startTime = microtime(true);
         $phNow = now()->timezone('Asia/Manila');
         $date = $phNow->format('Y-m-d');
@@ -46,6 +50,9 @@ class UpdateAllProductAllocations extends Command
         $logFile = "{$logDir}/allocations_{$hour}.log";
 
         $this->log($logFile, "=== Starting allocation update ===");
+        $this->log($logFile, "PHP max_execution_time: " . ini_get('max_execution_time'));
+        $this->log($logFile, "PHP default_socket_timeout: " . ini_get('default_socket_timeout'));
+        $this->log($logFile, "Memory limit: " . ini_get('memory_limit'));
 
         // Check if async mode is enabled
         $asyncMode = $this->option('async');
@@ -170,28 +177,45 @@ class UpdateAllProductAllocations extends Command
 
             $this->log($logFile, "Total unique SKUs collected: " . count($allSkus));
 
+    
             // Test Oracle connection first
             try {
                 $this->log($logFile, "Testing Oracle connection...");
-                $this->log($logFile, "Oracle Config: " . config('database.connections.oracle_wms.host'));
+                $this->log($logFile, "Oracle Host: " . config('database.connections.oracle_wms.host'));
+                $this->log($logFile, "Oracle Database: " . config('database.connections.oracle_wms.database'));
                 
                 $testStart = microtime(true);
                 
-                // Try to get PDO connection first
-                $pdo = DB::connection('oracle_wms')->getPdo();
-                $this->log($logFile, "PDO connection established");
+                // Get connection and set timeout at runtime (belt and suspenders approach)
+                $connection = DB::connection('oracle_wms');
                 
-                // Then test query
-                $result = DB::connection('oracle_wms')->select("SELECT 1 FROM DUAL");
+                try {
+                    $pdo = $connection->getPdo();
+                    $pdo->setAttribute(PDO::ATTR_TIMEOUT, 60);
+                    $this->log($logFile, "PDO connection established, timeout set to 60s");
+                } catch (\Exception $e) {
+                    $this->log($logFile, "Could not set PDO timeout: " . $e->getMessage());
+                }
+                
+                // Test with a simple query
+                $this->log($logFile, "Executing test query...");
+                $result = $connection->select("SELECT 1 AS test FROM DUAL");
                 
                 $testEnd = microtime(true);
                 $testDuration = round(($testEnd - $testStart) * 1000, 2);
                 $this->log($logFile, "Oracle connection successful (response time: {$testDuration}ms)");
+                $this->log($logFile, "Proceeding to query allocations...");
+                
+            } catch (\PDOException $e) {
+                $this->log($logFile, "ERROR: Oracle PDO Exception - " . $e->getMessage());
+                $this->log($logFile, "PDO Error Code: " . $e->getCode());
+                $this->log($logFile, "This usually indicates a network timeout or connection issue");
+                $this->log($logFile, "Skipping warehouse {$warehouseCode}");
+                continue;
             } catch (\Exception $e) {
                 $this->log($logFile, "ERROR: Oracle connection failed - " . $e->getMessage());
-                $this->log($logFile, "Error type: " . get_class($e));
-                $this->log($logFile, "Error code: " . $e->getCode());
-                $this->log($logFile, "Stack trace: " . $e->getTraceAsString());
+                $this->log($logFile, "Error Type: " . get_class($e));
+                $this->log($logFile, "Error Code: " . $e->getCode());
                 $this->log($logFile, "Skipping warehouse {$warehouseCode}");
                 continue;
             }
