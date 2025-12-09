@@ -34,9 +34,10 @@ class UpdateAllProductAllocations extends Command
 
     public function handle()
     {
-        // CRITICAL: Force unbuffered output for cron compatibility
-        if (ob_get_level()) ob_end_flush();
-        ob_implicit_flush(true);
+        // CRITICAL: Disable ALL output buffering immediately
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
         
         // CRITICAL: Prevent script timeout and set network timeouts
         set_time_limit(0);
@@ -108,7 +109,7 @@ class UpdateAllProductAllocations extends Command
         $message .= str_repeat("=", 80) . "\n";
         
         if ($this->logFile) {
-            error_log($message, 3, $this->logFile);
+            file_put_contents($this->logFile, $message, FILE_APPEND | LOCK_EX);
         }
     }
 
@@ -228,12 +229,30 @@ class UpdateAllProductAllocations extends Command
                 $this->log("Testing Oracle connection...");
                 $this->log("Oracle Host: " . config('database.connections.oracle_wms.host'));
                 $this->log("Oracle Database: " . config('database.connections.oracle_wms.database'));
+                $this->log("Oracle Port: " . config('database.connections.oracle_wms.port'));
+                $this->log("Oracle Username: " . config('database.connections.oracle_wms.username'));
+                
+                // Check if oci8 extension is loaded
+                $this->log("Checking PHP OCI8 extension...");
+                if (!extension_loaded('oci8')) {
+                    throw new \Exception("OCI8 extension not loaded");
+                }
+                $this->log("OCI8 extension is loaded");
+                
+                // Check environment variables
+                $this->log("Environment check:");
+                $this->log("→ ORACLE_HOME: " . (getenv('ORACLE_HOME') ?: 'NOT SET'));
+                $this->log("→ LD_LIBRARY_PATH: " . (getenv('LD_LIBRARY_PATH') ?: 'NOT SET'));
+                $this->log("→ NLS_LANG: " . (getenv('NLS_LANG') ?: 'NOT SET'));
                 
                 $testStart = microtime(true);
                 
                 // CRITICAL: Reconnect to ensure fresh connection in cron context
+                $this->log("Purging existing Oracle connection...");
                 DB::purge('oracle_wms');
+                $this->log("Getting new Oracle connection...");
                 $connection = DB::connection('oracle_wms');
+                $this->log("Connection object created");
                 
                 try {
                     $this->log("Attempting to get PDO connection...");
@@ -515,20 +534,20 @@ class UpdateAllProductAllocations extends Command
     }
 
     /**
-     * Log with timestamp - uses error_log for immediate write
+     * Log with timestamp - uses file_put_contents with LOCK_EX for immediate write
      */
     private function log(string $message)
     {
         $timestamp = now()->format('Y-m-d H:i:s');
-        $logMessage = "[{$timestamp}] {$message}";
+        $logMessage = "[{$timestamp}] {$message}\n";
         
-        // Write to file immediately
+        // Write to file immediately with exclusive lock
         if ($this->logFile) {
-            error_log($logMessage . "\n", 3, $this->logFile);
+            file_put_contents($this->logFile, $logMessage, FILE_APPEND | LOCK_EX);
         }
         
         // Output to console
-        $this->info($logMessage);
+        $this->info($message);
     }
 
     /**
@@ -537,7 +556,7 @@ class UpdateAllProductAllocations extends Command
     private function logRaw(string $message)
     {
         if ($this->logFile) {
-            error_log($message . "\n", 3, $this->logFile);
+            file_put_contents($this->logFile, $message . "\n", FILE_APPEND | LOCK_EX);
         }
         
         $this->line($message);
