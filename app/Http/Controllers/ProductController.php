@@ -118,10 +118,7 @@ public function index(Request $request)
         if ($search) {
             $productsQuery->where(function($q) use ($search, $tableName) {
                 $q->whereRaw("LOWER($tableName.description) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER($tableName.sku) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER($tableName.department) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER($tableName.department_code) LIKE ?", ["%{$search}%"]);
-                  
+                  ->orWhereRaw("LOWER($tableName.sku) LIKE ?", ["%{$search}%"]);
 
                 if (preg_match('/^[a-zA-Z0-9\-]+$/', $search)) {
                     $q->orWhereRaw("LOWER($tableName.sku) = ?", [$search]);
@@ -582,15 +579,15 @@ public function search(Request $request)
                 ->select(
                     'sku',
                     'description',
-                    'department_code',
-                    'department',
                     'allocation_per_case',
                     'case_pack',
                     'srp',
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'discount_scheme',
-                    'freebie_sku'
+                    'freebie_sku',
+                    'department_code',
+                    'department'
                 )
                 ->whereNull('archived_at'); // keep consistent with your index()
 
@@ -623,9 +620,9 @@ public function search(Request $request)
 
                 // CSV header
                 fputcsv($handle, [
-                    'SKU', 'Description','Sub-Department Code', 'Sub-Department Name', 'Allocation per Case', 'Case Pack', 'SRP',
+                    'SKU', 'Description', 'Allocation per Case', 'Case Pack', 'SRP',
                      'Cash/Bank/Card Scheme',
-                    'PO15 Scheme', 'Discount Scheme', 'Freebie SKU'
+                    'PO15 Scheme', 'Discount Scheme', 'Freebie SKU','Sub-Department Code', 'Sub-Department Name'
                 ]);
 
                 // Rows
@@ -636,15 +633,15 @@ public function search(Request $request)
                     fputcsv($handle, [
                         $row['sku'] ?? '',
                         $row['description'] ?? '',
-                        $row['department_code'] ?? '',
-                        $row['department'] ?? '',
                         $row['allocation_per_case'] ?? '',
                         $row['case_pack'] ?? '',
                         $row['srp'] ?? '',
                         $row['cash_bank_card_scheme'] ?? '',
                         $row['po15_scheme'] ?? '',
                         $row['discount_scheme'] ?? '',
-                        $row['freebie_sku'] ?? ''
+                        $row['freebie_sku'] ?? '',
+                        $row['department_code'] ?? '',
+                        $row['department'] ?? ''
                     ]);
                 }
 
@@ -1013,188 +1010,194 @@ public function search(Request $request)
     }
 
         
-    public function import(Request $request)
-    {
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:2048'
-        ]);
+public function import(Request $request)
+{
+    $request->validate([
+        'csv_file' => 'required|file|mimes:csv,txt|max:2048'
+    ]);
 
-        try {
-            $userLocation = strtolower(auth()->user()->user_location);
-            $tableName = "products_{$userLocation}";
+    try {
+        $userLocation = strtolower(auth()->user()->user_location);
+        $tableName = "products_{$userLocation}";
 
-            $file = $request->file('csv_file');
-            $csvContent = file_get_contents($file->getRealPath());
+        $file = $request->file('csv_file');
+        $csvContent = file_get_contents($file->getRealPath());
 
-            // Split CSV lines and remove empty rows
-            $lines = array_filter(
-                preg_split('/\r\n|\r|\n/', trim($csvContent)),
-                fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
-            );
+        // Split CSV lines and remove empty rows
+        $lines = array_filter(
+            preg_split('/\r\n|\r|\n/', trim($csvContent)),
+            fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
+        );
 
-            if (count($lines) < 2) {
-                return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
+        if (count($lines) < 2) {
+            return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
+        }
+
+        $dataLines = array_slice($lines, 1);
+        $errors = [];
+        $insertData = [];
+        $updateData = [];
+
+        // Get existing SKUs and case_pack
+        $existingProducts = DB::table($tableName)
+            ->select('sku', 'case_pack')
+            ->get()
+            ->keyBy(fn($row) => strtoupper($row->sku));
+
+        $seenCsvSkus = [];
+
+        foreach ($dataLines as $lineNumber => $line) {
+            $rowNumber = $lineNumber + 2;
+            $columns = str_getcsv(trim($line));
+
+            if (count($columns) < 9) {
+                $errors[] = "Row {$rowNumber}: Missing required columns.";
+                continue;
             }
 
-            $dataLines = array_slice($lines, 1);
-            $errors = [];
-            $insertData = [];
-            $updateData = [];
+            [$sku, $description, $allocationPerCase, $casePackRaw, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
+                array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
 
-            // Get existing SKUs and case_pack
-            $existingProducts = DB::table($tableName)
-                ->select('sku', 'case_pack')
-                ->get()
-                ->keyBy(fn($row) => strtoupper($row->sku));
+            $formattedSku = strtoupper($sku);
 
-            $seenCsvSkus = [];
+            // --- VALIDATIONS (same as your version, trimmed for brevity) ---
+            if (!$sku || !preg_match('/^\d+$/', $sku)) {
+                $errors[] = "Row {$rowNumber}: SKU must be numeric and not empty.";
+                continue;
+            }
 
-            foreach ($dataLines as $lineNumber => $line) {
-                $rowNumber = $lineNumber + 2;
-                $columns = str_getcsv(trim($line));
+            if (in_array($formattedSku, $seenCsvSkus)) {
+                $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
+                continue;
+            }
 
-                if (count($columns) < 9) {
-                    $errors[] = "Row {$rowNumber}: Missing required columns.";
-                    continue;
-                }
+            $seenCsvSkus[] = $formattedSku;
 
-                [$sku, $description, $allocationPerCase, $casePackRaw, $srpRaw, $cashBankCardScheme, $po15Scheme, $discountScheme, $freebieSkuRaw] =
-                    array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
+            if (!$description) {
+                $errors[] = "Row {$rowNumber}: Product Description is required.";
+                continue;
+            }
 
-                $formattedSku = strtoupper($sku);
+            if ($allocationPerCase === '' || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
+                $errors[] = "Row {$rowNumber}: Store Allocation must be a number greater than 0.";
+                continue;
+            }
 
-                // --- VALIDATIONS (same as your version, trimmed for brevity) ---
-                if (!$sku || !preg_match('/^\d+$/', $sku)) {
-                    $errors[] = "Row {$rowNumber}: SKU must be numeric and not empty.";
-                    continue;
-                }
-
-                if (in_array($formattedSku, $seenCsvSkus)) {
-                    $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' found in CSV.";
-                    continue;
-                }
-
-                $seenCsvSkus[] = $formattedSku;
-
-                if (!$description) {
-                    $errors[] = "Row {$rowNumber}: Product Description is required.";
-                    continue;
-                }
-
-                if ($allocationPerCase === '' || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
-                    $errors[] = "Row {$rowNumber}: Store Allocation must be a number greater than 0.";
-                    continue;
-                }
-
-                // Case Pack merge
-                $casePackNumbers = [];
-                if ($casePackRaw !== '') {
-                    $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
-                    foreach ($casePackNumbers as $num) {
-                        if (!is_numeric($num) || $num <= 0) {
-                            $errors[] = "Row {$rowNumber}: Invalid Case Pack value '{$num}'.";
-                            continue 2;
-                        }
+            // Case Pack merge
+            $casePackNumbers = [];
+            if ($casePackRaw !== '') {
+                $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
+                foreach ($casePackNumbers as $num) {
+                    if (!is_numeric($num) || $num <= 0) {
+                        $errors[] = "Row {$rowNumber}: Invalid Case Pack value '{$num}'.";
+                        continue 2;
                     }
                 }
-
-                if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
-                    $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
-                    $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
-                    $casePack = implode(' | ', $allNumbers);
-                } else {
-                    $casePack = implode(' | ', $casePackNumbers);
-                }
-
-                // SRP validation
-                $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-                if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be numeric and greater than 0.";
-                    continue;
-                }
-
-                // Scheme & freebie validation (same)
-                if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
-                    $errors[] = "Row {$rowNumber}: CBC Scheme must be in 'number+number' format.";
-                    continue;
-                }
-
-                if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
-                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format.";
-                    continue;
-                }
-
-                if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
-                    $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
-                    continue;
-                }
-
-                $freebieSku = trim($freebieSkuRaw);
-                if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
-                    $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/', '|', or spaces.";
-                    continue;
-                }
-
-                // ✅ Get department CODE and NAME from Oracle
-                $oracleData = DB::connection('oracle_rms')->selectOne("
-                    SELECT 
-                        item_master.dept AS department_code,
-                        deps.dept_name AS department_name
-                    FROM item_master
-                    LEFT JOIN deps ON deps.dept = item_master.dept
-                    WHERE item_master.item_parent = ?
-                    AND ROWNUM = 1
-                ", [$sku]);
-
-                // Build record
-                $record = [
-                    'sku' => $formattedSku,
-                    'description' => $description,
-                    'department_code' => $oracleData->department_code ?? null, // ✅ save department code
-                    'department' => $oracleData->department_name ?? null,       // ✅ save department name
-                    'allocation_per_case' => intval($allocationPerCase),
-                    'case_pack' => $casePack !== '' ? $casePack : null,
-                    'srp' => floatval($srp),
-                    'cash_bank_card_scheme' => $cashBankCardScheme,
-                    'po15_scheme' => $po15Scheme,
-                    'discount_scheme' => $discountScheme,
-                    'freebie_sku' => $freebieSku,
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ];
-
-                if (isset($existingProducts[$formattedSku])) {
-                    $updateData[] = $record;
-                } else {
-                    $insertData[] = $record;
-                }
             }
 
-            // ✅ Upsert all valid data
-            $allData = array_merge($insertData, $updateData);
-            if (!empty($allData)) {
-                DB::table($tableName)->upsert($allData, ['sku'], [
-                    'description',
-                    'department_code',
-                    'department',
-                    'allocation_per_case',
-                    'case_pack',
-                    'srp',
-                    'cash_bank_card_scheme',
-                    'po15_scheme',
-                    'discount_scheme',
-                    'freebie_sku',
-                    'updated_at'
-                ]);
+            if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
+                $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
+                $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
+                $casePack = implode(' | ', $allNumbers);
+            } else {
+                $casePack = implode(' | ', $casePackNumbers);
             }
 
-            $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
-            return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
+            // SRP validation
+            $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
+            if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
+                $errors[] = "Row {$rowNumber}: SRP must be numeric and greater than 0.";
+                continue;
+            }
 
-        } catch (\Exception $e) {
-            return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
+            // Scheme & freebie validation (same)
+            if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
+                $errors[] = "Row {$rowNumber}: CBC Scheme must be in 'number+number' format.";
+                continue;
+            }
+
+            if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
+                $errors[] = "Row {$rowNumber}: PO15 Scheme must be in 'number+number' format.";
+                continue;
+            }
+
+            if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
+                $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
+                continue;
+            }
+
+            $freebieSku = trim($freebieSkuRaw);
+            if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
+                $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric or multiple separated by '/', '|', or spaces.";
+                continue;
+            }
+
+            // ✅ Get department CODE and NAME from Oracle
+            $oracleData = DB::connection('oracle_rms')->selectOne("
+                SELECT 
+                    item_master.dept AS department_code,
+                    deps.dept_name AS department_name
+                FROM item_master
+                LEFT JOIN deps ON deps.dept = item_master.dept
+                WHERE item_master.item_parent = ?
+                AND ROWNUM = 1
+            ", [$sku]);
+
+            // Build record
+            $record = [
+                'sku' => $formattedSku,
+                'description' => $description,
+                'department_code' => $oracleData->department_code ?? null, // ✅ save department code
+                'department' => $oracleData->department_name ?? null,       // ✅ save department name
+                'allocation_per_case' => intval($allocationPerCase),
+                'case_pack' => $casePack !== '' ? $casePack : null,
+                'srp' => floatval($srp),
+                'cash_bank_card_scheme' => $cashBankCardScheme,
+                'po15_scheme' => $po15Scheme,
+                'discount_scheme' => $discountScheme,
+                'freebie_sku' => $freebieSku,
+                'archived_at' => null,  // ✅ Clear archive fields
+                'archived_by' => null,  // ✅ Clear archive fields
+                'archive_reason' => null, // ✅ Clear archive fields
+                'updated_at' => now(),
+                'created_at' => now(),
+            ];
+
+            if (isset($existingProducts[$formattedSku])) {
+                $updateData[] = $record;
+            } else {
+                $insertData[] = $record;
+            }
         }
+
+        // ✅ Upsert all valid data
+        $allData = array_merge($insertData, $updateData);
+        if (!empty($allData)) {
+            DB::table($tableName)->upsert($allData, ['sku'], [
+                'description',
+                'department_code',
+                'department',
+                'allocation_per_case',
+                'case_pack',
+                'srp',
+                'cash_bank_card_scheme',
+                'po15_scheme',
+                'discount_scheme',
+                'freebie_sku',
+                'archived_at',      // ✅ Include in update
+                'archived_by',      // ✅ Include in update
+                'archive_reason',  // ✅ Include in update
+                'updated_at'
+            ]);
+        }
+
+        $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
+        return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
     }
+}
 
 
 
@@ -1389,14 +1392,8 @@ protected function getWmsCacheKeys(string $warehouseCode): array
 /**
  * Update WMS allocations
  */
-/**
- * Update WMS allocations - Optimized to prevent timeouts
- */
 public function wmsUpdate(Request $request)
 {
-    // Force execution time limit
-    // set_time_limit(25); // 25 seconds (before nginx 30s timeout)
-    
     $user = auth()->user();
     $userLocation = $user->user_location ?? null;
 
@@ -1416,8 +1413,12 @@ public function wmsUpdate(Request $request)
     }
 
     $cacheKeys = $this->getWmsCacheKeys($warehouseCode);
+    Log::info("Updating warehouse", [
+        'warehouse_code' => $warehouseCode,
+        'cache_keys' => $cacheKeys
+    ]);
 
-    // Quick check if already running
+    // Prevent multiple simultaneous updates
     if (Cache::has($cacheKeys['running'])) {
         return response()->json([
             'status' => 'running',
@@ -1427,49 +1428,35 @@ public function wmsUpdate(Request $request)
     }
 
     try {
-        // FAST validation with timeout
-        $connectionStart = microtime(true);
-        
-        try {
-            DB::connection('mysql')->getPdo();
-        } catch (\Exception $e) {
-            throw new \Exception('MySQL connection failed');
-        }
-        
-        $connectionTime = round((microtime(true) - $connectionStart) * 1000, 2);
-        Log::debug("MySQL connection time: {$connectionTime}ms");
+        $this->validateDatabaseConnections();
 
         $facilityId = self::WAREHOUSE_TO_FACILITY[$warehouseCode] ?? $warehouseCode;
         $tableName = "products_" . strtolower($userLocation);
 
         if (!Schema::connection('mysql')->hasTable($tableName)) {
-            throw new \Exception("Table '{$tableName}' does not exist");
+            throw new \Exception("Table '{$tableName}' does not exist for location '{$userLocation}'.");
         }
 
-        // Get total count with timeout
-        $countStart = microtime(true);
         $totalSkus = DB::connection('mysql')
             ->table($tableName)
             ->whereNull('archived_at')
             ->distinct('sku')
             ->count('sku');
-        
-        $countTime = round((microtime(true) - $countStart) * 1000, 2);
-        Log::debug("SKU count query time: {$countTime}ms");
 
         if ($totalSkus === 0) {
-            throw new \Exception("No active SKUs found");
+            throw new \Exception("No active SKUs found in '{$tableName}'.");
         }
 
-        // Clear and initialize cache
+        // CRITICAL: Clear all cache keys before starting
         Cache::forget($cacheKeys['processed']);
         Cache::forget($cacheKeys['failed']);
         Cache::forget($cacheKeys['running']);
         
+        // Initialize counters
         Cache::put($cacheKeys['processed'], 0, now()->addHours(3));
         Cache::put($cacheKeys['failed'], 0, now()->addHours(3));
 
-        // Mark as running
+        // Mark warehouse update as running
         Cache::put($cacheKeys['running'], [
             'started_at' => now()->toDateTimeString(),
             'total_skus' => $totalSkus,
@@ -1478,27 +1465,17 @@ public function wmsUpdate(Request $request)
             'user_location' => $userLocation,
         ], now()->addHours(3));
 
-        // Dispatch jobs with timing
-        $dispatchStart = microtime(true);
-        $dispatched = $this->dispatchAllocationJobsFast($tableName, $facilityId, $warehouseCode);
-        $dispatchTime = round((microtime(true) - $dispatchStart) * 1000, 2);
-        
-        Log::info("Dispatched {$dispatched} jobs in {$dispatchTime}ms", [
+        // Ensure queue worker is running before dispatching
+        $this->ensureQueueWorkerRunning();
+
+        // Dispatch jobs for this warehouse only
+        $dispatched = $this->dispatchAllocationJobs($tableName, $facilityId, $warehouseCode);
+
+        Log::info("Queued {$dispatched} allocation jobs", [
             'warehouse_code' => $warehouseCode,
             'facility_id' => $facilityId,
+            'cache_keys' => $cacheKeys,
         ]);
-
-        // Check queue worker AFTER response (non-blocking)
-        dispatch(function() {
-            if (!$this->isQueueWorkerRunning()) {
-                Log::warning('Queue worker not running, attempting to start');
-                try {
-                    $this->startQueueWorker();
-                } catch (\Exception $e) {
-                    Log::error('Failed to start queue worker: ' . $e->getMessage());
-                }
-            }
-        })->afterResponse();
 
         return response()->json([
             'status' => 'started',
@@ -1523,80 +1500,16 @@ public function wmsUpdate(Request $request)
 
 
 /**
- * Fast job dispatch with memory optimization
- * Use this version instead of dispatchAllocationJobsFast
+ * Get WMS update status
  */
-protected function dispatchAllocationJobsFast(string $tableName, string $facilityId, string $warehouseCode): int
-{
-    $dispatched = 0;
-    
-    // Use cursor for memory efficiency - loads one row at a time
-    // instead of loading all SKUs into memory
-    DB::connection('mysql')
-        ->table($tableName)
-        ->whereNull('archived_at')
-        ->select('sku')
-        ->distinct()
-        ->orderBy('sku')
-        ->cursor()
-        ->each(function ($row) use (&$dispatched, $facilityId, $warehouseCode) {
-            FetchAllocationJob::dispatch(
-                strtoupper($row->sku),
-                $facilityId,
-                $warehouseCode
-            )->onQueue('default');
-            
-            $dispatched++;
-        });
-
-    return $dispatched;
-}
-
 /**
- * Alternative: Batch dispatch for even better performance
- * Dispatches jobs in batches of 100 to reduce overhead
+ * Get WMS update status
  */
-protected function dispatchAllocationJobsBatch(string $tableName, string $facilityId, string $warehouseCode): int
-{
-    $dispatched = 0;
-    $batchSize = 100;
-    
-    DB::connection('mysql')
-        ->table($tableName)
-        ->whereNull('archived_at')
-        ->select('sku')
-        ->distinct()
-        ->orderBy('sku')
-        ->chunk($batchSize, function ($rows) use (&$dispatched, $facilityId, $warehouseCode) {
-            // Dispatch all jobs in this chunk at once
-            foreach ($rows as $row) {
-                FetchAllocationJob::dispatch(
-                    strtoupper($row->sku),
-                    $facilityId,
-                    $warehouseCode
-                )->onQueue('default');
-                
-                $dispatched++;
-            }
-        });
-
-    return $dispatched;
-}
-
 /**
- * Removed: ensureQueueWorkerRunning() - moved to afterResponse callback
- * Removed: validateDatabaseConnections() - simplified to fast MySQL-only check
- */
-
-
-/**
- * Get WMS update status - Optimized to prevent timeouts
+ * Get WMS update status
  */
 public function wmsStatus(Request $request)
 {
-    // Force execution time limit
-    // set_time_limit(15); // 15 seconds for status checks
-    
     $user = auth()->user();
     $userLocation = $user && $user->user_location 
         ? strtolower($user->user_location) 
@@ -1621,6 +1534,13 @@ public function wmsStatus(Request $request)
     $cacheKeys = $this->getWmsCacheKeys($warehouseCode);
     $cache = Cache::get($cacheKeys['running']);
 
+    // Debug logging
+    Log::debug('WMS Status Check', [
+        'warehouse_code' => $warehouseCode,
+        'cache_keys' => $cacheKeys,
+        'has_running_cache' => !empty($cache),
+    ]);
+
     if (!$cache) {
         return response()->json([
             'status' => 'idle',
@@ -1635,24 +1555,54 @@ public function wmsStatus(Request $request)
         $startedAt = $cache['started_at'];
         $facilityId = $cache['facility_id'];
 
-        // Get progress from cache (FAST)
+        // Get progress with explicit cache retrieval
         $processed = (int) Cache::get($cacheKeys['processed'], 0);
         $failed = (int) Cache::get($cacheKeys['failed'], 0);
         $percent = $totalSkus > 0 ? round(($processed / $totalSkus) * 100, 1) : 0;
 
-        // Quick queue check with timeout protection
-        $pendingJobs = 0;
-        try {
-            $pendingJobs = DB::table('jobs')
-                ->where('queue', 'default')
-                ->count();
-        } catch (\Exception $e) {
-            Log::debug('Queue check failed (non-critical): ' . $e->getMessage());
+        // DETAILED DEBUG LOGGING - Always log to see what's happening
+        Log::info('WMS Progress Detail', [
+            'warehouse_code' => $warehouseCode,
+            'cache_keys' => $cacheKeys,
+            'processed_raw' => Cache::get($cacheKeys['processed']),
+            'failed_raw' => Cache::get($cacheKeys['failed']),
+            'processed' => $processed,
+            'failed' => $failed,
+            'total' => $totalSkus,
+            'percentage' => $percent,
+            'running_cache' => $cache,
+        ]);
+
+        // Check queue status
+        $pendingJobs = DB::table('jobs')->where('queue', 'default')->count();
+        $failedJobs = DB::table('failed_jobs')->count();
+        
+        Log::info('Queue Status', [
+            'pending_jobs' => $pendingJobs,
+            'failed_jobs' => $failedJobs,
+            'queue_worker_running' => $this->isQueueWorkerRunning(),
+        ]);
+
+        // Ensure queue worker is still running
+        if (!$this->isQueueWorkerRunning()) {
+            Log::warning('⚠ Queue worker stopped during processing, restarting...');
+            try {
+                $this->startQueueWorker();
+            } catch (\Exception $e) {
+                Log::error('Failed to restart queue worker: ' . $e->getMessage());
+            }
         }
 
         // Check if completed
         if ($processed >= $totalSkus && $totalSkus > 0) {
             $this->clearWmsCache($cacheKeys);
+
+            Log::info('WMS Update Completed', [
+                'warehouse_code' => $warehouseCode,
+                'processed' => $processed,
+                'failed' => $failed,
+                'total' => $totalSkus,
+            ]);
 
             return response()->json([
                 'status' => 'done',
@@ -1671,22 +1621,16 @@ public function wmsStatus(Request $request)
             ]);
         }
 
-        // Check for stalled processing (AFTER response)
+        // If no progress after some time, might be stuck
         $startTime = \Carbon\Carbon::parse($startedAt);
         $elapsedMinutes = now()->diffInMinutes($startTime);
         
         if ($processed === 0 && $elapsedMinutes > 5) {
-            // Check queue worker in background
-            dispatch(function() use ($warehouseCode) {
-                if (!$this->isQueueWorkerRunning()) {
-                    Log::warning("Queue worker stopped for {$warehouseCode}, restarting");
-                    try {
-                        $this->startQueueWorker();
-                    } catch (\Exception $e) {
-                        Log::error('Failed to restart queue: ' . $e->getMessage());
-                    }
-                }
-            })->afterResponse();
+            Log::warning('No progress after 5 minutes', [
+                'warehouse_code' => $warehouseCode,
+                'elapsed_minutes' => $elapsedMinutes,
+                'pending_jobs' => $pendingJobs,
+            ]);
         }
 
         return response()->json([
@@ -1702,17 +1646,20 @@ public function wmsStatus(Request $request)
                 'warehouse_code' => $warehouseCode,
                 'warehouse_name' => $this->getWarehouseName($warehouseCode),
                 'facility_id' => $facilityId,
-                'pending_jobs' => $pendingJobs,
-                'elapsed_time' => $elapsedMinutes,
+                'pending_jobs' => $pendingJobs ?? 0,
+                'elapsed_time' => $elapsedMinutes ?? 0,
             ],
         ]);
 
     } catch (\Exception $e) {
-        Log::error("Status check failed for {$warehouseCode}: " . $e->getMessage());
+        Log::error("✗ Status check failed for warehouse {$warehouseCode}: " . $e->getMessage(), [
+            'exception' => $e,
+            'trace' => $e->getTraceAsString(),
+        ]);
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Failed to check update status',
+            'message' => 'Failed to check update status: ' . $e->getMessage(),
             'warehouse_code' => $warehouseCode,
         ], 500);
     }
