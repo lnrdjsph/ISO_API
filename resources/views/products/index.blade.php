@@ -93,403 +93,403 @@
                         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
                         <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('updateAllocationsForm');
-    const button = document.getElementById('updateButton');
-    const loader = document.getElementById('pageLoader');
-    const loaderTitle = document.getElementById('loaderTitle');
-    const loaderMessage = document.getElementById('loaderMessage');
-    const progressDetails = document.getElementById('progressDetails');
-    const progressText = document.getElementById('progressText');
-    const progressBar = document.getElementById('progressBar');
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const form = document.getElementById('updateAllocationsForm');
+                                const button = document.getElementById('updateButton');
+                                const loader = document.getElementById('pageLoader');
+                                const loaderTitle = document.getElementById('loaderTitle');
+                                const loaderMessage = document.getElementById('loaderMessage');
+                                const progressDetails = document.getElementById('progressDetails');
+                                const progressText = document.getElementById('progressText');
+                                const progressBar = document.getElementById('progressBar');
 
-    const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]').value;
+                                const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]').value;
 
-    let checkStatusInterval = null;
-    let progressPercentage = 0;
-    let consecutiveIdleCount = 0;
-    let consecutiveErrorCount = 0; // Track network errors
+                                let checkStatusInterval = null;
+                                let progressPercentage = 0;
+                                let consecutiveIdleCount = 0;
+                                let consecutiveErrorCount = 0; // Track network errors
 
-    // REQUEST TIMEOUT PROTECTION
-    const REQUEST_TIMEOUT = 25000; // 25 seconds (before nginx 30s timeout)
-    
-    // -----------------------------------
-    // 🔧 FETCH WITH TIMEOUT
-    // -----------------------------------
-    function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
-        return Promise.race([
-            fetch(url, options),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Request timeout')), timeout)
-            )
-        ]);
-    }
+                                // REQUEST TIMEOUT PROTECTION
+                                const REQUEST_TIMEOUT = 300000; // 25 seconds (before nginx 30s timeout)
 
-    // -----------------------------------
-    // 🔍 CHECK SERVER CONNECTION
-    // -----------------------------------
-    async function checkConnection() {
-        try {
-            const warehouse = getSelectedWarehouse();
-            const res = await fetchWithTimeout(
-                `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    cache: 'no-store'
-                },
-                10000 // 10 second timeout for connection check
-            );
+                                // -----------------------------------
+                                // 🔧 FETCH WITH TIMEOUT
+                                // -----------------------------------
+                                function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
+                                    return Promise.race([
+                                        fetch(url, options),
+                                        new Promise((_, reject) =>
+                                            setTimeout(() => reject(new Error('Request timeout')), timeout)
+                                        )
+                                    ]);
+                                }
 
-            if (!res.ok) {
-                console.error('Connection check failed:', res.status);
-                return false;
-            }
+                                // -----------------------------------
+                                // 🔍 CHECK SERVER CONNECTION
+                                // -----------------------------------
+                                async function checkConnection() {
+                                    try {
+                                        const warehouse = getSelectedWarehouse();
+                                        const res = await fetchWithTimeout(
+                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                                method: 'GET',
+                                                headers: {
+                                                    'Accept': 'application/json',
+                                                    'X-Requested-With': 'XMLHttpRequest'
+                                                },
+                                                cache: 'no-store'
+                                            },
+                                            10000 // 10 second timeout for connection check
+                                        );
 
-            const data = await res.json();
-            console.log('✓ Connection check OK:', data.status);
-            consecutiveErrorCount = 0; // Reset error counter
-            return true;
+                                        if (!res.ok) {
+                                            console.error('Connection check failed:', res.status);
+                                            return false;
+                                        }
 
-        } catch (err) {
-            console.error('Connection check error:', err.message);
-            return false;
-        }
-    }
+                                        const data = await res.json();
+                                        console.log('✓ Connection check OK:', data.status);
+                                        consecutiveErrorCount = 0; // Reset error counter
+                                        return true;
 
-    // -----------------------------------
-    // 📝 FORM SUBMIT
-    // -----------------------------------
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+                                    } catch (err) {
+                                        console.error('Connection check error:', err.message);
+                                        return false;
+                                    }
+                                }
 
-        // Quick connection check
-        loaderTitle.textContent = 'Checking connection...';
-        loaderMessage.textContent = 'Please wait...';
-        loader.classList.remove('hidden');
+                                // -----------------------------------
+                                // 📝 FORM SUBMIT
+                                // -----------------------------------
+                                form.addEventListener('submit', async function(e) {
+                                    e.preventDefault();
 
-        const alive = await checkConnection();
-        loader.classList.add('hidden');
+                                    // Quick connection check
+                                    loaderTitle.textContent = 'Checking connection...';
+                                    loaderMessage.textContent = 'Please wait...';
+                                    loader.classList.remove('hidden');
 
-        if (!alive) {
-            Swal.fire({
-                title: 'Connection Error',
-                text: 'Unable to reach the server. Please check your network or try again.',
-                icon: 'error',
-                confirmButtonColor: '#ef4444'
-            });
-            return;
-        }
+                                    const alive = await checkConnection();
+                                    loader.classList.add('hidden');
 
-        Swal.fire({
-            title: 'Warning',
-            html: '<p>This process may take several minutes and will update:</p>' +
-                '<ul class="text-left mt-2 space-y-1">' +
-                '<li>• WMS Actual Allocation</li>' +
-                '<li>• WMS Virtual Allocation</li>' +
-                '<li>• Case Pack Data</li>' +
-                '</ul>' +
-                '<p class="mt-2">Are you sure you want to proceed?</p>',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, proceed',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#2563eb',
-            cancelButtonColor: '#6b7280'
-        }).then((result) => {
-            if (result.isConfirmed) startUpdate();
-        });
-    });
+                                    if (!alive) {
+                                        Swal.fire({
+                                            title: 'Connection Error',
+                                            text: 'Unable to reach the server. Please check your network or try again.',
+                                            icon: 'error',
+                                            confirmButtonColor: '#ef4444'
+                                        });
+                                        return;
+                                    }
 
-    // -----------------------------------
-    // 🚀 START UPDATE WITH TIMEOUT PROTECTION
-    // -----------------------------------
-    function startUpdate() {
-        button.disabled = true;
-        consecutiveIdleCount = 0;
-        consecutiveErrorCount = 0;
+                                    Swal.fire({
+                                        title: 'Warning',
+                                        html: '<p>This process may take several minutes and will update:</p>' +
+                                            '<ul class="text-left mt-2 space-y-1">' +
+                                            '<li>• WMS Actual Allocation</li>' +
+                                            '<li>• WMS Virtual Allocation</li>' +
+                                            '<li>• Case Pack Data</li>' +
+                                            '</ul>' +
+                                            '<p class="mt-2">Are you sure you want to proceed?</p>',
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Yes, proceed',
+                                        cancelButtonText: 'Cancel',
+                                        confirmButtonColor: '#2563eb',
+                                        cancelButtonColor: '#6b7280'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) startUpdate();
+                                    });
+                                });
 
-        loader.classList.remove('hidden');
-        loaderTitle.textContent = 'Initializing Update...';
-        loaderMessage.textContent = 'Starting allocation update process...';
-        progressBar.style.width = '10%';
-        progressPercentage = 10;
+                                // -----------------------------------
+                                // 🚀 START UPDATE WITH TIMEOUT PROTECTION
+                                // -----------------------------------
+                                function startUpdate() {
+                                    button.disabled = true;
+                                    consecutiveIdleCount = 0;
+                                    consecutiveErrorCount = 0;
 
-        const warehouse = getSelectedWarehouse();
+                                    loader.classList.remove('hidden');
+                                    loaderTitle.textContent = 'Initializing Update...';
+                                    loaderMessage.textContent = 'Starting allocation update process...';
+                                    progressBar.style.width = '10%';
+                                    progressPercentage = 10;
 
-        fetchWithTimeout(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ warehouse: warehouse })
-        }, 30000) // 30 second timeout
-        .then(res => {
-            console.log('Start response:', res.status);
-            if (!res.ok) {
-                return res.json().then(data => {
-                    throw new Error(data.message || `Server error: ${res.status}`);
-                });
-            }
-            return res.json();
-        })
-        .then(data => {
-            console.log('✓ Update started:', data);
+                                    const warehouse = getSelectedWarehouse();
 
-            if (data.status === 'started' || data.status === 'running') {
-                loaderTitle.textContent = 'Update in Progress';
-                loaderMessage.textContent = data.message || 'Processing...';
-                progressBar.style.width = '25%';
-                progressPercentage = 25;
+                                    fetchWithTimeout(form.action, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                'Accept': 'application/json',
+                                                'Content-Type': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
+                                            },
+                                            body: JSON.stringify({
+                                                warehouse: warehouse
+                                            })
+                                        }, 30000) // 30 second timeout
+                                        .then(res => {
+                                            console.log('Start response:', res.status);
+                                            if (!res.ok) {
+                                                return res.json().then(data => {
+                                                    throw new Error(data.message || `Server error: ${res.status}`);
+                                                });
+                                            }
+                                            return res.json();
+                                        })
+                                        .then(data => {
+                                            console.log('✓ Update started:', data);
 
-                // Wait 2 seconds before starting polling to let jobs queue
-                setTimeout(startPolling, 2000);
+                                            if (data.status === 'started' || data.status === 'running') {
+                                                loaderTitle.textContent = 'Update in Progress';
+                                                loaderMessage.textContent = data.message || 'Processing...';
+                                                progressBar.style.width = '25%';
+                                                progressPercentage = 25;
 
-            } else if (data.status === 'error') {
-                showError(data.message);
-            } else {
-                showError('Unexpected response: ' + data.status);
-            }
-        })
-        .catch(err => {
-            console.error('Start error:', err.message);
-            
-            if (err.message === 'Request timeout') {
-                showError('Request timed out. The update may still be processing. Check status in a moment.');
-            } else {
-                showError(err.message || 'Failed to start update. Please try again.');
-            }
-        });
-    }
+                                                // Wait 2 seconds before starting polling to let jobs queue
+                                                setTimeout(startPolling, 2000);
 
-    // -----------------------------------
-    // 🔁 POLLING WITH ERROR RECOVERY
-    // -----------------------------------
-    function startPolling() {
-        // Start with shorter interval, increase if stable
-        checkStatusInterval = setInterval(checkStatus, 3000);
-        console.log('✓ Polling started');
-    }
+                                            } else if (data.status === 'error') {
+                                                showError(data.message);
+                                            } else {
+                                                showError('Unexpected response: ' + data.status);
+                                            }
+                                        })
+                                        .catch(err => {
+                                            console.error('Start error:', err.message);
 
-    function stopPolling() {
-        if (checkStatusInterval) {
-            clearInterval(checkStatusInterval);
-            checkStatusInterval = null;
-            console.log('✓ Polling stopped');
-        }
-    }
+                                            if (err.message === 'Request timeout') {
+                                                showError('Request timed out. The update may still be processing. Check status in a moment.');
+                                            } else {
+                                                showError(err.message || 'Failed to start update. Please try again.');
+                                            }
+                                        });
+                                }
 
-    function checkStatus() {
-        const warehouse = getSelectedWarehouse();
+                                // -----------------------------------
+                                // 🔁 POLLING WITH ERROR RECOVERY
+                                // -----------------------------------
+                                function startPolling() {
+                                    // Start with shorter interval, increase if stable
+                                    checkStatusInterval = setInterval(checkStatus, 3000);
+                                    console.log('✓ Polling started');
+                                }
 
-        fetchWithTimeout(
-            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                cache: 'no-store'
-            },
-            15000 // 15 second timeout for status checks
-        )
-        .then(res => {
-            if (!res.ok) {
-                console.warn('Status check HTTP error:', res.status);
-                throw new Error(`HTTP ${res.status}`);
-            }
-            return res.json();
-        })
-        .then(data => {
-            consecutiveErrorCount = 0; // Reset on success
-            console.log('Status:', data.status, `(${data.progress?.percentage || 0}%)`);
+                                function stopPolling() {
+                                    if (checkStatusInterval) {
+                                        clearInterval(checkStatusInterval);
+                                        checkStatusInterval = null;
+                                        console.log('✓ Polling stopped');
+                                    }
+                                }
 
-            if (data.status === 'done') {
-                stopPolling();
-                handleCompletion(data);
+                                function checkStatus() {
+                                    const warehouse = getSelectedWarehouse();
 
-            } else if (data.status === 'running') {
-                consecutiveIdleCount = 0;
-                updateProgress(data);
+                                    fetchWithTimeout(
+                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                                method: 'GET',
+                                                headers: {
+                                                    'Accept': 'application/json',
+                                                    'X-Requested-With': 'XMLHttpRequest'
+                                                },
+                                                cache: 'no-store'
+                                            },
+                                            15000 // 15 second timeout for status checks
+                                        )
+                                        .then(res => {
+                                            if (!res.ok) {
+                                                console.warn('Status check HTTP error:', res.status);
+                                                throw new Error(`HTTP ${res.status}`);
+                                            }
+                                            return res.json();
+                                        })
+                                        .then(data => {
+                                            consecutiveErrorCount = 0; // Reset on success
+                                            console.log('Status:', data.status, `(${data.progress?.percentage || 0}%)`);
 
-            } else if (data.status === 'pending') {
-                loaderMessage.textContent = data.message || 'Jobs queued...';
-                if (progressPercentage < 30) {
-                    progressPercentage += 2;
-                    progressBar.style.width = progressPercentage + '%';
-                }
+                                            if (data.status === 'done') {
+                                                stopPolling();
+                                                handleCompletion(data);
 
-            } else if (data.status === 'idle') {
-                consecutiveIdleCount++;
+                                            } else if (data.status === 'running') {
+                                                consecutiveIdleCount = 0;
+                                                updateProgress(data);
 
-                if (consecutiveIdleCount > 10) {
-                    console.warn('⚠ Idle for too long');
-                    loaderMessage.textContent = '⚠️ Waiting for queue worker... (this may take a moment)';
-                } else {
-                    loaderMessage.textContent = 'Waiting for jobs to start...';
-                }
+                                            } else if (data.status === 'pending') {
+                                                loaderMessage.textContent = data.message || 'Jobs queued...';
+                                                if (progressPercentage < 30) {
+                                                    progressPercentage += 2;
+                                                    progressBar.style.width = progressPercentage + '%';
+                                                }
 
-                if (progressPercentage < 35) {
-                    progressPercentage += 0.5;
-                    progressBar.style.width = progressPercentage + '%';
-                }
+                                            } else if (data.status === 'idle') {
+                                                consecutiveIdleCount++;
 
-            } else if (data.status === 'error') {
-                stopPolling();
-                showError(data.message);
-            }
-        })
-        .catch(err => {
-            consecutiveErrorCount++;
-            console.error(`Status check error (${consecutiveErrorCount}/5):`, err.message);
+                                                if (consecutiveIdleCount > 10) {
+                                                    console.warn('⚠ Idle for too long');
+                                                    loaderMessage.textContent = '⚠️ Waiting for queue worker... (this may take a moment)';
+                                                } else {
+                                                    loaderMessage.textContent = 'Waiting for jobs to start...';
+                                                }
 
-            // Show user-friendly message
-            if (err.message === 'Request timeout') {
-                loaderMessage.textContent = '⚠️ Server is slow to respond, retrying...';
-            } else {
-                loaderMessage.textContent = '⚠️ Connection issue, retrying...';
-            }
+                                                if (progressPercentage < 35) {
+                                                    progressPercentage += 0.5;
+                                                    progressBar.style.width = progressPercentage + '%';
+                                                }
 
-            // Stop polling after too many consecutive errors
-            if (consecutiveErrorCount > 5) {
-                stopPolling();
-                showError('Lost connection to server. Please refresh and check status.');
-            }
-        });
-    }
+                                            } else if (data.status === 'error') {
+                                                stopPolling();
+                                                showError(data.message);
+                                            }
+                                        })
+                                        .catch(err => {
+                                            consecutiveErrorCount++;
+                                            console.error(`Status check error (${consecutiveErrorCount}/5):`, err.message);
 
-    // -----------------------------------
-    // 📊 PROGRESS UPDATE
-    // -----------------------------------
-    function updateProgress(data) {
-        loaderMessage.textContent = data.message || 'Processing...';
+                                            // Show user-friendly message
+                                            if (err.message === 'Request timeout') {
+                                                loaderMessage.textContent = '⚠️ Server is slow to respond, retrying...';
+                                            } else {
+                                                loaderMessage.textContent = '⚠️ Connection issue, retrying...';
+                                            }
 
-        if (data.progress) {
-            if (data.progress.current_step) {
-                progressDetails.classList.remove('hidden');
-                progressText.textContent = data.progress.current_step;
-            }
+                                            // Stop polling after too many consecutive errors
+                                            if (consecutiveErrorCount > 5) {
+                                                stopPolling();
+                                                showError('Lost connection to server. Please refresh and check status.');
+                                            }
+                                        });
+                                }
 
-            if (data.progress.percentage !== undefined) {
-                progressPercentage = Math.max(progressPercentage, data.progress.percentage);
-                progressBar.style.width = progressPercentage + '%';
-                loaderTitle.textContent = `Update in Progress (${Math.round(progressPercentage)}%)`;
+                                // -----------------------------------
+                                // 📊 PROGRESS UPDATE
+                                // -----------------------------------
+                                function updateProgress(data) {
+                                    loaderMessage.textContent = data.message || 'Processing...';
 
-                if (data.progress.processed !== undefined && data.progress.total !== undefined) {
-                    progressText.textContent = `Processing: ${data.progress.processed} / ${data.progress.total} SKUs`;
+                                    if (data.progress) {
+                                        if (data.progress.current_step) {
+                                            progressDetails.classList.remove('hidden');
+                                            progressText.textContent = data.progress.current_step;
+                                        }
 
-                    if (data.progress.failed > 0) {
-                        progressText.textContent += ` (${data.progress.failed} failed)`;
-                    }
-                    
-                    // Show elapsed time if available
-                    if (data.progress.elapsed_time) {
-                        progressText.textContent += ` • ${data.progress.elapsed_time} min elapsed`;
-                    }
-                }
-            } else {
-                // Fallback simulation
-                if (progressPercentage < 90) {
-                    progressPercentage += Math.random() * 2;
-                    progressBar.style.width = Math.min(progressPercentage, 90) + '%';
-                }
-            }
-        }
-    }
+                                        if (data.progress.percentage !== undefined) {
+                                            progressPercentage = Math.max(progressPercentage, data.progress.percentage);
+                                            progressBar.style.width = progressPercentage + '%';
+                                            loaderTitle.textContent = `Update in Progress (${Math.round(progressPercentage)}%)`;
 
-    // -----------------------------------
-    // ✅ COMPLETION
-    // -----------------------------------
-    function handleCompletion(data) {
-        progressBar.style.width = '100%';
-        loaderTitle.textContent = 'Update in Progress (100%)';
+                                            if (data.progress.processed !== undefined && data.progress.total !== undefined) {
+                                                progressText.textContent = `Processing: ${data.progress.processed} / ${data.progress.total} SKUs`;
 
-        setTimeout(() => {
-            loader.classList.add('hidden');
-            button.disabled = false;
+                                                if (data.progress.failed > 0) {
+                                                    progressText.textContent += ` (${data.progress.failed} failed)`;
+                                                }
 
-            let summaryHtml = '<p class="mb-2">Update completed successfully!</p>';
+                                                // Show elapsed time if available
+                                                if (data.progress.elapsed_time) {
+                                                    progressText.textContent += ` • ${data.progress.elapsed_time} min elapsed`;
+                                                }
+                                            }
+                                        } else {
+                                            // Fallback simulation
+                                            if (progressPercentage < 90) {
+                                                progressPercentage += Math.random() * 2;
+                                                progressBar.style.width = Math.min(progressPercentage, 90) + '%';
+                                            }
+                                        }
+                                    }
+                                }
 
-            if (data.summary) {
-                summaryHtml += '<div class="text-left bg-green-50 p-3 rounded-lg mt-3">';
-                summaryHtml += '<p class="text-sm font-semibold mb-2">Summary:</p>';
-                summaryHtml += '<ul class="text-sm space-y-1">';
+                                // -----------------------------------
+                                // ✅ COMPLETION
+                                // -----------------------------------
+                                function handleCompletion(data) {
+                                    progressBar.style.width = '100%';
+                                    loaderTitle.textContent = 'Update in Progress (100%)';
 
-                if (data.summary.processed_skus !== undefined) {
-                    summaryHtml += `<li>✓ SKUs Processed: <strong>${data.summary.processed_skus}</strong></li>`;
-                }
-                if (data.summary.failed_skus !== undefined && data.summary.failed_skus > 0) {
-                    summaryHtml += `<li>⚠ SKUs Failed: <strong>${data.summary.failed_skus}</strong></li>`;
-                }
-                if (data.summary.warehouse_name) {
-                    summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_name}</strong></li>`;
-                }
-                if (data.summary.started_at && data.summary.completed_at) {
-                    const start = new Date(data.summary.started_at);
-                    const end = new Date(data.summary.completed_at);
-                    const duration = Math.floor((end - start) / 1000);
-                    const minutes = Math.floor(duration / 60);
-                    const seconds = duration % 60;
-                    summaryHtml += `<li>⏱ Duration: <strong>${minutes}m ${seconds}s</strong></li>`;
-                }
+                                    setTimeout(() => {
+                                        loader.classList.add('hidden');
+                                        button.disabled = false;
 
-                summaryHtml += '</ul></div>';
-            }
+                                        let summaryHtml = '<p class="mb-2">Update completed successfully!</p>';
 
-            Swal.fire({
-                title: 'Completed!',
-                html: summaryHtml,
-                icon: 'success',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#10b981'
-            }).then(() => {
-                window.location.reload();
-            });
+                                        if (data.summary) {
+                                            summaryHtml += '<div class="text-left bg-green-50 p-3 rounded-lg mt-3">';
+                                            summaryHtml += '<p class="text-sm font-semibold mb-2">Summary:</p>';
+                                            summaryHtml += '<ul class="text-sm space-y-1">';
 
-            progressPercentage = 0;
-            progressBar.style.width = '0%';
-            progressDetails.classList.add('hidden');
-        }, 500);
-    }
+                                            if (data.summary.processed_skus !== undefined) {
+                                                summaryHtml += `<li>✓ SKUs Processed: <strong>${data.summary.processed_skus}</strong></li>`;
+                                            }
+                                            if (data.summary.failed_skus !== undefined && data.summary.failed_skus > 0) {
+                                                summaryHtml += `<li>⚠ SKUs Failed: <strong>${data.summary.failed_skus}</strong></li>`;
+                                            }
+                                            if (data.summary.warehouse_name) {
+                                                summaryHtml += `<li>📦 Warehouse: <strong>${data.summary.warehouse_name}</strong></li>`;
+                                            }
+                                            if (data.summary.started_at && data.summary.completed_at) {
+                                                const start = new Date(data.summary.started_at);
+                                                const end = new Date(data.summary.completed_at);
+                                                const duration = Math.floor((end - start) / 1000);
+                                                const minutes = Math.floor(duration / 60);
+                                                const seconds = duration % 60;
+                                                summaryHtml += `<li>⏱ Duration: <strong>${minutes}m ${seconds}s</strong></li>`;
+                                            }
 
-    // -----------------------------------
-    // ❌ ERROR HANDLING
-    // -----------------------------------
-    function showError(message) {
-        stopPolling();
-        loader.classList.add('hidden');
-        button.disabled = false;
+                                            summaryHtml += '</ul></div>';
+                                        }
 
-        Swal.fire({
-            title: 'Error',
-            text: message || 'Failed to update allocations.',
-            icon: 'error',
-            confirmButtonColor: '#ef4444'
-        });
+                                        Swal.fire({
+                                            title: 'Completed!',
+                                            html: summaryHtml,
+                                            icon: 'success',
+                                            confirmButtonText: 'OK',
+                                            confirmButtonColor: '#10b981'
+                                        }).then(() => {
+                                            window.location.reload();
+                                        });
 
-        progressPercentage = 0;
-        progressBar.style.width = '0%';
-        progressDetails.classList.add('hidden');
-    }
+                                        progressPercentage = 0;
+                                        progressBar.style.width = '0%';
+                                        progressDetails.classList.add('hidden');
+                                    }, 500);
+                                }
 
-    // -----------------------------------
-    // 📡 AUTO-CHECK ON LOAD
-    // -----------------------------------
-    setTimeout(() => {
-        checkConnection().then(connected => {
-            if (connected) {
-                checkStatus();
-            }
-        });
-    }, 500);
-});
+                                // -----------------------------------
+                                // ❌ ERROR HANDLING
+                                // -----------------------------------
+                                function showError(message) {
+                                    stopPolling();
+                                    loader.classList.add('hidden');
+                                    button.disabled = false;
+
+                                    Swal.fire({
+                                        title: 'Error',
+                                        text: message || 'Failed to update allocations.',
+                                        icon: 'error',
+                                        confirmButtonColor: '#ef4444'
+                                    });
+
+                                    progressPercentage = 0;
+                                    progressBar.style.width = '0%';
+                                    progressDetails.classList.add('hidden');
+                                }
+
+                                // -----------------------------------
+                                // 📡 AUTO-CHECK ON LOAD
+                                // -----------------------------------
+                                setTimeout(() => {
+                                    checkConnection().then(connected => {
+                                        if (connected) {
+                                            checkStatus();
+                                        }
+                                    });
+                                }, 500);
+                            });
                         </script>
 
                         <style>
