@@ -15,8 +15,8 @@ class FetchAllocationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 30; // 30 seconds max per SKU
-    public int $tries = 1; // No retries, skip and move on
+    public int $timeout = 300; // 300 seconds max per SKU
+    public int $tries = 3; // No retries, skip and move on
     public int $maxExceptions = 1; // Don't retry on exception
 
     protected string $sku;
