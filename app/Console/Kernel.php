@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('products:update-allocations')->dailyAt('06:00');
-        $schedule->command('products:update-allocations')->dailyAt('07:55');
+        $schedule->command('products:update-allocations')->dailyAt('08:05');
         $schedule->command('products:update-allocations')->dailyAt('08:55');
         $schedule->command('products:update-allocations')->dailyAt('10:00');
         $schedule->command('products:update-allocations')->dailyAt('12:00');
