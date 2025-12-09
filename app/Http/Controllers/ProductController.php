@@ -1333,35 +1333,48 @@ public function import(Request $request)
 protected function getWarehouseCode(Request $request): ?string
 {
     $user = auth()->user();
+    $userRole = strtolower($user->role ?? '');
     $userLocation = strtolower($user->user_location ?? '');
-    
-    $warehouseMap = [
+
+    // Allowed warehouses
+    $allowedWarehouses = [
         '80141' => 'Silangan Warehouse',
         '80181' => 'Bacolod Depot',
     ];
 
     Log::info('Warehouse request check', [
-        'request_warehouse' => $request->get('warehouse'),
+        'requested_warehouse' => $request->get('warehouse'),
         'user_location' => $userLocation,
-        'user_role' => $user->role ?? null
+        'user_role' => $userRole,
     ]);
 
-    $isPersonnel = str_contains(strtolower($user->role ?? ''), 'personnel');
+    $isPersonnel = str_contains($userRole, 'personnel');
 
+    /**
+     * 1️⃣ Non-personnel: respect selected warehouse
+     */
     if (!$isPersonnel) {
         $requestedWarehouse = $request->get('warehouse');
-        if ($requestedWarehouse && array_key_exists($requestedWarehouse, $warehouseMap)) {
+
+        if (
+            $requestedWarehouse &&
+            array_key_exists($requestedWarehouse, $allowedWarehouses)
+        ) {
             return $requestedWarehouse;
         }
     }
 
+    /**
+     * 2️⃣ Fallback: derive from user location
+     */
     $locationToWarehouse = [
-        '4002' => '80181',
-        '6012' => '80141',
+        '4002' => '80181', // Bacolod
+        '6012' => '80141', // Silangan
     ];
 
     return $locationToWarehouse[$userLocation] ?? null;
 }
+
 
 
 /**
@@ -1466,7 +1479,7 @@ public function wmsUpdate(Request $request)
         ], now()->addHours(3));
 
         // Ensure queue worker is running before dispatching
-        $this->ensureQueueWorkerRunning();
+        // $this->ensureQueueWorkerRunning();
 
         // Dispatch jobs for this warehouse only
         $dispatched = $this->dispatchAllocationJobs($tableName, $facilityId, $warehouseCode);
