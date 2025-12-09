@@ -30,6 +30,9 @@ class UpdateAllProductAllocations extends Command
 
     public function handle()
     {
+        set_time_limit(0);
+        ini_set('max_execution_time', 0);
+        ini_set('memory_limit', '512M'); 
         $startTime = microtime(true);
         $phNow = now()->timezone('Asia/Manila');
         $date = $phNow->format('Y-m-d');
@@ -432,33 +435,18 @@ class UpdateAllProductAllocations extends Command
         
         // Write to file (unless console only)
         if (!$consoleOnly) {
-            File::append($file, $logMessage . "\n");
+            // Use FILE_APPEND flag and force write
+            file_put_contents($file, $logMessage . "\n", FILE_APPEND | LOCK_EX);
         }
         
         // Output to console
         $this->info($logMessage);
-        
-        // Force immediate write to disk and output buffer
-        if (function_exists('flush')) {
-            flush();
-        }
-        if (function_exists('ob_flush')) {
-            @ob_flush();
-        }
     }
-    
+
     private function logRaw(string $file, string $message)
     {
-        // Log without timestamp for formatted tables
-        File::append($file, $message . "\n");
+        // Use file_put_contents instead of File::append for immediate write
+        file_put_contents($file, $message . "\n", FILE_APPEND | LOCK_EX);
         $this->line($message);
-        
-        // Force immediate write
-        if (function_exists('flush')) {
-            flush();
-        }
-        if (function_exists('ob_flush')) {
-            @ob_flush();
-        }
     }
 }
