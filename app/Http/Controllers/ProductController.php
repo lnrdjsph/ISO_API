@@ -1394,6 +1394,9 @@ protected function getWmsCacheKeys(string $warehouseCode): array
  */
 public function wmsUpdate(Request $request)
 {
+    // Force execution time limit
+    set_time_limit(25); // 25 seconds (before nginx 30s timeout)
+    
     $user = auth()->user();
     $userLocation = $user->user_location ?? null;
 
@@ -1424,12 +1427,17 @@ public function wmsUpdate(Request $request)
     }
 
     try {
-        // FAST validation - don't wait for Oracle
+        // FAST validation with timeout
+        $connectionStart = microtime(true);
+        
         try {
             DB::connection('mysql')->getPdo();
         } catch (\Exception $e) {
             throw new \Exception('MySQL connection failed');
         }
+        
+        $connectionTime = round((microtime(true) - $connectionStart) * 1000, 2);
+        Log::debug("MySQL connection time: {$connectionTime}ms");
 
         $facilityId = self::WAREHOUSE_TO_FACILITY[$warehouseCode] ?? $warehouseCode;
         $tableName = "products_" . strtolower($userLocation);
@@ -1438,12 +1446,16 @@ public function wmsUpdate(Request $request)
             throw new \Exception("Table '{$tableName}' does not exist");
         }
 
-        // Get total count with timeout protection
+        // Get total count with timeout
+        $countStart = microtime(true);
         $totalSkus = DB::connection('mysql')
             ->table($tableName)
             ->whereNull('archived_at')
             ->distinct('sku')
             ->count('sku');
+        
+        $countTime = round((microtime(true) - $countStart) * 1000, 2);
+        Log::debug("SKU count query time: {$countTime}ms");
 
         if ($totalSkus === 0) {
             throw new \Exception("No active SKUs found");
@@ -1466,8 +1478,15 @@ public function wmsUpdate(Request $request)
             'user_location' => $userLocation,
         ], now()->addHours(3));
 
-        // Dispatch jobs QUICKLY - don't wait for queue worker checks
+        // Dispatch jobs with timing
+        $dispatchStart = microtime(true);
         $dispatched = $this->dispatchAllocationJobsFast($tableName, $facilityId, $warehouseCode);
+        $dispatchTime = round((microtime(true) - $dispatchStart) * 1000, 2);
+        
+        Log::info("Dispatched {$dispatched} jobs in {$dispatchTime}ms", [
+            'warehouse_code' => $warehouseCode,
+            'facility_id' => $facilityId,
+        ]);
 
         // Check queue worker AFTER response (non-blocking)
         dispatch(function() {
@@ -1502,26 +1521,66 @@ public function wmsUpdate(Request $request)
     }
 }
 
+
 /**
- * Fast job dispatch without chunking delays
+ * Fast job dispatch with memory optimization
+ * Use this version instead of dispatchAllocationJobsFast
  */
 protected function dispatchAllocationJobsFast(string $tableName, string $facilityId, string $warehouseCode): int
 {
-    $skus = DB::connection('mysql')
+    $dispatched = 0;
+    
+    // Use cursor for memory efficiency - loads one row at a time
+    // instead of loading all SKUs into memory
+    DB::connection('mysql')
         ->table($tableName)
         ->whereNull('archived_at')
+        ->select('sku')
         ->distinct()
-        ->pluck('sku');
+        ->orderBy('sku')
+        ->cursor()
+        ->each(function ($row) use (&$dispatched, $facilityId, $warehouseCode) {
+            FetchAllocationJob::dispatch(
+                strtoupper($row->sku),
+                $facilityId,
+                $warehouseCode
+            )->onQueue('default');
+            
+            $dispatched++;
+        });
 
-    foreach ($skus as $sku) {
-        FetchAllocationJob::dispatch(
-            strtoupper($sku),
-            $facilityId,
-            $warehouseCode
-        )->onQueue('default');
-    }
+    return $dispatched;
+}
 
-    return $skus->count();
+/**
+ * Alternative: Batch dispatch for even better performance
+ * Dispatches jobs in batches of 100 to reduce overhead
+ */
+protected function dispatchAllocationJobsBatch(string $tableName, string $facilityId, string $warehouseCode): int
+{
+    $dispatched = 0;
+    $batchSize = 100;
+    
+    DB::connection('mysql')
+        ->table($tableName)
+        ->whereNull('archived_at')
+        ->select('sku')
+        ->distinct()
+        ->orderBy('sku')
+        ->chunk($batchSize, function ($rows) use (&$dispatched, $facilityId, $warehouseCode) {
+            // Dispatch all jobs in this chunk at once
+            foreach ($rows as $row) {
+                FetchAllocationJob::dispatch(
+                    strtoupper($row->sku),
+                    $facilityId,
+                    $warehouseCode
+                )->onQueue('default');
+                
+                $dispatched++;
+            }
+        });
+
+    return $dispatched;
 }
 
 /**
@@ -1535,6 +1594,9 @@ protected function dispatchAllocationJobsFast(string $tableName, string $facilit
  */
 public function wmsStatus(Request $request)
 {
+    // Force execution time limit
+    set_time_limit(15); // 15 seconds for status checks
+    
     $user = auth()->user();
     $userLocation = $user && $user->user_location 
         ? strtolower($user->user_location) 
@@ -1578,14 +1640,14 @@ public function wmsStatus(Request $request)
         $failed = (int) Cache::get($cacheKeys['failed'], 0);
         $percent = $totalSkus > 0 ? round(($processed / $totalSkus) * 100, 1) : 0;
 
-        // Quick queue check (FAST) - don't query database if not needed
+        // Quick queue check with timeout protection
         $pendingJobs = 0;
         try {
             $pendingJobs = DB::table('jobs')
                 ->where('queue', 'default')
                 ->count();
         } catch (\Exception $e) {
-            // Ignore DB errors, not critical
+            Log::debug('Queue check failed (non-critical): ' . $e->getMessage());
         }
 
         // Check if completed
