@@ -1804,8 +1804,11 @@ protected function validateDatabaseConnections(): void
 /**
  * Dispatch allocation jobs for all SKUs
  */
-protected function dispatchAllocationJobs(string $tableName, string $facilityId, string $warehouseCode): int
-{
+protected function dispatchAllocationJobs(
+    string $tableName,
+    string $facilityId,
+    string $warehouseCode
+): int {
     $dispatched = 0;
 
     DB::connection('mysql')
@@ -1814,12 +1817,18 @@ protected function dispatchAllocationJobs(string $tableName, string $facilityId,
         ->select('sku')
         ->distinct()
         ->orderBy('sku')
-        ->chunk(100, function ($rows) use (&$dispatched, $facilityId, $warehouseCode) {
+        ->chunk(100, function ($rows) use (
+            &$dispatched,
+            $facilityId,
+            $warehouseCode,
+            $tableName
+        ) {
             foreach ($rows as $row) {
                 FetchAllocationJob::dispatch(
                     strtoupper($row->sku),
                     $facilityId,
-                    $warehouseCode
+                    $warehouseCode,
+                    $tableName // ✅ PASS EXACT TABLE
                 )->onQueue('default');
 
                 $dispatched++;
@@ -1828,6 +1837,7 @@ protected function dispatchAllocationJobs(string $tableName, string $facilityId,
 
     return $dispatched;
 }
+
 
 /**
  * Clear WMS cache
