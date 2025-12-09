@@ -126,7 +126,27 @@ class UpdateAllProductAllocations extends Command
     protected function handleBatch($logFile, $startTime)
     {
         $specificWarehouse = $this->option('warehouse');
-        
+
+        // Register shutdown handler FIRST
+        register_shutdown_function(function() use ($logFile) {
+            $error = error_get_last();
+            $message = "\n" . str_repeat("=", 80) . "\n";
+            $message .= "[SHUTDOWN] Process ended at: " . date('Y-m-d H:i:s') . "\n";
+            
+            if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+                $message .= "[FATAL ERROR] Script terminated unexpectedly:\n";
+                $message .= "Type: " . $error['type'] . "\n";
+                $message .= "Message: " . $error['message'] . "\n";
+                $message .= "File: " . $error['file'] . "\n";
+                $message .= "Line: " . $error['line'] . "\n";
+            } else {
+                $message .= "[NORMAL SHUTDOWN] Process completed successfully\n";
+            }
+            
+            $message .= str_repeat("=", 80) . "\n";
+            error_log($message, 3, $logFile);
+        });
+
         // Determine which warehouses to process
         if ($specificWarehouse) {
             if (!isset($this->warehouseConfig[$specificWarehouse])) {
@@ -236,9 +256,10 @@ class UpdateAllProductAllocations extends Command
                 try {
                     $queryStart = microtime(true);
                     $this->log($logFile, "Executing Oracle query for chunk {$chunkNum}...");
+                    $this->log($logFile, "→ Started at: " . date('H:i:s.u'));
                     
-                    // Set query timeout (5 minutes)
-                    ini_set('default_socket_timeout', 300);
+                    // Set query timeout
+                    ini_set('default_socket_timeout', 120);
                     
                     $inventoryRows = DB::connection('oracle_wms')->select("
                         SELECT /*+ PARALLEL(4) */ ci.item_id,
@@ -253,10 +274,12 @@ class UpdateAllProductAllocations extends Command
                         GROUP BY ci.item_id
                     ");
 
-                    $this->log($logFile, "Query executed, processing results...");
-                    
                     $queryEnd = microtime(true);
                     $queryDuration = round($queryEnd - $queryStart, 2);
+                    
+                    $this->log($logFile, "→ Finished at: " . date('H:i:s.u'));
+                    $this->log($logFile, "→ Duration: {$queryDuration}s");
+                    $this->log($logFile, "Query executed, processing results...");
                     
                     $resultCount = 0;
                     foreach ($inventoryRows as $row) {
@@ -459,45 +482,19 @@ class UpdateAllProductAllocations extends Command
         
         // Write to file immediately (unless console only)
         if (!$consoleOnly) {
-            // Use file_put_contents with LOCK_EX for immediate write
-            $handle = fopen($file, 'a');
-            if ($handle) {
-                flock($handle, LOCK_EX);
-                fwrite($handle, $logMessage . "\n");
-                fflush($handle);  // Force write to disk
-                flock($handle, LOCK_UN);
-                fclose($handle);
-            }
+            // Use error_log which bypasses all buffering
+            error_log($logMessage . "\n", 3, $file);
         }
         
         // Output to console
         $this->info($logMessage);
-        
-        // Force all output buffers to flush
-        if (ob_get_level()) {
-            ob_flush();
-        }
-        flush();
     }
 
     private function logRaw(string $file, string $message)
     {
-        // Use file handle for immediate write
-        $handle = fopen($file, 'a');
-        if ($handle) {
-            flock($handle, LOCK_EX);
-            fwrite($handle, $message . "\n");
-            fflush($handle);  // Force write to disk
-            flock($handle, LOCK_UN);
-            fclose($handle);
-        }
+        // Use error_log which bypasses all buffering
+        error_log($message . "\n", 3, $file);
         
         $this->line($message);
-        
-        // Force all output buffers to flush
-        if (ob_get_level()) {
-            ob_flush();
-        }
-        flush();
     }
 }
