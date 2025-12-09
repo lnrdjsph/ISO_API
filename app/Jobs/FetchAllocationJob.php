@@ -22,28 +22,20 @@ class FetchAllocationJob implements ShouldQueue
     protected string $sku;
     protected string $facilityId;
     protected string $warehouseCode;
-    protected string $location;
+    protected string $productTable;
 
-    public function __construct(string $sku, string $facilityId, string $warehouseCode)
-    {
+    public function __construct(
+        string $sku,
+        string $facilityId,
+        string $warehouseCode,
+        string $productTable
+    ) {
         $this->sku = $sku;
         $this->facilityId = $facilityId;
         $this->warehouseCode = $warehouseCode;
-        
-        $warehouseToLocation = [
-            '80181' => '4002',
-            '80141' => '6012',
-            '80001' => '2010',
-            '80041' => '2017',
-            '80051' => '3018',
-            '80071' => '3019',
-            '80131' => '2008',
-            '80201' => '6009',
-            '80191' => '6010',
-        ];
-        
-        $this->location = $warehouseToLocation[$warehouseCode] ?? '';
+        $this->productTable = $productTable;
     }
+
 
     public function handle(): void
     {
@@ -118,42 +110,37 @@ class FetchAllocationJob implements ShouldQueue
             }
 
             // Update case pack data (optional, don't fail if this errors)
-            if ($this->location) {
-                try {
-                    $caseRows = $oracle->select("
-                        SELECT item_id, unit_qty
-                        FROM (
-                            SELECT ci.item_id, ci.unit_qty,
-                                ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-                            FROM rwms.container_item ci
-                            WHERE ci.facility_id = ?
-                            AND ci.item_id = ?
-                        )
-                        WHERE rn <= 5
-                    ", [$this->facilityId, $this->sku]);
+            // Update case pack data (warehouse-based only)
+            try {
+                $caseRows = $oracle->select("
+                    SELECT item_id, unit_qty
+                    FROM (
+                        SELECT ci.item_id, ci.unit_qty,
+                            ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
+                        FROM rwms.container_item ci
+                        WHERE ci.facility_id = ?
+                        AND ci.item_id = ?
+                    )
+                    WHERE rn <= 5
+                ", [$this->facilityId, $this->sku]);
 
-                    if (!empty($caseRows)) {
-                        $casePacks = array_unique(array_map(
-                            fn($row) => $row->unit_qty,
-                            $caseRows
-                        ));
+                if (!empty($caseRows)) {
+                    $casePacks = array_unique(array_map(
+                        fn($row) => $row->unit_qty,
+                        $caseRows
+                    ));
 
-                        $tableName = "products_{$this->location}";
-
-                        if ($mysql->getSchemaBuilder()->hasTable($tableName)) {
-                            $mysql->table($tableName)
-                                ->where('sku', $this->sku)
-                                ->update([
-                                    'case_pack'  => implode(' | ', $casePacks),
-                                    'updated_at' => now()
-                                ]);
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Don't fail the job for case pack errors
-                    Log::debug("[FetchAllocationJob] Case pack update failed for SKU {$this->sku}: " . $e->getMessage());
+                    $mysql->table($this->productTable)
+                        ->where('sku', $this->sku)
+                        ->update([
+                            'case_pack' => implode(' | ', $casePacks),
+                            'updated_at' => now()
+                        ]);
                 }
+            } catch (\Exception $e) {
+                Log::debug("[FetchAllocationJob] Case pack skipped {$this->sku}: {$e->getMessage()}");
             }
+
 
             // SUCCESS: Mark as processed
             Cache::increment($processedKey);
