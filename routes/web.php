@@ -131,10 +131,12 @@ Route::prefix('others')->name('others.')->group(function () {
 // manually trigger wms allocations
 Route::prefix('update-allocations')->group(function () {
     Route::post('/', [ProductController::class, 'wmsUpdate'])
-        ->name('update.allocations');
+        ->name('update.allocations')
+        ->middleware(['web', 'auth']);
     
     Route::get('/status', [ProductController::class, 'wmsStatus'])
-        ->name('update.allocations.status');
+        ->name('update.allocations.status')
+        ->middleware(['web', 'auth']);
 });
 
     
