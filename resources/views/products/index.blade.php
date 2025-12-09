@@ -219,7 +219,7 @@
 
                                     const warehouse = getSelectedWarehouse();
 
-                                    fetchWithTimeout(form.action, {
+                                    fetch(form.action, {
                                             method: 'POST',
                                             headers: {
                                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -228,9 +228,10 @@
                                                 'X-Requested-With': 'XMLHttpRequest'
                                             },
                                             body: JSON.stringify({
-                                                warehouse: warehouse
+                                                warehouse
                                             })
-                                        }, 30000) // 30 second timeout
+                                        })
+
                                         .then(res => {
                                             console.log('Start response:', res.status);
                                             if (!res.ok) {
