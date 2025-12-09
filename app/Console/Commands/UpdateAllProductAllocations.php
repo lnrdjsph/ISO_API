@@ -62,7 +62,9 @@ class UpdateAllProductAllocations extends Command
             $this->handleShutdown();
         });
 
+        $this->log("\n" . str_repeat("=", 80) . "\n");
         $this->log("=== Starting allocation update ===");
+        $this->log("\n" . str_repeat("=", 80) . "\n");
         $this->log("Running from: " . (php_sapi_name() === 'cli' ? 'CLI' : 'WEB'));
         $this->log("PID: " . getmypid());
         $this->log("PHP max_execution_time: " . ini_get('max_execution_time'));
