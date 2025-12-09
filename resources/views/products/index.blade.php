@@ -180,7 +180,7 @@
                                 // 🚀 START ALLOCATION UPDATE
                                 // -----------------------------------
                                 function startUpdate() {
-                                    button.disabled = true;
+                                    button.disabled = false;
                                     consecutiveIdleCount = 0;
 
                                     loader.classList.remove('hidden');
