@@ -457,20 +457,47 @@ class UpdateAllProductAllocations extends Command
         $timestamp = now()->format('Y-m-d H:i:s');
         $logMessage = "[{$timestamp}] {$message}";
         
-        // Write to file (unless console only)
+        // Write to file immediately (unless console only)
         if (!$consoleOnly) {
-            // Use FILE_APPEND flag and force write
-            file_put_contents($file, $logMessage . "\n", FILE_APPEND | LOCK_EX);
+            // Use file_put_contents with LOCK_EX for immediate write
+            $handle = fopen($file, 'a');
+            if ($handle) {
+                flock($handle, LOCK_EX);
+                fwrite($handle, $logMessage . "\n");
+                fflush($handle);  // Force write to disk
+                flock($handle, LOCK_UN);
+                fclose($handle);
+            }
         }
         
         // Output to console
         $this->info($logMessage);
+        
+        // Force all output buffers to flush
+        if (ob_get_level()) {
+            ob_flush();
+        }
+        flush();
     }
 
     private function logRaw(string $file, string $message)
     {
-        // Use file_put_contents instead of File::append for immediate write
-        file_put_contents($file, $message . "\n", FILE_APPEND | LOCK_EX);
+        // Use file handle for immediate write
+        $handle = fopen($file, 'a');
+        if ($handle) {
+            flock($handle, LOCK_EX);
+            fwrite($handle, $message . "\n");
+            fflush($handle);  // Force write to disk
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+        
         $this->line($message);
+        
+        // Force all output buffers to flush
+        if (ob_get_level()) {
+            ob_flush();
+        }
+        flush();
     }
 }
