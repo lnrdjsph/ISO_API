@@ -29,15 +29,22 @@ class UpdateAllProductAllocations extends Command
         '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
     ];
 
+    private $logFile;
+    private $processStartTime;
+
     public function handle()
     {
+        // CRITICAL: Force unbuffered output for cron compatibility
+        if (ob_get_level()) ob_end_flush();
+        ob_implicit_flush(true);
+        
         // CRITICAL: Prevent script timeout and set network timeouts
         set_time_limit(0);
         ini_set('max_execution_time', '0');
         ini_set('memory_limit', '512M');
-        ini_set('default_socket_timeout', '120');  // 2 minutes for network operations
+        ini_set('default_socket_timeout', '120');
         
-        $startTime = microtime(true);
+        $this->processStartTime = microtime(true);
         $phNow = now()->timezone('Asia/Manila');
         $date = $phNow->format('Y-m-d');
         $hour = $phNow->format('H');
@@ -47,34 +54,73 @@ class UpdateAllProductAllocations extends Command
         if (!File::exists($logDir)) {
             File::makeDirectory($logDir, 0777, true);
         }
-        $logFile = "{$logDir}/allocations_{$hour}.log";
+        $this->logFile = "{$logDir}/allocations_{$hour}.log";
 
-        $this->log($logFile, "=== Starting allocation update ===");
-        $this->log($logFile, "PHP max_execution_time: " . ini_get('max_execution_time'));
-        $this->log($logFile, "PHP default_socket_timeout: " . ini_get('default_socket_timeout'));
-        $this->log($logFile, "Memory limit: " . ini_get('memory_limit'));
+        // Register shutdown handler FIRST (before any DB operations)
+        register_shutdown_function(function() {
+            $this->handleShutdown();
+        });
+
+        $this->log("=== Starting allocation update ===");
+        $this->log("Running from: " . (php_sapi_name() === 'cli' ? 'CLI' : 'WEB'));
+        $this->log("PID: " . getmypid());
+        $this->log("PHP max_execution_time: " . ini_get('max_execution_time'));
+        $this->log("PHP default_socket_timeout: " . ini_get('default_socket_timeout'));
+        $this->log("Memory limit: " . ini_get('memory_limit'));
+        $this->log("Output buffering: " . (ob_get_level() > 0 ? 'ON (Level: ' . ob_get_level() . ')' : 'OFF'));
 
         // Check if async mode is enabled
         $asyncMode = $this->option('async');
         
         if ($asyncMode) {
-            $this->log($logFile, "Running in ASYNC mode (using job queue)");
-            return $this->handleAsync($logFile);
+            $this->log("Running in ASYNC mode (using job queue)");
+            return $this->handleAsync();
         } else {
-            $this->log($logFile, "Running in BATCH mode (synchronous)");
-            return $this->handleBatch($logFile, $startTime);
+            $this->log("Running in BATCH mode (synchronous)");
+            return $this->handleBatch();
+        }
+    }
+
+    /**
+     * Handle shutdown gracefully
+     */
+    protected function handleShutdown()
+    {
+        $error = error_get_last();
+        $message = "\n" . str_repeat("=", 80) . "\n";
+        $message .= "[SHUTDOWN] Process ended at: " . date('Y-m-d H:i:s') . "\n";
+        
+        if ($this->processStartTime) {
+            $duration = microtime(true) - $this->processStartTime;
+            $message .= "[SHUTDOWN] Total runtime: " . round($duration, 2) . "s\n";
+        }
+        
+        if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            $message .= "[FATAL ERROR] Script terminated unexpectedly:\n";
+            $message .= "Type: " . $error['type'] . "\n";
+            $message .= "Message: " . $error['message'] . "\n";
+            $message .= "File: " . $error['file'] . "\n";
+            $message .= "Line: " . $error['line'] . "\n";
+        } else {
+            $message .= "[NORMAL SHUTDOWN] Process completed successfully\n";
+        }
+        
+        $message .= str_repeat("=", 80) . "\n";
+        
+        if ($this->logFile) {
+            error_log($message, 3, $this->logFile);
         }
     }
 
     /**
      * Handle async mode - dispatch individual jobs for each SKU
      */
-    protected function handleAsync($logFile)
+    protected function handleAsync()
     {
         $warehouseCode = $this->option('warehouse');
 
         if (!$warehouseCode) {
-            $this->log($logFile, "Warehouse code is required for async mode. Exiting.");
+            $this->log("Warehouse code is required for async mode. Exiting.");
             return Command::FAILURE;
         }
 
@@ -82,31 +128,31 @@ class UpdateAllProductAllocations extends Command
         $config = $this->warehouseConfig[$warehouseCode] ?? null;
         
         if (!$config) {
-            $this->log($logFile, "No configuration found for warehouse {$warehouseCode}. Exiting.");
+            $this->log("No configuration found for warehouse {$warehouseCode}. Exiting.");
             return Command::FAILURE;
         }
 
         $facilityId = $config['facility'];
         $stores = $config['stores'];
 
-        $this->log($logFile, "Resolved warehouse '{$warehouseCode}' → Facility '{$facilityId}' → Stores: " . implode(', ', $stores));
+        $this->log("Resolved warehouse '{$warehouseCode}' → Facility '{$facilityId}' → Stores: " . implode(', ', $stores));
 
         // Collect all SKUs from all stores using this warehouse
         $allSkus = [];
         foreach ($stores as $store) {
             $tableName = "products_{$store}";
-            $skus = $this->collectSkusFromTable($tableName, $logFile);
+            $skus = $this->collectSkusFromTable($tableName);
             $allSkus = array_merge($allSkus, $skus);
         }
         
         $allSkus = array_unique($allSkus);
 
         if (empty($allSkus)) {
-            $this->log($logFile, "No SKUs found for warehouse {$warehouseCode}. Exiting.");
+            $this->log("No SKUs found for warehouse {$warehouseCode}. Exiting.");
             return Command::SUCCESS;
         }
 
-        $this->log($logFile, "Dispatching jobs for " . count($allSkus) . " SKUs...");
+        $this->log("Dispatching jobs for " . count($allSkus) . " SKUs...");
 
         // Dispatch async jobs
         foreach ($allSkus as $sku) {
@@ -114,8 +160,8 @@ class UpdateAllProductAllocations extends Command
                 ->onQueue('wms');
         }
 
-        $this->log($logFile, "Successfully dispatched " . count($allSkus) . " jobs to 'wms' queue.");
-        $this->log($logFile, "Run: php artisan queue:work --queue=wms");
+        $this->log("Successfully dispatched " . count($allSkus) . " jobs to 'wms' queue.");
+        $this->log("Run: php artisan queue:work --queue=wms");
 
         return Command::SUCCESS;
     }
@@ -123,34 +169,14 @@ class UpdateAllProductAllocations extends Command
     /**
      * Handle batch mode - process all warehouses synchronously
      */
-    protected function handleBatch($logFile, $startTime)
+    protected function handleBatch()
     {
         $specificWarehouse = $this->option('warehouse');
-
-        // Register shutdown handler FIRST
-        register_shutdown_function(function() use ($logFile) {
-            $error = error_get_last();
-            $message = "\n" . str_repeat("=", 80) . "\n";
-            $message .= "[SHUTDOWN] Process ended at: " . date('Y-m-d H:i:s') . "\n";
-            
-            if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-                $message .= "[FATAL ERROR] Script terminated unexpectedly:\n";
-                $message .= "Type: " . $error['type'] . "\n";
-                $message .= "Message: " . $error['message'] . "\n";
-                $message .= "File: " . $error['file'] . "\n";
-                $message .= "Line: " . $error['line'] . "\n";
-            } else {
-                $message .= "[NORMAL SHUTDOWN] Process completed successfully\n";
-            }
-            
-            $message .= str_repeat("=", 80) . "\n";
-            error_log($message, 3, $logFile);
-        });
 
         // Determine which warehouses to process
         if ($specificWarehouse) {
             if (!isset($this->warehouseConfig[$specificWarehouse])) {
-                $this->log($logFile, "Invalid warehouse code: {$specificWarehouse}. Exiting.");
+                $this->log("Invalid warehouse code: {$specificWarehouse}. Exiting.");
                 return Command::FAILURE;
             }
             $warehousesToProcess = [$specificWarehouse];
@@ -159,7 +185,7 @@ class UpdateAllProductAllocations extends Command
             $warehousesToProcess = array_keys($this->warehouseConfig);
         }
 
-        $this->log($logFile, "Warehouses to process: " . implode(', ', $warehousesToProcess));
+        $this->log("Warehouses to process: " . implode(', ', $warehousesToProcess));
 
         $grandTotalUpdated = 0;
         $grandTotalInserted = 0;
@@ -171,7 +197,7 @@ class UpdateAllProductAllocations extends Command
             $facilityId = $config['facility'];
             $stores = $config['stores'];
 
-            $this->log($logFile, "---- Processing Warehouse: {$warehouseCode} (Facility: {$facilityId}, Stores: " . implode(', ', $stores) . ") ----");
+            $this->log("---- Processing Warehouse: {$warehouseCode} (Facility: {$facilityId}, Stores: " . implode(', ', $stores) . ") ----");
 
             // Collect all SKUs from all stores using this warehouse
             $allSkus = [];
@@ -180,86 +206,100 @@ class UpdateAllProductAllocations extends Command
                 
                 // Check if table exists
                 if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
-                    $this->log($logFile, "Table {$tableName} does not exist. Skipping.");
+                    $this->log("Table {$tableName} does not exist. Skipping.");
                     continue;
                 }
                 
-                $skus = $this->collectSkusFromTable($tableName, $logFile);
+                $skus = $this->collectSkusFromTable($tableName);
                 $allSkus = array_merge($allSkus, $skus);
             }
             
             $allSkus = array_unique($allSkus);
             
             if (empty($allSkus)) {
-                $this->log($logFile, "No SKUs found for warehouse {$warehouseCode}. Skipping.");
+                $this->log("No SKUs found for warehouse {$warehouseCode}. Skipping.");
                 continue;
             }
 
-            $this->log($logFile, "Total unique SKUs collected: " . count($allSkus));
+            $this->log("Total unique SKUs collected: " . count($allSkus));
 
-    
-            // Test Oracle connection first
+            // Test Oracle connection with enhanced error reporting
             try {
-                $this->log($logFile, "Testing Oracle connection...");
-                $this->log($logFile, "Oracle Host: " . config('database.connections.oracle_wms.host'));
-                $this->log($logFile, "Oracle Database: " . config('database.connections.oracle_wms.database'));
+                $this->log("Testing Oracle connection...");
+                $this->log("Oracle Host: " . config('database.connections.oracle_wms.host'));
+                $this->log("Oracle Database: " . config('database.connections.oracle_wms.database'));
                 
                 $testStart = microtime(true);
                 
-                // Get connection and set timeout at runtime (belt and suspenders approach)
+                // CRITICAL: Reconnect to ensure fresh connection in cron context
+                DB::purge('oracle_wms');
                 $connection = DB::connection('oracle_wms');
                 
                 try {
+                    $this->log("Attempting to get PDO connection...");
                     $pdo = $connection->getPdo();
+                    $this->log("PDO connection object retrieved");
+                    
                     $pdo->setAttribute(PDO::ATTR_TIMEOUT, 60);
-                    $this->log($logFile, "PDO connection established, timeout set to 60s");
+                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                    $this->log("PDO attributes set (timeout: 60s, error mode: exception)");
                 } catch (\Exception $e) {
-                    $this->log($logFile, "Could not set PDO timeout: " . $e->getMessage());
+                    $this->log("WARNING: Could not configure PDO - " . $e->getMessage());
+                    $this->log("Exception type: " . get_class($e));
+                    // Don't fail here, try to continue
                 }
                 
                 // Test with a simple query
-                $this->log($logFile, "Executing test query...");
+                $this->log("Executing test query...");
                 $result = $connection->select("SELECT 1 AS test FROM DUAL");
                 
                 $testEnd = microtime(true);
                 $testDuration = round(($testEnd - $testStart) * 1000, 2);
-                $this->log($logFile, "Oracle connection successful (response time: {$testDuration}ms)");
-                $this->log($logFile, "Proceeding to query allocations...");
+                $this->log("Oracle connection successful (response time: {$testDuration}ms)");
+                $this->log("Test result: " . json_encode($result));
+                $this->log("Proceeding to query allocations...");
                 
             } catch (\PDOException $e) {
-                $this->log($logFile, "ERROR: Oracle PDO Exception - " . $e->getMessage());
-                $this->log($logFile, "PDO Error Code: " . $e->getCode());
-                $this->log($logFile, "This usually indicates a network timeout or connection issue");
-                $this->log($logFile, "Skipping warehouse {$warehouseCode}");
+                $this->log("ERROR: Oracle PDO Exception");
+                $this->log("Message: " . $e->getMessage());
+                $this->log("Code: " . $e->getCode());
+                $this->log("File: " . $e->getFile());
+                $this->log("Line: " . $e->getLine());
+                $this->log("Trace: " . $e->getTraceAsString());
+                $this->log("Skipping warehouse {$warehouseCode}");
                 continue;
             } catch (\Exception $e) {
-                $this->log($logFile, "ERROR: Oracle connection failed - " . $e->getMessage());
-                $this->log($logFile, "Error Type: " . get_class($e));
-                $this->log($logFile, "Error Code: " . $e->getCode());
-                $this->log($logFile, "Skipping warehouse {$warehouseCode}");
+                $this->log("ERROR: Oracle connection failed");
+                $this->log("Type: " . get_class($e));
+                $this->log("Message: " . $e->getMessage());
+                $this->log("Code: " . $e->getCode());
+                $this->log("File: " . $e->getFile());
+                $this->log("Line: " . $e->getLine());
+                $this->log("Trace: " . $e->getTraceAsString());
+                $this->log("Skipping warehouse {$warehouseCode}");
                 continue;
             }
 
             // Process SKUs in chunks to avoid query issues
-            $chunkSize = 500; // Oracle IN clause limit consideration
+            $chunkSize = 500;
             $skuChunks = array_chunk($allSkus, $chunkSize);
-            $this->log($logFile, "Processing in " . count($skuChunks) . " chunks of {$chunkSize} SKUs each");
+            $this->log("Processing in " . count($skuChunks) . " chunks of {$chunkSize} SKUs each");
 
             $allocations = [];
             
             foreach ($skuChunks as $chunkIndex => $skuChunk) {
                 $chunkNum = $chunkIndex + 1;
-                $this->log($logFile, "Processing chunk {$chunkNum}/" . count($skuChunks) . " (" . count($skuChunk) . " SKUs)");
+                $this->log("Processing chunk {$chunkNum}/" . count($skuChunks) . " (" . count($skuChunk) . " SKUs)");
                 
                 $inClause = "'" . implode("','", $skuChunk) . "'";
 
                 try {
                     $queryStart = microtime(true);
-                    $this->log($logFile, "Executing Oracle query for chunk {$chunkNum}...");
-                    $this->log($logFile, "→ Started at: " . date('H:i:s.u'));
+                    $this->log("Executing Oracle query for chunk {$chunkNum}...");
+                    $this->log("→ Started at: " . date('H:i:s.u'));
                     
-                    // Set query timeout
-                    ini_set('default_socket_timeout', 120);
+                    // Ensure connection is still alive
+                    DB::connection('oracle_wms')->getPdo();
                     
                     $inventoryRows = DB::connection('oracle_wms')->select("
                         SELECT /*+ PARALLEL(4) */ ci.item_id,
@@ -277,9 +317,9 @@ class UpdateAllProductAllocations extends Command
                     $queryEnd = microtime(true);
                     $queryDuration = round($queryEnd - $queryStart, 2);
                     
-                    $this->log($logFile, "→ Finished at: " . date('H:i:s.u'));
-                    $this->log($logFile, "→ Duration: {$queryDuration}s");
-                    $this->log($logFile, "Query executed, processing results...");
+                    $this->log("→ Finished at: " . date('H:i:s.u'));
+                    $this->log("→ Duration: {$queryDuration}s");
+                    $this->log("Query executed, processing results...");
                     
                     $resultCount = 0;
                     foreach ($inventoryRows as $row) {
@@ -287,19 +327,20 @@ class UpdateAllProductAllocations extends Command
                         $resultCount++;
                     }
                     
-                    $this->log($logFile, "Chunk {$chunkNum} completed in {$queryDuration}s - Retrieved {$resultCount} allocations");
+                    $this->log("Chunk {$chunkNum} completed in {$queryDuration}s - Retrieved {$resultCount} allocations");
                 } catch (\Exception $e) {
-                    $this->log($logFile, "ERROR: Chunk {$chunkNum} failed - " . $e->getMessage());
-                    $this->log($logFile, "Error Code: " . $e->getCode());
-                    // Continue with next chunk instead of stopping entirely
+                    $this->log("ERROR: Chunk {$chunkNum} failed");
+                    $this->log("Type: " . get_class($e));
+                    $this->log("Message: " . $e->getMessage());
+                    $this->log("Code: " . $e->getCode());
                     continue;
                 }
             }
 
-            $this->log($logFile, "Total allocations retrieved: " . count($allocations) . " SKUs");
+            $this->log("Total allocations retrieved: " . count($allocations) . " SKUs");
 
             // Fetch existing allocations for comparison
-            $this->log($logFile, "Fetching existing allocations for comparison...");
+            $this->log("Fetching existing allocations for comparison...");
             $existingAllocations = DB::connection('mysql')
                 ->table('product_wms_allocations')
                 ->whereIn('sku', $allSkus)
@@ -311,12 +352,12 @@ class UpdateAllProductAllocations extends Command
             $updated = 0;
             $inserted = 0;
 
-            $this->log($logFile, "");
-            $this->logRaw($logFile, str_repeat("=", 120));
-            $this->logRaw($logFile, "ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
-            $this->logRaw($logFile, str_repeat("=", 120));
-            $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
-            $this->logRaw($logFile, str_repeat("-", 120));
+            $this->log("");
+            $this->logRaw(str_repeat("=", 120));
+            $this->logRaw("ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
+            $this->logRaw(str_repeat("=", 120));
+            $this->logRaw(sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
+            $this->logRaw(str_repeat("-", 120));
 
             foreach ($allSkus as $sku) {
                 $newAllocation = $allocations[$sku] ?? 0;
@@ -330,7 +371,6 @@ class UpdateAllProductAllocations extends Command
                         $after = sprintf("%d / %d", $newAllocation, $newAllocation);
                         $status = "UPDATED";
                         
-                        // Update
                         DB::connection('mysql')->table('product_wms_allocations')
                             ->where('sku', $sku)
                             ->where('warehouse_code', $warehouseCode)
@@ -346,7 +386,6 @@ class UpdateAllProductAllocations extends Command
                         $after = sprintf("%d / %d", $newAllocation, $newAllocation);
                         $status = "INSERTED";
                         
-                        // Insert
                         DB::connection('mysql')->table('product_wms_allocations')->insert([
                             'sku' => $sku,
                             'warehouse_code' => $warehouseCode,
@@ -359,23 +398,23 @@ class UpdateAllProductAllocations extends Command
                         $inserted++;
                     }
                     
-                    $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, $before, $after, $status));
+                    $this->logRaw(sprintf("%-20s | %-25s | %-25s | %-20s", $sku, $before, $after, $status));
                     
                 } catch (\Exception $e) {
-                    $this->logRaw($logFile, sprintf("%-20s | %-25s | %-25s | %-20s", $sku, "ERROR", "ERROR", "FAILED: " . $e->getMessage()));
+                    $this->logRaw(sprintf("%-20s | %-25s | %-25s | %-20s", $sku, "ERROR", "ERROR", "FAILED: " . $e->getMessage()));
                 }
             }
 
-            $this->logRaw($logFile, str_repeat("=", 120));
-            $this->logRaw($logFile, sprintf("SUMMARY: %d Updated | %d Inserted | %d Total Processed", $updated, $inserted, count($allSkus)));
-            $this->logRaw($logFile, str_repeat("=", 120));
-            $this->log($logFile, "");
-            $this->log($logFile, "Allocations: {$updated} updated, {$inserted} inserted");
+            $this->logRaw(str_repeat("=", 120));
+            $this->logRaw(sprintf("SUMMARY: %d Updated | %d Inserted | %d Total Processed", $updated, $inserted, count($allSkus)));
+            $this->logRaw(str_repeat("=", 120));
+            $this->log("");
+            $this->log("Allocations: {$updated} updated, {$inserted} inserted");
             $grandTotalUpdated += $updated;
             $grandTotalInserted += $inserted;
 
             // Query Oracle for case pack data
-            $this->log($logFile, "Querying Oracle WMS for case pack data...");
+            $this->log("Querying Oracle WMS for case pack data...");
             $caseMap = [];
             
             foreach ($skuChunks as $chunkIndex => $skuChunk) {
@@ -404,14 +443,14 @@ class UpdateAllProductAllocations extends Command
                         $caseMap[$row->item_id][] = $row->unit_qty;
                     }
                     
-                    $this->log($logFile, "Case pack chunk {$chunkNum} completed in {$queryDuration}s");
+                    $this->log("Case pack chunk {$chunkNum} completed in {$queryDuration}s");
                 } catch (\Exception $e) {
-                    $this->log($logFile, "ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
+                    $this->log("ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
                     continue;
                 }
             }
             
-            $this->log($logFile, "Total case packs retrieved: " . count($caseMap) . " SKUs");
+            $this->log("Total case packs retrieved: " . count($caseMap) . " SKUs");
 
             // Update case pack in products tables for each store
             $casePackProcessed = 0;
@@ -435,27 +474,27 @@ class UpdateAllProductAllocations extends Command
                                 ]);
                             $casePackProcessed++;
                         } catch (\Exception $e) {
-                            $this->log($logFile, "Case pack update failed for SKU {$sku}: " . $e->getMessage());
+                            $this->log("Case pack update failed for SKU {$sku}: " . $e->getMessage());
                         }
                     }
                 }
             }
 
-            $this->log($logFile, "Case packs: {$casePackProcessed} updated");
+            $this->log("Case packs: {$casePackProcessed} updated");
             $grandTotalCasePack += $casePackProcessed;
         }
 
         // Final summary
         $endTime = microtime(true);
-        $duration = $endTime - $startTime;
+        $duration = $endTime - $this->processStartTime;
         $minutes = floor($duration / 60);
         $seconds = round($duration % 60);
 
-        $this->log($logFile, "=== All warehouses processed ===");
-        $this->log($logFile, "Total allocations updated: {$grandTotalUpdated}");
-        $this->log($logFile, "Total allocations inserted: {$grandTotalInserted}");
-        $this->log($logFile, "Total case packs updated: {$grandTotalCasePack}");
-        $this->log($logFile, "Process completed in {$minutes}m {$seconds}s");
+        $this->log("=== All warehouses processed ===");
+        $this->log("Total allocations updated: {$grandTotalUpdated}");
+        $this->log("Total allocations inserted: {$grandTotalInserted}");
+        $this->log("Total case packs updated: {$grandTotalCasePack}");
+        $this->log("Process completed in {$minutes}m {$seconds}s");
 
         return Command::SUCCESS;
     }
@@ -463,37 +502,43 @@ class UpdateAllProductAllocations extends Command
     /**
      * Collect SKUs from a specific table
      */
-    protected function collectSkusFromTable($tableName, $logFile)
+    protected function collectSkusFromTable($tableName)
     {
         try {
             $skus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
-            $this->log($logFile, "Fetched " . count($skus) . " SKUs from {$tableName}");
+            $this->log("Fetched " . count($skus) . " SKUs from {$tableName}");
             return array_unique($skus);
         } catch (\Exception $e) {
-            $this->log($logFile, "Failed to fetch SKUs from {$tableName}: " . $e->getMessage());
+            $this->log("Failed to fetch SKUs from {$tableName}: " . $e->getMessage());
             return [];
         }
     }
 
-    private function log(string $file, string $message, bool $consoleOnly = false)
+    /**
+     * Log with timestamp - uses error_log for immediate write
+     */
+    private function log(string $message)
     {
         $timestamp = now()->format('Y-m-d H:i:s');
         $logMessage = "[{$timestamp}] {$message}";
         
-        // Write to file immediately (unless console only)
-        if (!$consoleOnly) {
-            // Use error_log which bypasses all buffering
-            error_log($logMessage . "\n", 3, $file);
+        // Write to file immediately
+        if ($this->logFile) {
+            error_log($logMessage . "\n", 3, $this->logFile);
         }
         
         // Output to console
         $this->info($logMessage);
     }
 
-    private function logRaw(string $file, string $message)
+    /**
+     * Log without timestamp - for formatted output
+     */
+    private function logRaw(string $message)
     {
-        // Use error_log which bypasses all buffering
-        error_log($message . "\n", 3, $file);
+        if ($this->logFile) {
+            error_log($message . "\n", 3, $this->logFile);
+        }
         
         $this->line($message);
     }
