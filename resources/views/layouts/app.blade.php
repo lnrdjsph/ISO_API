@@ -691,7 +691,7 @@
                     </li>
 
                     @auth
-                        @if (auth()->user()->role === 'super admin')
+                        @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel' ]))
                             <!-- Products Group -->
                             <li class="{{ request()->routeIs('products*') ? 'active' : '' }} group relative">
                                 @if (request()->routeIs('products*'))
