@@ -522,11 +522,11 @@ public function index(Request $request)
         // 🔔 Determine recipient based on requesting_store
         $recipients = [];
 
-        if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
+        if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018'])) {
             $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
-        if ($order->requesting_store === '6012') {
+        if (in_array($order->requesting_store, ['6012', '3019', '2008', '6009', '6010'])) {
             $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
