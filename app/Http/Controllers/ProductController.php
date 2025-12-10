@@ -1370,6 +1370,14 @@ protected function getWarehouseCode(Request $request): ?string
     $locationToWarehouse = [
         '4002' => '80181', // Bacolod
         '6012' => '80141', // Silangan
+        '2010' => '80141', // Silangan
+        '2017' => '80141', // Silangan
+        '2019' => '80141', // Silangan
+        '3018' => '80141', // Silangan
+        '3019' => '80141', // Silangan
+        '2008' => '80141', // Silangan
+        '6009' => '80141', // Silangan
+        '6010' => '80141', // Silangan
     ];
 
     return $locationToWarehouse[$userLocation] ?? null;

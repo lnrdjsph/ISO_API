@@ -399,9 +399,9 @@
                             <table class="min-w-full border border-gray-200 text-xs text-gray-700">
                                 <thead class="bg-gray-100 text-xs uppercase">
                                     <tr>
-                                        <th
-                                            rowspan="2"
-                                            class="border px-2 py-1 text-center">No.</th>
+                                        <th rowspan="2" class="border px-2 py-1 text-center">
+                                            <input type="checkbox" id="select-all" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                                        </th>
                                         <th
                                             rowspan="2"
                                             class="border px-2 py-1 text-left">SKU</th>
@@ -450,7 +450,7 @@
                                     @forelse ($order->items as $item)
                                         <tr
                                             data-index="{{ $loop->index }}"
-                                            class="@if ($item->item_type === 'FREEBIE') bg-green-50 @else bg-white @endif transition hover:bg-indigo-50">
+                                            class="@if ($item->remarks === 'Item Cancelled') bg-red-50 @elseif ($item->item_type === 'FREEBIE') bg-green-50 @else bg-white @endif transition hover:bg-indigo-50">
 
 
                                             {{-- hidden input for item_type --}}
@@ -463,9 +463,10 @@
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][id]"
                                                 value="{{ $item->id }}">
-                                            {{-- Number column --}}
-                                            <td class="border p-2 text-center font-medium">
-                                                {{ $loop->iteration }}
+                                            {{-- Checkbox column --}}
+                                            <td class="border p-2 text-center">
+                                                <input type="checkbox" name="items[{{ $loop->index }}][cancel]" value="1"
+                                                    class="item-checkbox h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500">
                                             </td>
                                             <td
                                                 class="relative border p-2"
@@ -627,6 +628,11 @@
                                                             {{ $item->remarks === 'For RMS Approval' ? 'selected' : '' }}>
                                                             For RMS Approval
                                                         </option>
+                                                        {{-- item cancelled --}}
+                                                        <option hidden value="Item Cancelled"
+                                                            {{ $item->remarks === 'Item Cancelled' ? 'selected' : '' }}>
+                                                            Item Cancelled
+                                                        </option>
                                                     </select>
                                                 </div>
                                             </td>
@@ -650,7 +656,7 @@
                                                 contenteditable="false"
                                                 data-item-index="{{ $loop->index }}"
                                                 @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" 
-        data-load-status="true" @endif>
+                                    data-load-status="true" @endif>
                                                 @if (!empty($item->store_order_no))
                                                     <span class="inline-flex items-center px-3 py-1 text-xs font-medium">
                                                         <svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -681,6 +687,108 @@
                                                 class="border px-4 py-4 text-center text-gray-500">No items found for this order.</td>
                                         </tr>
                                     @endforelse
+
+                                    <script>
+                                        (function() {
+                                            // Select/Deselect All functionality
+                                            const selectAllCheckbox = document.getElementById('select-all');
+                                            const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+
+                                            selectAllCheckbox.addEventListener('change', function() {
+                                                itemCheckboxes.forEach(checkbox => {
+                                                    checkbox.checked = this.checked;
+                                                });
+                                            });
+
+                                            // Update select-all state when individual checkboxes change
+                                            itemCheckboxes.forEach(checkbox => {
+                                                checkbox.addEventListener('change', function() {
+                                                    const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                                                    const someChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+
+                                                    selectAllCheckbox.checked = allChecked;
+                                                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                                                });
+                                            });
+
+                                            // Get all TDs with store order numbers
+                                            const tds = document.querySelectorAll('td[data-load-status="true"]');
+
+                                            tds.forEach((td) => {
+                                                const storeOrderNo = td.dataset.storeOrderNo;
+                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__']) }}".replace('__STORE_ORDER_NO__', storeOrderNo);
+
+                                                fetch(url)
+                                                    .then(async response => {
+                                                        const text = await response.text();
+                                                        if (!text) {
+                                                            throw new Error('Empty response from server');
+                                                        }
+                                                        let data;
+                                                        try {
+                                                            data = JSON.parse(text);
+                                                        } catch (parseError) {
+                                                            throw new Error('Invalid response format');
+                                                        }
+                                                        return data;
+                                                    })
+                                                    .then(data => {
+                                                        const status = data?.status ?? 'Unknown';
+                                                        let badgeClass = 'bg-gray-100 text-gray-800';
+                                                        let description = '';
+
+                                                        if (status === 'Received') {
+                                                            badgeClass = 'bg-green-100 text-green-800';
+                                                            description = 'Order has been received by the store';
+                                                        } else if (status === 'Shipped') {
+                                                            badgeClass = 'bg-blue-100 text-blue-800';
+                                                            description = 'Order is currently in transit to the store';
+                                                        } else if (status === 'Processing') {
+                                                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                                                            description = 'Order is being processed for shipment';
+                                                        } else if (status === 'Pending') {
+                                                            badgeClass = 'bg-orange-100 text-orange-800';
+                                                            description = 'Order is pending for shipment';
+                                                        } else if (status === 'Not Found') {
+                                                            badgeClass = 'bg-red-100 text-red-800';
+                                                            description = 'Order not found in the system';
+                                                        } else if (status === 'N/A') {
+                                                            badgeClass = 'bg-gray-100 text-gray-800';
+                                                            description = 'No order number provided';
+                                                        } else if (status === 'Error') {
+                                                            badgeClass = 'bg-red-100 text-red-800';
+                                                            description = 'An error occurred while checking the order status';
+                                                        } else {
+                                                            badgeClass = 'bg-gray-100 text-gray-800';
+                                                            description = 'Order status is unknown';
+                                                        }
+
+                                                        td.innerHTML = `
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                            ${status}
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            ${description}
+                        </div>
+                    </div>
+                `;
+                                                    })
+                                                    .catch(error => {
+                                                        td.innerHTML = `
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                            Error
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            Failed to load order status. Please try again later.
+                        </div>
+                    </div>
+                `;
+                                                    });
+                                            });
+                                        })();
+                                    </script>
                                     <script>
                                         (function() {
                                             // Get all TDs with store order numbers
@@ -795,7 +903,203 @@
                                     </button>
                                 @endif --}}
 
+                                <!-- Add SweetAlert2 CDN in your layout/head section -->
+                                {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
+                                <!-- Add this button above or below your table -->
+                                <div class="mb-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span id="selected-count" class="hidden text-sm text-gray-600">
+                                            <span class="font-semibold">0</span> items selected
+                                        </span>
+                                        <button type="button" id="cancel-items-btn"
+                                            class="hidden items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                            <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                            Cancel Selected Items
+                                        </button>
+
+                                    </div>
+                                </div>
+
+                                <script>
+                                    (function() {
+                                        const cancelBtn = document.getElementById('cancel-items-btn');
+                                        const selectedCountSpan = document.getElementById('selected-count');
+                                        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+
+                                        // Update selected count and button visibility
+                                        function updateSelectedCount() {
+                                            const checkedCount = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
+
+                                            if (checkedCount > 0) {
+                                                // Show button and count
+                                                cancelBtn.classList.remove('hidden');
+                                                cancelBtn.classList.add('inline-flex');
+                                                selectedCountSpan.classList.remove('hidden');
+                                                selectedCountSpan.innerHTML = `<span class="font-semibold">${checkedCount}</span> items selected`;
+                                            } else {
+                                                // Hide button and count
+                                                cancelBtn.classList.add('hidden');
+                                                cancelBtn.classList.remove('inline-flex');
+                                                selectedCountSpan.classList.add('hidden');
+                                            }
+                                        }
+
+                                        // Listen to checkbox changes
+                                        itemCheckboxes.forEach(checkbox => {
+                                            checkbox.addEventListener('change', updateSelectedCount);
+                                        });
+
+                                        // Also update when select-all changes
+                                        const selectAllCheckbox = document.getElementById('select-all');
+                                        if (selectAllCheckbox) {
+                                            selectAllCheckbox.addEventListener('change', updateSelectedCount);
+                                        }
+
+                                        // Show confirmation modal when cancel button is clicked
+                                        cancelBtn.addEventListener('click', function() {
+                                            const checkedCount = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
+
+                                            if (checkedCount === 0) {
+                                                Swal.fire({
+                                                    icon: 'warning',
+                                                    title: 'No Items Selected',
+                                                    text: 'Please select at least one item to cancel.',
+                                                    confirmButtonColor: '#3b82f6'
+                                                });
+                                                return;
+                                            }
+
+                                            // Show confirmation dialog
+                                            Swal.fire({
+                                                title: 'Cancel Items?',
+                                                html: `Are you sure you want to cancel <strong>${checkedCount}</strong> selected item(s)?<br><span class="text-sm text-gray-600">This action cannot be undone.</span>`,
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonColor: '#dc2626',
+                                                cancelButtonColor: '#6b7280',
+                                                confirmButtonText: 'Yes, Cancel Items',
+                                                cancelButtonText: 'No, Keep Items',
+                                                reverseButtons: true,
+                                                focusCancel: true
+                                            }).then((result) => {
+                                                if (result.isConfirmed) {
+                                                    cancelItems();
+                                                }
+                                            });
+                                        });
+
+                                        // Function to cancel items
+                                        function cancelItems() {
+                                            // Show loading state
+                                            Swal.fire({
+                                                title: 'Processing...',
+                                                html: 'Cancelling selected items',
+                                                allowOutsideClick: false,
+                                                allowEscapeKey: false,
+                                                allowEnterKey: false,
+                                                showConfirmButton: false,
+                                                didOpen: () => {
+                                                    Swal.showLoading();
+                                                }
+                                            });
+
+                                            // Collect selected item IDs
+                                            const selectedItems = [];
+                                            itemCheckboxes.forEach((checkbox, index) => {
+                                                if (checkbox.checked) {
+                                                    const row = checkbox.closest('tr');
+                                                    const itemIdInput = row.querySelector('input[name*="[id]"]');
+                                                    if (itemIdInput) {
+                                                        selectedItems.push(itemIdInput.value);
+                                                    }
+                                                }
+                                            });
+
+                                            // Prepare form data
+                                            const formData = new FormData();
+                                            selectedItems.forEach(itemId => {
+                                                formData.append('item_ids[]', itemId);
+                                            });
+
+                                            // Get order ID from the page (adjust selector as needed)
+                                            const orderId = '{{ $order->id }}'; // Or get it from a data attribute
+                                            formData.append('order_id', orderId);
+
+                                            // Add CSRF token
+                                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                                            if (csrfToken) {
+                                                formData.append('_token', csrfToken);
+                                            }
+
+                                            // Make POST request
+                                            fetch('{{ route('orders.cancel-items') }}', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': csrfToken,
+                                                        'Accept': 'application/json',
+                                                    },
+                                                    body: formData
+                                                })
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        // Show success message
+                                                        Swal.fire({
+                                                            icon: 'success',
+                                                            title: 'Success!',
+                                                            text: data.message || 'Items cancelled successfully!',
+                                                            confirmButtonColor: '#10b981',
+                                                            timer: 2000,
+                                                            timerProgressBar: true
+                                                        }).then(() => {
+                                                            // Reload the page or update the UI
+                                                            window.location.reload();
+                                                        });
+                                                    } else {
+                                                        // Show error message
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Failed',
+                                                            text: data.message || 'Failed to cancel items. Please try again.',
+                                                            confirmButtonColor: '#3b82f6'
+                                                        });
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    console.error('Error:', error);
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Error',
+                                                        text: 'An error occurred while cancelling items. Please try again.',
+                                                        confirmButtonColor: '#3b82f6'
+                                                    });
+                                                });
+                                        }
+
+                                        // Initialize count
+                                        updateSelectedCount();
+                                    })();
+                                </script>
+
+                                <style>
+                                    /* Optional: Customize SweetAlert2 styles */
+                                    .swal2-popup {
+                                        font-family: inherit;
+                                    }
+
+                                    .swal2-title {
+                                        font-size: 1.5rem;
+                                        font-weight: 600;
+                                    }
+
+                                    .swal2-html-container {
+                                        font-size: 0.95rem;
+                                        line-height: 1.5;
+                                    }
+                                </style>
                                 @if ($order->order_status === 'approved')
                                     <button
                                         type="button"
@@ -1491,6 +1795,10 @@
                             const itemTypeInput = row.querySelector(`input[name="items[${index}][item_type]"]`);
                             const itemType = itemTypeInput?.value || "MAIN";
 
+                            // Check if item is cancelled
+                            const remarksSelect = row.querySelector(`select[name="items[${index}][remarks]"]`);
+                            const isCancelled = remarksSelect?.value === "Item Cancelled";
+
                             if (itemType === "MAIN") {
                                 const schemeInput = row.querySelector(`input[name="items[${index}][scheme]"]`);
                                 const schemeValue = schemeInput?.value || "1+0";
@@ -1519,7 +1827,7 @@
                                 };
 
                                 const values = this.extractValues(cells);
-                                const calculations = this.performCalculations(values, schemeValue);
+                                const calculations = this.performCalculations(values, schemeValue, isCancelled);
 
                                 this.updateRowDisplay(cells, inputs, calculations);
                                 pendingFreebieQty = calculations.freebies;
@@ -1536,6 +1844,10 @@
 
                         const itemTypeInput = row.querySelector(`input[name="items[${index}][item_type]"]`);
                         const itemType = itemTypeInput?.value || "MAIN";
+
+                        // Check if item is cancelled
+                        const remarksSelect = row.querySelector(`select[name="items[${index}][remarks]"]`);
+                        const isCancelled = remarksSelect?.value === "Item Cancelled";
 
                         const cells = {
                             pricePerPc: row.querySelector('[data-field="price_per_pc"]'),
@@ -1566,7 +1878,7 @@
                             values.freebiesPerCs = 0;
                         }
 
-                        const calculations = this.performCalculations(values);
+                        const calculations = this.performCalculations(values, null, isCancelled);
                         this.updateRowDisplay(cells, inputs, calculations);
                     }
 
@@ -1594,13 +1906,22 @@
                         return isNaN(num) ? 0 : num;
                     }
 
-                    performCalculations(values) {
+                    performCalculations(values, schemeValue, isCancelled = false) {
                         const calculations = {
                             price: 0,
                             totalQty: 0,
                             amount: 0,
                             freebies: 0
                         };
+
+                        // If item is cancelled, set amount to 0
+                        if (isCancelled) {
+                            calculations.price = 0;
+                            calculations.totalQty = 0;
+                            calculations.amount = 0;
+                            calculations.freebies = 0;
+                            return calculations;
+                        }
 
                         const basePrice = values.pricePerPc * values.qtyPerPc;
 
@@ -1654,6 +1975,13 @@
 
                             const itemType = row.querySelector(`input[name="items[${index}][item_type]"]`)?.value || "MAIN";
 
+                            // Check if item is cancelled
+                            const remarksSelect = row.querySelector(`select[name="items[${index}][remarks]"]`);
+                            const isCancelled = remarksSelect?.value === "Item Cancelled";
+
+                            // Skip cancelled items
+                            if (isCancelled) return;
+
                             if (itemType === "MAIN" || itemType === "DISCOUNT") {
                                 const amountInput = row.querySelector(`input[name="items[${index}][amount]"]`);
                                 if (amountInput) total += parseFloat(amountInput.value) || 0;
@@ -1671,6 +1999,13 @@
 
                             const itemType = row.querySelector(`input[name="items[${index}][item_type]"]`)?.value || "MAIN";
                             if (itemType !== "DISCOUNT") return;
+
+                            // Check if item is cancelled
+                            const remarksSelect = row.querySelector(`select[name="items[${index}][remarks]"]`);
+                            const isCancelled = remarksSelect?.value === "Item Cancelled";
+
+                            // Skip cancelled items
+                            if (isCancelled) return;
 
                             const price = parseFloat(row.querySelector(`input[name="items[${index}][price]"]`)?.value) || 0;
                             const totalQty = parseFloat(row.querySelector(`input[name="items[${index}][total_qty]"]`)?.value) || 0;
@@ -1701,6 +2036,13 @@
                             if (index === undefined) return;
 
                             const itemType = row.querySelector(`input[name="items[${index}][item_type]"]`)?.value || "MAIN";
+
+                            // Check if item is cancelled
+                            const remarksSelect = row.querySelector(`select[name="items[${index}][remarks]"]`);
+                            const isCancelled = remarksSelect?.value === "Item Cancelled";
+
+                            // Skip cancelled items
+                            if (isCancelled) return;
 
                             if (itemType === "FREEBIE") {
                                 const amountInput = row.querySelector(`input[name="items[${index}][amount]"]`);

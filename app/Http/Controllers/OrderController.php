@@ -1075,6 +1075,133 @@ private function getWarehouseCodeByLocation(string $location): string
         return $pdf->stream('order_slip.pdf');
     }
 
-    
+    public function cancelItems(Request $request)
+    {
+        // Log incoming payload for debugging
+        Log::info('Order cancel items request payload', $request->all());
+
+        // Use manual validator so we can log validation errors and return a friendly response
+        $validator = Validator::make($request->all(), [
+            'order_id' => 'required|exists:orders,id',
+            'item_ids' => 'required|array|min:1',
+            'item_ids.*' => 'required|exists:order_items,id'
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Order cancel items validation failed', $validator->errors()->toArray());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $validator->errors()->all())
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            DB::beginTransaction();
+
+            // Find the order
+            $order = Order::findOrFail($validated['order_id']);
+
+            // Track changes for notes
+            $changes = [];
+            $cancelledItems = [];
+
+            // Get the items to be cancelled
+            $itemsToCancel = OrderItem::whereIn('id', $validated['item_ids'])
+                ->where('order_id', $order->id)
+                ->get();
+
+            if ($itemsToCancel->isEmpty()) {
+                DB::rollback();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid items found to cancel.'
+                ], 404);
+            }
+
+            // === CANCEL ITEMS ===
+            foreach ($itemsToCancel as $item) {
+                $oldRemarks = $item->remarks;
+                $oldAmount = $item->amount;
+
+                // Update item remarks to "Item Cancelled"
+                $item->update([
+                    'remarks' => 'Item Cancelled',
+                    'amount' => 0, // Optional: Set amount to 0 for cancelled items
+                ]);
+
+                // Track the change
+                $changes[] = "Item {$item->sku} ({$item->item_description}) - Remarks changed from '{$oldRemarks}' to 'Item Cancelled'";
+                
+                if ($oldAmount != 0) {
+                    $changes[] = "Item {$item->sku} - Amount changed from '{$oldAmount}' to '0'";
+                }
+
+                $cancelledItems[] = [
+                    'id' => $item->id,
+                    'sku' => $item->sku,
+                    'description' => $item->item_description
+                ];
+
+                Log::info('Item cancelled', [
+                    'order_id' => $order->id,
+                    'item_id' => $item->id,
+                    'sku' => $item->sku,
+                    'old_remarks' => $oldRemarks,
+                    'user_id' => auth()->id()
+                ]);
+            }
+
+            // === RECALCULATE ORDER TOTAL ===
+            $order->refresh();
+            $newTotal = $order->items()
+                ->where('remarks', '!=', 'Item Cancelled')
+                ->sum('amount');
+            
+            $oldTotal = $order->total_amount ?? 0;
+            
+            if ($oldTotal != $newTotal) {
+                $order->update(['total_amount' => $newTotal]);
+                $changes[] = "Order total amount changed from '{$oldTotal}' to '{$newTotal}'";
+            }
+
+            // === SAVE NOTES IF THERE ARE CHANGES ===
+            if (!empty($changes)) {
+                $order->notes()->create([
+                    'user_id' => auth()->id(),
+                    'status'  => $order->order_status, // use current order status
+                    'note'    => "Items Cancelled:\n• " . implode("\n• ", $changes), // bulleted list
+                ]);
+            }
+
+            DB::commit();
+
+            Log::info('Items cancelled successfully', [
+                'order_id' => $order->id,
+                'cancelled_count' => count($cancelledItems),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => count($cancelledItems) . ' item(s) cancelled successfully.',
+                'cancelled_items' => $cancelledItems,
+                'new_total' => $newTotal
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Order cancel items exception: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while cancelling items. Please check the application logs.'
+            ], 500);
+        }
+    }    
 
 }

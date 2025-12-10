@@ -24,7 +24,9 @@ class OracleTransferController extends Controller
                 ->where('order_id', $order->id)
                 ->where(function ($q) {
                     $q->whereNull('store_order_no')->orWhere('store_order_no', '');
-                })->get();
+                })
+                ->where('remarks', '!=', 'Item Cancelled')
+                ->get();
 
             if ($items->isEmpty()) {
                 return response()->json([
