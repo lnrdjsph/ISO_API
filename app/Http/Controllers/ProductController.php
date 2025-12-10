@@ -52,14 +52,15 @@ public function index(Request $request)
         // Warehouse mapping
         $locationToWarehouse = [
             '4002' => '80181',
-            '6012' => '80141',
-            '2010' => '80001',
-            '2017' => '80041',
-            '3018' => '80051',
-            '3019' => '80071',
-            '2008' => '80131',
-            '6009' => '80201',
-            '6010' => '80191',
+            '6012' => '80141', // Silangan
+            '2010' => '80141', // Silangan
+            '2017' => '80141', // Silangan
+            '2019' => '80141', // Silangan
+            '3018' => '80141', // Silangan
+            '3019' => '80141', // Silangan
+            '2008' => '80141', // Silangan
+            '6009' => '80141', // Silangan
+            '6010' => '80141', // Silangan
         ];
 
         $warehouseMap = [

@@ -174,43 +174,44 @@
                             @php
                                 $warehouseMap = [
                                     '80141' => 'Silangan Warehouse',
-                                    // '80001' => 'Central Warehouse',
-                                    // '80041' => 'Procter Warehouse',
-                                    // '80051' => 'Opao-ISO Warehouse',
-                                    // '80071' => 'Big Blue Warehouse',
-                                    // '80131' => 'Lower Tingub Warehouse',
-                                    // '80201' => 'Sta. Rosa Warehouse',
                                     '80181' => 'Bacolod Depot',
-                                    // '80191' => 'Tacloban Depot',
                                 ];
 
-                                // Map user locations to warehouse codes
                                 $locationToWarehouse = [
-                                    '4002' => '80181', // Example: Opao-ISO
-                                    '6012' => '80141', // Example: Silangan
-                                    // Add more mappings as needed...
+                                    '4002' => '80181',
+                                    '6012' => '80141',
+                                    '2010' => '80141',
+                                    '2017' => '80141',
+                                    '2019' => '80141',
+                                    '3018' => '80141',
+                                    '3019' => '80141',
+                                    '2008' => '80141',
+                                    '6009' => '80141',
+                                    '6010' => '80141',
                                 ];
 
                                 use Illuminate\Support\Str;
 
                                 $isPersonnel = Str::contains(strtolower(Auth::user()->role), 'personnel');
 
-                                // Determine selected warehouse
-                                $selectedWarehouse = old('warehouse'); // old input takes priority
+                                // Determine selected warehouse CODE
+                                $selectedWarehouseCode = old('warehouse'); // old input takes priority
 
-                                if (!$selectedWarehouse && isset($locationToWarehouse[$userLocation])) {
+                                if (!$selectedWarehouseCode && isset($locationToWarehouse[$userLocation])) {
                                     // Fallback to user location mapping if no old input
-                                    $selectedWarehouse = $locationToWarehouse[$userLocation];
+                                    $selectedWarehouseCode = $locationToWarehouse[$userLocation];
                                 }
                             @endphp
 
                             <div class="relative mb-6 w-full">
                                 @if ($isPersonnel)
-                                    <!-- Readonly input for personnel -->
+                                    <!-- Hidden input to store the actual code -->
+                                    <input type="hidden" name="warehouse" value="{{ $selectedWarehouseCode }}" />
+
+                                    <!-- Readonly display showing the name -->
                                     <input
-                                        id="warehouse"
-                                        name="warehouse"
-                                        value="{{ $selectedWarehouse ? $warehouseMap[$selectedWarehouse] ?? $selectedWarehouse : '' }}"
+                                        id="warehouse_display"
+                                        value="{{ $selectedWarehouseCode ? $warehouseMap[$selectedWarehouseCode] ?? $selectedWarehouseCode : '' }}"
                                         type="text"
                                         readonly
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -221,9 +222,9 @@
                                         id="warehouse"
                                         name="warehouse"
                                         class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-                                        <option value="" disabled {{ $selectedWarehouse == '' ? 'selected' : '' }}>Select Warehouse</option>
+                                        <option value="" disabled {{ $selectedWarehouseCode == '' ? 'selected' : '' }}>Select Warehouse</option>
                                         @foreach ($warehouseMap as $code => $name)
-                                            <option value="{{ $code }}" {{ $selectedWarehouse == $code ? 'selected' : '' }}>
+                                            <option value="{{ $code }}" {{ $selectedWarehouseCode == $code ? 'selected' : '' }}>
                                                 {{ $code }} - {{ $name }}
                                             </option>
                                         @endforeach
@@ -1056,7 +1057,7 @@
 
                                         <!-- RIGHT SIDE: Readonly Invoice Style -->
                                         <div
-                                            class="readonly-side mt-6 flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1">
+                                            class="readonly-side flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1">
                                             <div class="space-y-2">
 
                                                 <!-- Price -->

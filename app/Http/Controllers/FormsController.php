@@ -541,6 +541,10 @@ public function checkAllocationStock(array $orders, $warehouseName)
             ->where('warehouse_code', $warehouseCode)
             ->first();
 
+        if (!$wmsAllocation) {
+            throw new \Exception("No WMS allocation found for SKU {$sku} in warehouse {$warehouseCode}.");
+        }
+
         $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
 
         if ($availableWmsQty < $requiredWmsQty) {
