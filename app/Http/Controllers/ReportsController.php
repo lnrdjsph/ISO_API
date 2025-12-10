@@ -664,8 +664,8 @@ public function ordersReport(Request $request)
 
     // 🗺️ Region -> stores mapping
     $storeMapping = [
-        'lz' => ['6012'], // Luzon = only Antipolo
-        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas = everything EXCEPT Antipolo
+        'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018'], // Visayas = everything EXCEPT Antipolo
     ];
 
     $allowedStatuses = null;
@@ -795,8 +795,8 @@ public function exportOrdersReport(Request $request)
     $query = Order::query()->with('items');
 
     $storeMapping = [
-        'lz' => ['6012'], // Luzon = only Antipolo
-        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], 
+        'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018'], 
     ];
 
     $allowedStatuses = null;
