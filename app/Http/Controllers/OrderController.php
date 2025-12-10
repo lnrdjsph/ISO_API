@@ -869,16 +869,18 @@ public function index(Request $request)
  */
 private function getWarehouseCodeByLocation(string $location): string
 {
+    // Warehouse mapping
     $locationToWarehouse = [
         '4002' => '80181',
-        '6012' => '80211',
-        '2010' => '80001',
-        '2017' => '80041',
-        '3018' => '80051',
-        '3019' => '80071',
-        '2008' => '80131',
-        '6009' => '80141',
-        '6010' => '80191',
+        '2010' => '80181', //bacolod
+        '2017' => '80181', //bacolod
+        '2019' => '80181', //bacolod
+        '3018' => '80181', //bacolod
+        '3019' => '80141', //bacolod
+        '2008' => '80141', // Silangan
+        '6009' => '80141', // Silangan
+        '6010' => '80141', // Silangan
+        '6012' => '80141', // Silangan
     ];
 
     $warehouseCode = $locationToWarehouse[$location] ?? null;
