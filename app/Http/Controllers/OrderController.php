@@ -523,7 +523,7 @@ public function index(Request $request)
         $recipients = [];
 
         if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
+            $recipients[] = 'gene.catarina@metroretial.ph';
         }
 
         if (in_array($order->requesting_store, ['6012', '3019', '2008', '6009', '6010'])) {
