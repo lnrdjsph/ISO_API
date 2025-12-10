@@ -25,8 +25,8 @@ public function index(Request $request)
 
     // 🗺️ Region -> store mapping
     $storeMapping = [
-        'lz' => ['6012'], // Luzon = only Antipolo
-        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
+        'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon = only Antipolo
+        'vs' => ['4002', '2010', '2017', '2019', '3018'], // Visayas
     ];
 
     // Default

@@ -18,15 +18,15 @@ class UpdateAllProductAllocations extends Command
 
     // Master mapping: Warehouse Code => [Facility Label, Store Codes]
     protected array $warehouseConfig = [
-        '80181' => ['facility' => 'BD', 'stores' => ['4002']],                    // Bacolod Depot
-        '80141' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
-        '80001' => ['facility' => 'BD', 'stores' => ['2010']],                    // Central Warehouse
-        '80041' => ['facility' => 'BD', 'stores' => ['2017']],                    // Procter Warehouse
-        '80051' => ['facility' => 'BD', 'stores' => ['2019']],                    // Opao-ISO Warehouse
-        '80071' => ['facility' => 'BD', 'stores' => ['3018']],                    // Big Blue Warehouse
-        '80131' => ['facility' => 'BD', 'stores' => ['3019']],                    // Lower Tingub Warehouse
-        '80201' => ['facility' => 'SL', 'stores' => ['2008']],                    // Sta. Rosa Warehouse
-        '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
+        '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018']],                    // Bacolod Depot
+        '80141' => ['facility' => 'SI', 'stores' => ['6012', '3019', '2008', '6009', '6010']],                    // Silangan Warehouse
+        // '80001' => ['facility' => 'BD', 'stores' => ['2010']],                    // Central Warehouse
+        // '80041' => ['facility' => 'BD', 'stores' => ['2017']],                    // Procter Warehouse
+        // '80051' => ['facility' => 'BD', 'stores' => ['2019']],                    // Opao-ISO Warehouse
+        // '80071' => ['facility' => 'BD', 'stores' => ['3018']],                    // Big Blue Warehouse
+        // '80131' => ['facility' => 'BD', 'stores' => ['3019']],                    // Lower Tingub Warehouse
+        // '80201' => ['facility' => 'SL', 'stores' => ['2008']],                    // Sta. Rosa Warehouse
+        // '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
     ];
 
     private $logFile;
