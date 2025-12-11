@@ -191,8 +191,6 @@
                                     '6012' => '80141', // Silangan
                                 ];
 
-                                use Illuminate\Support\Str;
-
                                 $isPersonnel = Str::contains(strtolower(Auth::user()->role), 'personnel');
 
                                 // Determine selected warehouse CODE
@@ -448,6 +446,8 @@
                         <h2 class="mb-4 text-lg font-semibold">Payment Information</h2>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             @php
+                                use Illuminate\Support\Str;
+
                                 $paymentCenters = [
                                     '4002' => 'F2 - Metro Wholesalemart Colon',
                                     '2010' => 'S10 - Metro Maasin',
@@ -462,28 +462,56 @@
                                 ];
 
                                 $userLocation = auth()->user()->user_location ?? null;
-                                $mappedLocation = $paymentCenters[$userLocation] ?? 'Personnel Sample';
+                                $isPersonnel = Str::contains(strtolower(auth()->user()->role), 'personnel');
+
+                                // Resolve selected payment center
+                                $selectedPaymentCenter = old('payment_center');
+
+                                if (!$selectedPaymentCenter && isset($paymentCenters[$userLocation])) {
+                                    $selectedPaymentCenter = $paymentCenters[$userLocation];
+                                }
                             @endphp
 
                             <div class="relative mb-6 w-full">
-                                <select
-                                    name="payment_center"
-                                    id="payment_center"
-                                    class="required-input peer block w-full appearance-none rounded-md border border-gray-300 bg-indigo-50 px-3 pb-2 pt-6 text-sm text-gray-900 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-                                    <option value="" disabled {{ old('payment_center', $mappedLocation) == '' ? 'selected' : '' }}>Select Payment Center</option>
-                                    @foreach ($paymentCenters as $code => $name)
-                                        <option value="{{ $name }}" {{ old('payment_center', $mappedLocation) == $name ? 'selected' : '' }}>
-                                            {{ $name }}
+                                @if ($isPersonnel)
+                                    <!-- Hidden value (submitted) -->
+                                    <input type="hidden" name="payment_center" value="{{ $selectedPaymentCenter }}">
+
+                                    <!-- Readonly display -->
+                                    <input
+                                        id="payment_center_display"
+                                        type="text"
+                                        readonly
+                                        value="{{ $selectedPaymentCenter }}"
+                                        class="peer w-full rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                        placeholder="Payment Center">
+                                @else
+                                    <!-- Editable select -->
+                                    <select
+                                        name="payment_center"
+                                        id="payment_center"
+                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 bg-indigo-50 px-3 pb-2 pt-6 text-sm text-gray-900 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
+
+                                        <option value="" disabled {{ !$selectedPaymentCenter ? 'selected' : '' }}>
+                                            Select Payment Center
                                         </option>
-                                    @endforeach
-                                </select>
+
+                                        @foreach ($paymentCenters as $code => $name)
+                                            <option value="{{ $name }}" {{ $selectedPaymentCenter === $name ? 'selected' : '' }}>
+                                                {{ $name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
 
                                 <label
                                     for="payment_center"
-                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all">
                                     Payment Center
                                 </label>
                             </div>
+
+
 
 
 
