@@ -574,6 +574,10 @@ public function deductAllocationStock($orderId, $warehouseName)
     }
 
     foreach ($items as $item) {
+        // ============================================
+        // MAIN ITEM DEDUCTION
+        // ============================================
+        
         // Find product in location table
         $product = DB::connection('mysql')
             ->table($tableName)
@@ -646,11 +650,87 @@ public function deductAllocationStock($orderId, $warehouseName)
         } else {
             Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
         }
+
+        // ============================================
+        // FREEBIE ITEM DEDUCTION (if applicable)
+        // ============================================
+        
+        if (!empty($item->freebies_per_cs) && ($item->sale_type ?? '') == 'Freebie') {
+            $freebieSku = strtoupper($item->freebie_sku ?? $item->sku);
+            $freebieQty = $item->freebies_per_cs;
+
+            // Find freebie product in location table
+            $freebieProduct = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', $freebieSku)
+                ->first();
+
+            if ($freebieProduct) {
+                /** --------------------------------------------
+                 * 1) Deduct freebie allocation_per_case
+                 * -------------------------------------------- */
+                $freebieCasesDeduction = $freebieQty;
+                $currentFreebieCaseAllocation = $freebieProduct->allocation_per_case ?? 0;
+                $newFreebieCaseAllocation = max(0, $currentFreebieCaseAllocation - $freebieCasesDeduction);
+
+                // Update freebie allocation_per_case
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $freebieProduct->id)
+                    ->update([
+                        'allocation_per_case' => $newFreebieCaseAllocation,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info("Freebie Case Deduction - SKU: {$freebieSku}, Cases Deducted: {$freebieCasesDeduction}, Previous: {$currentFreebieCaseAllocation}, New Balance: {$newFreebieCaseAllocation}");
+
+                /** ----------------------------------------------------------
+                 * 2) Deduct freebie wms_virtual_allocation
+                 * ---------------------------------------------------------- */
+                $freebieQtyPerPc = $freebieProduct->qty_per_pc ?? 0;
+
+                if ($freebieQtyPerPc == 0) {
+                    Log::warning("qty_per_pc is 0 for Freebie SKU: {$freebieSku}. Skipping WMS deduction.");
+                    continue;
+                }
+
+                // Calculate freebie pieces deduction
+                $freebiePiecesDeduction = $freebieQty * $freebieQtyPerPc;
+
+                // Get current freebie wms allocation
+                $freebieWmsAllocation = DB::connection('mysql')
+                    ->table('product_wms_allocations')
+                    ->where('sku', $freebieSku)
+                    ->where('warehouse_code', $warehouseCode)
+                    ->first();
+
+                if (!$freebieWmsAllocation) {
+                    Log::warning("WMS allocation record not found for Freebie SKU: {$freebieSku}, Warehouse: {$warehouseCode}");
+                    continue;
+                }
+
+                $currentFreebieWmsPieces = $freebieWmsAllocation->wms_virtual_allocation ?? 0;
+                $newFreebieWmsPieces = max(0, $currentFreebieWmsPieces - $freebiePiecesDeduction);
+
+                // Update freebie wms_virtual_allocation
+                $freebieUpdated = DB::connection('mysql')
+                    ->table('product_wms_allocations')
+                    ->where('sku', $freebieSku)
+                    ->where('warehouse_code', $warehouseCode)
+                    ->update([
+                        'wms_virtual_allocation' => $newFreebieWmsPieces,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info("Freebie WMS Pieces Deduction - SKU: {$freebieSku}, Warehouse: {$warehouseCode}, Qty: {$freebieQty}, Pieces/Unit: {$freebieQtyPerPc}, Total Pieces Deducted: {$freebiePiecesDeduction}, Previous: {$currentFreebieWmsPieces}, New Balance: {$newFreebieWmsPieces}, Rows Updated: {$freebieUpdated}");
+            } else {
+                Log::warning("Freebie product not found in {$tableName} for SKU: {$freebieSku}");
+            }
+        }
     }
 
     return true;
 }
-
 
 /**
  * Map user location to warehouse code
