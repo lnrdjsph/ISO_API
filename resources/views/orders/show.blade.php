@@ -1392,7 +1392,7 @@
                 <div class="mt-2">
                     <label style="font-size:13px; cursor:pointer;">
                         <input type="checkbox" id="noDocumentCheckbox" style="margin-right:6px;">
-                        No approval document needed
+                        Approve this order without an approval document.
                     </label>
                 </div>
             </div>
