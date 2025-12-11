@@ -499,20 +499,53 @@ public function checkAllocationStock(array $orders, $warehouseName)
 {
     $userLocation = auth()->user()->user_location;
     $tableName = 'products_' . strtolower($userLocation);
-    $warehouseCode =  $warehouseName;
+    $warehouseCode = $warehouseName;
 
-    // Group orders by SKU (include freebies if sale_type == 'Freebie')
+    // Group orders by SKU and track qty_per_pc for each
     $skuTotals = [];
+    $skuQtyPerPc = []; // Track qty_per_pc for WMS calculation
+    
     foreach ($orders as $item) {
-        // Main item
-        $sku = strtoupper($item['sku']);
-        $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $item['total_qty'];
-
-        // Freebie item (if present and sale_type == 'Freebie')
-        if (!empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
+        // Handle both array and object (OrderItem model)
+        $sku = is_array($item) ? strtoupper($item['sku']) : strtoupper($item->sku);
+        $totalQty = is_array($item) ? ($item['total_qty'] ?? 0) : ($item->total_qty ?? 0);
+        
+        // For RAW INPUT: Check if total_qty already includes freebies
+        if (is_array($item) && !empty($item['freebies_per_cs']) && ($item['sale_type'] ?? '') == 'Freebie') {
+            // Get the main quantity (qty_per_cs) instead of total_qty
+            // because total_qty might already include freebies in the form
+            $mainQty = $item['qty_per_cs'] ?? 0;
+            $freebieQty = $item['freebies_per_cs'] ?? 0;
+            
+            // Store qty_per_pc for main item
+            if (isset($item['qty_per_pc'])) {
+                $skuQtyPerPc[$sku] = $item['qty_per_pc'];
+            }
+            
+            // Add main quantity
+            $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $mainQty;
+            
+            // Add freebie quantity (might be same or different SKU)
             $freebieSku = strtoupper($item['freebie_sku'] ?? $item['sku']);
-            $freebieQty = $item['freebies_per_cs'];
             $skuTotals[$freebieSku] = ($skuTotals[$freebieSku] ?? 0) + $freebieQty;
+            
+            // Store qty_per_pc for freebie item
+            if (isset($item['freebie_qty_per_pc'])) {
+                $skuQtyPerPc[$freebieSku] = $item['freebie_qty_per_pc'];
+            } elseif (isset($item['qty_per_pc'])) {
+                // Fallback to main qty_per_pc if freebie_qty_per_pc not provided
+                $skuQtyPerPc[$freebieSku] = $item['qty_per_pc'];
+            }
+        } else {
+            // For OrderItem models or non-freebie items, use total_qty directly
+            $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $totalQty;
+            
+            // Store qty_per_pc if available
+            if (is_array($item) && isset($item['qty_per_pc'])) {
+                $skuQtyPerPc[$sku] = $item['qty_per_pc'];
+            } elseif (!is_array($item) && isset($item->qty_per_pc)) {
+                $skuQtyPerPc[$sku] = $item->qty_per_pc;
+            }
         }
     }
 
@@ -533,7 +566,15 @@ public function checkAllocationStock(array $orders, $warehouseName)
         }
 
         // Check wms_virtual_allocation from product_wms_allocations table
-        $requiredWmsQty = $requiredQty * ($product->qty_per_pc ?? 1);
+        // Use qty_per_pc from input if available, otherwise from product table
+        $qtyPerPc = $skuQtyPerPc[$sku] ?? $product->qty_per_pc ?? 0;
+        
+        if ($qtyPerPc == 0) {
+            throw new \Exception("Product with SKU {$sku} has qty_per_pc = 0. Cannot calculate WMS requirement.");
+        }
+        
+        // Convert cases to pieces: requiredQty (cases) × qty_per_pc (pieces per case)
+        $requiredWmsQty = $requiredQty * $qtyPerPc;
 
         $wmsAllocation = DB::connection('mysql')
             ->table('product_wms_allocations')
@@ -548,7 +589,7 @@ public function checkAllocationStock(array $orders, $warehouseName)
         $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
 
         if ($availableWmsQty < $requiredWmsQty) {
-            throw new \Exception("Insufficient stock for SKU {$sku} in warehouse {$warehouseCode}. Required: {$requiredWmsQty}, Available: {$availableWmsQty}");
+            throw new \Exception("Insufficient stock for SKU {$sku} in warehouse {$warehouseCode}. Required: {$requiredWmsQty} pieces ({$requiredQty} cases × {$qtyPerPc} pcs), Available: {$availableWmsQty} pieces");
         }
     }
 
@@ -574,10 +615,6 @@ public function deductAllocationStock($orderId, $warehouseName)
     }
 
     foreach ($items as $item) {
-        // ============================================
-        // MAIN ITEM DEDUCTION
-        // ============================================
-        
         // Find product in location table
         $product = DB::connection('mysql')
             ->table($tableName)
@@ -586,9 +623,11 @@ public function deductAllocationStock($orderId, $warehouseName)
 
         if ($product) {
             /** --------------------------------------------
-             * 1) Deduct allocation_per_case by total_qty (number of cases or freebies)
+             * 1) Deduct allocation_per_case by total_qty
+             *    Works for both MAIN items and FREEBIE items since
+             *    freebies are stored as separate OrderItem records
              * -------------------------------------------- */
-            $casesDeduction = $item->total_qty; // Number of cases/freebies to deduct
+            $casesDeduction = $item->total_qty;
             $currentCaseAllocation = $product->allocation_per_case ?? 0;
             $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
 
@@ -614,7 +653,7 @@ public function deductAllocationStock($orderId, $warehouseName)
 
             // If qty_per_pc is still 0, log warning and skip WMS deduction
             if ($qtyPerPc == 0) {
-                Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Skipping WMS deduction.");
+                Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Item qty_per_pc: " . ($item->qty_per_pc ?? 'null') . ", Product qty_per_pc: " . ($product->qty_per_pc ?? 'null') . ". Skipping WMS deduction.");
                 continue;
             }
 
@@ -649,83 +688,6 @@ public function deductAllocationStock($orderId, $warehouseName)
             Log::info("WMS Pieces Deduction - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Qty: {$item->total_qty}, Pieces/Unit: {$qtyPerPc}, Total Pieces Deducted: {$piecesDeduction}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}, Rows Updated: {$updated}");
         } else {
             Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
-        }
-
-        // ============================================
-        // FREEBIE ITEM DEDUCTION (if applicable)
-        // ============================================
-        
-        if (!empty($item->freebies_per_cs) && ($item->sale_type ?? '') == 'Freebie') {
-            $freebieSku = strtoupper($item->freebie_sku ?? $item->sku);
-            $freebieQty = $item->freebies_per_cs;
-
-            // Find freebie product in location table
-            $freebieProduct = DB::connection('mysql')
-                ->table($tableName)
-                ->where('sku', $freebieSku)
-                ->first();
-
-            if ($freebieProduct) {
-                /** --------------------------------------------
-                 * 1) Deduct freebie allocation_per_case
-                 * -------------------------------------------- */
-                $freebieCasesDeduction = $freebieQty;
-                $currentFreebieCaseAllocation = $freebieProduct->allocation_per_case ?? 0;
-                $newFreebieCaseAllocation = max(0, $currentFreebieCaseAllocation - $freebieCasesDeduction);
-
-                // Update freebie allocation_per_case
-                DB::connection('mysql')
-                    ->table($tableName)
-                    ->where('id', $freebieProduct->id)
-                    ->update([
-                        'allocation_per_case' => $newFreebieCaseAllocation,
-                        'updated_at' => now(),
-                    ]);
-
-                Log::info("Freebie Case Deduction - SKU: {$freebieSku}, Cases Deducted: {$freebieCasesDeduction}, Previous: {$currentFreebieCaseAllocation}, New Balance: {$newFreebieCaseAllocation}");
-
-                /** ----------------------------------------------------------
-                 * 2) Deduct freebie wms_virtual_allocation
-                 * ---------------------------------------------------------- */
-                $freebieQtyPerPc = $freebieProduct->qty_per_pc ?? 0;
-
-                if ($freebieQtyPerPc == 0) {
-                    Log::warning("qty_per_pc is 0 for Freebie SKU: {$freebieSku}. Skipping WMS deduction.");
-                    continue;
-                }
-
-                // Calculate freebie pieces deduction
-                $freebiePiecesDeduction = $freebieQty * $freebieQtyPerPc;
-
-                // Get current freebie wms allocation
-                $freebieWmsAllocation = DB::connection('mysql')
-                    ->table('product_wms_allocations')
-                    ->where('sku', $freebieSku)
-                    ->where('warehouse_code', $warehouseCode)
-                    ->first();
-
-                if (!$freebieWmsAllocation) {
-                    Log::warning("WMS allocation record not found for Freebie SKU: {$freebieSku}, Warehouse: {$warehouseCode}");
-                    continue;
-                }
-
-                $currentFreebieWmsPieces = $freebieWmsAllocation->wms_virtual_allocation ?? 0;
-                $newFreebieWmsPieces = max(0, $currentFreebieWmsPieces - $freebiePiecesDeduction);
-
-                // Update freebie wms_virtual_allocation
-                $freebieUpdated = DB::connection('mysql')
-                    ->table('product_wms_allocations')
-                    ->where('sku', $freebieSku)
-                    ->where('warehouse_code', $warehouseCode)
-                    ->update([
-                        'wms_virtual_allocation' => $newFreebieWmsPieces,
-                        'updated_at' => now(),
-                    ]);
-
-                Log::info("Freebie WMS Pieces Deduction - SKU: {$freebieSku}, Warehouse: {$warehouseCode}, Qty: {$freebieQty}, Pieces/Unit: {$freebieQtyPerPc}, Total Pieces Deducted: {$freebiePiecesDeduction}, Previous: {$currentFreebieWmsPieces}, New Balance: {$newFreebieWmsPieces}, Rows Updated: {$freebieUpdated}");
-            } else {
-                Log::warning("Freebie product not found in {$tableName} for SKU: {$freebieSku}");
-            }
         }
     }
 
