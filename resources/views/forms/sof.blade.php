@@ -859,7 +859,7 @@
                                                 </div>
                                                 <!-- Discount Field -->
                                                 <div
-                                                    class="discount-field"
+                                                    class="discount-field hidden"
                                                     data-index="{{ $i }}">
                                                     <label class="mb-1 flex items-center gap-1 text-sm font-medium">
                                                         Discount
@@ -1457,6 +1457,19 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     attachCollapseListener(row);
                     attachSaleTypeListener(row);
                     calculateRowTotals(row);
+
+                    // 🆕 Initialize discount field visibility on page load
+                    const saleTypeSelect = row.querySelector('.sale-type');
+                    const discountField = row.querySelector('.discount-field');
+
+                    if (discountField) {
+                        // Hide by default, only show if sale type is "Discount"
+                        if (saleTypeSelect && saleTypeSelect.value === 'Discount') {
+                            discountField.classList.remove('hidden');
+                        } else {
+                            discountField.classList.add('hidden');
+                        }
+                    }
                 });
 
                 // Initialize remove buttons state and counter
