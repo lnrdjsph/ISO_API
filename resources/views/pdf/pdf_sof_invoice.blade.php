@@ -175,11 +175,11 @@
                         </tr>
                         <tr>
                             <td><strong>Address:</strong></td>
-                            <td>{{ $order->delivery_address ?? '-' }}</td>
+                            <td>{{ $order->address ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td><strong>Landmark:</strong></td>
-                            <td>{{ $order->delivery_landmark ?? '-' }}</td>
+                            <td>{{ $order->landmark ?? '-' }}</td>
                         </tr>
                     </table>
                 </td>
