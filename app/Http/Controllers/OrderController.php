@@ -378,8 +378,8 @@ public function update(Request $request, $id)
         if (!empty($changes)) {
             $order->notes()->create([
                 'user_id' => auth()->id(),
-                'status'  => $order->order_status,
-                'note'    => "\n• " . implode("\n• ", $changes),
+                'status'  => "updated",
+                'note' => nl2br("• " . implode("\n• ", $changes)),
             ]);
         }
 
@@ -605,7 +605,7 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'cancelled',
-            'note'    => 'Order was cancelled. Reason: ' . $request->note,
+            'note'    => 'Order was cancelled. <br> Reason: ' . $request->note,
         ]);
 
         return redirect()
@@ -750,7 +750,11 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
-            'note'    => 'Order approved' . ($filePath ? ' with document attached' : ''),
+            'note' =>
+                "Order approved by:<br>" .
+                "<strong>" . auth()->user()->name . "</strong><br>" .
+                ucfirst(auth()->user()->role)
+
         ]);
 
         // ✅ Send email to requester
