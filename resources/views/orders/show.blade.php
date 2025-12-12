@@ -1269,7 +1269,7 @@
                                                             <span class="font-medium text-gray-700">{{ strtoupper($note->status) }}</span>
                                                             <span class="text-gray-400">{{ $note->created_at->diffForHumans() }}</span>
                                                         </div>
-                                                        <p class="mt-1 text-gray-600">{{ $note->note ?? '—' }}</p>
+                                                        <p class="mt-1 text-gray-600">{!! $note->note ?? '—' !!}</p>
                                                         <p class="mt-1 italic text-gray-400">By: {{ $note->user->name ?? 'System' }}</p>
                                                     </div>
                                                 @empty
