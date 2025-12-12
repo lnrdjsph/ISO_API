@@ -1346,7 +1346,7 @@ private function getWarehouseCodeByLocation(string $location): string
             if (!empty($changes)) {
                 $order->notes()->create([
                     'user_id' => auth()->id(),
-                    'status'  => $order->order_status, // use current order status
+                    'status'  => "updated", // use current order status
                     'note'    => "Items Cancelled:\n• " . implode("\n• ", $changes), // bulleted list
                 ]);
             }

@@ -28,6 +28,18 @@ class UpdateAllProductAllocations extends Command
         // '80201' => ['facility' => 'SL', 'stores' => ['2008']],                    // Sta. Rosa Warehouse
         // '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
     ];
+    protected array $warehouseMap = [
+        '80141' => 'Silangan Warehouse',
+        '80001' => 'Central Warehouse',
+        '80041' => 'Procter Warehouse',
+        '80051' => 'Opao-ISO Warehouse',
+        '80071' => 'Big Blue Warehouse',
+        '80131' => 'Lower Tingub Warehouse',
+        '80211' => 'Sta. Rosa Warehouse',
+        '80181' => 'Bacolod Depot',
+        '80191' => 'Tacloban Depot',
+    ];
+
 
     private $logFile;
     private $processStartTime;
@@ -373,9 +385,11 @@ class UpdateAllProductAllocations extends Command
             $updated = 0;
             $inserted = 0;
 
+            $warehouseName = strtoupper($this->warehouseMap[$warehouseCode] ?? 'Unknown Warehouse');
+
             $this->log("");
             $this->logRaw(str_repeat("=", 120));
-            $this->logRaw("ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode}");
+            $this->logRaw("ALLOCATION UPDATE DETAILS - WAREHOUSE: {$warehouseCode} - {$warehouseName}");   
             $this->logRaw(str_repeat("=", 120));
             $this->logRaw(sprintf("%-20s | %-25s | %-25s | %-20s", "SKU", "BEFORE (Actual/Virtual)", "AFTER (Actual/Virtual)", "STATUS"));
             $this->logRaw(str_repeat("-", 120));
