@@ -567,7 +567,7 @@
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
                                                 data-field="qty_per_cs">
-                                                {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '-' : $item->qty_per_cs) : 'N/A' }}
+                                                {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '0' : $item->qty_per_cs) : '0' }}
 
                                                 <input
                                                     type="hidden"
@@ -2314,7 +2314,6 @@
                         $(this).prop('readonly', true)
                             .css({
                                 'pointer-events': 'none',
-                                'user-select': 'none',
                                 'cursor': 'default'
                             });
                     });
@@ -2335,7 +2334,6 @@
                         $(this).attr('contenteditable', 'false')
                             .css({
                                 'pointer-events': 'none',
-                                'user-select': 'none',
                                 'cursor': 'default'
                             })
                             .off(); // Remove all event listeners
@@ -2347,7 +2345,6 @@
                             .attr('contenteditable', 'false')
                             .css({
                                 'pointer-events': 'none',
-                                'user-select': 'none',
                                 'cursor': 'default'
                             })
                             .off();
