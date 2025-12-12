@@ -40,6 +40,17 @@ class FormsController extends Controller
 
 
 
+protected array $warehouseMap = [
+    '80141' => 'Silangan Warehouse',
+    '80001' => 'Central Warehouse',
+    '80041' => 'Procter Warehouse',
+    '80051' => 'Opao-ISO Warehouse',
+    '80071' => 'Big Blue Warehouse',
+    '80131' => 'Lower Tingub Warehouse',
+    '80211' => 'Sta. Rosa Warehouse',
+    '80181' => 'Bacolod Depot',
+    '80191' => 'Tacloban Depot',
+];
 
 
 
@@ -587,9 +598,15 @@ public function checkAllocationStock(array $orders, $warehouseName)
         }
 
         $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
+        $warehouseName = strtoupper($this->warehouseMap[$warehouseCode] ?? 'UNKNOWN WAREHOUSE');
 
+        
         if ($availableWmsQty < $requiredWmsQty) {
-            throw new \Exception("Insufficient stock for SKU {$sku} in warehouse {$warehouseCode}. Required: {$requiredWmsQty} pieces ({$requiredQty} cases × {$qtyPerPc} pcs), Available: {$availableWmsQty} pieces");
+            throw new \Exception(
+                "Insufficient stock for SKU {$sku} in warehouse {$warehouseCode} - {$warehouseName}. ".
+                "Required: {$requiredWmsQty} pieces ({$requiredQty} cases × {$qtyPerPc} pcs), ".
+                "Available: {$availableWmsQty} pieces"
+            );
         }
     }
 
