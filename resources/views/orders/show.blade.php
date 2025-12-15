@@ -584,7 +584,7 @@
                                                 @if ($item->item_type === 'DISCOUNT')
                                                     N/A
                                                 @else
-                                                    {!! $item->freebies_per_cs == 0 ? 'N/A' : $item->freebies_per_cs !!}
+                                                    {!! $item->freebies_per_cs == 0 ? '0' : $item->freebies_per_cs !!}
                                                 @endif
                                                 <input
                                                     type="hidden"
@@ -656,7 +656,7 @@
                                                 contenteditable="false"
                                                 data-item-index="{{ $loop->index }}"
                                                 @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" 
-                                    data-load-status="true" @endif>
+                                                data-load-status="true" @endif>
                                                 @if (!empty($item->store_order_no))
                                                     <span class="inline-flex items-center px-3 py-1 text-xs font-medium">
                                                         <svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1100,7 +1100,13 @@
                                         line-height: 1.5;
                                     }
                                 </style>
-                                @if ($order->order_status === 'approved')
+                                @php
+                                    $hasEmptyStoreOrderNo = $order->items->contains(function ($item) {
+                                        return empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
+                                    });
+                                @endphp
+
+                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo)
                                     <button
                                         type="button"
                                         id="generateSOButton"
@@ -1777,7 +1783,7 @@
                                 if (IS_LOCKED) return;
                                 const value = $(this).text().trim();
                                 if (value === "" || value === "0") {
-                                    $(this).text("-");
+                                    $(this).text("0");
                                 }
                             }
                         );
@@ -2183,7 +2189,7 @@
                         const freebiesCell = nextRow.querySelector('[data-field="freebies_per_cs"]');
                         if (freebiesCell) {
                             const oldText = freebiesCell.textContent;
-                            freebiesCell.textContent = freebieCount > 0 ? freebieCount : "-";
+                            freebiesCell.textContent = freebieCount > 0 ? freebieCount : "0";
                             console.log(`      freebies_per_cs cell: ${oldText} → ${freebiesCell.textContent}`);
 
                             // Mark as changed
