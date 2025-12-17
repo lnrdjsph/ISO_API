@@ -361,15 +361,24 @@ public function getItemStatus($storeOrderNo)
         $containerItem = DB::connection('oracle_wms')
             ->table('rwms.container_item')
             ->where('distro_nbr', $storeOrderNo)
-            // where bol_no is not null
-            ->whereNotNull('bol_no')
             ->first();
 
-        // If found in container_item, status becomes Shipped
+        $container = null;
+
+        // If container_item exists, check container by container_id
         if ($containerItem) {
+            $container = DB::connection('oracle_wms')
+                ->table('rwms.container')
+                ->where('container_id', $containerItem->container_id)
+                ->whereNotNull('bol_nbr')
+                ->first();
+        }
+
+        // If found in container_item OR bol_nbr exists in container, status becomes Shipped
+        if ($containerItem || $container) {
             $status = 'Shipped';
-            Log::info('Order found in container_item, status: Shipped', ['store_order_no' => $storeOrderNo]);
-            
+            Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
+
             // Step 3: Check oracle_rms database - shipsku table for received qty
             Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
             $shipSku = DB::connection('oracle_rms')
@@ -384,6 +393,8 @@ public function getItemStatus($storeOrderNo)
                 Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
             }
         }
+
+
 
         Log::info('Final status determined', [
             'store_order_no' => $storeOrderNo,
