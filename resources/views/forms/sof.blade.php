@@ -1086,38 +1086,41 @@
 
                                         <!-- RIGHT SIDE: Readonly Invoice Style -->
                                         <div
-                                            class="readonly-side flex h-full w-full flex-col justify-between rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1">
-                                            <div class="space-y-2">
-
-                                                <!-- Price -->
-                                                <div class="flex items-start justify-between">
-                                                    <label class="block text-sm text-gray-600">Price</label>
-                                                    <div class="text-right font-medium text-black">
-                                                        <span class="price-display">0.00</span>
-                                                        <input
-                                                            type="hidden"
-                                                            name="orders[{{ $i }}][price]"
-                                                            value="{{ old("orders.$i.price") }}"
-                                                            class="computed-price" />
-                                                        <div class="breakdown-price text-xs text-gray-500"></div>
+                                            class="readonly-side">
+                                            <label class="mb-1 text-sm font-medium">Item Breakdown</label>
+                                            <div
+                                                class="mb-2 flex w-full flex-col justify-between space-y-2 rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1"
+                                                style="height: calc(100% - 5.5%);">
+                                                <div class="space-y-2">
+                                                    <!-- Price -->
+                                                    <div class="flex items-start justify-between">
+                                                        <label class="block text-sm text-gray-600">Price</label>
+                                                        <div class="text-right font-medium text-black">
+                                                            <span class="price-display">0.00</span>
+                                                            <input
+                                                                type="hidden"
+                                                                name="orders[{{ $i }}][price]"
+                                                                value="{{ old("orders.$i.price") }}"
+                                                                class="computed-price" />
+                                                            <div class="breakdown-price text-xs text-gray-500"></div>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- Total QTY -->
-                                                <div class="flex items-start justify-between">
-                                                    <label class="block text-sm text-gray-600">Total QTY/CS</label>
-                                                    <div class="text-right font-medium text-black">
-                                                        <span class="total-qty-display">0</span>
-                                                        <input
-                                                            type="hidden"
-                                                            name="orders[{{ $i }}][total_qty]"
-                                                            value="{{ old("orders.$i.total_qty") }}"
-                                                            class="computed-total-qty" />
-                                                        <div class="breakdown-total-qty text-xs text-gray-500"></div>
+                                                    <!-- Total QTY -->
+                                                    <div class="flex items-start justify-between">
+                                                        <label class="block text-sm text-gray-600">Total QTY/CS</label>
+                                                        <div class="text-right font-medium text-black">
+                                                            <span class="total-qty-display">0</span>
+                                                            <input
+                                                                type="hidden"
+                                                                name="orders[{{ $i }}][total_qty]"
+                                                                value="{{ old("orders.$i.total_qty") }}"
+                                                                class="computed-total-qty" />
+                                                            <div class="breakdown-total-qty text-xs text-gray-500"></div>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                {{-- 
+                                                    {{-- 
 																								<!-- Freebies/CS -->
 																								<div class="flex justify-between items-start">
 																										<label class="block text-sm text-green-600">Freebies</label>
@@ -1131,61 +1134,62 @@
 
 
 
-                                            </div>
-                                            <div>
-                                                <!-- Freebie Amount -->
-                                                <div class="freebie-block mx-[-1rem] flex items-start justify-between bg-green-50 px-4 py-2">
-                                                    <label class="block text-sm text-green-600">Freebie Amount</label>
-                                                    <div class="text-right font-medium text-black">
-                                                        <span class="freebie-amount-display block text-green-600">0.00</span>
-                                                        <input
-                                                            type="hidden"
-                                                            name="orders[{{ $i }}][freebie_amount]"
-                                                            class="computed-freebie-amount" />
-                                                        <div class="breakdown-freebie-amount text-xs text-gray-500"></div>
-                                                    </div>
                                                 </div>
+                                                <div>
+                                                    <!-- Freebie Amount -->
+                                                    <div class="freebie-block mx-[-1rem] flex items-start justify-between bg-green-50 px-4 py-2">
+                                                        <label class="block text-sm text-green-600">Freebie Amount</label>
+                                                        <div class="text-right font-medium text-black">
+                                                            <span class="freebie-amount-display block text-green-600">0.00</span>
+                                                            <input
+                                                                type="hidden"
+                                                                name="orders[{{ $i }}][freebie_amount]"
+                                                                class="computed-freebie-amount" />
+                                                            <div class="breakdown-freebie-amount text-xs text-gray-500"></div>
+                                                        </div>
+                                                    </div>
 
-                                                <script>
-                                                    document.addEventListener('DOMContentLoaded', function() {
-                                                        document.querySelectorAll('.freebie-block').forEach(function(container) {
-                                                            const input = container.querySelector('.computed-freebie-amount');
-                                                            const span = container.querySelector('.freebie-amount-display');
+                                                    <script>
+                                                        document.addEventListener('DOMContentLoaded', function() {
+                                                            document.querySelectorAll('.freebie-block').forEach(function(container) {
+                                                                const input = container.querySelector('.computed-freebie-amount');
+                                                                const span = container.querySelector('.freebie-amount-display');
 
-                                                            // Function to toggle visibility
-                                                            function toggleVisibility() {
-                                                                const amount = parseFloat(input.value) || parseFloat(span.textContent) || 0;
-                                                                container.classList.toggle('hidden', amount === 0);
-                                                            }
+                                                                // Function to toggle visibility
+                                                                function toggleVisibility() {
+                                                                    const amount = parseFloat(input.value) || parseFloat(span.textContent) || 0;
+                                                                    container.classList.toggle('hidden', amount === 0);
+                                                                }
 
-                                                            // Initial check
-                                                            toggleVisibility();
+                                                                // Initial check
+                                                                toggleVisibility();
 
-                                                            // Listen for input changes
-                                                            input.addEventListener('input', toggleVisibility);
+                                                                // Listen for input changes
+                                                                input.addEventListener('input', toggleVisibility);
 
-                                                            // Observe changes in span text
-                                                            const observer = new MutationObserver(toggleVisibility);
-                                                            observer.observe(span, {
-                                                                childList: true,
-                                                                characterData: true,
-                                                                subtree: true
+                                                                // Observe changes in span text
+                                                                const observer = new MutationObserver(toggleVisibility);
+                                                                observer.observe(span, {
+                                                                    childList: true,
+                                                                    characterData: true,
+                                                                    subtree: true
+                                                                });
                                                             });
                                                         });
-                                                    });
-                                                </script>
+                                                    </script>
 
-                                                <!-- Total Amount -->
-                                                <div class="mx-[-1rem] flex items-start justify-between bg-blue-50 px-4 py-2">
-                                                    <label class="block text-sm text-indigo-600">Total Amount</label>
-                                                    <div class="text-right font-bold text-black text-blue-600">
-                                                        <span class="amount-display">0.00</span>
-                                                        <input
-                                                            type="hidden"
-                                                            name="orders[{{ $i }}][amount]"
-                                                            value="{{ old("orders.$i.amount") }}"
-                                                            class="computed-amount" />
-                                                        <div class="breakdown-amount text-xs text-gray-500"></div>
+                                                    <!-- Total Amount -->
+                                                    <div class="mx-[-1rem] flex items-start justify-between bg-blue-50 px-4 py-2">
+                                                        <label class="block text-sm text-indigo-600">Total Amount</label>
+                                                        <div class="text-right font-bold text-black text-blue-600">
+                                                            <span class="amount-display">0.00</span>
+                                                            <input
+                                                                type="hidden"
+                                                                name="orders[{{ $i }}][amount]"
+                                                                value="{{ old("orders.$i.amount") }}"
+                                                                class="computed-amount" />
+                                                            <div class="breakdown-amount text-xs text-gray-500"></div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
