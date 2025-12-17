@@ -190,8 +190,8 @@ class OracleTransferController extends Controller
                         $tsfData = $response['verification']['tsf_data'];
                         $deptResponse['details'][] = "TSF created in Oracle database";
                         $deptResponse['details'][] = "From: {$tsfData['from_loc']} → To: {$tsfData['to_loc']}";
-                        $deptResponse['details'][] = "Status: {$tsfData['status']}";
-                        $deptResponse['details'][] = "Verified in TSFHEAD table";
+                        // $deptResponse['details'][] = "Status: {$tsfData['status']}";
+                        // $deptResponse['details'][] = "Verified in TSFHEAD table";
                     }
 
                     // Update order items - update ALL items with matching SKUs
@@ -361,6 +361,8 @@ public function getItemStatus($storeOrderNo)
         $containerItem = DB::connection('oracle_wms')
             ->table('rwms.container_item')
             ->where('distro_nbr', $storeOrderNo)
+            // where bol_no is not null
+            ->whereNotNull('bol_no')
             ->first();
 
         // If found in container_item, status becomes Shipped

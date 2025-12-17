@@ -553,7 +553,8 @@
 
 
                                             <td
-                                                class="border p-2 text-center"
+                                                class="numeric-only border p-2 text-center"
+                                                data-max="9"
                                                 contenteditable="true"
                                                 data-field="qty_per_pc">{{ $item->qty_per_pc }}
                                                 <input
@@ -564,7 +565,8 @@
 
 
                                             <td
-                                                class="border p-2 text-center"
+                                                class="numeric-only border p-2 text-center"
+                                                data-max="9"
                                                 @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
                                                 data-field="qty_per_cs">
                                                 {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '0' : $item->qty_per_cs) : '0' }}
@@ -578,7 +580,8 @@
 
 
                                             <td
-                                                class="border p-2 text-center"
+                                                class="numeric-only border p-2 text-center"
+                                                data-max="9"
                                                 @if ($item->item_type === 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
                                                 data-field="freebies_per_cs">
                                                 @if ($item->item_type === 'DISCOUNT')
@@ -594,8 +597,9 @@
 
 
                                             <td
-                                                class="border p-2 text-center"
+                                                class="numeric-only border p-2 text-center"
                                                 contenteditable="false"
+                                                data-max="9"
                                                 data-field="total_qty">{{ $item->total_qty }}</td>
                                             <input
                                                 type="hidden"
@@ -3123,6 +3127,34 @@
                 });
             });
         </script>
+        <script>
+            document.addEventListener('beforeinput', function(e) {
+                const el = e.target;
+
+                if (!el.classList.contains('numeric-only')) return;
+
+                // Allow delete, backspace, undo, redo
+                if (e.inputType.startsWith('delete') || e.inputType === 'historyUndo' || e.inputType === 'historyRedo') {
+                    return;
+                }
+
+                // Block non-numeric input
+                if (!/^\d+$/.test(e.data)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                const max = parseInt(el.dataset.max || 6, 10);
+                const current = el.textContent.replace(/\D/g, '');
+
+                // Block if max length reached
+                if (current.length >= max) {
+                    e.preventDefault();
+                }
+            });
+        </script>
+
+
 
         <!-- Enhanced CSS for better visual feedback -->
         <style>
