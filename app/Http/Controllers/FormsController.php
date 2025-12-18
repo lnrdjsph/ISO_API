@@ -116,7 +116,7 @@ public function sof_submit(Request $request){
                 'freebie_description' => 'nullable|string',
                 'freebie_price_per_pc' => 'nullable|numeric',
                 'freebie_price' => 'nullable|numeric',
-                'freebie_qty_per_pc' => 'nullable|integer',
+                'freebie_qty_per_pc' => 'nullable|numeric',
 
                 'sale_type' => 'nullable|string',
                 'discount' => 'nullable|string',
