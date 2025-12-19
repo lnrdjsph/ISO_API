@@ -386,7 +386,7 @@ public function getItemStatus($storeOrderNo)
                 ->where('distro_no', $storeOrderNo)
                 ->where('qty_received', '>', 0)
                 ->first();
-            Log::info('Items:', [$shipSku]);
+            Log::info('Items ShipSKU:', [$shipSku]);
             // If qty_received > 0, status becomes Received
             if ($shipSku) {
                 $status = 'Received';
