@@ -723,13 +723,14 @@
                                                 const skuInput = td.closest('tr')?.querySelector('.sku-hidden');
                                                 const sku = skuInput ? skuInput.value : null;
 
-                                                const url = "{{ route('order.status', [
+                                                const url =
+                                                    "{{ route('order.status', [
                                                         'storeOrderNo' => '__ORDER__',
-                                                        'sku' => '__SKU__'
+                                                        'sku' => '__SKU__',
                                                     ]) }}"
                                                     .replace('__ORDER__', storeOrderNo)
                                                     .replace('__SKU__', sku);
-                                                    
+
                                                 fetch(url)
                                                     .then(async response => {
                                                         const text = await response.text();
@@ -808,9 +809,20 @@
 
                                             tds.forEach((td) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
+                                                // Get the hidden SKU input in the same row
+                                                const skuInput = td.closest('tr')?.querySelector('.sku-hidden');
+                                                const sku = skuInput?.value;
 
+                                                if (!sku) {
+                                                    console.warn('Missing SKU for store order:', storeOrderNo);
+                                                    td.innerHTML = '<span class="text-red-600">N/A (no SKU)</span>';
+                                                    return;
+                                                }
                                                 // Use Laravel route helper
-                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__']) }}".replace('__STORE_ORDER_NO__', storeOrderNo);
+                                                // Replace placeholders in route
+                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__', 'sku' => '__SKU__']) }}"
+                                                    .replace('__STORE_ORDER_NO__', storeOrderNo)
+                                                    .replace('__SKU__', sku);
 
                                                 fetch(url)
                                                     .then(async response => {
