@@ -720,8 +720,16 @@
 
                                             tds.forEach((td) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
-                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__']) }}".replace('__STORE_ORDER_NO__', storeOrderNo);
+                                                const skuInput = td.closest('tr')?.querySelector('.sku-hidden');
+                                                const sku = skuInput ? skuInput.value : null;
 
+                                                const url = "{{ route('order.status', [
+                                                        'storeOrderNo' => '__ORDER__',
+                                                        'sku' => '__SKU__'
+                                                    ]) }}"
+                                                    .replace('__ORDER__', storeOrderNo)
+                                                    .replace('__SKU__', sku);
+                                                    
                                                 fetch(url)
                                                     .then(async response => {
                                                         const text = await response.text();

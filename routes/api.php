@@ -97,5 +97,7 @@ Route::get('/test-iso', function () {
     }
 });
 
-Route::get('/order-status/{storeOrderNo}', [OracleTransferController::class, 'getItemStatus'])
-    ->name('order.status');
+Route::get('/order-status/{storeOrderNo}/{sku}', [
+    OracleTransferController::class,
+    'getItemStatus'
+])->name('order.status');

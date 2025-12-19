@@ -324,7 +324,7 @@ class OracleTransferController extends Controller
         }
     }
 
-public function getItemStatus($storeOrderNo)
+public function getItemStatus($storeOrderNo, $sku)
 {
     try {
         // Log the incoming request
@@ -384,9 +384,18 @@ public function getItemStatus($storeOrderNo)
             $shipSku = DB::connection('oracle_rms')
                 ->table('shipsku')
                 ->where('distro_no', $storeOrderNo)
-                ->where('qty_received', '>', 0)
-                ->first();
-            Log::info('Items ShipSKU:', [$shipSku]);
+                ->where('item', $sku)
+                ->whereRaw('NVL(qty_received,0) > 0')
+                ->exists();
+
+            if (empty($sku)) {
+    return response()->json(['status' => 'N/A'], 200);
+}
+
+            Log::info('ShipSKU qty_received', [
+                'qty_received' => $shipSku->qty_received ?? null
+            ]);
+            
             // If qty_received > 0, status becomes Received
             if ($shipSku) {
                 $status = 'Received';
