@@ -389,8 +389,8 @@ public function getItemStatus($storeOrderNo, $sku)
                 ->exists();
 
             if (empty($sku)) {
-    return response()->json(['status' => 'N/A'], 200);
-}
+                return response()->json(['status' => 'N/A'], 200);
+            }
 
             Log::info('ShipSKU qty_received', [
                 'qty_received' => $shipSku->qty_received ?? null
