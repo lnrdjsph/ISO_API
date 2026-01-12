@@ -12,6 +12,7 @@ use App\Http\Controllers\MRCTenderController;
 use App\Http\Controllers\ECRController;
 use App\Http\Controllers\OracleRmsController;
 use App\Http\Controllers\OracleTransferController;
+use App\Http\Controllers\AtomController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -101,3 +102,17 @@ Route::get('/order-status/{storeOrderNo}/{sku}', [
     OracleTransferController::class,
     'getItemStatus'
 ])->name('order.status');
+
+
+Route::prefix('iso-api')->group(function () {
+    // Public endpoint (no auth) - for testing
+    Route::post('/test', [AtomController::class, 'test']);
+    
+    // Protected endpoint with Bearer token
+    Route::post('/', [AtomController::class, 'receiveOrder'])
+        ->middleware('verify.api.token');
+    
+    // Alternative: Using Laravel Sanctum (if you prefer)
+    // Route::post('/', [AtomController::class, 'receiveOrder'])
+    //     ->middleware('auth:sanctum');
+});

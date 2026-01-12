@@ -43,4 +43,8 @@ return [
         'port' => env('JPOS_ENGINE_PORT', 1521),
     ],
 
+
+    'woocommerce' => [
+        'api_token' => env('WOOCOMMERCE_API_TOKEN', 'test.test'),
+    ],    
 ];
