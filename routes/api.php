@@ -104,7 +104,7 @@ Route::get('/order-status/{storeOrderNo}/{sku}', [
 ])->name('order.status');
 
 
-Route::prefix('iso-api')->group(function () {
+Route::prefix('atom-api')->group(function () {
     // Public endpoint (no auth) - for testing
     Route::post('/test', [AtomController::class, 'test']);
     
