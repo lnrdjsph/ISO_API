@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\OrderRequest;
 
 class AtomController extends Controller
 {
@@ -117,8 +118,13 @@ class AtomController extends Controller
             DB::beginTransaction();
 
             // Extract billing and shipping addresses
-            $billing = $orderData['billing_address'];
-            $shipping = $orderData['shipping_address'];
+            $billing = $orderData['billing_address'] ?? [];
+            $shipping = $orderData['shipping_address'] ?? [];
+
+            // Get customer name safely
+            $customerName = $billing['name'] ?? 
+                           ($billing['first_name'] ?? '') . ' ' . ($billing['last_name'] ?? '');
+            $customerName = trim($customerName) ?: 'Guest Customer';
 
             // Combine shipping address parts
             $fullAddress = collect([
@@ -134,20 +140,20 @@ class AtomController extends Controller
             $order = DB::connection('mysql')->table('orders')->insertGetId([
                 'sof_id' => $orderData['order_number'], // Using WooCommerce order number as SOF ID
                 'requesting_store' => $billing['company'] ?? 'Online Store',
-                'requested_by' => $billing['name'] ?? 'Customer',
+                'requested_by' => $customerName,
                 'mbc_card_no' => $orderData['meta_data']['mbc_card_no'] ?? null,
-                'customer_name' => $billing['name'],
+                'customer_name' => $customerName,
                 'contact_number' => $billing['phone'] ?? null,
-                'email' => $billing['email'],
+                'email' => $billing['email'] ?? null,
                 'channel_order' => 'WooCommerce',
                 'warehouse' => $orderData['meta_data']['warehouse'] ?? null,
                 'time_order' => $orderData['date'],
                 'payment_center' => $orderData['meta_data']['payment_center'] ?? null,
-                'mode_payment' => $orderData['payment_method_title'],
+                'mode_payment' => $orderData['payment_method_title'] ?? 'N/A',
                 'payment_date' => now()->toDateString(),
                 'mode_dispatching' => $orderData['meta_data']['mode_dispatching'] ?? 'Delivery',
                 'delivery_date' => $orderData['meta_data']['delivery_date'] ?? null,
-                'address' => $fullAddress,
+                'address' => $fullAddress ?: 'N/A',
                 'landmark' => $shipping['address_2'] ?? null,
                 'order_status' => $this->mapOrderStatus($orderData['status']),
                 'created_at' => now(),
@@ -161,19 +167,24 @@ class AtomController extends Controller
 
             // Insert order items
             foreach ($orderData['items'] as $item) {
+                // Calculate unit price safely
+                $quantity = $item['quantity'] ?? 1;
+                $total = floatval($item['total'] ?? 0);
+                $unitPrice = $quantity > 0 ? ($total / $quantity) : 0;
+
                 $itemId = DB::connection('mysql')->table('order_items')->insertGetId([
                     'order_id' => $order,
                     'sku' => $item['sku'] ?? null,
-                    'item_description' => $item['name'],
+                    'item_description' => $item['name'] ?? 'Unknown Item',
                     'scheme' => $item['scheme'] ?? null,
-                    'price_per_pc' => $item['total'] / $item['quantity'], // Calculate unit price
-                    'price' => $item['total'],
-                    'qty_per_pc' => $item['quantity'],
+                    'price_per_pc' => $unitPrice,
+                    'price' => $total,
+                    'qty_per_pc' => $quantity,
                     'qty_per_cs' => 0, // Set to 0 or calculate if case quantity exists
                     'freebies_per_cs' => 0,
                     'discount' => 0,
-                    'total_qty' => $item['quantity'],
-                    'amount' => $item['total'],
+                    'total_qty' => $quantity,
+                    'amount' => $total,
                     'remarks' => null,
                     'store_order_no' => $orderData['order_number'],
                     'item_type' => 'MAIN',
