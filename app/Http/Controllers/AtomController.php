@@ -10,6 +10,25 @@ use App\Http\Requests\OrderRequest;
 
 class AtomController extends Controller
 {
+
+    protected array $locationMap = [
+        'Metro Wholesalemart Colon' => '4002',
+        'Metro Maasin' => '2010',
+        'Metro Tacloban' => '2017',
+        'Metro Bay-Bay' => '2019',
+        'Metro Alang-Alang' => '3018',
+        'Metro Hilongos' => '3019',
+        'Metro Toledo' => '2008',
+        'Super Metro Antipolo' => '6012',
+        'Super Metro Carcar' => '6009',
+        'Super Metro Bogo' => '6010',
+    ];
+
+    protected array $warehouseConfig = [
+        '80001' => ['stores' => ['4002','2010']],
+        '80141' => ['stores' => ['2017','2019']],
+    ];
+
     /**
      * Receive order from WooCommerce
      *
@@ -38,10 +57,12 @@ class AtomController extends Controller
                 'billing_address.email' => 'required|email',
                 'shipping_address' => 'required|array',
                 'items' => 'required|array|min:1',
-                'items.*.product_id' => 'required|integer',
-                'items.*.name' => 'required|string',
-                'items.*.quantity' => 'required|integer|min:1',
-                'items.*.sku' => 'nullable|string',
+                'items.*.sku' => 'required|string',
+                'items.*.qty' => 'required|integer|min:1',
+                'items.*.price' => 'required|numeric|min:0',
+                'meta_data' => 'required|array',
+                'meta_data.*.key' => 'required|string',
+                'meta_data.*.value' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
@@ -114,6 +135,25 @@ class AtomController extends Controller
      */
     private function processOrder(array $orderData)
     {
+        $exists = DB::table('orders')
+            ->where('sof_id', $orderData['order_number'])
+            ->exists();
+
+        if ($exists) {
+            Log::channel('orders')->warning('Duplicate order ignored', [
+                'order_number' => $orderData['order_number']
+            ]);
+            return;
+        }
+
+        $storeCode = $this->extractStoreCode($orderData['meta_data'] ?? []);
+
+        if (!$storeCode) {
+            throw new \Exception('Pickup store not found in order metadata');
+        }
+
+        $warehouse = $this->resolveWarehouse($storeCode);
+
         try {
             DB::beginTransaction();
 
@@ -141,18 +181,18 @@ class AtomController extends Controller
                 'sof_id' => $orderData['order_number'], // Using WooCommerce order number as SOF ID
                 'requesting_store' => 'MarengEms Online',
                 'requested_by' => $customerName,
-                'mbc_card_no' => $orderData['meta_data']['mbc_card_no'] ?? null,
+                'mbc_card_no' => $this->meta($orderData['meta_data'], 'mbc_card_no') ?? null,
                 'customer_name' => $customerName,
                 'contact_number' => $billing['phone'] ?? null,
                 'email' => $billing['email'] ?? null,
                 'channel_order' => 'E-Commerce',
-                'warehouse' => $orderData['meta_data']['warehouse'] ?? null,
+                'warehouse' => $warehouse ?? null,
                 'time_order' => $orderData['date'],
-                'payment_center' => $orderData['meta_data']['payment_center'] ?? null,
+                'payment_center'   => $this->meta($orderData['meta_data'], 'payment_center'),
                 'mode_payment' => $orderData['payment_method_title'] ?? 'N/A',
                 'payment_date' => now()->toDateString(),
-                'mode_dispatching' => $orderData['meta_data']['mode_dispatching'] ?? 'Delivery',
-                'delivery_date' => $orderData['meta_data']['delivery_date'] ?? null,
+                'mode_dispatching' => $this->meta($orderData['meta_data'], 'mode_dispatching') ?? 'Delivery',
+                'delivery_date'    => $this->meta($orderData['meta_data'], 'delivery_date'),
                 'address' => $fullAddress ?: 'N/A',
                 'landmark' => $shipping['address_2'] ?? null,
                 'order_status' => $this->mapOrderStatus($orderData['status']),
@@ -171,7 +211,7 @@ class AtomController extends Controller
                     throw new \Exception('SKU is required');
                 }
 
-                $warehouse = $orderData['meta_data']['warehouse'] ?? null;
+
                 if (!$warehouse) {
                     throw new \Exception('Warehouse not provided');
                 }
@@ -183,13 +223,30 @@ class AtomController extends Controller
                     throw new \Exception("SKU {$item['sku']} not found in warehouse {$warehouse}");
                 }
 
-                // 2. Quantities
-                $qtyCs     = (int) $item['quantity']; // Woo = cases
+                $allocation = $this->getAllocation($product->sku, $warehouse);
+
+                if (!$allocation) {
+                    throw new \Exception("No allocation record for SKU {$product->sku} in warehouse {$warehouse}");
+                }
+
+                $qtyCs   = (int) $item['qty'];        // Woo = cases
                 $casePack = (int) ($product->case_pack ?? 1);
-                $qtyPc    = $qtyCs * $casePack;
+                $qtyPc   = $qtyCs * $casePack;
+
+                $requiredQty = $qtyPc;
+
+                $availableQty = (int) ($allocation->wms_virtual_allocation ?? 0);
+
+                if ($availableQty < $requiredQty) {
+                    throw new \Exception(
+                        "Insufficient stock for SKU {$product->sku}. Required {$requiredQty}, available {$availableQty}"
+                    );
+                }
+
+
 
                 // 3. Pricing
-                $pricePerPc = (float) $product->srp;
+                $pricePerPc = (float) $item['price'] / $qtyPc;
                 $rawPrice   = $pricePerPc * $qtyPc;
 
                 // 4. Discount (if any)
@@ -224,6 +281,17 @@ class AtomController extends Controller
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
+                
+                $totalDeduct = $requiredQty;
+                
+                if (!empty($product->freebie_sku)) {
+                    $totalDeduct += $product->allocation_per_case * $qtyCs;
+                }
+                    
+                DB::table('product_wms_allocations')
+                    ->where('sku', $product->sku)
+                    ->where('warehouse_code', $warehouse)
+                    ->decrement('wms_virtual_allocation', $totalDeduct);
 
                 // 6. Freebie logic (DB-driven)
                 if (!empty($product->freebie_sku) && !empty($product->allocation_per_case)) {
@@ -320,5 +388,44 @@ class AtomController extends Controller
             ->where('sku', $sku)
             ->whereNull('archived_at')
             ->first();
+    }    
+
+    private function extractStoreCode(array $metaData): ?string
+    {
+        foreach ($metaData as $meta) {
+            if (($meta['key'] ?? '') === '_pickup_store') {
+                return $this->locationMap[$meta['value']] ?? null;
+            }
+        }
+        return null;
+    }    
+
+    private function resolveWarehouse(string $storeCode): string
+    {
+        foreach ($this->warehouseConfig as $warehouse => $config) {
+            if (in_array($storeCode, $config['stores'], true)) {
+                return $warehouse;
+            }
+        }
+
+        throw new \Exception("No warehouse mapped for store {$storeCode}");
+    }
+
+    private function getAllocation(string $sku, string $warehouse)
+    {
+        return DB::table('product_wms_allocations')
+            ->where('sku', $sku)
+            ->where('warehouse_code', $warehouse)
+            ->lockForUpdate() // CRITICAL for concurrency
+            ->first();
+    }
+
+    private function meta(array $meta, string $key): mixed {
+        foreach ($meta as $m) {
+            if (($m['key'] ?? null) === $key) {
+                return $m['value'];
+            }
+        }
+        return null;
     }    
 }
