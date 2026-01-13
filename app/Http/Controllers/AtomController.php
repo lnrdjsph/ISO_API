@@ -139,13 +139,13 @@ class AtomController extends Controller
             // Create the main order
             $order = DB::connection('mysql')->table('orders')->insertGetId([
                 'sof_id' => $orderData['order_number'], // Using WooCommerce order number as SOF ID
-                'requesting_store' => $billing['company'] ?? 'Online Store',
+                'requesting_store' => 'MarengEms Online',
                 'requested_by' => $customerName,
                 'mbc_card_no' => $orderData['meta_data']['mbc_card_no'] ?? null,
                 'customer_name' => $customerName,
                 'contact_number' => $billing['phone'] ?? null,
                 'email' => $billing['email'] ?? null,
-                'channel_order' => 'WooCommerce',
+                'channel_order' => 'E-Commerce',
                 'warehouse' => $orderData['meta_data']['warehouse'] ?? null,
                 'time_order' => $orderData['date'],
                 'payment_center' => $orderData['meta_data']['payment_center'] ?? null,
@@ -165,39 +165,91 @@ class AtomController extends Controller
                 'woocommerce_order_id' => $orderData['order_id']
             ]);
 
-            // Insert order items
             foreach ($orderData['items'] as $item) {
-                // Calculate unit price safely
-                $quantity = $item['quantity'] ?? 1;
-                $total = floatval($item['total'] ?? 0);
-                $unitPrice = $quantity > 0 ? ($total / $quantity) : 0;
 
-                $itemId = DB::connection('mysql')->table('order_items')->insertGetId([
+                if (empty($item['sku'])) {
+                    throw new \Exception('SKU is required');
+                }
+
+                $warehouse = $orderData['meta_data']['warehouse'] ?? null;
+                if (!$warehouse) {
+                    throw new \Exception('Warehouse not provided');
+                }
+
+                // 1. Fetch product
+                $product = $this->getProduct($item['sku'], $warehouse);
+
+                if (!$product) {
+                    throw new \Exception("SKU {$item['sku']} not found in warehouse {$warehouse}");
+                }
+
+                // 2. Quantities
+                $qtyCs     = (int) $item['quantity']; // Woo = cases
+                $casePack = (int) ($product->case_pack ?? 1);
+                $qtyPc    = $qtyCs * $casePack;
+
+                // 3. Pricing
+                $pricePerPc = (float) $product->srp;
+                $rawPrice   = $pricePerPc * $qtyPc;
+
+                // 4. Discount (if any)
+                $discountRaw = $item['discount'] ?? 0;
+                $discount = 0;
+
+                if (is_string($discountRaw) && str_ends_with($discountRaw, '%')) {
+                    $discount = $rawPrice * ((float) rtrim($discountRaw, '%') / 100);
+                } else {
+                    $discount = (float) $discountRaw;
+                }
+
+                $finalPrice = max($rawPrice - $discount, 0);
+
+                // 5. Insert MAIN / DISCOUNT item
+                DB::table('order_items')->insert([
                     'order_id' => $order,
-                    'sku' => $item['sku'] ?? null,
-                    'item_description' => $item['name'] ?? 'Unknown Item',
-                    'scheme' => $item['scheme'] ?? null,
-                    'price_per_pc' => $unitPrice,
-                    'price' => $total,
-                    'qty_per_pc' => $quantity,
-                    'qty_per_cs' => 0, // Set to 0 or calculate if case quantity exists
+                    'sku' => $product->sku,
+                    'item_description' => $product->description,
+                    'scheme' => $product->discount_scheme,
+                    'price_per_pc' => $pricePerPc,
+                    'price' => $finalPrice,
+                    'qty_per_pc' => $casePack,
+                    'qty_per_cs' => $qtyCs,
                     'freebies_per_cs' => 0,
-                    'discount' => 0,
-                    'total_qty' => $quantity,
-                    'amount' => $total,
+                    'discount' => $discountRaw,
+                    'total_qty' => $qtyPc,
+                    'amount' => $finalPrice,
                     'remarks' => null,
-                    'store_order_no' => $orderData['order_number'],
-                    'item_type' => 'MAIN',
+                    'store_order_no' => null,
+                    'item_type' => $discount > 0 ? 'DISCOUNT' : 'MAIN',
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
 
-                Log::channel('orders')->debug('Order item inserted', [
-                    'item_id' => $itemId,
-                    'sku' => $item['sku'],
-                    'quantity' => $item['quantity']
-                ]);
+                // 6. Freebie logic (DB-driven)
+                if (!empty($product->freebie_sku) && !empty($product->allocation_per_case)) {
+
+                    DB::table('order_items')->insert([
+                        'order_id' => $order,
+                        'sku' => $product->freebie_sku,
+                        'item_description' => 'Freebie',
+                        'scheme' => 'Freebie',
+                        'price_per_pc' => 0,
+                        'price' => 0,
+                        'qty_per_pc' => 0,
+                        'qty_per_cs' => 0,
+                        'freebies_per_cs' => $product->allocation_per_case,
+                        'discount' => 0,
+                        'total_qty' => $product->allocation_per_case * $qtyCs,
+                        'amount' => 0,
+                        'remarks' => null,
+                        'store_order_no' => null,
+                        'item_type' => 'FREEBIE',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
             }
+
 
             DB::commit();
 
@@ -260,4 +312,13 @@ class AtomController extends Controller
             'timestamp' => now()->toIso8601String()
         ], 200);
     }
+
+
+    private function getProduct(string $sku, string $warehouse)
+    {
+        return DB::table("products_{$warehouse}")
+            ->where('sku', $sku)
+            ->whereNull('archived_at')
+            ->first();
+    }    
 }
