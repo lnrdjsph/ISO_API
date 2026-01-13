@@ -217,7 +217,7 @@ class AtomController extends Controller
                 }
 
                 // 1. Fetch product
-                $product = $this->getProduct($item['sku'], $warehouse);
+                $product = $this->getProduct($item['sku'], $storeCode);
 
                 if (!$product) {
                     throw new \Exception("SKU {$item['sku']} not found in warehouse {$warehouse}");
@@ -382,13 +382,13 @@ class AtomController extends Controller
     }
 
 
-    private function getProduct(string $sku, string $warehouse)
+    private function getProduct(string $sku, string $storeCode)
     {
-        return DB::table("products_{$warehouse}")
+        return DB::table("products_{$storeCode}")
             ->where('sku', $sku)
             ->whereNull('archived_at')
             ->first();
-    }    
+    } 
 
     private function extractStoreCode(array $metaData): ?string
     {
