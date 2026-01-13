@@ -25,7 +25,7 @@ class AtomController extends Controller
     ];
 
     protected array $warehouseConfig = [
-        '80001' => ['stores' => ['4002','2010']],
+        '80181' => ['stores' => ['4002','2010']],
         '80141' => ['stores' => ['2017','2019']],
     ];
 
