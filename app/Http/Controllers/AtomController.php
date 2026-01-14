@@ -34,7 +34,7 @@ class AtomController extends Controller
     ];
 
     /**
-     * Receive order from WooCommerce - Updated for direct send plugin
+     * Receive order from WooCommerce - Updated for flexible field names
      */
     public function receiveOrder(Request $request)
     {
@@ -53,8 +53,11 @@ class AtomController extends Controller
                 'payload' => $request->all()
             ]);
 
+            // Normalize items to handle both old and new field formats
+            $normalizedData = $this->normalizeOrderData($request->all());
+
             // Validate incoming data with flexible rules
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($normalizedData, [
                 'order_id' => 'required|integer',
                 'order_number' => 'required',
                 'date' => 'required|date',
@@ -75,8 +78,6 @@ class AtomController extends Controller
                 'billing_address.city' => 'nullable|string',
                 'shipping_address' => 'required|array',
                 'items' => 'required|array|min:1',
-                'items.*.product_id' => 'required|integer',
-                'items.*.name' => 'required|string',
                 'items.*.sku' => 'required|string',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.total' => 'required|numeric|min:0',
@@ -166,6 +167,48 @@ class AtomController extends Controller
                 'order_number' => $request->input('order_number')
             ], 500);
         }
+    }
+
+    /**
+     * Normalize order data to handle flexible field names
+     * Converts: qty -> quantity, price -> total
+     */
+    private function normalizeOrderData(array $data): array
+    {
+        // Normalize items array
+        if (isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $key => $item) {
+                // Handle qty -> quantity
+                if (isset($item['qty']) && !isset($item['quantity'])) {
+                    $data['items'][$key]['quantity'] = $item['qty'];
+                    Log::channel('orders')->debug('Normalized qty to quantity', [
+                        'item_index' => $key,
+                        'value' => $item['qty']
+                    ]);
+                }
+
+                // Handle price -> total
+                if (isset($item['price']) && !isset($item['total'])) {
+                    $data['items'][$key]['total'] = $item['price'];
+                    Log::channel('orders')->debug('Normalized price to total', [
+                        'item_index' => $key,
+                        'value' => $item['price']
+                    ]);
+                }
+
+                // Add product_id if missing (use a placeholder or derive from SKU)
+                if (!isset($item['product_id'])) {
+                    $data['items'][$key]['product_id'] = 0; // Placeholder
+                }
+
+                // Add name if missing
+                if (!isset($item['name'])) {
+                    $data['items'][$key]['name'] = $item['sku'] ?? 'Unknown Product';
+                }
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -690,12 +733,12 @@ class AtomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'API is working correctly - Direct send mode active',
+            'message' => 'API is working correctly - Accepts flexible field names (qty/quantity, price/total)',
             'received_data' => $request->all(),
             'timestamp' => now()->toIso8601String(),
             'server_time' => now()->toDateTimeString(),
             'timezone' => config('app.timezone'),
-            'version' => '2.0.0'
+            'version' => '2.0.0-flexible'
         ], 200);
     }
 }
