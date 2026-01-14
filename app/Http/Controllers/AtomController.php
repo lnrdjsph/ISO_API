@@ -1,21 +1,3 @@
-?php
-
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AtomController;
-
-Route::prefix('atom-api')->group(function () {
-// Test endpoint (no auth)
-Route::post('/test', [AtomController::class, 'test']);
-
-// Main endpoint (with Bearer token)
-Route::post('/', [AtomController::class, 'receiveOrder'])
-->middleware('verify.api.token');
-});
-
-
-// ============================================
-// FILE: app/Http/Controllers/AtomController.php
-// ============================================
 <?php
 
 namespace App\Http\Controllers;
