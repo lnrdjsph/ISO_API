@@ -34,89 +34,144 @@ class AtomController extends Controller
     ];
 
     /**
-     * Receive order from WooCommerce
+     * Receive order from WooCommerce - Updated for direct send plugin
      */
     public function receiveOrder(Request $request)
     {
+        $startTime = microtime(true);
+
         try {
-            Log::channel('orders')->info('Order received from WooCommerce', [
+            Log::channel('orders')->info('=== NEW ORDER RECEIVED FROM WOOCOMMERCE ===', [
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'payload_size' => strlen(json_encode($request->all()))
+                'payload_size' => strlen(json_encode($request->all())),
+                'timestamp' => now()->toDateTimeString()
             ]);
 
-            // Validate incoming data
+            // Log raw payload for debugging
+            Log::channel('orders')->debug('Raw payload', [
+                'payload' => $request->all()
+            ]);
+
+            // Validate incoming data with flexible rules
             $validator = Validator::make($request->all(), [
                 'order_id' => 'required|integer',
                 'order_number' => 'required',
                 'date' => 'required|date',
                 'status' => 'required|string',
                 'currency' => 'required|string|size:3',
-                'total' => 'required|numeric',
+                'total' => 'required|numeric|min:0',
+                'subtotal' => 'nullable|numeric',
+                'tax_total' => 'nullable|numeric',
+                'shipping_total' => 'nullable|numeric',
+                'payment_method' => 'nullable|string',
                 'payment_method_title' => 'nullable|string',
+                'customer_note' => 'nullable|string',
                 'billing_address' => 'required|array',
+                'billing_address.name' => 'nullable|string',
                 'billing_address.email' => 'required|email',
+                'billing_address.phone' => 'nullable|string',
+                'billing_address.address_1' => 'nullable|string',
+                'billing_address.city' => 'nullable|string',
                 'shipping_address' => 'required|array',
                 'items' => 'required|array|min:1',
                 'items.*.product_id' => 'required|integer',
+                'items.*.name' => 'required|string',
                 'items.*.sku' => 'required|string',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.total' => 'required|numeric|min:0',
-                'meta_data' => 'required|array',
+                'meta_data' => 'nullable|array',
             ]);
 
             if ($validator->fails()) {
-                Log::channel('orders')->error('Validation failed', [
-                    'errors' => $validator->errors()->toArray(),
-                    'order_id' => $request->input('order_id')
+                $errors = $validator->errors()->toArray();
+
+                Log::channel('orders')->error('❌ VALIDATION FAILED', [
+                    'errors' => $errors,
+                    'order_id' => $request->input('order_id'),
+                    'order_number' => $request->input('order_number')
                 ]);
 
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'errors' => $errors,
+                    'order_id' => $request->input('order_id')
                 ], 422);
             }
 
             $orderData = $validator->validated();
 
-            Log::channel('orders')->info('Order validated successfully', [
+            Log::channel('orders')->info('✓ Order validated successfully', [
                 'order_id' => $orderData['order_id'],
                 'order_number' => $orderData['order_number'],
                 'total' => $orderData['total'],
                 'items_count' => count($orderData['items']),
-                'payment_method' => $orderData['payment_method_title']
+                'payment_method' => $orderData['payment_method_title'] ?? 'N/A'
             ]);
 
             // Process the order
-            $this->processOrder($orderData);
+            $result = $this->processOrder($orderData);
+
+            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            Log::channel('orders')->info('✓ ORDER PROCESSED SUCCESSFULLY', [
+                'order_id' => $orderData['order_id'],
+                'order_number' => $orderData['order_number'],
+                'internal_id' => $result['internal_order_id'] ?? null,
+                'processing_time_ms' => $processingTime
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order received and processed successfully',
                 'order_id' => $orderData['order_id'],
                 'order_number' => $orderData['order_number'],
+                'internal_order_id' => $result['internal_order_id'] ?? null,
+                'items_processed' => $result['items_count'] ?? 0,
+                'processing_time_ms' => $processingTime,
                 'timestamp' => now()->toIso8601String()
             ], 200);
-        } catch (\Exception $e) {
-            Log::channel('orders')->error('Error processing order', [
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::channel('orders')->error('❌ Validation exception', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
                 'order_id' => $request->input('order_id')
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Internal server error',
-                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred'
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            Log::channel('orders')->error('❌ ERROR PROCESSING ORDER', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
+                'order_id' => $request->input('order_id'),
+                'order_number' => $request->input('order_number'),
+                'processing_time_ms' => $processingTime
+            ]);
+
+            // Return appropriate error response for WordPress plugin
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process order',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+                'error_code' => $e->getCode() ?: 500,
+                'order_id' => $request->input('order_id'),
+                'order_number' => $request->input('order_number')
             ], 500);
         }
     }
 
     /**
-     * Process the order - Complete implementation
+     * Process the order - Complete implementation with better error handling
      */
-    private function processOrder(array $orderData)
+    private function processOrder(array $orderData): array
     {
         // Check for duplicate order
         $exists = DB::table('orders')
@@ -124,21 +179,47 @@ class AtomController extends Controller
             ->exists();
 
         if ($exists) {
-            Log::channel('orders')->warning('Duplicate order ignored', [
-                'order_number' => $orderData['order_number']
+            Log::channel('orders')->warning('⚠ DUPLICATE ORDER IGNORED', [
+                'order_number' => $orderData['order_number'],
+                'woocommerce_order_id' => $orderData['order_id']
             ]);
-            return;
+
+            // Return success but indicate it was a duplicate
+            $existingOrder = DB::table('orders')
+                ->where('sof_id', $orderData['order_number'])
+                ->first();
+
+            return [
+                'internal_order_id' => $existingOrder->id ?? null,
+                'items_count' => 0,
+                'duplicate' => true
+            ];
         }
 
         // Extract store code from meta data
-        $storeCode = $this->extractStoreCode($orderData['meta_data'] ?? []);
+        $metaData = $orderData['meta_data'] ?? [];
+        $storeCode = $this->extractStoreCode($metaData);
 
         if (!$storeCode) {
-            throw new \Exception('Pickup store not found in order metadata');
+            Log::channel('orders')->error('❌ Store code not found', [
+                'meta_data' => $metaData,
+                'order_number' => $orderData['order_number']
+            ]);
+            throw new \Exception('Pickup store not found in order metadata. Please ensure _pickup_store is set.');
         }
+
+        Log::channel('orders')->info('Store identified', [
+            'store_code' => $storeCode,
+            'order_number' => $orderData['order_number']
+        ]);
 
         // Resolve warehouse for this store
         $warehouse = $this->resolveWarehouse($storeCode);
+
+        Log::channel('orders')->info('Warehouse resolved', [
+            'warehouse' => $warehouse,
+            'store_code' => $storeCode
+        ]);
 
         try {
             DB::beginTransaction();
@@ -166,18 +247,18 @@ class AtomController extends Controller
                 'sof_id' => $orderData['order_number'],
                 'requesting_store' => 'MarengEms Online',
                 'requested_by' => $customerName,
-                'mbc_card_no' => $this->getMeta($orderData['meta_data'], 'mbc_card_no'),
+                'mbc_card_no' => $this->getMeta($metaData, 'mbc_card_no'),
                 'customer_name' => $customerName,
                 'contact_number' => $billing['phone'] ?? null,
                 'email' => $billing['email'] ?? null,
                 'channel_order' => 'E-Commerce',
                 'warehouse' => $warehouse,
                 'time_order' => $orderData['date'],
-                'payment_center' => $this->getMeta($orderData['meta_data'], 'payment_center'),
+                'payment_center' => $this->getMeta($metaData, 'payment_center'),
                 'mode_payment' => $orderData['payment_method_title'] ?? 'N/A',
                 'payment_date' => now()->toDateString(),
-                'mode_dispatching' => $this->getMeta($orderData['meta_data'], 'mode_dispatching') ?? 'Delivery',
-                'delivery_date' => $this->getMeta($orderData['meta_data'], 'delivery_date'),
+                'mode_dispatching' => $this->getMeta($metaData, 'mode_dispatching') ?? 'Delivery',
+                'delivery_date' => $this->getMeta($metaData, 'delivery_date'),
                 'address' => $fullAddress ?: 'N/A',
                 'landmark' => $shipping['address_2'] ?? null,
                 'order_status' => $this->mapOrderStatus($orderData['status']),
@@ -185,34 +266,54 @@ class AtomController extends Controller
                 'updated_at' => now()
             ]);
 
-            Log::channel('orders')->info('Order created', [
-                'order_id' => $orderId,
+            Log::channel('orders')->info('✓ Order record created', [
+                'internal_order_id' => $orderId,
                 'sof_id' => $orderData['order_number'],
                 'warehouse' => $warehouse,
-                'store_code' => $storeCode
+                'store_code' => $storeCode,
+                'customer' => $customerName
             ]);
 
             // Process each item
             $paymentMode = $orderData['payment_method_title'] ?? '';
+            $itemsProcessed = 0;
 
             foreach ($orderData['items'] as $itemIndex => $item) {
-                $this->processOrderItem($orderId, $item, $storeCode, $warehouse, $paymentMode, $itemIndex);
+                try {
+                    $this->processOrderItem($orderId, $item, $storeCode, $warehouse, $paymentMode, $itemIndex);
+                    $itemsProcessed++;
+                } catch (\Exception $e) {
+                    Log::channel('orders')->error('Failed to process item', [
+                        'order_id' => $orderId,
+                        'item_index' => $itemIndex,
+                        'sku' => $item['sku'] ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                    throw $e; // Re-throw to rollback entire order
+                }
             }
 
             DB::commit();
 
-            Log::channel('orders')->info('Order processed successfully', [
-                'order_id' => $orderId,
+            Log::channel('orders')->info('✓ ORDER COMMITTED TO DATABASE', [
+                'internal_order_id' => $orderId,
                 'woocommerce_order_id' => $orderData['order_id'],
-                'items_count' => count($orderData['items'])
+                'items_processed' => $itemsProcessed
             ]);
+
+            return [
+                'internal_order_id' => $orderId,
+                'items_count' => $itemsProcessed,
+                'duplicate' => false
+            ];
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::channel('orders')->error('Failed to process order', [
+            Log::channel('orders')->error('❌ TRANSACTION ROLLED BACK', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
-                'woocommerce_order_id' => $orderData['order_id']
+                'woocommerce_order_id' => $orderData['order_id'],
+                'order_number' => $orderData['order_number']
             ]);
 
             throw $e;
@@ -230,6 +331,13 @@ class AtomController extends Controller
             throw new \Exception("SKU is required for item at index {$index}");
         }
 
+        Log::channel('orders')->debug('Processing item', [
+            'order_id' => $orderId,
+            'sku' => $sku,
+            'quantity' => $item['quantity'] ?? 0,
+            'total' => $item['total'] ?? 0
+        ]);
+
         // 1. Fetch product from store-specific table
         $product = $this->getProduct($sku, $storeCode);
 
@@ -244,8 +352,8 @@ class AtomController extends Controller
             throw new \Exception("No allocation record for SKU {$sku} in warehouse {$warehouse}");
         }
 
-        // 3. Calculate quantities (WooCommerce sends 'quantity' not 'qty')
-        $qtyCs = (int) ($item['quantity'] ?? $item['qty'] ?? 0);
+        // 3. Calculate quantities
+        $qtyCs = (int) ($item['quantity'] ?? 0);
         $casePack = (int) ($product->case_pack ?? 1);
         $qtyPc = $qtyCs * $casePack;
         $requiredQty = $qtyPc;
@@ -259,9 +367,11 @@ class AtomController extends Controller
             $freebieScheme = $product->cash_bank_card_scheme ?? '';
         }
 
-        Log::channel('orders')->debug('Processing item', [
+        Log::channel('orders')->debug('Item details', [
             'sku' => $sku,
             'qty_cases' => $qtyCs,
+            'case_pack' => $casePack,
+            'qty_pieces' => $qtyPc,
             'payment_mode' => $paymentMode,
             'freebie_scheme' => $freebieScheme ?: 'none',
             'discount_scheme' => $product->discount_scheme ?? 'none'
@@ -283,6 +393,13 @@ class AtomController extends Controller
             if (!empty($product->freebie_sku) && $totalFreebies > 0) {
                 $requiredQty += ($totalFreebies * $casePack);
             }
+
+            Log::channel('orders')->debug('Freebie scheme qualified', [
+                'sku' => $sku,
+                'scheme' => $freebieScheme,
+                'sets' => $schemeSets,
+                'total_freebies' => $totalFreebies
+            ]);
         }
 
         // 6. Check available stock
@@ -290,17 +407,23 @@ class AtomController extends Controller
 
         if ($availableQty < $requiredQty) {
             throw new \Exception(
-                "Insufficient stock for SKU {$sku}. Required: {$requiredQty}, Available: {$availableQty}"
+                "Insufficient stock for SKU {$sku}. Required: {$requiredQty} pcs, Available: {$availableQty} pcs"
             );
         }
 
+        Log::channel('orders')->debug('Stock check passed', [
+            'sku' => $sku,
+            'required' => $requiredQty,
+            'available' => $availableQty,
+            'remaining_after' => $availableQty - $requiredQty
+        ]);
+
         // 7. Calculate pricing with discount_scheme
-        // WooCommerce sends 'total' not 'price'
-        $itemTotal = (float) ($item['total'] ?? $item['price'] ?? 0);
-        $pricePerPc = $itemTotal / $qtyPc;
+        $itemTotal = (float) ($item['total'] ?? 0);
+        $pricePerPc = $qtyPc > 0 ? $itemTotal / $qtyPc : 0;
         $rawPricePerCase = $pricePerPc * $casePack;
 
-        // Apply discount_scheme (always applied if exists)
+        // Apply discount_scheme
         $discountScheme = $product->discount_scheme ?? '';
         $pricePerCaseAfterDiscount = $rawPricePerCase;
         $discountApplied = 0;
@@ -316,6 +439,7 @@ class AtomController extends Controller
                     'sku' => $sku,
                     'discount' => $discountScheme,
                     'original' => $rawPricePerCase,
+                    'discount_amount' => $discountApplied,
                     'final' => $pricePerCaseAfterDiscount
                 ]);
             } else {
@@ -327,6 +451,7 @@ class AtomController extends Controller
                     'sku' => $sku,
                     'discount' => $discountScheme,
                     'original' => $rawPricePerCase,
+                    'discount_amount' => $discountApplied,
                     'final' => $pricePerCaseAfterDiscount
                 ]);
             }
@@ -356,7 +481,7 @@ class AtomController extends Controller
         DB::table('order_items')->insert([
             'order_id' => $orderId,
             'sku' => $sku,
-            'item_description' => $product->description ?? 'Unknown Item',
+            'item_description' => $product->description ?? $item['name'] ?? 'Unknown Item',
             'scheme' => $freebieScheme ?: null,
             'price_per_pc' => round($pricePerPc, 2),
             'price' => round($pricePerCaseAfterDiscount, 2),
@@ -373,11 +498,12 @@ class AtomController extends Controller
             'updated_at' => now()
         ]);
 
-        Log::channel('orders')->info('Main item inserted', [
+        Log::channel('orders')->info('✓ Main item inserted', [
             'order_id' => $orderId,
             'sku' => $sku,
+            'description' => $product->description ?? $item['name'] ?? 'Unknown',
             'qty_cases' => $qtyCs,
-            'price' => $pricePerCaseAfterDiscount,
+            'price_per_case' => $pricePerCaseAfterDiscount,
             'amount' => $finalPrice,
             'item_type' => $itemType
         ]);
@@ -388,7 +514,7 @@ class AtomController extends Controller
             ->where('warehouse_code', $warehouse)
             ->decrement('wms_virtual_allocation', $requiredQty);
 
-        Log::channel('orders')->debug('Allocation decremented', [
+        Log::channel('orders')->debug('✓ Allocation decremented', [
             'sku' => $sku,
             'warehouse' => $warehouse,
             'deducted' => $requiredQty,
@@ -401,7 +527,7 @@ class AtomController extends Controller
             DB::table('order_items')->insert([
                 'order_id' => $orderId,
                 'sku' => $product->freebie_sku,
-                'item_description' => 'Freebie - ' . ($product->description ?? 'Item'),
+                'item_description' => 'Freebie - ' . ($product->description ?? $item['name'] ?? 'Item'),
                 'scheme' => $freebieScheme,
                 'price_per_pc' => 0,
                 'price' => 0,
@@ -418,13 +544,13 @@ class AtomController extends Controller
                 'updated_at' => now()
             ]);
 
-            Log::channel('orders')->info('Freebie item added', [
+            Log::channel('orders')->info('✓ Freebie item added', [
                 'order_id' => $orderId,
                 'main_sku' => $sku,
                 'freebie_sku' => $product->freebie_sku,
                 'scheme' => $freebieScheme,
                 'qty_cases' => $qtyCs,
-                'sets' => $schemeSets,
+                'sets' => floor($qtyCs / $buyQty),
                 'total_freebies' => $totalFreebies
             ]);
         }
@@ -459,10 +585,23 @@ class AtomController extends Controller
     private function extractStoreCode(array $metaData): ?string
     {
         foreach ($metaData as $meta) {
-            if (($meta['key'] ?? '') === '_pickup_store') {
-                return $this->locationMap[$meta['value']] ?? null;
+            if (is_array($meta) && ($meta['key'] ?? '') === '_pickup_store') {
+                $storeName = $meta['value'] ?? null;
+                $storeCode = $this->locationMap[$storeName] ?? null;
+
+                Log::channel('orders')->debug('Store extraction', [
+                    'store_name' => $storeName,
+                    'store_code' => $storeCode
+                ]);
+
+                return $storeCode;
             }
         }
+
+        Log::channel('orders')->warning('Store code not found in meta_data', [
+            'meta_data_keys' => array_column($metaData, 'key')
+        ]);
+
         return null;
     }
 
@@ -477,7 +616,7 @@ class AtomController extends Controller
             }
         }
 
-        throw new \Exception("No warehouse mapped for store {$storeCode}");
+        throw new \Exception("No warehouse mapped for store {$storeCode}. Available warehouses: " . implode(', ', array_keys($this->warehouseConfig)));
     }
 
     /**
@@ -486,7 +625,7 @@ class AtomController extends Controller
     private function getMeta(array $meta, string $key)
     {
         foreach ($meta as $m) {
-            if (($m['key'] ?? null) === $key) {
+            if (is_array($m) && ($m['key'] ?? null) === $key) {
                 return $m['value'] ?? null;
             }
         }
@@ -539,20 +678,24 @@ class AtomController extends Controller
     }
 
     /**
-     * Test endpoint
+     * Test endpoint - Enhanced for debugging
      */
     public function test(Request $request)
     {
-        Log::channel('orders')->info('Test endpoint called', [
+        Log::channel('orders')->info('=== TEST ENDPOINT CALLED ===', [
+            'method' => $request->method(),
+            'ip' => $request->ip(),
             'payload' => $request->all()
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'API is working correctly',
+            'message' => 'API is working correctly - Direct send mode active',
             'received_data' => $request->all(),
             'timestamp' => now()->toIso8601String(),
-            'server_time' => now()->toDateTimeString()
+            'server_time' => now()->toDateTimeString(),
+            'timezone' => config('app.timezone'),
+            'version' => '2.0.0'
         ], 200);
     }
 }
