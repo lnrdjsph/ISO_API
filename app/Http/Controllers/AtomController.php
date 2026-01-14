@@ -401,13 +401,27 @@ class AtomController extends Controller
         $qtyPc = $qtyCs * $casePack;
         $requiredQty = $qtyPc;
 
-        // 4. Determine freebie scheme based on payment mode
+        // 4. Determine freebie scheme based on payment mode (default: po15_scheme)
         $freebieScheme = '';
 
-        if ($paymentMode === 'PO15%') {
-            $freebieScheme = $product->po15_scheme ?? '';
-        } elseif (in_array($paymentMode, ['Cash / Bank Card', 'Cash'])) {
+        if (in_array($paymentMode, ['Cash / Bank Card', 'Cash', 'Cash on Delivery', 'COD'])) {
+            // Cash/Bank Card payment - use cash_bank_card_scheme
             $freebieScheme = $product->cash_bank_card_scheme ?? '';
+
+            Log::channel('orders')->debug('Using cash/bank card scheme', [
+                'sku' => $sku,
+                'payment_mode' => $paymentMode,
+                'scheme' => $freebieScheme ?: 'none'
+            ]);
+        } else {
+            // Default to PO15% scheme for all other payment methods
+            $freebieScheme = $product->po15_scheme ?? '';
+
+            Log::channel('orders')->debug('Using PO15 scheme (default)', [
+                'sku' => $sku,
+                'payment_mode' => $paymentMode,
+                'scheme' => $freebieScheme ?: 'none'
+            ]);
         }
 
         Log::channel('orders')->debug('Item details', [
@@ -416,7 +430,8 @@ class AtomController extends Controller
             'case_pack' => $casePack,
             'qty_pieces' => $qtyPc,
             'payment_mode' => $paymentMode,
-            'freebie_scheme' => $freebieScheme ?: 'none',
+            'freebie_scheme_selected' => $freebieScheme ?: 'none',
+            'scheme_type' => in_array($paymentMode, ['Cash / Bank Card', 'Cash', 'Cash on Delivery', 'COD']) ? 'cash_bank_card' : 'po15_default',
             'discount_scheme' => $product->discount_scheme ?? 'none'
         ]);
 
