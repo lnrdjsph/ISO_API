@@ -1,3 +1,21 @@
+?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AtomController;
+
+Route::prefix('atom-api')->group(function () {
+// Test endpoint (no auth)
+Route::post('/test', [AtomController::class, 'test']);
+
+// Main endpoint (with Bearer token)
+Route::post('/', [AtomController::class, 'receiveOrder'])
+->middleware('verify.api.token');
+});
+
+
+// ============================================
+// FILE: app/Http/Controllers/AtomController.php
+// ============================================
 <?php
 
 namespace App\Http\Controllers;
@@ -53,15 +71,15 @@ class AtomController extends Controller
                 'status' => 'required|string',
                 'currency' => 'required|string|size:3',
                 'total' => 'required|numeric',
-                'payment_method_title' => 'required|string',
+                'payment_method_title' => 'nullable|string',
                 'billing_address' => 'required|array',
                 'billing_address.email' => 'required|email',
                 'shipping_address' => 'required|array',
                 'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|integer',
                 'items.*.sku' => 'required|string',
-                'items.*.name' => 'required|string',
-                'items.*.qty' => 'required|integer|min:1',
-                'items.*.price' => 'required|numeric|min:0',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.total' => 'required|numeric|min:0',
                 'meta_data' => 'required|array',
             ]);
 
@@ -244,8 +262,8 @@ class AtomController extends Controller
             throw new \Exception("No allocation record for SKU {$sku} in warehouse {$warehouse}");
         }
 
-        // 3. Calculate quantities
-        $qtyCs = (int) ($item['qty'] ?? 0);
+        // 3. Calculate quantities (WooCommerce sends 'quantity' not 'qty')
+        $qtyCs = (int) ($item['quantity'] ?? $item['qty'] ?? 0);
         $casePack = (int) ($product->case_pack ?? 1);
         $qtyPc = $qtyCs * $casePack;
         $requiredQty = $qtyPc;
@@ -295,7 +313,9 @@ class AtomController extends Controller
         }
 
         // 7. Calculate pricing with discount_scheme
-        $pricePerPc = (float) ($item['price'] ?? 0) / $qtyPc;
+        // WooCommerce sends 'total' not 'price'
+        $itemTotal = (float) ($item['total'] ?? $item['price'] ?? 0);
+        $pricePerPc = $itemTotal / $qtyPc;
         $rawPricePerCase = $pricePerPc * $casePack;
 
         // Apply discount_scheme (always applied if exists)
