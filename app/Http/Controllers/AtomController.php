@@ -267,6 +267,9 @@ class AtomController extends Controller
         try {
             DB::beginTransaction();
 
+            // Check stock availability BEFORE creating order
+            $this->checkAllocationStock($orderData['items'], $warehouse, $storeCode, $orderData['payment_method_title'] ?? '');
+
             $billing = $orderData['billing_address'] ?? [];
             $shipping = $orderData['shipping_address'] ?? [];
 
@@ -285,9 +288,30 @@ class AtomController extends Controller
                 $shipping['country'] ?? ''
             ])->filter()->implode(', ');
 
+            // Generate SOF ID (format: SOFYYYYMMDD-XXX)
+            $today = now()->format('Ymd');
+            $latest = DB::table('orders')
+                ->where('sof_id', 'like', "SOF{$today}-%")
+                ->orderBy('sof_id', 'desc')
+                ->first();
+
+            if ($latest) {
+                $lastNumber = (int) substr($latest->sof_id, -3);
+                $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            } else {
+                $nextNumber = '001';
+            }
+
+            $sofId = "SOF{$today}-{$nextNumber}";
+
+            Log::channel('orders')->info('Generated SOF ID', [
+                'sof_id' => $sofId,
+                'woocommerce_order_number' => $orderData['order_number']
+            ]);
+
             // Create main order
             $orderId = DB::connection('mysql')->table('orders')->insertGetId([
-                'sof_id' => $orderData['order_number'],
+                'sof_id' => $sofId,
                 'requesting_store' => 'MarengEms Online',
                 'requested_by' => $customerName,
                 'mbc_card_no' => $this->getMeta($metaData, 'mbc_card_no'),
@@ -337,6 +361,9 @@ class AtomController extends Controller
             }
 
             DB::commit();
+
+            // Deduct stock after successful order creation
+            $this->deductAllocationStock($orderId, $warehouse, $storeCode);
 
             Log::channel('orders')->info('✓ ORDER COMMITTED TO DATABASE', [
                 'internal_order_id' => $orderId,
@@ -476,48 +503,54 @@ class AtomController extends Controller
             'remaining_after' => $availableQty - $requiredQty
         ]);
 
-        // 7. Calculate pricing with discount_scheme
+        // 7. Calculate pricing with discount_scheme (matching manual SOF logic)
         $itemTotal = (float) ($item['total'] ?? 0);
         $pricePerPc = $qtyPc > 0 ? $itemTotal / $qtyPc : 0;
         $rawPricePerCase = $pricePerPc * $casePack;
 
-        // Apply discount_scheme
+        // Apply discount_scheme from product
         $discountScheme = $product->discount_scheme ?? '';
-        $pricePerCaseAfterDiscount = $rawPricePerCase;
         $discountApplied = 0;
+        $discountType = 'amount';
+        $finalPricePerCase = $rawPricePerCase;
 
         if (!empty($discountScheme)) {
             if (str_ends_with($discountScheme, '%')) {
                 // Percentage discount
+                $discountType = 'percent';
                 $percentValue = (float) rtrim($discountScheme, '%');
                 $discountApplied = $rawPricePerCase * ($percentValue / 100);
-                $pricePerCaseAfterDiscount = $rawPricePerCase - $discountApplied;
+                $finalPricePerCase = $rawPricePerCase - $discountApplied;
 
                 Log::channel('orders')->debug('Percentage discount applied', [
                     'sku' => $sku,
                     'discount' => $discountScheme,
+                    'type' => 'percent',
                     'original' => $rawPricePerCase,
                     'discount_amount' => $discountApplied,
-                    'final' => $pricePerCaseAfterDiscount
+                    'final' => $finalPricePerCase
                 ]);
             } else {
                 // Fixed value discount
+                $discountType = 'amount';
                 $discountApplied = (float) $discountScheme;
-                $pricePerCaseAfterDiscount = max(0, $rawPricePerCase - $discountApplied);
+                $finalPricePerCase = max(0, $rawPricePerCase - $discountApplied);
 
                 Log::channel('orders')->debug('Fixed discount applied', [
                     'sku' => $sku,
                     'discount' => $discountScheme,
+                    'type' => 'amount',
                     'original' => $rawPricePerCase,
                     'discount_amount' => $discountApplied,
-                    'final' => $pricePerCaseAfterDiscount
+                    'final' => $finalPricePerCase
                 ]);
             }
         }
 
-        $totalAmount = $pricePerCaseAfterDiscount * $qtyCs;
+        // Calculate total amount
+        $totalAmount = $finalPricePerCase * $qtyCs;
 
-        // 8. Apply additional item discount if provided
+        // Apply additional item discount if provided (from WooCommerce)
         $itemDiscountRaw = $item['discount'] ?? 0;
         $itemDiscount = 0;
 
@@ -527,29 +560,34 @@ class AtomController extends Controller
             $itemDiscount = (float) $itemDiscountRaw;
         }
 
-        $finalPrice = max($totalAmount - $itemDiscount, 0);
+        $finalAmount = max($totalAmount - $itemDiscount, 0);
 
-        // 9. Determine item type
+        // 8. Determine item type (matching manual SOF logic)
         $itemType = 'MAIN';
         if ($discountApplied > 0 || $itemDiscount > 0) {
             $itemType = 'DISCOUNT';
         }
 
-        // 10. Insert main item
+        // 9. Insert main item (matching manual SOF structure)
+        $scheme = $freebieScheme ?: null;
+        if ($itemType === 'DISCOUNT') {
+            $scheme = 'Discount';
+        }
+
         DB::table('order_items')->insert([
             'order_id' => $orderId,
             'sku' => $sku,
             'item_description' => $product->description ?? $item['name'] ?? 'Unknown Item',
-            'scheme' => $freebieScheme ?: null,
+            'scheme' => $scheme,
             'price_per_pc' => round($pricePerPc, 2),
-            'price' => round($pricePerCaseAfterDiscount, 2),
+            'price' => round($finalPricePerCase, 2),
             'qty_per_pc' => $casePack,
             'qty_per_cs' => $qtyCs,
-            'freebies_per_cs' => $schemeQualified ? $freeQty : 0,
+            'freebies_per_cs' => 0, // Main item doesn't show freebies
             'discount' => $discountScheme ?: ($itemDiscountRaw ?: 0),
             'total_qty' => $qtyPc,
-            'amount' => round($finalPrice, 2),
-            'remarks' => $discountScheme ? "Discount: {$discountScheme}" : null,
+            'amount' => round($finalAmount, 2),
+            'remarks' => $discountScheme ? "Discount: {$discountScheme}" : ($item['remarks'] ?? null),
             'store_order_no' => null,
             'item_type' => $itemType,
             'created_at' => now(),
@@ -561,40 +599,30 @@ class AtomController extends Controller
             'sku' => $sku,
             'description' => $product->description ?? $item['name'] ?? 'Unknown',
             'qty_cases' => $qtyCs,
-            'price_per_case' => $pricePerCaseAfterDiscount,
-            'amount' => $finalPrice,
-            'item_type' => $itemType
+            'price_per_case' => $finalPricePerCase,
+            'amount' => $finalAmount,
+            'item_type' => $itemType,
+            'scheme' => $scheme
         ]);
 
-        // 11. Deduct from allocation
-        DB::table('product_wms_allocations')
-            ->where('sku', $sku)
-            ->where('warehouse_code', $warehouse)
-            ->decrement('wms_virtual_allocation', $requiredQty);
-
-        Log::channel('orders')->debug('✓ Allocation decremented', [
-            'sku' => $sku,
-            'warehouse' => $warehouse,
-            'deducted' => $requiredQty,
-            'remaining' => $availableQty - $requiredQty
-        ]);
-
-        // 12. Insert freebie item if qualified
+        // 10. Insert freebie item if qualified (matching manual SOF structure)
         if ($schemeQualified && !empty($product->freebie_sku) && $totalFreebies > 0) {
+            // Calculate freebie amount (usually 0, but structure matches manual SOF)
+            $freebieAmount = 0; // Freebies are typically free
 
             DB::table('order_items')->insert([
                 'order_id' => $orderId,
                 'sku' => $product->freebie_sku,
                 'item_description' => 'Freebie - ' . ($product->description ?? $item['name'] ?? 'Item'),
-                'scheme' => $freebieScheme,
+                'scheme' => 'Freebie',
                 'price_per_pc' => 0,
                 'price' => 0,
-                'qty_per_pc' => 0,
+                'qty_per_pc' => $casePack,
                 'qty_per_cs' => 0,
-                'freebies_per_cs' => $freeQty,
+                'freebies_per_cs' => $totalFreebies,
                 'discount' => 0,
-                'total_qty' => $totalFreebies * $casePack,
-                'amount' => 0,
+                'total_qty' => $totalFreebies,
+                'amount' => $freebieAmount,
                 'remarks' => "Freebie: {$freebieScheme} (Payment: {$paymentMode})",
                 'store_order_no' => null,
                 'item_type' => 'FREEBIE',
@@ -609,7 +637,8 @@ class AtomController extends Controller
                 'scheme' => $freebieScheme,
                 'qty_cases' => $qtyCs,
                 'sets' => floor($qtyCs / $buyQty),
-                'total_freebies' => $totalFreebies
+                'total_freebies' => $totalFreebies,
+                'amount' => $freebieAmount
             ]);
         }
     }
@@ -755,5 +784,242 @@ class AtomController extends Controller
             'timezone' => config('app.timezone'),
             'version' => '2.0.0-flexible'
         ], 200);
+    }
+
+    /**
+     * Check stock availability before processing order
+     */
+    private function checkAllocationStock(array $items, string $warehouseCode, string $storeCode, string $paymentMode)
+    {
+        $tableName = "products_{$storeCode}";
+
+        // Group items by SKU and calculate requirements
+        $skuTotals = [];
+        $skuQtyPerPc = [];
+
+        foreach ($items as $item) {
+            $sku = strtoupper($item['sku']);
+            $quantity = $item['quantity'] ?? 0;
+
+            // Get product to find case_pack
+            $product = DB::table($tableName)
+                ->where('sku', $sku)
+                ->whereNull('archived_at')
+                ->first();
+
+            if (!$product) {
+                throw new \Exception("Product with SKU {$sku} not found in store {$storeCode}");
+            }
+
+            $casePack = (int) ($product->case_pack ?? 1);
+            $qtyPieces = $quantity * $casePack;
+
+            // Store requirements
+            $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $quantity; // Cases
+            $skuQtyPerPc[$sku] = $casePack; // Pieces per case
+
+            // Check for freebies using payment mode
+            $freebieScheme = '';
+
+            if (in_array($paymentMode, ['Cash / Bank Card', 'Cash', 'Cash on Delivery', 'COD'])) {
+                $freebieScheme = $product->cash_bank_card_scheme ?? '';
+            } else {
+                $freebieScheme = $product->po15_scheme ?? '';
+            }
+
+            // Calculate freebies
+            $schemeData = $this->parseScheme($freebieScheme);
+            $buyQty = $schemeData['buy'] ?? 0;
+            $freeQty = $schemeData['free'] ?? 0;
+
+            if ($buyQty > 0 && $freeQty > 0 && $quantity >= $buyQty) {
+                $schemeSets = floor($quantity / $buyQty);
+                $totalFreebies = $schemeSets * $freeQty;
+
+                if (!empty($product->freebie_sku) && $totalFreebies > 0) {
+                    $freebieSku = strtoupper($product->freebie_sku);
+                    $skuTotals[$freebieSku] = ($skuTotals[$freebieSku] ?? 0) + $totalFreebies;
+                    $skuQtyPerPc[$freebieSku] = $casePack;
+                }
+            }
+        }
+
+        // Validate stock for each SKU
+        foreach ($skuTotals as $sku => $requiredCases) {
+            $product = DB::table($tableName)
+                ->where('sku', $sku)
+                ->whereNull('archived_at')
+                ->first();
+
+            if (!$product) {
+                throw new \Exception("Product with SKU {$sku} not found");
+            }
+
+            // Check allocation_per_case
+            $availableCases = $product->allocation_per_case ?? 0;
+            if ($availableCases < $requiredCases) {
+                throw new \Exception(
+                    "Insufficient stock for SKU {$sku}. Required: {$requiredCases} cases, Available: {$availableCases} cases"
+                );
+            }
+
+            // Check WMS virtual allocation (in pieces)
+            $qtyPerPc = $skuQtyPerPc[$sku] ?? 0;
+            if ($qtyPerPc == 0) {
+                throw new \Exception("Product SKU {$sku} has case_pack = 0");
+            }
+
+            $requiredPieces = $requiredCases * $qtyPerPc;
+
+            $wmsAllocation = DB::table('product_wms_allocations')
+                ->where('sku', $sku)
+                ->where('warehouse_code', $warehouseCode)
+                ->first();
+
+            if (!$wmsAllocation) {
+                throw new \Exception("No WMS allocation found for SKU {$sku} in warehouse {$warehouseCode}");
+            }
+
+            $availablePieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+            $warehouseName = strtoupper($this->getWarehouseName($warehouseCode));
+
+            if ($availablePieces < $requiredPieces) {
+                throw new \Exception(
+                    "Insufficient stock for SKU {$sku} in warehouse {$warehouseCode} - {$warehouseName}. " .
+                        "Required: {$requiredPieces} pieces ({$requiredCases} cases × {$qtyPerPc} pcs), " .
+                        "Available: {$availablePieces} pieces"
+                );
+            }
+
+            Log::channel('orders')->debug('Stock check passed', [
+                'sku' => $sku,
+                'required_cases' => $requiredCases,
+                'available_cases' => $availableCases,
+                'required_pieces' => $requiredPieces,
+                'available_pieces' => $availablePieces
+            ]);
+        }
+
+        Log::channel('orders')->info('✓ All stock checks passed');
+        return true;
+    }
+
+    /**
+     * Deduct stock after successful order
+     */
+    private function deductAllocationStock(int $orderId, string $warehouseCode, string $storeCode)
+    {
+        $tableName = "products_{$storeCode}";
+
+        // Get all order items
+        $items = DB::table('order_items')
+            ->where('order_id', $orderId)
+            ->get();
+
+        foreach ($items as $item) {
+            $sku = strtoupper($item->sku);
+
+            // Find product
+            $product = DB::table($tableName)
+                ->where('sku', $sku)
+                ->whereNull('archived_at')
+                ->first();
+
+            if (!$product) {
+                Log::channel('orders')->warning("Product not found for deduction", [
+                    'sku' => $sku,
+                    'store' => $storeCode
+                ]);
+                continue;
+            }
+
+            // 1. Deduct allocation_per_case by total_qty (cases)
+            $casesDeduction = $item->total_qty;
+            $currentCaseAllocation = $product->allocation_per_case ?? 0;
+            $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
+
+            DB::table($tableName)
+                ->where('id', $product->id)
+                ->update([
+                    'allocation_per_case' => $newCaseAllocation,
+                    'updated_at' => now(),
+                ]);
+
+            Log::channel('orders')->info('Case deduction', [
+                'sku' => $sku,
+                'type' => $item->item_type,
+                'cases_deducted' => $casesDeduction,
+                'previous' => $currentCaseAllocation,
+                'new_balance' => $newCaseAllocation
+            ]);
+
+            // 2. Deduct wms_virtual_allocation by (total_qty × qty_per_pc) - pieces
+            $qtyPerPc = $item->qty_per_pc ?? $product->case_pack ?? 0;
+
+            if ($qtyPerPc == 0) {
+                Log::channel('orders')->warning("qty_per_pc is 0, skipping WMS deduction", [
+                    'sku' => $sku,
+                    'item_id' => $item->id
+                ]);
+                continue;
+            }
+
+            $piecesDeduction = $item->total_qty * $qtyPerPc;
+
+            $wmsAllocation = DB::table('product_wms_allocations')
+                ->where('sku', $sku)
+                ->where('warehouse_code', $warehouseCode)
+                ->first();
+
+            if (!$wmsAllocation) {
+                Log::channel('orders')->warning("WMS allocation not found", [
+                    'sku' => $sku,
+                    'warehouse' => $warehouseCode
+                ]);
+                continue;
+            }
+
+            $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+            $newWmsPieces = max(0, $currentWmsPieces - $piecesDeduction);
+
+            DB::table('product_wms_allocations')
+                ->where('sku', $sku)
+                ->where('warehouse_code', $warehouseCode)
+                ->update([
+                    'wms_virtual_allocation' => $newWmsPieces,
+                    'updated_at' => now(),
+                ]);
+
+            Log::channel('orders')->info('WMS pieces deduction', [
+                'sku' => $sku,
+                'type' => $item->item_type,
+                'warehouse' => $warehouseCode,
+                'qty_cases' => $item->total_qty,
+                'pieces_per_case' => $qtyPerPc,
+                'pieces_deducted' => $piecesDeduction,
+                'previous' => $currentWmsPieces,
+                'new_balance' => $newWmsPieces
+            ]);
+        }
+
+        Log::channel('orders')->info('✓ All stock deductions completed', [
+            'order_id' => $orderId,
+            'items_processed' => count($items)
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Get warehouse name from code
+     */
+    private function getWarehouseName(string $code): string
+    {
+        $warehouseNames = [
+            '80181' => 'Mandaue Warehouse',
+            '80141' => 'Tacloban Warehouse',
+        ];
+
+        return $warehouseNames[$code] ?? 'Unknown Warehouse';
     }
 }
