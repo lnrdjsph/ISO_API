@@ -354,7 +354,25 @@
                                     </div>
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Order Status</p>
-                                        <p class="text-xs font-medium text-gray-900">{{ ucwords($order->order_status) }}</p>
+                                        <p class="text-xs font-medium text-gray-900">
+                                            @php
+                                                $status = ucwords(strtolower($order->order_status ?? 'New Order'));
+                                                $statusClass = match ($status) {
+                                                    'Completed' => 'bg-green-200 text-green-800',
+                                                    'Archived' => 'bg-gray-200 text-gray-800',
+                                                    'Cancelled' => 'bg-red-200 text-red-800',
+                                                    'Pending' => 'bg-yellow-200 text-yellow-800',
+                                                    'Rejected' => 'bg-orange-200 text-orange-800',
+                                                    'For Approval' => 'bg-purple-100 text-purple-800',
+                                                    'Approved' => 'bg-green-100 text-green-800',
+                                                    default => 'bg-blue-100 text-blue-800',
+                                                };
+                                            @endphp
+
+                                            <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                                                {{ $status }}
+                                            </span>
+                                        </p>
                                     </div>
 
                                 </div>
