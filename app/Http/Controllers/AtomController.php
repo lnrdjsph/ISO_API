@@ -218,7 +218,7 @@ class AtomController extends Controller
     {
         // Check for duplicate order
         $exists = DB::table('orders')
-            ->where('sof_id', $orderData['order_number'])
+            ->where('sof_id', 'like', "ATOM{$orderData['order_number']}-%")
             ->exists();
 
         if ($exists) {
@@ -229,7 +229,7 @@ class AtomController extends Controller
 
             // Return success but indicate it was a duplicate
             $existingOrder = DB::table('orders')
-                ->where('sof_id', $orderData['order_number'])
+                ->where('sof_id', 'like', "ATOM{$orderData['order_number']}-%")
                 ->first();
 
             return [
@@ -288,25 +288,15 @@ class AtomController extends Controller
                 $shipping['country'] ?? ''
             ])->filter()->implode(', ');
 
-            // Generate SOF ID (format: SOFYYYYMMDD-XXX)
-            $today = now()->format('Ymd');
-            $latest = DB::table('orders')
-                ->where('sof_id', 'like', "SOF{$today}-%")
-                ->orderBy('sof_id', 'desc')
-                ->first();
-
-            if ($latest) {
-                $lastNumber = (int) substr($latest->sof_id, -3);
-                $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-            } else {
-                $nextNumber = '001';
-            }
-
-            $sofId = "SOF{$today}-{$nextNumber}";
+            // Generate SOF ID using format: ATOM{woocommerce_order_id}-{date}
+            $woocommerceOrderId = $orderData['order_number'];
+            $datePart = now()->format('Ymd');
+            $sofId = "ATOM{$woocommerceOrderId}-{$datePart}";
 
             Log::channel('orders')->info('Generated SOF ID', [
                 'sof_id' => $sofId,
-                'woocommerce_order_number' => $orderData['order_number']
+                'woocommerce_order_id' => $woocommerceOrderId,
+                'date_part' => $datePart
             ]);
 
             // Create main order
@@ -335,7 +325,7 @@ class AtomController extends Controller
 
             Log::channel('orders')->info('✓ Order record created', [
                 'internal_order_id' => $orderId,
-                'sof_id' => $orderData['order_number'],
+                'sof_id' => $sofId,
                 'warehouse' => $warehouse,
                 'store_code' => $storeCode,
                 'customer' => $customerName
@@ -368,13 +358,15 @@ class AtomController extends Controller
             Log::channel('orders')->info('✓ ORDER COMMITTED TO DATABASE', [
                 'internal_order_id' => $orderId,
                 'woocommerce_order_id' => $orderData['order_id'],
-                'items_processed' => $itemsProcessed
+                'items_processed' => $itemsProcessed,
+                'sof_id' => $sofId
             ]);
 
             return [
                 'internal_order_id' => $orderId,
                 'items_count' => $itemsProcessed,
-                'duplicate' => false
+                'duplicate' => false,
+                'sof_id' => $sofId
             ];
         } catch (\Exception $e) {
             DB::rollBack();
