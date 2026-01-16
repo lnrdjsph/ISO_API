@@ -29,8 +29,8 @@ class AtomController extends Controller
      * Warehouse to store mapping
      */
     protected array $warehouseConfig = [
-        '80181' => ['stores' => ['4002', '2010']],
-        '80141' => ['stores' => ['2017', '2019']],
+        '80141' => ['stores' => ['4002']],
+        '80181' => ['stores' => ['6012']],
     ];
 
     /**
@@ -1016,8 +1016,8 @@ class AtomController extends Controller
     private function getWarehouseName(string $code): string
     {
         $warehouseNames = [
-            '80181' => 'Mandaue Warehouse',
-            '80141' => 'Tacloban Warehouse',
+            '80181' => 'Silangan Warehouse',
+            '80141' => 'Bacolod Warehouse',
         ];
 
         return $warehouseNames[$code] ?? 'Unknown Warehouse';
