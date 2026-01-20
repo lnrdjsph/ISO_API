@@ -181,7 +181,7 @@
                                             $channelDisplay = ucwords($channel ?: 'Unknown');
 
                                             $channelClass = match ($channel) {
-                                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-200 text-yellow-800',
+                                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-200 text-green-800',
                                                 'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
                                                 default => 'bg-gray-100 text-gray-800',
                                             };
