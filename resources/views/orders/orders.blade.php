@@ -175,7 +175,22 @@
                                             {{ $storeName }}
                                         </td>
                                     @endif
-                                    <td class="whitespace-nowrap px-4 py-3">{{ $order->channel_order }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        @php
+                                            $channel = strtolower(trim($order->channel_order ?? ''));
+                                            $channelDisplay = ucwords($channel ?: 'Unknown');
+
+                                            $channelClass = match ($channel) {
+                                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-200 text-yellow-800',
+                                                'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
+                                                default => 'bg-gray-100 text-gray-800',
+                                            };
+                                        @endphp
+
+                                        <span class="{{ $channelClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                                            {{ $channelDisplay }}
+                                        </span>
+                                    </td>
                                     <td class="whitespace-nowrap px-4 py-3">
                                         {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
                                     {{-- <td class="whitespace-nowrap px-4 py-3">
