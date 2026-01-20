@@ -298,13 +298,14 @@ class AtomController extends Controller
                 'woocommerce_order_id' => $woocommerceOrderId,
                 'date_part' => $datePart
             ]);
-
+            $mbcCardNumber = $this->getMeta($metaData, 'mbc_card_number');
+            $mbcCardType = $this->getMeta($metaData, 'mbc_card_type');
             // Create main order
             $orderId = DB::connection('mysql')->table('orders')->insertGetId([
                 'sof_id' => $sofId,
                 'requesting_store' => 'MarengEms Online',
                 'requested_by' => $customerName,
-                'mbc_card_no' => $this->getMeta($metaData, 'mbc_card_no'),
+                'mbc_card_no' => $mbcCardNumber,
                 'customer_name' => $customerName,
                 'contact_number' => $billing['phone'] ?? null,
                 'email' => $billing['email'] ?? null,
