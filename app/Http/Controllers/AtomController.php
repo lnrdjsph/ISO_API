@@ -299,7 +299,7 @@ class AtomController extends Controller
                 'date_part' => $datePart
             ]);
             $mbcCardNumber = $this->getMeta($metaData, 'mbc_card_number');
-            $mbcCardType = $this->getMeta($metaData, 'mbc_card_type');
+            // $mbcCardType = $this->getMeta($metaData, 'mbc_card_type');
             // Create main order
             $orderId = DB::connection('mysql')->table('orders')->insertGetId([
                 'sof_id' => $sofId,
@@ -608,8 +608,8 @@ class AtomController extends Controller
                 'sku' => $product->freebie_sku,
                 'item_description' => 'Freebie - ' . ($product->description ?? $item['name'] ?? 'Item'),
                 'scheme' => 'Freebie',
-                'price_per_pc' => 0,
-                'price' => 0,
+                'price_per_pc' => round($pricePerPc, 2),
+                'price' => round($finalPricePerCase, 2),
                 'qty_per_pc' => $casePack,
                 'qty_per_cs' => 0,
                 'freebies_per_cs' => $totalFreebies,
