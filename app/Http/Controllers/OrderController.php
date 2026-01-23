@@ -697,7 +697,7 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
         }
 
         if (in_array($order->requesting_store, ['6012', '3019', '2008', '6009', '6010'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
+            $recipients[] = 'leonard.tomalon@metroretail.ph';
         }
 
         // If recipients found, send email
