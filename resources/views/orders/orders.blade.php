@@ -183,7 +183,7 @@
         <script>
             function fetchOrders(url) {
                 const overlay = document.getElementById('orders-loading');
-                if (overlay) overlay.classList.remove('hidden');
+                overlay?.classList.remove('hidden');
 
                 fetch(url, {
                         headers: {
@@ -193,14 +193,45 @@
                     .then(res => res.text())
                     .then(html => {
                         document.getElementById('orders-table').innerHTML = html;
+
+                        // Update browser URL without reloading
+                        window.history.pushState({}, '', url);
+
+                        // Re-bind rows per page listener
+                        const perPage = document.getElementById('per_page');
+                        if (perPage) {
+                            perPage.addEventListener('change', function() {
+                                const form = this.closest('form');
+
+                                // Include all hidden inputs for filters
+                                const query = new URLSearchParams(new FormData(form)).toString();
+
+                                // Also include main filter form values if you want
+                                const mainForm = document.querySelector('.ajax-form');
+                                if (mainForm && mainForm !== form) {
+                                    new FormData(mainForm).forEach((value, key) => {
+                                        if (!query.includes(key + '=')) query.append(key, value);
+                                    });
+                                }
+
+                                fetchOrders(form.action + '?' + query);
+                            });
+                        }
                     })
                     .catch(err => console.error(err))
-                    .finally(() => {
-                        const overlayAfter = document.getElementById('orders-loading'); // re-query
-                        if (overlayAfter) overlayAfter.classList.add('hidden');
-                    });
+                    .finally(() => overlay?.classList.add('hidden'));
             }
 
+            document.getElementById('per_page')?.dispatchEvent(new Event('change', {
+                bubbles: true
+            }));
+
+
+
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', () => {
+                fetchOrders(window.location.href);
+            });
 
             // Pagination clicks
             document.addEventListener('click', function(e) {
@@ -220,8 +251,8 @@
                 });
             });
 
-            // ✅ Rows per page change (THIS WAS MISSING)
-            document.getElementById('per_page').addEventListener('change', function() {
+            // Rows per page
+            document.getElementById('per_page')?.addEventListener('change', function() {
                 const form = this.closest('form');
                 const url = form.action + '?' + new URLSearchParams(new FormData(form));
                 fetchOrders(url);

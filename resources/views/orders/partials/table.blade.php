@@ -1,5 +1,5 @@
                 <!-- Table -->
-                <div class="overflow-x-auto rounded-xl">
+                <div class="mb-4 overflow-x-auto rounded-xl">
                     <table class="min-w-full divide-y divide-gray-200 rounded-xl text-sm">
                         <thead class="bg-gray-50 text-left">
                             <tr>
