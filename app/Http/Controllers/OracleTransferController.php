@@ -89,16 +89,14 @@ class OracleTransferController extends Controller
                     }
 
                     // supp_pack_size should be qty_per_pc
-                    // $suppPackSize = $qtyPerPc;
+                    $suppPackSize = $qtyPerPc;
 
                     if (!isset($skuGroups[$sku])) {
                         // first occurrence: initialize
                         $skuGroups[$sku] = [
                             'item' => $sku,
-                            'tsf_qty' => $qtyPerPc,
-                            'supp_pack_size' => $qtyPerPc * $totalQty,
-                            // 'tsf_qty' => $qtyPerPc * $totalQty,
-                            // 'supp_pack_size' => $suppPackSize,
+                            'tsf_qty' => $qtyPerPc * $totalQty,
+                            'supp_pack_size' => $suppPackSize,
                         ];
                     } else {
                         // subsequent occurrences: accumulate quantities
