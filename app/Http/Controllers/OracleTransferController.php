@@ -352,6 +352,21 @@ class OracleTransferController extends Controller
             $status = 'Processing';
             Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
+            // Step 2: Check oracle_wms database - pick_directive table
+            Log::info('Checking pick_directive table', ['store_order_no' => $storeOrderNo]);
+
+            $picking = DB::connection('oracle_wms')
+                ->table('rwms.pick_directive')
+                ->where('distro_nbr', $storeOrderNo)
+                ->exists();
+
+            if ($picking) {
+                $status = 'Picking';
+                Log::info('Order is currently being picked', [
+                    'store_order_no' => $storeOrderNo
+                ]);
+            }
+
             // Step 2: Check oracle_wms database - container_item table with rwms schema
             Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
             $containerItem = DB::connection('oracle_wms')
@@ -375,6 +390,10 @@ class OracleTransferController extends Controller
                 $status = 'Shipped';
                 Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
 
+                if (empty($sku)) {
+                    return response()->json(['status' => 'N/A'], 200);
+                }
+
                 // Step 3: Check oracle_rms database - shipsku table for received qty
                 Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
                 $shipSku = DB::connection('oracle_rms')
@@ -384,13 +403,7 @@ class OracleTransferController extends Controller
                     ->whereRaw('NVL(qty_received,0) > 0')
                     ->exists();
 
-                if (empty($sku)) {
-                    return response()->json(['status' => 'N/A'], 200);
-                }
 
-                Log::info('ShipSKU qty_received', [
-                    'qty_received' => $shipSku->qty_received ?? null
-                ]);
 
                 // If qty_received > 0, status becomes Received
                 if ($shipSku) {
