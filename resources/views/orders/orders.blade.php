@@ -27,10 +27,8 @@
                     </div>
                 </div>
             </div><!-- Modern Filter Bar -->
-            <form
-                method="GET"
-                action="{{ route('orders.index') }}"
-                class="mb-4 flex flex-wrap items-center gap-2 text-xs">
+            <form method="GET" action="{{ route('orders.index') }}" class="ajax-form mb-4 flex flex-wrap items-center gap-2 text-xs">
+
                 <!-- Search -->
                 <div class="relative">
                     <input
@@ -127,159 +125,106 @@
             <div class="space-y-6 rounded-xl bg-white shadow-lg">
                 <!-- Search Bar -->
 
+                <div class="relative">
+                    <div id="orders-loading" class="absolute inset-0 z-10 flex hidden items-center justify-center bg-white/70">
+                        <div class="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600"></div>
+                    </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto rounded-xl">
-                    <table class="min-w-full divide-y divide-gray-200 rounded-xl text-sm">
-                        <thead class="bg-gray-50 text-left">
-                            <tr>
-                                <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
-                                <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
-                                {{-- 👔 Only managers see this column --}}
-                                @if (auth()->user()->role === 'manager')
-                                    <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
-                                @endif
-                                <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
-                                <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
-                                {{-- <th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th> --}}
-                                <th class="px-4 py-3 font-medium text-gray-700">Status</th>
-                                <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 bg-white">
-                            @forelse($orders as $order)
-                                <tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
-                                    <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
-                                    <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
-                                    {{-- 👔 Only managers see store --}}
-                                    @if (auth()->user()->role === 'manager')
-                                        @php
-                                            // All store names (exclude lz/vs keys)
-                                            $allStoreLocations = [
-                                                '4002' => 'F2 - Metro Wholesalemart Colon',
-                                                '2010' => 'S10 - Metro Maasin',
-                                                '2017' => 'S17 - Metro Tacloban',
-                                                '2019' => 'S19 - Metro Bay-Bay',
-                                                '3018' => 'F18 - Metro Alang-Alang',
-                                                '3019' => 'F19 - Metro Hilongos',
-                                                '2008' => 'S8 - Metro Toledo',
-                                                '6012' => 'H8 - Super Metro Antipolo',
-                                                '6009' => 'H9 - Super Metro Carcar',
-                                                '6010' => 'H10 - Super Metro Bogo',
-                                            ];
-
-                                            $storeName = $allStoreLocations[$order->requesting_store] ?? 'Unknown Store';
-                                        @endphp
-
-                                        <td class="whitespace-nowrap px-4 py-3">
-                                            {{ $storeName }}
-                                        </td>
-                                    @endif
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        @php
-                                            $channel = strtolower(trim($order->channel_order ?? ''));
-                                            $channelDisplay = ucwords($channel ?: 'Unknown');
-
-                                            $channelClass = match ($channel) {
-                                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-100 text-green-800',
-                                                'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
-                                                default => 'bg-gray-100 text-gray-800',
-                                            };
-                                        @endphp
-
-                                        <span class="{{ $channelClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                                            {{ $channelDisplay }}
-                                        </span>
-                                    </td>
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
-                                    {{-- <td class="whitespace-nowrap px-4 py-3">
-																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td> --}}
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        @php
-                                            $status = ucwords(strtolower($order->order_status ?? 'New Order'));
-                                            $statusClass = match ($status) {
-                                                'Completed' => 'bg-green-200 text-green-800',
-                                                'Archived' => 'bg-gray-200 text-gray-800',
-                                                'Cancelled' => 'bg-red-200 text-red-800',
-                                                'Pending' => 'bg-yellow-200 text-yellow-800',
-                                                'Rejected' => 'bg-orange-200 text-orange-800',
-                                                'For Approval' => 'bg-purple-100 text-purple-800',
-                                                'Approved' => 'bg-green-100 text-green-800',
-                                                default => 'bg-blue-100 text-blue-800',
-                                            };
-                                        @endphp
-
-                                        <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                                            {{ $status }}
-                                        </span>
-
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <a
-                                            href="{{ route('orders.show', $order->id) }}"
-                                            class="inline-block font-medium text-indigo-600 hover:text-indigo-800">
-                                            View
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td
-                                        colspan="7"
-                                        class="px-4 py-4 text-center text-gray-500">No orders found.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                <div class="flex items-center justify-between p-4">
-                    <!-- Rows per page -->
-                    <form
-                        method="GET"
-                        action="{{ route('orders.index') }}"
-                        class="flex items-center space-x-2">
-                        @foreach (request()->except('per_page', 'page') as $key => $value)
-                            <input
-                                type="hidden"
-                                name="{{ $key }}"
-                                value="{{ $value }}">
-                        @endforeach
-
-                        <label
-                            for="per_page"
-                            class="text-sm text-gray-600">Rows per page:</label>
-                        <select
-                            name="per_page"
-                            id="per_page"
-                            onchange="this.form.submit()"
-                            class="rounded border-0 px-8 py-1 text-sm">
-                            <option
-                                value="10"
-                                {{ $perPage == 10 ? 'selected' : '' }}>10</option>
-                            <option
-                                value="25"
-                                {{ $perPage == 25 ? 'selected' : '' }}>25</option>
-                            <option
-                                value="50"
-                                {{ $perPage == 50 ? 'selected' : '' }}>50</option>
-                            <option
-                                value="100"
-                                {{ $perPage == 100 ? 'selected' : '' }}>100</option>
-                        </select>
-                    </form>
+                    <div id="orders-table">
+                        @include('orders.partials.table')
+                    </div>
 
                     <!-- Pagination -->
-                    <div>
+                    <div class="flex items-center justify-between p-4" style="margin-top:-65px;">
+                        <!-- Rows per page -->
+                        <form method="GET" action="{{ route('orders.index') }}" class="ajax-form flex items-center space-x-2">
+
+                            @foreach (request()->except('per_page', 'page') as $key => $value)
+                                <input
+                                    type="hidden"
+                                    name="{{ $key }}"
+                                    value="{{ $value }}">
+                            @endforeach
+
+                            <label
+                                for="per_page"
+                                class="text-sm text-gray-600">Rows per page:</label>
+                            <select
+                                name="per_page"
+                                id="per_page"
+                                class="rounded border-0 px-8 py-1 text-sm">
+                                <option
+                                    value="10"
+                                    {{ $perPage == 10 ? 'selected' : '' }}>10</option>
+                                <option
+                                    value="25"
+                                    {{ $perPage == 25 ? 'selected' : '' }}>25</option>
+                                <option
+                                    value="50"
+                                    {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                                <option
+                                    value="100"
+                                    {{ $perPage == 100 ? 'selected' : '' }}>100</option>
+                            </select>
+                        </form>
+
+                        <!-- Pagination -->
+                        {{-- <div>
                         {{ $orders->links('pagination::tailwind') }}
+                    </div> --}}
                     </div>
+
+
                 </div>
 
-
             </div>
-
         </div>
-    </div>
-@endsection
+
+        <script>
+            function fetchOrders(url) {
+                const overlay = document.getElementById('orders-loading');
+                if (overlay) overlay.classList.remove('hidden');
+
+                fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById('orders-table').innerHTML = html;
+                    })
+                    .catch(err => console.error(err))
+                    .finally(() => {
+                        const overlayAfter = document.getElementById('orders-loading'); // re-query
+                        if (overlayAfter) overlayAfter.classList.add('hidden');
+                    });
+            }
+
+
+            // Pagination clicks
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('nav[aria-label="Pagination Navigation"] a');
+                if (!link) return;
+
+                e.preventDefault();
+                fetchOrders(link.href);
+            });
+
+            // AJAX forms (filters)
+            document.querySelectorAll('.ajax-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const url = this.action + '?' + new URLSearchParams(new FormData(this));
+                    fetchOrders(url);
+                });
+            });
+
+            // ✅ Rows per page change (THIS WAS MISSING)
+            document.getElementById('per_page').addEventListener('change', function() {
+                const form = this.closest('form');
+                const url = form.action + '?' + new URLSearchParams(new FormData(form));
+                fetchOrders(url);
+            });
+        </script>
+    @endsection
