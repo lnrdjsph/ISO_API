@@ -847,7 +847,7 @@
 
                                                 <!-- Price/PCS -->
                                                 <div>
-                                                    <label class="mb-1 block text-sm font-medium">Price/PC</label>
+                                                    <label class="mb-1 block text-sm font-medium">Price per Piece</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -860,7 +860,7 @@
 
                                                 <!-- QTY/PCS -->
                                                 <div class="relative">
-                                                    <label class="mb-1 block text-sm font-medium">QTY/PC</label>
+                                                    <label class="mb-1 block text-sm font-medium">Pieces per Case</label>
                                                     <input
                                                         type="text"
                                                         name="orders[{{ $i }}][qty_per_pc]"
@@ -874,7 +874,7 @@
 
                                                 <!-- QTY/CS -->
                                                 <div x-data="{ qty: '{{ old("orders.$i.qty_per_cs") }}' }">
-                                                    <label class="mb-1 block text-sm font-medium">QTY/CS</label>
+                                                    <label class="mb-1 block text-sm font-medium">Case/s Ordered</label>
                                                     <input
                                                         type="number"
                                                         x-model="qty"
@@ -983,7 +983,7 @@
 
                                                 <!-- Freebies Price/PCS -->
                                                 <div>
-                                                    <label class="mb-1 block text-sm font-medium">Freebie Price/PC</label>
+                                                    <label class="mb-1 block text-sm font-medium">Freebie Price per Piece</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -1006,7 +1006,7 @@
 
                                                 <!-- Freebies QTY/PCS -->
                                                 <div>
-                                                    <label class="mb-1 block text-sm font-medium">Freebie QTY/PC</label>
+                                                    <label class="mb-1 block text-sm font-medium">Freebie Pieces per Case</label>
                                                     <input
                                                         type="text"
                                                         name="orders[{{ $i }}][freebie_qty_per_pc]"
@@ -1019,7 +1019,7 @@
 
                                                 <!-- Freebie QTY/CS-->
                                                 <div>
-                                                    <label class="mb-1 block text-sm font-medium">Freebie QTY/CS</label>
+                                                    <label class="mb-1 block text-sm font-medium">Case/s Free</label>
                                                     <input
                                                         type="text"
                                                         name="orders[{{ $i }}][freebies_per_cs]"
@@ -1096,7 +1096,7 @@
                                                     <div class="flex items-start justify-between">
                                                         <label class="block text-sm text-gray-600">Price</label>
                                                         <div class="text-right font-medium text-black">
-                                                            <span class="price-display">0.00</span>
+                                                            ₱<span class="price-display">0.00</span>
                                                             <input
                                                                 type="hidden"
                                                                 name="orders[{{ $i }}][price]"
@@ -1105,6 +1105,20 @@
                                                             <div class="breakdown-price text-xs text-gray-500"></div>
                                                         </div>
                                                     </div>
+
+
+                                                    <!-- Freebies/CS -->
+                                                    <div class="flex items-start justify-between">
+                                                        <label class="block text-sm text-green-600">Freebies</label>
+                                                        <div class="text-right font-medium text-black">
+                                                            <span class="freebies-cs-display block text-green-600">0</span>
+                                                            <div class="breakdown-freebie-qty text-xs text-green-600"></div>
+                                                            <input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
+                                                                value="{{ old("orders.$i.freebies_per_cs") }}"
+                                                                class="computed-freebies" />
+                                                        </div>
+                                                    </div>
+
 
                                                     <!-- Total QTY -->
                                                     <div class="flex items-start justify-between">
@@ -1120,27 +1134,13 @@
                                                         </div>
                                                     </div>
 
-                                                    {{-- 
-																								<!-- Freebies/CS -->
-																								<div class="flex justify-between items-start">
-																										<label class="block text-sm text-green-600">Freebies</label>
-																										<div class="text-right text-black font-medium">
-																												<span class="freebies-cs-display block text-green-600">0</span>
-																												<input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
-																														value="{{ old("orders.$i.freebies_per_cs") }}"  
-																														class="computed-freebies" />
-																										</div>
-																								</div> --}}
-
-
-
                                                 </div>
                                                 <div>
                                                     <!-- Freebie Amount -->
                                                     <div class="freebie-block mx-[-1rem] flex items-start justify-between bg-green-50 px-4 py-2">
                                                         <label class="block text-sm text-green-600">Freebie Amount</label>
-                                                        <div class="text-right font-medium text-black">
-                                                            <span class="freebie-amount-display block text-green-600">0.00</span>
+                                                        <div class="text-right font-medium text-green-600">
+                                                            ₱<span class="freebie-amount-display text-green-600">0.00</span>
                                                             <input
                                                                 type="hidden"
                                                                 name="orders[{{ $i }}][freebie_amount]"
@@ -1181,8 +1181,8 @@
                                                     <!-- Total Amount -->
                                                     <div class="mx-[-1rem] flex items-start justify-between bg-blue-50 px-4 py-2">
                                                         <label class="block text-sm text-indigo-600">Total Amount</label>
-                                                        <div class="text-right font-bold text-black text-blue-600">
-                                                            <span class="amount-display">0.00</span>
+                                                        <div class="text-right font-bold text-blue-600">
+                                                            ₱<span class="amount-display">0.00</span>
                                                             <input
                                                                 type="hidden"
                                                                 name="orders[{{ $i }}][amount]"
@@ -1711,6 +1711,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             const breakdownTotalQty = row.querySelector('.breakdown-total-qty');
             const breakdownFreebieAmount = row.querySelector('.breakdown-freebie-amount');
 
+
+            const freebiesCsDisplay = row.querySelector('.freebies-cs-display');
+            const breakdownFreebieQty = row.querySelector('.breakdown-freebie-qty');
             const freebieAmountDisplay = row.querySelector('.freebie-amount-display');
 
             const freebiePriceInput = row.querySelector('input[name*="[freebie_price_per_pc]"]');
@@ -1792,6 +1795,20 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             // Update freebies per cs field in freebie section
             if (freebieQtyCsInput) freebieQtyCsInput.value = actualFreebies;
 
+            if (freebiesCsDisplay) {
+                freebiesCsDisplay.textContent = actualFreebies; // display calculated freebies
+            }
+
+            if (breakdownFreebieQty) {
+                if (saleType === 'Freebie' && actualFreebies > 0) {
+                    breakdownFreebieQty.textContent = `${qtyCs} case/s ordered → ${actualFreebies} case/s free`;
+                    breakdownFreebieQty.style.display = '';
+                } else {
+                    breakdownFreebieQty.textContent = '';
+                    breakdownFreebieQty.style.display = 'none';
+                }
+            }
+
             // === UI Display Updates ===
             if (totalQtyDisplay) totalQtyDisplay.textContent = totalCases;
             if (priceDisplay) priceDisplay.textContent = `₱${safeFixed(pricePerCase)}`;
@@ -1811,7 +1828,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                         breakdownPrice.textContent = `₱${safeFixed(originalPricePerCase)} - ₱${safeFixed(discountValue)} = ₱${safeFixed(pricePerCase)}`;
                     }
                 } else {
-                    breakdownPrice.textContent = `₱${safeFixed(pricePerPc)} × ${qtyPcs}pcs`;
+                    breakdownPrice.textContent = `₱${safeFixed(pricePerPc)} × ${qtyPcs} piece/s`;
                 }
             }
 
@@ -1822,17 +1839,17 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     const discountLabel = isPercentage ?
                         `${parseFloat(discountText.replace('%', ''))}% discount` :
                         `₱${discountValue} discount`;
-                    breakdownAmount.textContent = `${qtyCs}cs × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)} (After ${discountLabel})`;
+                    breakdownAmount.textContent = `${qtyCs} case/s × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)} (After ${discountLabel})`;
                 } else {
-                    breakdownAmount.textContent = `${qtyCs}cs × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)}`;
+                    breakdownAmount.textContent = `${qtyCs} case/s × ₱${safeFixed(pricePerCase)} = ₱${safeFixed(totalAmount)}`;
                 }
             }
 
             if (breakdownTotalQty) {
                 if (saleType === 'Freebie' && actualFreebies > 0) {
-                    breakdownTotalQty.textContent = `${qtyCs}cs + ${actualFreebies}cs (free)`;
+                    breakdownTotalQty.textContent = `${qtyCs} case/s + ${actualFreebies} case/s (free)`;
                 } else {
-                    breakdownTotalQty.textContent = `${qtyCs}cs`;
+                    breakdownTotalQty.textContent = `${qtyCs} case/s`;
                 }
             }
 
@@ -1849,7 +1866,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
             if (breakdownFreebieAmount) {
                 if (saleType === 'Freebie' && actualFreebies > 0 && freebieAmount > 0) {
-                    breakdownFreebieAmount.textContent = `₱${safeFixed(freebiePricePc)} × ${freebieQtyPc}pcs × ${actualFreebies}cs (free items value)`;
+                    breakdownFreebieAmount.textContent = `₱${safeFixed(freebiePricePc)} case/s ordered × ${freebieQtyPc} piece/s × ${actualFreebies} Case/s free`;
                 } else if (saleType === 'Discount' && discountValue > 0) {
                     const discountText = discountInput?.value || '';
                     const isPercentage = discountText.includes('%');
@@ -2736,6 +2753,56 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             updateRemoveButtonsState();
             updateCounter();
             updateRowNumbers();
+
+            function formatAmount(value) {
+                // strip everything except digits and dot
+                const num = parseFloat(String(value).replace(/[^0-9.]/g, ''));
+                if (isNaN(num)) return '0';
+
+                // Check if original value had decimals
+                const hasDecimals = String(value).includes('.');
+
+                // If original had decimals, keep two digits; else show integer
+                if (hasDecimals) {
+                    return num.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                } else {
+                    return num.toLocaleString('en-US');
+                }
+            }
+
+            const selector = '.amount-display, .freebie-amount-display, .price-display, .total-qty-display';
+
+            // format once on load
+            document.querySelectorAll(selector).forEach(el => {
+                el.textContent = formatAmount(el.textContent);
+            });
+
+            // auto-format when value changes
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(m => {
+                    const el = m.target;
+                    if (el.dataset.formatting === '1') return;
+                    el.dataset.formatting = '1';
+
+                    const formatted = formatAmount(el.textContent);
+                    if (el.textContent !== formatted) {
+                        el.textContent = formatted;
+                    }
+
+                    delete el.dataset.formatting;
+                });
+            });
+
+            document.querySelectorAll(selector).forEach(el => {
+                observer.observe(el, {
+                    childList: true
+                });
+            });
+
+
         });
 
         // Helper function to manually trigger highlight update (useful for product selection dropdowns)

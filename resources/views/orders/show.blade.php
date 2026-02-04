@@ -317,16 +317,50 @@
                                         <p class="mb-0.5 text-xs text-gray-600">SOF Order ID</p>
                                         <p class="text-xs font-medium text-gray-900">{{ $order->sof_id }}</p>
                                     </div>
+                                    @php
+                                        $channel = strtolower(trim($order->channel_order ?? ''));
+                                        $channelClass = match ($channel) {
+                                            'e-commerce', 'ecommerce', 'online' => 'bg-yellow-100 text-green-800',
+                                            'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
+                                            default => 'bg-gray-100 text-gray-800',
+                                        };
+                                    @endphp
+                                    <div>
+                                        <p class="mb-0.5 text-xs text-gray-600">Channel Order</p>
+                                        <span class="{{ $channelClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                                            {{ ucwords($channel ?: 'Unknown') }}
+                                        </span>
+                                    </div>
 
+                                    <div>
+                                        <p class="mb-0.5 text-xs text-gray-600">Order Status</p>
+                                        <p class="text-xs font-medium text-gray-900">
+                                            @php
+                                                $status = ucwords(strtolower($order->order_status ?? 'New Order'));
+                                                $statusClass = match ($status) {
+                                                    'Completed' => 'bg-green-200 text-green-800',
+                                                    'Archived' => 'bg-gray-200 text-gray-800',
+                                                    'Cancelled' => 'bg-red-200 text-red-800',
+                                                    'Pending' => 'bg-yellow-200 text-yellow-800',
+                                                    'Rejected' => 'bg-orange-200 text-orange-800',
+                                                    'For Approval' => 'bg-purple-100 text-purple-800',
+                                                    'Approved' => 'bg-green-100 text-green-800',
+                                                    default => 'bg-blue-100 text-blue-800',
+                                                };
+                                            @endphp
+
+                                            <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                                                {{ $status }}
+                                            </span>
+                                        </p>
+                                    </div>
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Requesting Store & Personnel</p>
                                         <p class="text-xs font-medium text-gray-900">{{ $order->requesting_store }} -
                                             {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}</p>
                                     </div>
-                                    <div>
-                                        <p class="mb-0.5 text-xs text-gray-600">Channel Order</p>
-                                        <p class="text-xs font-medium text-gray-900">{{ $order->channel_order }}</p>
-                                    </div>
+
+
                                     @php
                                         $warehouseMap = [
                                             '80141' => 'Silangan Warehouse',
@@ -352,28 +386,7 @@
                                         <p class="text-xs font-medium text-gray-900">
                                             {{ \Carbon\Carbon::parse($order->time_order)->format('F j, Y - h:i A') }}</p>
                                     </div>
-                                    <div>
-                                        <p class="mb-0.5 text-xs text-gray-600">Order Status</p>
-                                        <p class="text-xs font-medium text-gray-900">
-                                            @php
-                                                $status = ucwords(strtolower($order->order_status ?? 'New Order'));
-                                                $statusClass = match ($status) {
-                                                    'Completed' => 'bg-green-200 text-green-800',
-                                                    'Archived' => 'bg-gray-200 text-gray-800',
-                                                    'Cancelled' => 'bg-red-200 text-red-800',
-                                                    'Pending' => 'bg-yellow-200 text-yellow-800',
-                                                    'Rejected' => 'bg-orange-200 text-orange-800',
-                                                    'For Approval' => 'bg-purple-100 text-purple-800',
-                                                    'Approved' => 'bg-green-100 text-green-800',
-                                                    default => 'bg-blue-100 text-blue-800',
-                                                };
-                                            @endphp
 
-                                            <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                                                {{ $status }}
-                                            </span>
-                                        </p>
-                                    </div>
 
                                 </div>
                             </div>
@@ -451,7 +464,7 @@
                                             class="border px-2 py-1">Remarks</th>
                                         <th
                                             rowspan="2"
-                                            class="border px-2 py-1">Store Order No. (SO#)</th>
+                                            class="border px-2 py-1">Transfer Number</th>
 
                                         <th rowspan="2" class="border px-2 py-1">Item Status</th>
 

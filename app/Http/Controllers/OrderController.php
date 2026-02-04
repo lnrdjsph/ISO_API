@@ -18,135 +18,138 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class OrderController extends Controller
 {
 
-public function index(Request $request)
-{
-    $user = auth()->user();
-    $query = Order::query()->with('items');
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        $query = Order::query()->with('items');
 
-    // 🗺️ Region -> store mapping
-    $storeMapping = [
-        'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon = only Antipolo
-        'vs' => ['4002', '2010', '2017', '2019', '3018'], // Visayas
-    ];
+        // 🗺️ Region -> store mapping
+        $storeMapping = [
+            'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon = only Antipolo
+            'vs' => ['4002', '2010', '2017', '2019', '3018'], // Visayas
+        ];
 
-    // Default
-    $allowedStatuses = null;
-
-    // 👔 Role-based filters
-    if ($user->role === 'manager') {
-        $allowedStatuses = ['for approval', 'approved', 'rejected'];
-        $query->whereIn('order_status', $allowedStatuses);
-
-        // Restrict managers by region
-        if ($user->user_location && isset($storeMapping[$user->user_location])) {
-            $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
-        }
-
-    } elseif ($user->role === 'super admin') {
-        // 🔓 Super admin sees all — no restrictions
+        // Default
         $allowedStatuses = null;
 
-    } else {
-        // Regular user → single store restriction
-        if ($user->user_location) {
-            $query->where('requesting_store', $user->user_location);
+        // 👔 Role-based filters
+        if ($user->role === 'manager') {
+            $allowedStatuses = ['for approval', 'approved', 'rejected'];
+            $query->whereIn('order_status', $allowedStatuses);
+
+            // Restrict managers by region
+            if ($user->user_location && isset($storeMapping[$user->user_location])) {
+                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+            }
+        } elseif ($user->role === 'super admin') {
+            // 🔓 Super admin sees all — no restrictions
+            $allowedStatuses = null;
+        } else {
+            // Regular user → single store restriction
+            if ($user->user_location) {
+                $query->where('requesting_store', $user->user_location);
+            }
         }
-    }
 
-    // 🔍 Search filter
-    if ($search = $request->input('search')) {
-        $query->where(function ($q) use ($search) {
-            $q->where('customer_name', 'like', "%{$search}%")
-              ->orWhere('sof_id', 'like', "%{$search}%")
-              ->orWhere('requesting_store', 'like', "%{$search}%");
-        });
-    }
+        // 🔍 Search filter
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('sof_id', 'like', "%{$search}%")
+                    ->orWhere('requesting_store', 'like', "%{$search}%");
+            });
+        }
 
-    // 📦 Channel filter
-    if ($channel = $request->input('channel')) {
-        $query->where('channel_order', $channel);
-    }
+        // 📦 Channel filter
+        if ($channel = $request->input('channel')) {
+            $query->where('channel_order', $channel);
+        }
 
-    // 🏬 Store filter
-    if ($storeCode = $request->input('store_code')) {
-        $query->where('requesting_store', $storeCode);
-    }
+        // 🏬 Store filter
+        if ($storeCode = $request->input('store_code')) {
+            $query->where('requesting_store', $storeCode);
+        }
 
-    // ✅ Status filter
-    if ($status = $request->input('status')) {
-        if ($allowedStatuses) {
-            if (in_array($status, $allowedStatuses)) {
+        // ✅ Status filter
+        if ($status = $request->input('status')) {
+            if ($allowedStatuses) {
+                if (in_array($status, $allowedStatuses)) {
+                    $query->where('order_status', $status);
+                }
+            } else {
                 $query->where('order_status', $status);
             }
-        } else {
-            $query->where('order_status', $status);
         }
-    }
 
-    // 📅 Date range filter
-    if ($startDate = $request->input('start_date')) {
-        $query->whereDate('time_order', '>=', $startDate);
-    }
-    if ($endDate = $request->input('end_date')) {
-        $query->whereDate('time_order', '<=', $endDate);
-    }
-
-    // ✅ Pagination
-    $perPage = $request->input('per_page', 10);
-
-    $orders = $query->orderByDesc('created_at')
-        ->paginate($perPage)
-        ->withQueryString();
-
-    // Dropdown data
-    $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
-    $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
-
-    // 🏪 All store names
-    $allStoreLocations = [
-        '4002' => 'F2 - Metro Wholesalemart Colon',
-        '2010' => 'S10 - Metro Maasin',
-        '2017' => 'S17 - Metro Tacloban',
-        '2019' => 'S19 - Metro Bay-Bay',
-        '3018' => 'F18 - Metro Alang-Alang',
-        '3019' => 'F19 - Metro Hilongos',
-        '2008' => 'S8 - Metro Toledo',
-        '6012' => 'H8 - Super Metro Antipolo',
-        '6009' => 'H9 - Super Metro Carcar',
-        '6010' => 'H10 - Super Metro Bogo',
-    ];
-
-    // 🎯 Dropdown restriction
-    if ($user->role === 'super admin') {
-        $storeLocations = $allStoreLocations; // show all stores
-    } elseif ($user->role === 'manager') {
-        if ($user->user_location && isset($storeMapping[$user->user_location])) {
-            $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
-        } else {
-            $storeLocations = $allStoreLocations;
+        // 📅 Date range filter
+        if ($startDate = $request->input('start_date')) {
+            $query->whereDate('time_order', '>=', $startDate);
         }
-    } else {
-        if ($user->user_location) {
-            $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
-        } else {
-            $storeLocations = $allStoreLocations;
+        if ($endDate = $request->input('end_date')) {
+            $query->whereDate('time_order', '<=', $endDate);
         }
+
+        // ✅ Pagination
+        $perPage = $request->input('per_page', 10);
+
+        $orders = $query->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->onEachSide(2)
+            ->withQueryString();
+
+        // Dropdown data
+        $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
+        $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
+
+        // 🏪 All store names
+        $allStoreLocations = [
+            '4002' => 'F2 - Metro Wholesalemart Colon',
+            '2010' => 'S10 - Metro Maasin',
+            '2017' => 'S17 - Metro Tacloban',
+            '2019' => 'S19 - Metro Bay-Bay',
+            '3018' => 'F18 - Metro Alang-Alang',
+            '3019' => 'F19 - Metro Hilongos',
+            '2008' => 'S8 - Metro Toledo',
+            '6012' => 'H8 - Super Metro Antipolo',
+            '6009' => 'H9 - Super Metro Carcar',
+            '6010' => 'H10 - Super Metro Bogo',
+        ];
+
+        // 🎯 Dropdown restriction
+        if ($user->role === 'super admin') {
+            $storeLocations = $allStoreLocations; // show all stores
+        } elseif ($user->role === 'manager') {
+            if ($user->user_location && isset($storeMapping[$user->user_location])) {
+                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+            } else {
+                $storeLocations = $allStoreLocations;
+            }
+        } else {
+            if ($user->user_location) {
+                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
+            } else {
+                $storeLocations = $allStoreLocations;
+            }
+        }
+
+
+        if ($request->ajax()) {
+            return view('orders.partials.table', compact('orders'))->render();
+        }
+        return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
     }
 
-    return view('orders.orders', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations'));
-}
 
 
 
 
 
-    
     public function show($id)
     {
         $order = Order::with('items')->findOrFail($id);
         return view('orders.show', compact('order'));
     }
-    
+
     // public function create()
     // {
     //     $orders = Order::with('items')->get();
@@ -236,330 +239,329 @@ public function index(Request $request)
     //     return redirect()->route('orders.create')->with('success', 'Order created successfully.');
     // }
 
-public function update(Request $request, $id)
-{
-    // Log incoming payload for debugging
-    Log::info('Order update request payload', $request->all());
+    public function update(Request $request, $id)
+    {
+        // Log incoming payload for debugging
+        Log::info('Order update request payload', $request->all());
 
-    // Use manual validator so we can log validation errors and return a friendly response
-    $validator = Validator::make($request->all(), [
-        // Customer Info
-        'mbc_card_no' => 'nullable|string|max:16',
-        'customer_name' => 'nullable|string|max:100',
-        'contact_number' => 'nullable|string|max:12',
-        'email' => 'nullable|email|max:100',
+        // Use manual validator so we can log validation errors and return a friendly response
+        $validator = Validator::make($request->all(), [
+            // Customer Info
+            'mbc_card_no' => 'nullable|string|max:16',
+            'customer_name' => 'nullable|string|max:100',
+            'contact_number' => 'nullable|string|max:12',
+            'email' => 'nullable|email|max:100',
 
-        // Payment Info
-        'payment_center' => 'nullable|string',
-        'mode_payment' => 'nullable|string',
-        'payment_date' => 'nullable|date',
+            // Payment Info
+            'payment_center' => 'nullable|string',
+            'mode_payment' => 'nullable|string',
+            'payment_date' => 'nullable|date',
 
-        // Delivery Info
-        'mode_dispatching' => 'nullable|string',
-        'delivery_date' => 'nullable|date',
-        'address' => 'nullable|string|max:500',
-        'landmark' => 'nullable|string|max:255',
+            // Delivery Info
+            'mode_dispatching' => 'nullable|string',
+            'delivery_date' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'landmark' => 'nullable|string|max:255',
 
-        // Items validation
-        'items' => 'required|array',
-        'items.*.id' => 'required|exists:order_items,id',
-        'items.*.sku' => 'required|string|max:255',
-        'items.*.item_description' => 'required|string|max:500',
-        'items.*.scheme' => 'required|string',
-        'items.*.price_per_pc' => 'required|numeric|min:0',
-        'items.*.price' => 'required|numeric|min:0',
-        'items.*.qty_per_pc' => 'required|integer|min:0',
-        'items.*.qty_per_cs' => 'required|integer|min:0',
-        'items.*.freebies_per_cs' => 'nullable|integer|min:0',
-        'items.*.freebie_sku' => 'nullable|string|max:255',
-        'items.*.sale_type' => 'nullable|string|max:50',
-        'items.*.total_qty' => 'required|integer|min:0',
-        'items.*.discount' => 'required|string',
-        'items.*.amount' => 'required|numeric|min:0',
-        'items.*.remarks' => 'nullable|string|max:255',
-        'items.*.store_order_no' => 'nullable|string|max:255',
-    ]);
+            // Items validation
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:order_items,id',
+            'items.*.sku' => 'required|string|max:255',
+            'items.*.item_description' => 'required|string|max:500',
+            'items.*.scheme' => 'required|string',
+            'items.*.price_per_pc' => 'required|numeric|min:0',
+            'items.*.price' => 'required|numeric|min:0',
+            'items.*.qty_per_pc' => 'required|integer|min:0',
+            'items.*.qty_per_cs' => 'required|integer|min:0',
+            'items.*.freebies_per_cs' => 'nullable|integer|min:0',
+            'items.*.freebie_sku' => 'nullable|string|max:255',
+            'items.*.sale_type' => 'nullable|string|max:50',
+            'items.*.total_qty' => 'required|integer|min:0',
+            'items.*.discount' => 'required|string',
+            'items.*.amount' => 'required|numeric|min:0',
+            'items.*.remarks' => 'nullable|string|max:255',
+            'items.*.store_order_no' => 'nullable|string|max:255',
+        ]);
 
-    if ($validator->fails()) {
-        Log::warning('Order update validation failed', $validator->errors()->toArray());
-        return redirect()->back()->withErrors($validator)->withInput();
-    }
-
-    $validated = $validator->validated();
-
-    try {
-        DB::beginTransaction();
-
-        // Find the order
-        $order = Order::findOrFail($id);
-
-        // Track changes for notes
-        $changes = [];
-
-        // === ORDER FIELDS CHANGES ===
-        $orderFields = [
-            'mbc_card_no',
-            'customer_name',
-            'contact_number',
-            'email',
-            'payment_center',
-            'mode_payment',
-            'payment_date',
-            'mode_dispatching',
-            'delivery_date',
-            'address',
-            'landmark',
-        ];
-
-        foreach ($orderFields as $field) {
-            $old = $order->$field;
-            $new = $validated[$field] ?? null;
-
-            if ($old != $new) {
-                $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
-            }
+        if ($validator->fails()) {
+            Log::warning('Order update validation failed', $validator->errors()->toArray());
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Update order fields
-        $order->update(Arr::only($validated, $orderFields));
+        $validated = $validator->validated();
 
-        // Get warehouse for inventory adjustments
-        $warehouseCode = $order->warehouse ?? null;
-        
-        if (!$warehouseCode) {
-            throw new \Exception("Order does not have a warehouse assigned. Cannot adjust inventory.");
-        }
+        try {
+            DB::beginTransaction();
 
-        // === ORDER ITEMS CHANGES WITH INVENTORY ADJUSTMENT ===
-        foreach ($validated['items'] as $itemData) {
-            $orderItem = OrderItem::findOrFail($itemData['id']);
-            $oldData = $orderItem->toArray();
+            // Find the order
+            $order = Order::findOrFail($id);
 
-            // === ADJUST INVENTORY BEFORE UPDATING ===
-            $this->adjustInventoryOnUpdate($orderItem, $itemData, $warehouseCode, $changes);
+            // Track changes for notes
+            $changes = [];
 
-            // Calculate amount
-            $price = $itemData['price'];
-            $discount = $itemData['discount'] ?? 0;
-            $price = $price - floatval($discount);
-            $calculatedAmount = $price * $itemData['total_qty'];
+            // === ORDER FIELDS CHANGES ===
+            $orderFields = [
+                'mbc_card_no',
+                'customer_name',
+                'contact_number',
+                'email',
+                'payment_center',
+                'mode_payment',
+                'payment_date',
+                'mode_dispatching',
+                'delivery_date',
+                'address',
+                'landmark',
+            ];
 
-            // Update order item
-            $orderItem->update([
-                'sku' => $itemData['sku'],
-                'item_description' => $itemData['item_description'],
-                'scheme' => $itemData['scheme'],
-                'price_per_pc' => $itemData['price_per_pc'],
-                'price' => $itemData['price'],
-                'qty_per_pc' => $itemData['qty_per_pc'],
-                'qty_per_cs' => $itemData['qty_per_cs'],
-                'freebies_per_cs' => $itemData['freebies_per_cs'] ?? null,
-                'freebie_sku' => $itemData['freebie_sku'] ?? null,
-                'sale_type' => $itemData['sale_type'] ?? null,
-                'total_qty' => $itemData['total_qty'],
-                'discount' => $itemData['discount'],
-                'amount' => $calculatedAmount,
-                'remarks' => $itemData['remarks'],
-                'store_order_no' => $itemData['store_order_no'],
-            ]);
+            foreach ($orderFields as $field) {
+                $old = $order->$field;
+                $new = $validated[$field] ?? null;
 
-            // Compare old vs new for notes
-            foreach ($orderItem->getChanges() as $field => $newVal) {
-                if ($field == 'updated_at') continue;
-
-                $oldVal = $oldData[$field] ?? null;
-                if ($oldVal != $newVal) {
-                    $changes[] = "Item {$orderItem->sku} - " . ucfirst(str_replace('_', ' ', $field)) . " changed from '{$oldVal}' to '{$newVal}'";
+                if ($old != $new) {
+                    $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
                 }
             }
-        }
-        
-        // === SAVE NOTES IF THERE ARE CHANGES ===
-        if (!empty($changes)) {
-            $order->notes()->create([
-                'user_id' => auth()->id(),
-                'status'  => "updated",
-                'note' => nl2br("• " . implode("\n• ", $changes)),
-            ]);
-        }
 
-        DB::commit();
+            // Update order fields
+            $order->update(Arr::only($validated, $orderFields));
 
-        return redirect()->route('orders.show', $order->id)
-            ->with('success', 'Order updated successfully!');
+            // Get warehouse for inventory adjustments
+            $warehouseCode = $order->warehouse ?? null;
 
-    } catch (\Exception $e) {
-        DB::rollback();
-        Log::error('Order update exception: ' . $e->getMessage(), ['exception' => $e]);
+            if (!$warehouseCode) {
+                throw new \Exception("Order does not have a warehouse assigned. Cannot adjust inventory.");
+            }
 
-        return redirect()->back()
-            ->withInput()
-            ->withErrors(['error' => 'An error occurred while updating the order: ' . $e->getMessage()]);
-    }
-}
+            // === ORDER ITEMS CHANGES WITH INVENTORY ADJUSTMENT ===
+            foreach ($validated['items'] as $itemData) {
+                $orderItem = OrderItem::findOrFail($itemData['id']);
+                $oldData = $orderItem->toArray();
 
-/**
- * Adjust inventory allocation based on quantity changes
- * 
- * @param OrderItem $orderItem - The existing order item
- * @param array $newData - The new item data from request
- * @param string $warehouseCode - The warehouse code
- * @param array &$changes - Reference to changes array for logging
- */
-private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &$changes)
-{
-    $userLocation = auth()->user()->user_location;
-    $tableName = 'products_' . strtolower($userLocation);
+                // === ADJUST INVENTORY BEFORE UPDATING ===
+                $this->adjustInventoryOnUpdate($orderItem, $itemData, $warehouseCode, $changes);
 
-    // === MAIN ITEM ADJUSTMENT ===
-    $oldQty = $orderItem->total_qty;
-    $newQty = $newData['total_qty'];
-    $qtyDifference = $newQty - $oldQty; // Positive = increase (need to deduct more), Negative = decrease (need to add back)
+                // Calculate amount
+                $price = $itemData['price'];
+                $discount = $itemData['discount'] ?? 0;
+                $price = $price - floatval($discount);
+                $calculatedAmount = $price * $itemData['total_qty'];
 
-    if ($qtyDifference != 0) {
-        $sku = strtoupper($newData['sku']);
-        
-        // Get product
-        $product = DB::connection('mysql')
-            ->table($tableName)
-            ->where('sku', $sku)
-            ->first();
-
-        if (!$product) {
-            Log::warning("Product not found in {$tableName} for SKU: {$sku}");
-        } else {
-            // === 1) ADJUST allocation_per_case ===
-            $currentCaseAllocation = $product->allocation_per_case ?? 0;
-            
-            // If qtyDifference is positive (increased), we deduct more (subtract)
-            // If qtyDifference is negative (decreased), we add back (add)
-            $newCaseAllocation = max(0, $currentCaseAllocation - $qtyDifference);
-
-            DB::connection('mysql')
-                ->table($tableName)
-                ->where('id', $product->id)
-                ->update([
-                    'allocation_per_case' => $newCaseAllocation,
-                    'updated_at' => now(),
+                // Update order item
+                $orderItem->update([
+                    'sku' => $itemData['sku'],
+                    'item_description' => $itemData['item_description'],
+                    'scheme' => $itemData['scheme'],
+                    'price_per_pc' => $itemData['price_per_pc'],
+                    'price' => $itemData['price'],
+                    'qty_per_pc' => $itemData['qty_per_pc'],
+                    'qty_per_cs' => $itemData['qty_per_cs'],
+                    'freebies_per_cs' => $itemData['freebies_per_cs'] ?? null,
+                    'freebie_sku' => $itemData['freebie_sku'] ?? null,
+                    'sale_type' => $itemData['sale_type'] ?? null,
+                    'total_qty' => $itemData['total_qty'],
+                    'discount' => $itemData['discount'],
+                    'amount' => $calculatedAmount,
+                    'remarks' => $itemData['remarks'],
+                    'store_order_no' => $itemData['store_order_no'],
                 ]);
 
-            $changeType = $qtyDifference > 0 ? 'increased' : 'decreased';
-            $absQtyDiff = abs($qtyDifference);
-            Log::info("Main Item Allocation Adjusted - SKU: {$sku}, Qty {$changeType} by {$absQtyDiff}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
-            $changes[] = "Inventory adjusted for SKU {$sku}: Qty {$changeType} by {$absQtyDiff} (Allocation: {$currentCaseAllocation} → {$newCaseAllocation})";
+                // Compare old vs new for notes
+                foreach ($orderItem->getChanges() as $field => $newVal) {
+                    if ($field == 'updated_at') continue;
 
-            // === 2) ADJUST wms_virtual_allocation ===
-            $qtyPerPc = $newData['qty_per_pc'] ?? $product->qty_per_pc ?? 0;
+                    $oldVal = $oldData[$field] ?? null;
+                    if ($oldVal != $newVal) {
+                        $changes[] = "Item {$orderItem->sku} - " . ucfirst(str_replace('_', ' ', $field)) . " changed from '{$oldVal}' to '{$newVal}'";
+                    }
+                }
+            }
 
-            if ($qtyPerPc == 0) {
-                Log::warning("qty_per_pc is 0 for SKU: {$sku}. Skipping WMS adjustment.");
+            // === SAVE NOTES IF THERE ARE CHANGES ===
+            if (!empty($changes)) {
+                $order->notes()->create([
+                    'user_id' => auth()->id(),
+                    'status'  => "updated",
+                    'note' => nl2br("• " . implode("\n• ", $changes)),
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('orders.show', $order->id)
+                ->with('success', 'Order updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Order update exception: ' . $e->getMessage(), ['exception' => $e]);
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'An error occurred while updating the order: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Adjust inventory allocation based on quantity changes
+     * 
+     * @param OrderItem $orderItem - The existing order item
+     * @param array $newData - The new item data from request
+     * @param string $warehouseCode - The warehouse code
+     * @param array &$changes - Reference to changes array for logging
+     */
+    private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &$changes)
+    {
+        $userLocation = auth()->user()->user_location;
+        $tableName = 'products_' . strtolower($userLocation);
+
+        // === MAIN ITEM ADJUSTMENT ===
+        $oldQty = $orderItem->total_qty;
+        $newQty = $newData['total_qty'];
+        $qtyDifference = $newQty - $oldQty; // Positive = increase (need to deduct more), Negative = decrease (need to add back)
+
+        if ($qtyDifference != 0) {
+            $sku = strtoupper($newData['sku']);
+
+            // Get product
+            $product = DB::connection('mysql')
+                ->table($tableName)
+                ->where('sku', $sku)
+                ->first();
+
+            if (!$product) {
+                Log::warning("Product not found in {$tableName} for SKU: {$sku}");
             } else {
-                $piecesDifference = $qtyDifference * $qtyPerPc;
+                // === 1) ADJUST allocation_per_case ===
+                $currentCaseAllocation = $product->allocation_per_case ?? 0;
 
-                $wmsAllocation = DB::connection('mysql')
-                    ->table('product_wms_allocations')
-                    ->where('sku', $sku)
-                    ->where('warehouse_code', $warehouseCode)
-                    ->first();
+                // If qtyDifference is positive (increased), we deduct more (subtract)
+                // If qtyDifference is negative (decreased), we add back (add)
+                $newCaseAllocation = max(0, $currentCaseAllocation - $qtyDifference);
 
-                if (!$wmsAllocation) {
-                    Log::warning("WMS allocation record not found for SKU: {$sku}, Warehouse: {$warehouseCode}");
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newCaseAllocation,
+                        'updated_at' => now(),
+                    ]);
+
+                $changeType = $qtyDifference > 0 ? 'increased' : 'decreased';
+                $absQtyDiff = abs($qtyDifference);
+                Log::info("Main Item Allocation Adjusted - SKU: {$sku}, Qty {$changeType} by {$absQtyDiff}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
+                $changes[] = "Inventory adjusted for SKU {$sku}: Qty {$changeType} by {$absQtyDiff} (Allocation: {$currentCaseAllocation} → {$newCaseAllocation})";
+
+                // === 2) ADJUST wms_virtual_allocation ===
+                $qtyPerPc = $newData['qty_per_pc'] ?? $product->qty_per_pc ?? 0;
+
+                if ($qtyPerPc == 0) {
+                    Log::warning("qty_per_pc is 0 for SKU: {$sku}. Skipping WMS adjustment.");
                 } else {
-                    $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
-                    
-                    // If piecesDifference is positive (increased), we deduct more (subtract)
-                    // If piecesDifference is negative (decreased), we add back (add)
-                    $newWmsPieces = max(0, $currentWmsPieces - $piecesDifference);
+                    $piecesDifference = $qtyDifference * $qtyPerPc;
 
-                    DB::connection('mysql')
+                    $wmsAllocation = DB::connection('mysql')
                         ->table('product_wms_allocations')
                         ->where('sku', $sku)
                         ->where('warehouse_code', $warehouseCode)
-                        ->update([
-                            'wms_virtual_allocation' => $newWmsPieces,
-                            'updated_at' => now(),
-                        ]);
+                        ->first();
 
-                    Log::info("Main Item WMS Adjusted - SKU: {$sku}, Warehouse: {$warehouseCode}, Pieces {$changeType} by " . abs($piecesDifference) . ", Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}");
+                    if (!$wmsAllocation) {
+                        Log::warning("WMS allocation record not found for SKU: {$sku}, Warehouse: {$warehouseCode}");
+                    } else {
+                        $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+
+                        // If piecesDifference is positive (increased), we deduct more (subtract)
+                        // If piecesDifference is negative (decreased), we add back (add)
+                        $newWmsPieces = max(0, $currentWmsPieces - $piecesDifference);
+
+                        DB::connection('mysql')
+                            ->table('product_wms_allocations')
+                            ->where('sku', $sku)
+                            ->where('warehouse_code', $warehouseCode)
+                            ->update([
+                                'wms_virtual_allocation' => $newWmsPieces,
+                                'updated_at' => now(),
+                            ]);
+
+                        Log::info("Main Item WMS Adjusted - SKU: {$sku}, Warehouse: {$warehouseCode}, Pieces {$changeType} by " . abs($piecesDifference) . ", Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}");
+                    }
                 }
             }
         }
-    }
 
-    // === FREEBIE ITEM ADJUSTMENT ===
-    $oldFreebieQty = $orderItem->freebies_per_cs ?? 0;
-    $newFreebieQty = $newData['freebies_per_cs'] ?? 0;
-    $oldSaleType = $orderItem->sale_type ?? '';
-    $newSaleType = $newData['sale_type'] ?? '';
+        // === FREEBIE ITEM ADJUSTMENT ===
+        $oldFreebieQty = $orderItem->freebies_per_cs ?? 0;
+        $newFreebieQty = $newData['freebies_per_cs'] ?? 0;
+        $oldSaleType = $orderItem->sale_type ?? '';
+        $newSaleType = $newData['sale_type'] ?? '';
 
-    // Check if freebies changed and sale_type is 'Freebie'
-    $shouldProcessFreebies = ($newSaleType == 'Freebie') && ($oldFreebieQty != $newFreebieQty);
+        // Check if freebies changed and sale_type is 'Freebie'
+        $shouldProcessFreebies = ($newSaleType == 'Freebie') && ($oldFreebieQty != $newFreebieQty);
 
-    if ($shouldProcessFreebies) {
-        $freebieQtyDifference = $newFreebieQty - $oldFreebieQty;
-        $freebieSku = strtoupper($newData['freebie_sku'] ?? $newData['sku']);
+        if ($shouldProcessFreebies) {
+            $freebieQtyDifference = $newFreebieQty - $oldFreebieQty;
+            $freebieSku = strtoupper($newData['freebie_sku'] ?? $newData['sku']);
 
-        // Get freebie product
-        $freebieProduct = DB::connection('mysql')
-            ->table($tableName)
-            ->where('sku', $freebieSku)
-            ->first();
-
-        if (!$freebieProduct) {
-            Log::warning("Freebie product not found in {$tableName} for SKU: {$freebieSku}");
-        } else {
-            // === 1) ADJUST freebie allocation_per_case ===
-            $currentFreebieCaseAllocation = $freebieProduct->allocation_per_case ?? 0;
-            $newFreebieCaseAllocation = max(0, $currentFreebieCaseAllocation - $freebieQtyDifference);
-
-            DB::connection('mysql')
+            // Get freebie product
+            $freebieProduct = DB::connection('mysql')
                 ->table($tableName)
-                ->where('id', $freebieProduct->id)
-                ->update([
-                    'allocation_per_case' => $newFreebieCaseAllocation,
-                    'updated_at' => now(),
-                ]);
+                ->where('sku', $freebieSku)
+                ->first();
 
-            $freebieChangeType = $freebieQtyDifference > 0 ? 'increased' : 'decreased';
-            $absFreebieQtyDiff = abs($freebieQtyDifference);
-            Log::info("Freebie Allocation Adjusted - SKU: {$freebieSku}, Qty {$freebieChangeType} by {$absFreebieQtyDiff}, Previous: {$currentFreebieCaseAllocation}, New Balance: {$newFreebieCaseAllocation}");
-            $changes[] = "Freebie inventory adjusted for SKU {$freebieSku}: Qty {$freebieChangeType} by {$absFreebieQtyDiff} (Allocation: {$currentFreebieCaseAllocation} → {$newFreebieCaseAllocation})";
-
-            // === 2) ADJUST freebie wms_virtual_allocation ===
-            $freebieQtyPerPc = $freebieProduct->qty_per_pc ?? 0;
-
-            if ($freebieQtyPerPc == 0) {
-                Log::warning("qty_per_pc is 0 for Freebie SKU: {$freebieSku}. Skipping WMS adjustment.");
+            if (!$freebieProduct) {
+                Log::warning("Freebie product not found in {$tableName} for SKU: {$freebieSku}");
             } else {
-                $freebiePiecesDifference = $freebieQtyDifference * $freebieQtyPerPc;
+                // === 1) ADJUST freebie allocation_per_case ===
+                $currentFreebieCaseAllocation = $freebieProduct->allocation_per_case ?? 0;
+                $newFreebieCaseAllocation = max(0, $currentFreebieCaseAllocation - $freebieQtyDifference);
 
-                $freebieWmsAllocation = DB::connection('mysql')
-                    ->table('product_wms_allocations')
-                    ->where('sku', $freebieSku)
-                    ->where('warehouse_code', $warehouseCode)
-                    ->first();
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $freebieProduct->id)
+                    ->update([
+                        'allocation_per_case' => $newFreebieCaseAllocation,
+                        'updated_at' => now(),
+                    ]);
 
-                if (!$freebieWmsAllocation) {
-                    Log::warning("WMS allocation record not found for Freebie SKU: {$freebieSku}, Warehouse: {$warehouseCode}");
+                $freebieChangeType = $freebieQtyDifference > 0 ? 'increased' : 'decreased';
+                $absFreebieQtyDiff = abs($freebieQtyDifference);
+                Log::info("Freebie Allocation Adjusted - SKU: {$freebieSku}, Qty {$freebieChangeType} by {$absFreebieQtyDiff}, Previous: {$currentFreebieCaseAllocation}, New Balance: {$newFreebieCaseAllocation}");
+                $changes[] = "Freebie inventory adjusted for SKU {$freebieSku}: Qty {$freebieChangeType} by {$absFreebieQtyDiff} (Allocation: {$currentFreebieCaseAllocation} → {$newFreebieCaseAllocation})";
+
+                // === 2) ADJUST freebie wms_virtual_allocation ===
+                $freebieQtyPerPc = $freebieProduct->qty_per_pc ?? 0;
+
+                if ($freebieQtyPerPc == 0) {
+                    Log::warning("qty_per_pc is 0 for Freebie SKU: {$freebieSku}. Skipping WMS adjustment.");
                 } else {
-                    $currentFreebieWmsPieces = $freebieWmsAllocation->wms_virtual_allocation ?? 0;
-                    $newFreebieWmsPieces = max(0, $currentFreebieWmsPieces - $freebiePiecesDifference);
+                    $freebiePiecesDifference = $freebieQtyDifference * $freebieQtyPerPc;
 
-                    DB::connection('mysql')
+                    $freebieWmsAllocation = DB::connection('mysql')
                         ->table('product_wms_allocations')
                         ->where('sku', $freebieSku)
                         ->where('warehouse_code', $warehouseCode)
-                        ->update([
-                            'wms_virtual_allocation' => $newFreebieWmsPieces,
-                            'updated_at' => now(),
-                        ]);
+                        ->first();
 
-                    Log::info("Freebie WMS Adjusted - SKU: {$freebieSku}, Warehouse: {$warehouseCode}, Pieces {$freebieChangeType} by " . abs($freebiePiecesDifference) . ", Previous: {$currentFreebieWmsPieces}, New Balance: {$newFreebieWmsPieces}");
+                    if (!$freebieWmsAllocation) {
+                        Log::warning("WMS allocation record not found for Freebie SKU: {$freebieSku}, Warehouse: {$warehouseCode}");
+                    } else {
+                        $currentFreebieWmsPieces = $freebieWmsAllocation->wms_virtual_allocation ?? 0;
+                        $newFreebieWmsPieces = max(0, $currentFreebieWmsPieces - $freebiePiecesDifference);
+
+                        DB::connection('mysql')
+                            ->table('product_wms_allocations')
+                            ->where('sku', $freebieSku)
+                            ->where('warehouse_code', $warehouseCode)
+                            ->update([
+                                'wms_virtual_allocation' => $newFreebieWmsPieces,
+                                'updated_at' => now(),
+                            ]);
+
+                        Log::info("Freebie WMS Adjusted - SKU: {$freebieSku}, Warehouse: {$warehouseCode}, Pieces {$freebieChangeType} by " . abs($freebiePiecesDifference) . ", Previous: {$currentFreebieWmsPieces}, New Balance: {$newFreebieWmsPieces}");
+                    }
                 }
             }
         }
     }
-}
 
     public function archive(Request $request)
     {
@@ -676,11 +678,11 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
         $order = Order::findOrFail($request->id);
         $previousStatus = $order->order_status;
         $order->order_status = 'for approval';
-        
+
         if ($previousStatus === 'rejected') {
             $this->deductAllocationStock($order->id);
         }
-        
+
         $order->save();
 
         $order->notes()->create([
@@ -751,7 +753,7 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
             'user_id' => auth()->id(),
             'status'  => 'approved',
             'note' =>
-                "Order approved by:<br>" .
+            "Order approved by:<br>" .
                 "<strong>" . auth()->user()->name . "</strong><br>" .
                 ucfirst(auth()->user()->role)
 
@@ -771,7 +773,6 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
         return redirect()
             ->route('orders.show', $order->id)
             ->with('success', $successMessage);
-
     }
 
 
@@ -929,7 +930,6 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
                     ]);
 
                 Log::info("WMS Pieces Revert - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Pieces Returned: {$piecesToReturn}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}");
-            
             } else {
                 Log::warning("Product not found in {$tableName} for SKU: {$item->sku}, cannot revert.");
             }
@@ -940,131 +940,131 @@ private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &
 
 
     public function deductAllocationStock($orderId)
-{
-    $userLocation = auth()->user()->user_location;
-    $tableName = 'products_' . strtolower($userLocation);
-    $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+    {
+        $userLocation = auth()->user()->user_location;
+        $tableName = 'products_' . strtolower($userLocation);
+        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
 
-    // Load order and items
-    $order = Order::with('items')->findOrFail($orderId);
+        // Load order and items
+        $order = Order::with('items')->findOrFail($orderId);
 
-    // Normalize items: handle cases where $order might be a Collection of orders or a single model
-    if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
-        // $order is a collection of orders; collect all items across them
-        $items = $order->pluck('items')->flatten();
-    } else {
-        // $order is a single model; get relation collection safely
-        $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
-    }
+        // Normalize items: handle cases where $order might be a Collection of orders or a single model
+        if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
+            // $order is a collection of orders; collect all items across them
+            $items = $order->pluck('items')->flatten();
+        } else {
+            // $order is a single model; get relation collection safely
+            $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
+        }
 
-    foreach ($items as $item) {
-        // Find product in location table
-        $product = DB::connection('mysql')
-            ->table($tableName)
-            ->where('sku', strtoupper($item->sku))
-            ->first();
-
-        if ($product) {
-            /** --------------------------------------------
-             * 1) Deduct allocation_per_case by total_qty (number of cases or freebies)
-             * -------------------------------------------- */
-            $casesDeduction = $item->total_qty; // Number of cases/freebies to deduct
-            $currentCaseAllocation = $product->allocation_per_case ?? 0;
-            $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
-
-            // Update allocation_per_case
-            DB::connection('mysql')
+        foreach ($items as $item) {
+            // Find product in location table
+            $product = DB::connection('mysql')
                 ->table($tableName)
-                ->where('id', $product->id)
-                ->update([
-                    'allocation_per_case' => $newCaseAllocation,
-                    'updated_at' => now(),
-                ]);
-
-            $itemType = $item->item_type ?? 'MAIN';
-            Log::info("Case Deduction - SKU: {$item->sku}, Type: {$itemType}, Cases Deducted: {$casesDeduction}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
-
-            /** ----------------------------------------------------------
-             * 2) Deduct wms_virtual_allocation by (total_qty × qty_per_pc)
-             *    This converts cases/freebies to pieces for WMS tracking
-             * ---------------------------------------------------------- */
-            
-            // Get qty_per_pc from item, fallback to product
-            $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
-            
-            // If qty_per_pc is still 0, log warning and skip WMS deduction
-            if ($qtyPerPc == 0) {
-                Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Skipping WMS deduction.");
-                continue;
-            }
-
-            // Calculate pieces deduction: total_qty × pieces per case
-            $piecesDeduction = $item->total_qty * $qtyPerPc;
-
-            // Get current wms allocation
-            $wmsAllocation = DB::connection('mysql')
-                ->table('product_wms_allocations')
                 ->where('sku', strtoupper($item->sku))
-                ->where('warehouse_code', $warehouseCode)
                 ->first();
 
-            if (!$wmsAllocation) {
-                Log::warning("WMS allocation record not found for SKU: {$item->sku}, Warehouse: {$warehouseCode}, Type: {$itemType}");
-                continue;
+            if ($product) {
+                /** --------------------------------------------
+                 * 1) Deduct allocation_per_case by total_qty (number of cases or freebies)
+                 * -------------------------------------------- */
+                $casesDeduction = $item->total_qty; // Number of cases/freebies to deduct
+                $currentCaseAllocation = $product->allocation_per_case ?? 0;
+                $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
+
+                // Update allocation_per_case
+                DB::connection('mysql')
+                    ->table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newCaseAllocation,
+                        'updated_at' => now(),
+                    ]);
+
+                $itemType = $item->item_type ?? 'MAIN';
+                Log::info("Case Deduction - SKU: {$item->sku}, Type: {$itemType}, Cases Deducted: {$casesDeduction}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
+
+                /** ----------------------------------------------------------
+                 * 2) Deduct wms_virtual_allocation by (total_qty × qty_per_pc)
+                 *    This converts cases/freebies to pieces for WMS tracking
+                 * ---------------------------------------------------------- */
+
+                // Get qty_per_pc from item, fallback to product
+                $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
+
+                // If qty_per_pc is still 0, log warning and skip WMS deduction
+                if ($qtyPerPc == 0) {
+                    Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}, Type: {$itemType}. Skipping WMS deduction.");
+                    continue;
+                }
+
+                // Calculate pieces deduction: total_qty × pieces per case
+                $piecesDeduction = $item->total_qty * $qtyPerPc;
+
+                // Get current wms allocation
+                $wmsAllocation = DB::connection('mysql')
+                    ->table('product_wms_allocations')
+                    ->where('sku', strtoupper($item->sku))
+                    ->where('warehouse_code', $warehouseCode)
+                    ->first();
+
+                if (!$wmsAllocation) {
+                    Log::warning("WMS allocation record not found for SKU: {$item->sku}, Warehouse: {$warehouseCode}, Type: {$itemType}");
+                    continue;
+                }
+
+                $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
+                $newWmsPieces = max(0, $currentWmsPieces - $piecesDeduction);
+
+                // Update wms_virtual_allocation
+                $updated = DB::connection('mysql')
+                    ->table('product_wms_allocations')
+                    ->where('sku', strtoupper($item->sku))
+                    ->where('warehouse_code', $warehouseCode)
+                    ->update([
+                        'wms_virtual_allocation' => $newWmsPieces,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info("WMS Pieces Deduction - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Qty: {$item->total_qty}, Pieces/Unit: {$qtyPerPc}, Total Pieces Deducted: {$piecesDeduction}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}, Rows Updated: {$updated}");
+            } else {
+                Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
             }
-
-            $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
-            $newWmsPieces = max(0, $currentWmsPieces - $piecesDeduction);
-
-            // Update wms_virtual_allocation
-            $updated = DB::connection('mysql')
-                ->table('product_wms_allocations')
-                ->where('sku', strtoupper($item->sku))
-                ->where('warehouse_code', $warehouseCode)
-                ->update([
-                    'wms_virtual_allocation' => $newWmsPieces,
-                    'updated_at' => now(),
-                ]);
-
-            Log::info("WMS Pieces Deduction - SKU: {$item->sku}, Type: {$itemType}, Warehouse: {$warehouseCode}, Qty: {$item->total_qty}, Pieces/Unit: {$qtyPerPc}, Total Pieces Deducted: {$piecesDeduction}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}, Rows Updated: {$updated}");
-        } else {
-            Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
         }
+
+        return true;
     }
 
-    return true;
-}
+    /**
+     * Map user location to warehouse code
+     * 
+     * @param string $location
+     * @return string
+     */
+    private function getWarehouseCodeByLocation(string $location): string
+    {
+        // Warehouse mapping
+        $locationToWarehouse = [
+            '4002' => '80181',
+            '2010' => '80181', //bacolod
+            '2017' => '80181', //bacolod
+            '2019' => '80181', //bacolod
+            '3018' => '80181', //bacolod
+            '3019' => '80141', //bacolod
+            '2008' => '80141', // Silangan
+            '6009' => '80141', // Silangan
+            '6010' => '80141', // Silangan
+            '6012' => '80141', // Silangan
+        ];
 
-/**
- * Map user location to warehouse code
- * 
- * @param string $location
- * @return string
- */
-private function getWarehouseCodeByLocation(string $location): string
-{
-    // Warehouse mapping
-    $locationToWarehouse = [
-        '4002' => '80181',
-        '2010' => '80181', //bacolod
-        '2017' => '80181', //bacolod
-        '2019' => '80181', //bacolod
-        '3018' => '80181', //bacolod
-        '3019' => '80141', //bacolod
-        '2008' => '80141', // Silangan
-        '6009' => '80141', // Silangan
-        '6010' => '80141', // Silangan
-        '6012' => '80141', // Silangan
-    ];
+        $warehouseCode = $locationToWarehouse[$location] ?? null;
 
-    $warehouseCode = $locationToWarehouse[$location] ?? null;
+        if (!$warehouseCode) {
+            throw new \Exception("Warehouse code not found for location: {$location}");
+        }
 
-    if (!$warehouseCode) {
-        throw new \Exception("Warehouse code not found for location: {$location}");
+        return $warehouseCode;
     }
-
-    return $warehouseCode;
-}
 
 
 
@@ -1123,7 +1123,7 @@ private function getWarehouseCodeByLocation(string $location): string
         $order = Order::with('items')->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
-                ->setPaper('A4', 'landscape'); // switched to landscape
+            ->setPaper('A4', 'landscape'); // switched to landscape
 
         return $pdf->stream("{$order->id}.pdf"); // Opens in browser
         // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
@@ -1133,7 +1133,7 @@ private function getWarehouseCodeByLocation(string $location): string
         $order = Order::with('items')->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.pdf_sof_invoice', compact('order'))
-                ->setPaper('A4', 'portrait'); // switched to landscape
+            ->setPaper('A4', 'portrait'); // switched to landscape
 
         return $pdf->stream("{$order->id}.pdf"); // Opens in browser
         // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
@@ -1214,7 +1214,7 @@ private function getWarehouseCodeByLocation(string $location): string
                 return 'Scheme ' . ($i + 1) . ': ' . $s;
             })->implode(', ');
         }
-        
+
         // Build rows for table
         $rows = [];
         foreach ($items as $item) {
@@ -1222,7 +1222,7 @@ private function getWarehouseCodeByLocation(string $location): string
 
             $rows[] = [
                 'no_of_case'      => $item->qty_per_cs,
-                'item_description'=> $item->item_description,
+                'item_description' => $item->item_description,
                 'remarks'         => $item->remarks,
                 'qty_per_case'    => $item->qty_per_pc,
                 'total_qty'       => $totalQty,
@@ -1309,7 +1309,7 @@ private function getWarehouseCodeByLocation(string $location): string
 
                 // Track the change
                 $changes[] = "Item {$item->sku} ({$item->item_description}) - Remarks changed from '{$oldRemarks}' to 'Item Cancelled'";
-                
+
                 if ($oldAmount != 0) {
                     $changes[] = "Item {$item->sku} - Amount changed from '{$oldAmount}' to '0'";
                 }
@@ -1334,9 +1334,9 @@ private function getWarehouseCodeByLocation(string $location): string
             $newTotal = $order->items()
                 ->where('remarks', '!=', 'Item Cancelled')
                 ->sum('amount');
-            
+
             $oldTotal = $order->total_amount ?? 0;
-            
+
             if ($oldTotal != $newTotal) {
                 $order->update(['total_amount' => $newTotal]);
                 $changes[] = "Order total amount changed from '{$oldTotal}' to '{$newTotal}'";
@@ -1365,7 +1365,6 @@ private function getWarehouseCodeByLocation(string $location): string
                 'cancelled_items' => $cancelledItems,
                 'new_total' => $newTotal
             ]);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Order cancel items exception: ' . $e->getMessage(), [
@@ -1378,6 +1377,5 @@ private function getWarehouseCodeByLocation(string $location): string
                 'message' => 'An error occurred while cancelling items. Please check the application logs.'
             ], 500);
         }
-    }    
-
+    }
 }
