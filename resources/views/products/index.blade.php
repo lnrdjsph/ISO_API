@@ -867,8 +867,10 @@
                                         </a>
                                     </th>
                                     <th class="px-2 py-2 text-left text-[10px] uppercase">Sub-Department</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Actual Inventory</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Virtual Inventory</th>
+                                    @if (auth()->user()->role === 'super admin')
+                                        <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Actual Inventory</th>
+                                    @endif
+                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Inventory (Pieces)</th>
                                     <th class="px-2 py-2 text-left text-[10px] uppercase">Store Allocation (Case)</th>
                                     <th class="px-2 py-2 text-left text-[10px] uppercase">Case Pack</th>
                                     <th class="px-2 py-2 text-left text-[10px] uppercase">SRP</th>
@@ -919,13 +921,15 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        @if (auth()->user()->role === 'super admin')
+                                            <td class="whitespace-nowrap px-2 py-2">
+                                                <span
+                                                    class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
+                                                    {{ $product->warehouse_actual_allocation ?? '-' }}
+                                                </span>
 
-                                        <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
-                                                {{ $product->warehouse_actual_allocation ?? '-' }}
-                                            </span>
-
-                                        </td>
+                                            </td>
+                                        @endif
 
                                         <td class="whitespace-nowrap px-2 py-2">
                                             <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
