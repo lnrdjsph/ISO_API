@@ -446,6 +446,12 @@
                                             summaryHtml += '</ul></div>';
                                         }
 
+                                        if (sessionStorage.getItem("allocUpdateDone")) {
+                                            return; // prevent popup loop
+                                        }
+
+                                        sessionStorage.setItem("allocUpdateDone", "1");
+
                                         Swal.fire({
                                             title: 'Completed!',
                                             html: summaryHtml,
