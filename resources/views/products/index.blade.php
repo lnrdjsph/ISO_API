@@ -110,6 +110,8 @@
                                 let consecutiveIdleCount = 0;
                                 let consecutiveErrorCount = 0; // Track network errors
 
+                                let pollingBusy = false;
+
                                 // REQUEST TIMEOUT PROTECTION
                                 const REQUEST_TIMEOUT = 300000; // 25 seconds (before nginx 30s timeout)
 
@@ -451,6 +453,7 @@
                                             confirmButtonText: 'OK',
                                             confirmButtonColor: '#10b981'
                                         }).then(() => {
+                                            stopPolling();
                                             window.location.reload();
                                         });
 
