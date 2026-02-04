@@ -288,6 +288,11 @@
                                 }
 
                                 function checkStatus() {
+
+                                    // ✅ Prevent overlapping requests
+                                    if (pollingBusy) return;
+                                    pollingBusy = true;
+
                                     const warehouse = getSelectedWarehouse();
 
                                     fetchWithTimeout(
@@ -299,72 +304,67 @@
                                                 },
                                                 cache: 'no-store'
                                             },
-                                            15000 // 15 second timeout for status checks
+                                            15000
                                         )
                                         .then(res => {
                                             if (!res.ok) {
-                                                console.warn('Status check HTTP error:', res.status);
                                                 throw new Error(`HTTP ${res.status}`);
                                             }
                                             return res.json();
                                         })
                                         .then(data => {
-                                            consecutiveErrorCount = 0; // Reset on success
-                                            console.log('Status:', data.status, `(${data.progress?.percentage || 0}%)`);
 
-                                            if (data.status === 'done') {
+                                            consecutiveErrorCount = 0;
+                                            console.log("Status:", data.status);
+
+                                            // ✅ DONE — stop polling immediately
+                                            if (data.status === "done") {
                                                 stopPolling();
                                                 handleCompletion(data);
+                                                return;
+                                            }
 
-                                            } else if (data.status === 'running') {
+                                            // ✅ RUNNING
+                                            if (data.status === "running") {
                                                 consecutiveIdleCount = 0;
                                                 updateProgress(data);
+                                                return;
+                                            }
 
-                                            } else if (data.status === 'pending') {
-                                                loaderMessage.textContent = data.message || 'Jobs queued...';
-                                                if (progressPercentage < 30) {
-                                                    progressPercentage += 2;
-                                                    progressBar.style.width = progressPercentage + '%';
-                                                }
+                                            // ✅ IDLE (jobs still starting)
+                                            if (data.status === "idle") {
+                                                loaderMessage.textContent = "Waiting for jobs to start...";
+                                                return;
+                                            }
 
-                                            } else if (data.status === 'idle') {
-                                                consecutiveIdleCount++;
-
-                                                if (consecutiveIdleCount > 10) {
-                                                    console.warn('⚠ Idle for too long');
-                                                    loaderMessage.textContent = '⚠️ Waiting for queue worker... (this may take a moment)';
-                                                } else {
-                                                    loaderMessage.textContent = 'Waiting for jobs to start...';
-                                                }
-
-                                                if (progressPercentage < 35) {
-                                                    progressPercentage += 0.5;
-                                                    progressBar.style.width = progressPercentage + '%';
-                                                }
-
-                                            } else if (data.status === 'error') {
+                                            // ❌ ERROR
+                                            if (data.status === "error") {
                                                 stopPolling();
                                                 showError(data.message);
+                                                return;
                                             }
                                         })
                                         .catch(err => {
+
                                             consecutiveErrorCount++;
-                                            console.error(`Status check error (${consecutiveErrorCount}/5):`, err.message);
+                                            console.error("Polling error:", err.message);
 
-                                            // Show user-friendly message
-                                            if (err.message === 'Request timeout') {
-                                                loaderMessage.textContent = '⚠️ Server is slow to respond, retrying...';
-                                            } else {
-                                                loaderMessage.textContent = '⚠️ Connection issue, retrying...';
-                                            }
+                                            loaderMessage.textContent =
+                                                err.message === "Request timeout" ?
+                                                "⚠️ Server slow, retrying..." :
+                                                "⚠️ Connection issue, retrying...";
 
-                                            // Stop polling after too many consecutive errors
                                             if (consecutiveErrorCount > 5) {
                                                 stopPolling();
-                                                showError('Lost connection to server. Please refresh and check status.');
+                                                showError("Lost connection to server. Please refresh.");
                                             }
+                                        })
+                                        .finally(() => {
+                                            // ✅ Unlock next polling call
+                                            pollingBusy = false;
                                         });
                                 }
+
 
                                 // -----------------------------------
                                 // 📊 PROGRESS UPDATE
