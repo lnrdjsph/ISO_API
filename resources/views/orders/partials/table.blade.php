@@ -6,11 +6,11 @@
                                 <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
                                 {{-- 👔 Only managers see this column --}}
-                                @if (auth()->user()->role === 'manager')
+                                @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
                                     <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
                                 @endif
-                                <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
+                                <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
                                 {{-- <th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th> --}}
                                 <th class="px-4 py-3 font-medium text-gray-700">Status</th>
                                 <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
@@ -22,7 +22,7 @@
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
                                     {{-- 👔 Only managers see store --}}
-                                    @if (auth()->user()->role === 'manager')
+                                    @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
                                         @php
                                             // All store names (exclude lz/vs keys)
                                             $allStoreLocations = [
@@ -46,6 +46,8 @@
                                         </td>
                                     @endif
                                     <td class="whitespace-nowrap px-4 py-3">
+                                        {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">
                                         @php
                                             $channel = strtolower(trim($order->channel_order ?? ''));
                                             $channelDisplay = ucwords($channel ?: 'Unknown');
@@ -61,8 +63,7 @@
                                             {{ $channelDisplay }}
                                         </span>
                                     </td>
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
+
                                     {{-- <td class="whitespace-nowrap px-4 py-3">
 																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td> --}}
                                     <td class="whitespace-nowrap px-4 py-3">

@@ -89,14 +89,16 @@ class OracleTransferController extends Controller
                     }
 
                     // supp_pack_size should be qty_per_pc
-                    $suppPackSize = $qtyPerPc;
+                    // $suppPackSize = $qtyPerPc;
 
                     if (!isset($skuGroups[$sku])) {
                         // first occurrence: initialize
                         $skuGroups[$sku] = [
                             'item' => $sku,
-                            'tsf_qty' => $qtyPerPc * $totalQty,
-                            'supp_pack_size' => $suppPackSize,
+                            'tsf_qty' => $qtyPerPc,
+                            'supp_pack_size' => $qtyPerPc * $totalQty,
+                            // 'tsf_qty' => $qtyPerPc * $totalQty,
+                            // 'supp_pack_size' => $suppPackSize,
                         ];
                     } else {
                         // subsequent occurrences: accumulate quantities
@@ -106,7 +108,7 @@ class OracleTransferController extends Controller
                 }
 
                 // Convert to array and format quantities as strings
-                $consolidatedItems = array_values(array_map(function($group) {
+                $consolidatedItems = array_values(array_map(function ($group) {
                     return [
                         'item' => $group['item'],
                         'tsf_qty' => (string) $group['tsf_qty'],
@@ -161,7 +163,7 @@ class OracleTransferController extends Controller
                     '80191' => 'Tacloban Depot',
                 ];
 
-            
+
                 $allStoreLocations = [
                     '4002' => 'F2 - Metro Wholesalemart Colon',
                     '2010' => 'S10 - Metro Maasin',
@@ -174,7 +176,7 @@ class OracleTransferController extends Controller
                     '6009' => 'H9 - Super Metro Carcar',
                     '6010' => 'H10 - Super Metro Bogo',
                 ];
-                
+
 
                 // ⚠️ Check for various failure types
                 $hasRibErrors = !empty($response['errors']) && is_array($response['errors']);
@@ -185,7 +187,7 @@ class OracleTransferController extends Controller
                     // ✅ Complete Success
                     $deptResponse['status'] = 'success';
                     $deptResponse['verification'] = $response['verification'];
-                    
+
                     if (isset($response['verification']['tsf_data'])) {
                         $tsfData = $response['verification']['tsf_data'];
                         $deptResponse['details'][] = "TSF created in Oracle database";
@@ -208,12 +210,11 @@ class OracleTransferController extends Controller
                     ]);
 
                     Log::info("✅ Oracle RIB success for Dept {$dept}. TSF#: {$nextTsf}");
-
                 } elseif ($hasRibErrors) {
                     // ⚠️ RIB Message Failures
                     $deptResponse['status'] = 'rib_errors';
                     $overallSuccess = false;
-                    
+
                     foreach ($response['errors'] as $err) {
                         $errorMsg = $err['CLEAN_ERROR'] ?? $err['message'] ?? 'Unknown RIB error';
                         $deptResponse['errors'][] = [
@@ -233,7 +234,6 @@ class OracleTransferController extends Controller
                     ]);
 
                     Log::warning("⚠️ Oracle RIB errors for Dept {$dept}. TSF#: {$nextTsf}");
-
                 } elseif (!$verificationPassed) {
                     // ⚠️ Verification Failed (TSF not in database)
                     $deptResponse['status'] = 'verification_failed';
@@ -242,7 +242,7 @@ class OracleTransferController extends Controller
                     // Get user-friendly message
                     $verifyMsg = 'TSF could not be verified in Oracle database';
                     $attempts = $response['verification']['attempt'] ?? 0;
-                    
+
                     // Check if it's a database error vs not found
                     if (isset($response['verification']['error'])) {
                         $verifyMsg = 'Database verification error occurred';
@@ -274,7 +274,6 @@ class OracleTransferController extends Controller
                     ]);
 
                     Log::warning("⚠️ Verification failed for Dept {$dept}. TSF#: {$nextTsf}. {$verifyMsg}");
-
                 } else {
                     // ⚠️ Other failure (SFTP, script execution, etc.)
                     $deptResponse['status'] = 'processing_failed';
@@ -301,8 +300,8 @@ class OracleTransferController extends Controller
 
             return response()->json([
                 'success' => $overallSuccess,
-                'message' => $overallSuccess 
-                    ? 'All transfers completed successfully.' 
+                'message' => $overallSuccess
+                    ? 'All transfers completed successfully.'
                     : 'Some transfers encountered issues. See details below.',
                 'payloads' => $payloads,
                 'responses' => $responses,
@@ -312,7 +311,6 @@ class OracleTransferController extends Controller
                     'failed' => count(array_filter($responses, fn($r) => $r['status'] !== 'success')),
                 ]
             ]);
-
         } catch (Exception $e) {
             Log::error("🔥 OracleTransferController: " . $e->getMessage());
 
@@ -324,110 +322,109 @@ class OracleTransferController extends Controller
         }
     }
 
-public function getItemStatus($storeOrderNo, $sku)
-{
-    try {
-        // Log the incoming request
-        Log::info('Order status request received', ['store_order_no' => $storeOrderNo]);
+    public function getItemStatus($storeOrderNo, $sku)
+    {
+        try {
+            // Log the incoming request
+            Log::info('Order status request received', ['store_order_no' => $storeOrderNo]);
 
-        // Check if store order number is blank or null
-        if (empty($storeOrderNo)) {
-            Log::warning('Empty store order number received');
-            return response()->json([
-                'status' => 'N/A'
-            ], 200);
-        }
+            // Check if store order number is blank or null
+            if (empty($storeOrderNo)) {
+                Log::warning('Empty store order number received');
+                return response()->json([
+                    'status' => 'N/A'
+                ], 200);
+            }
 
-        // Step 1: Check oracle_rms database - tsfhead table
-        Log::info('Checking tsfhead table', ['store_order_no' => $storeOrderNo]);
-        $tsfHead = DB::connection('oracle_rms')
-            ->table('tsfhead')
-            ->where('tsf_no', $storeOrderNo)
-            ->first();
-
-        if (!$tsfHead) {
-            Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
-            return response()->json([
-                'status' => 'Not Found'
-            ], 200);
-        }
-
-        // If found in tsfhead, default status is Processing
-        $status = 'Processing';
-        Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
-
-        // Step 2: Check oracle_wms database - container_item table with rwms schema
-        Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
-        $containerItem = DB::connection('oracle_wms')
-            ->table('rwms.container_item')
-            ->where('distro_nbr', $storeOrderNo)
-            ->first();
-
-        $container = null;
-
-        // If container_item exists, check container by container_id
-        if ($containerItem) {
-            $container = DB::connection('oracle_wms')
-                ->table('rwms.container')
-                ->where('container_id', $containerItem->container_id)
-                ->whereNotNull('bol_nbr')
+            // Step 1: Check oracle_rms database - tsfhead table
+            Log::info('Checking tsfhead table', ['store_order_no' => $storeOrderNo]);
+            $tsfHead = DB::connection('oracle_rms')
+                ->table('tsfhead')
+                ->where('tsf_no', $storeOrderNo)
                 ->first();
-        }
 
-        // If found in container_item OR bol_nbr exists in container, status becomes Shipped
-        if ($containerItem || $container) {
-            $status = 'Shipped';
-            Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
-
-            // Step 3: Check oracle_rms database - shipsku table for received qty
-            Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
-            $shipSku = DB::connection('oracle_rms')
-                ->table('shipsku')
-                ->where('distro_no', $storeOrderNo)
-                ->where('item', $sku)
-                ->whereRaw('NVL(qty_received,0) > 0')
-                ->exists();
-
-            if (empty($sku)) {
-                return response()->json(['status' => 'N/A'], 200);
+            if (!$tsfHead) {
+                Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
+                return response()->json([
+                    'status' => 'Not Found'
+                ], 200);
             }
 
-            Log::info('ShipSKU qty_received', [
-                'qty_received' => $shipSku->qty_received ?? null
+            // If found in tsfhead, default status is Processing
+            $status = 'Processing';
+            Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
+
+            // Step 2: Check oracle_wms database - container_item table with rwms schema
+            Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
+            $containerItem = DB::connection('oracle_wms')
+                ->table('rwms.container_item')
+                ->where('distro_nbr', $storeOrderNo)
+                ->first();
+
+            $container = null;
+
+            // If container_item exists, check container by container_id
+            if ($containerItem) {
+                $container = DB::connection('oracle_wms')
+                    ->table('rwms.container')
+                    ->where('container_id', $containerItem->container_id)
+                    ->whereNotNull('bol_nbr')
+                    ->first();
+            }
+
+            // If found in container_item OR bol_nbr exists in container, status becomes Shipped
+            if ($containerItem || $container) {
+                $status = 'Shipped';
+                Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
+
+                // Step 3: Check oracle_rms database - shipsku table for received qty
+                Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
+                $shipSku = DB::connection('oracle_rms')
+                    ->table('shipsku')
+                    ->where('distro_no', $storeOrderNo)
+                    ->where('item', $sku)
+                    ->whereRaw('NVL(qty_received,0) > 0')
+                    ->exists();
+
+                if (empty($sku)) {
+                    return response()->json(['status' => 'N/A'], 200);
+                }
+
+                Log::info('ShipSKU qty_received', [
+                    'qty_received' => $shipSku->qty_received ?? null
+                ]);
+
+                // If qty_received > 0, status becomes Received
+                if ($shipSku) {
+                    $status = 'Received';
+                    Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
+                }
+            }
+
+
+
+            Log::info('Final status determined', [
+                'store_order_no' => $storeOrderNo,
+                'status' => $status
             ]);
-            
-            // If qty_received > 0, status becomes Received
-            if ($shipSku) {
-                $status = 'Received';
-                Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
-            }
+
+            return response()->json([
+                'status' => $status,
+                'store_order_no' => $storeOrderNo
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Order status error', [
+                'store_order_no' => $storeOrderNo,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'Error',
+                'store_order_no' => $storeOrderNo
+            ], 500);
         }
-
-
-
-        Log::info('Final status determined', [
-            'store_order_no' => $storeOrderNo,
-            'status' => $status
-        ]);
-
-        return response()->json([
-            'status' => $status,
-            'store_order_no' => $storeOrderNo
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('Order status error', [
-            'store_order_no' => $storeOrderNo,
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'status' => 'Error',
-            'store_order_no' => $storeOrderNo
-        ], 500);
     }
-}
 }
