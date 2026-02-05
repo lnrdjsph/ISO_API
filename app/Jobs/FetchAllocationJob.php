@@ -37,8 +37,20 @@ class FetchAllocationJob implements ShouldQueue
     }
 
 
+
     public function handle(): void
     {
+
+        if (!defined('OCI_DEFAULT')) {
+            define('OCI_DEFAULT', 0);
+        }
+        if (!defined('OCI_COMMIT_ON_SUCCESS')) {
+            define('OCI_COMMIT_ON_SUCCESS', 32);
+        }
+        if (!defined('OCI_NO_AUTO_COMMIT')) {
+            define('OCI_NO_AUTO_COMMIT', 0);
+        }
+
         $startTime = microtime(true);
         $processedKey = "wms_processed_{$this->warehouseCode}";
         $failedKey = "wms_failed_{$this->warehouseCode}";
@@ -93,7 +105,7 @@ class FetchAllocationJob implements ShouldQueue
             try {
                 $mysql->table('product_wms_allocations')->updateOrInsert(
                     [
-                        'sku' => $this->sku, 
+                        'sku' => $this->sku,
                         'warehouse_code' => $this->warehouseCode
                     ],
                     [
@@ -144,16 +156,15 @@ class FetchAllocationJob implements ShouldQueue
 
             // SUCCESS: Mark as processed
             Cache::increment($processedKey);
-            
+
             $duration = round((microtime(true) - $startTime) * 1000, 2);
-            
+
             // Log differently for SKUs not in warehouse vs actual data
             if ($allocationValue > 0) {
                 Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Allocation: {$allocationValue} | {$duration}ms");
             } else {
                 Log::debug("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Not in warehouse (0) | {$duration}ms");
             }
-
         } catch (\Throwable $e) {
             Log::error("[FetchAllocationJob] ✗ Unexpected error for SKU {$this->sku} | WH: {$this->warehouseCode}: " . $e->getMessage());
             $this->markAsFailed($failedKey, $processedKey);
@@ -170,10 +181,10 @@ class FetchAllocationJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error("[FetchAllocationJob] FINAL FAILURE (timeout/exception) SKU {$this->sku} | WH: {$this->warehouseCode}: " . $exception->getMessage());
-        
+
         $failedKey = "wms_failed_{$this->warehouseCode}";
         $processedKey = "wms_processed_{$this->warehouseCode}";
-        
+
         Cache::increment($failedKey);
         Cache::increment($processedKey);
     }
