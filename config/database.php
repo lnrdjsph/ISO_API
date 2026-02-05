@@ -33,7 +33,7 @@ return [
     |
     */
 
-        'connections' => [
+    'connections' => [
 
         'oracle_mbc' => [
             'driver'   => 'oracle',
@@ -61,7 +61,7 @@ return [
         ],
 
         'oracle_wms' => [
-            'driver'         => 'oracle',
+            'driver'         => env('ORACLE_WMS_DRIVER', 'oracle'),
             'host'           => env('ORACLE_WMS_HOST', 'sitwmsdb.metro.com.ph'),
             'port'           => env('ORACLE_WMS_PORT', '1521'),
             'database'       => env('ORACLE_WMS_DATABASE', 'MGMST'),
@@ -166,7 +166,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
 
         'default' => [
