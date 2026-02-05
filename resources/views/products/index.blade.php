@@ -169,7 +169,6 @@
                                 form.addEventListener('submit', async function(e) {
                                     e.preventDefault();
 
-                                    // Quick connection check
                                     loaderTitle.textContent = 'Checking connection...';
                                     loaderMessage.textContent = 'Please wait...';
                                     loader.classList.remove('hidden');
@@ -187,6 +186,44 @@
                                         return;
                                     }
 
+                                    const warehouse = getSelectedWarehouse();
+
+                                    // Get current status
+                                    let statusData = null;
+                                    try {
+                                        const statusRes = await fetchWithTimeout(`{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                            method: 'GET',
+                                            headers: {
+                                                'Accept': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest'
+                                            },
+                                            cache: 'no-store'
+                                        }, 10000);
+
+                                        if (statusRes.ok) {
+                                            statusData = await statusRes.json();
+                                        }
+                                    } catch (err) {
+                                        console.error('Status fetch error:', err.message);
+                                    }
+
+                                    if (statusData?.status === 'running') {
+                                        // ✅ Already running: show loader with current progress
+                                        loader.classList.remove('hidden');
+                                        loaderTitle.textContent = `Update in Progress (${statusData.progress?.percentage || 0}%)`;
+                                        loaderMessage.textContent = statusData.message || 'Processing...';
+
+                                        if (statusData.progress) {
+                                            progressDetails.classList.remove('hidden');
+                                            progressText.textContent = `Processing: ${statusData.progress.processed || 0} / ${statusData.progress.total || 0} SKUs`;
+                                            progressBar.style.width = `${statusData.progress.percentage || 0}%`;
+                                        }
+
+                                        startPolling(); // continue polling for updates
+                                        return;
+                                    }
+
+                                    // Otherwise, no queue: show warning modal
                                     Swal.fire({
                                         title: 'Warning',
                                         html: '<p>This process may take several minutes and will update:</p>' +
@@ -206,6 +243,7 @@
                                         if (result.isConfirmed) startUpdate();
                                     });
                                 });
+
 
                                 // -----------------------------------
                                 // 🚀 START UPDATE WITH TIMEOUT PROTECTION
