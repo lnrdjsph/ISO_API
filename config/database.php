@@ -61,7 +61,7 @@ return [
         ],
 
         'oracle_wms' => [
-            'driver'         => env('ORACLE_WMS_DRIVER', 'oracle'),
+            'driver'         => 'oracle',
             'host'           => env('ORACLE_WMS_HOST', 'sitwmsdb.metro.com.ph'),
             'port'           => env('ORACLE_WMS_PORT', '1521'),
             'database'       => env('ORACLE_WMS_DATABASE', 'MGMST'),
