@@ -40,7 +40,7 @@ class FetchAllocationJob implements ShouldQueue
 
     public function handle(): void
     {
-
+        // CRITICAL: Define OCI constants if not already defined
         if (!defined('OCI_DEFAULT')) {
             define('OCI_DEFAULT', 0);
         }
@@ -56,43 +56,49 @@ class FetchAllocationJob implements ShouldQueue
         $failedKey = "wms_failed_{$this->warehouseCode}";
 
         try {
-            // Quick connection check with short timeout
-            $mysql = DB::connection('mysql');
+            // Force Oracle connection initialization FIRST
             $oracle = DB::connection('oracle_wms');
+            $mysql = DB::connection('mysql');
 
             try {
-                $mysql->getPdo();
                 $oracle->getPdo();
+                // Force OCI8 initialization with a dummy query
+                $oracle->select("SELECT 1 FROM DUAL");
+
+                $mysql->getPdo();
             } catch (\Exception $e) {
                 Log::error("[FetchAllocationJob] DB Connection failed for SKU {$this->sku}: " . $e->getMessage());
                 $this->markAsFailed($failedKey, $processedKey);
                 return;
             }
 
-            // Set statement timeout for Oracle queries (5 seconds max per query)
+            // Set statement timeout for Oracle queries
             try {
                 $oracle->statement("ALTER SESSION SET QUERY_TIMEOUT = 5");
             } catch (\Exception $e) {
                 // Ignore if not supported
             }
 
-            // Fetch allocation from Oracle with timeout
+            // Fetch allocation from Oracle
             $allocationValue = 0;
+            $skuFoundInOracle = false;
+
             try {
                 $oracleRows = $oracle->select("
-                    SELECT ci.item_id,
-                        SUM(CASE WHEN c.container_status NOT IN ('X','T','S','D','A') 
-                            THEN ci.unit_qty ELSE 0 END) AS total_qty
-                    FROM rwms.container_item ci
-                    JOIN rwms.container c
-                        ON ci.facility_id = c.facility_id
-                        AND ci.container_id = c.container_id
-                    WHERE ci.facility_id = ?
-                    AND ci.item_id = ?
-                    GROUP BY ci.item_id
-                ", [$this->facilityId, $this->sku]);
+                SELECT ci.item_id,
+                    SUM(CASE WHEN c.container_status NOT IN ('X','T','S','D','A') 
+                        THEN ci.unit_qty ELSE 0 END) AS total_qty
+                FROM rwms.container_item ci
+                JOIN rwms.container c
+                    ON ci.facility_id = c.facility_id
+                    AND ci.container_id = c.container_id
+                WHERE ci.facility_id = ?
+                AND ci.item_id = ?
+                GROUP BY ci.item_id
+            ", [$this->facilityId, $this->sku]);
 
                 if (!empty($oracleRows)) {
+                    $skuFoundInOracle = true;
                     $allocationValue = (int) $oracleRows[0]->total_qty;
                 }
             } catch (\Exception $e) {
@@ -122,19 +128,18 @@ class FetchAllocationJob implements ShouldQueue
             }
 
             // Update case pack data (optional, don't fail if this errors)
-            // Update case pack data (warehouse-based only)
             try {
                 $caseRows = $oracle->select("
-                    SELECT item_id, unit_qty
-                    FROM (
-                        SELECT ci.item_id, ci.unit_qty,
-                            ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
-                        FROM rwms.container_item ci
-                        WHERE ci.facility_id = ?
-                        AND ci.item_id = ?
-                    )
-                    WHERE rn <= 5
-                ", [$this->facilityId, $this->sku]);
+                SELECT item_id, unit_qty
+                FROM (
+                    SELECT ci.item_id, ci.unit_qty,
+                        ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
+                    FROM rwms.container_item ci
+                    WHERE ci.facility_id = ?
+                    AND ci.item_id = ?
+                )
+                WHERE rn <= 5
+            ", [$this->facilityId, $this->sku]);
 
                 if (!empty($caseRows)) {
                     $casePacks = array_unique(array_map(
@@ -153,17 +158,18 @@ class FetchAllocationJob implements ShouldQueue
                 Log::debug("[FetchAllocationJob] Case pack skipped {$this->sku}: {$e->getMessage()}");
             }
 
-
             // SUCCESS: Mark as processed
             Cache::increment($processedKey);
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Log differently for SKUs not in warehouse vs actual data
-            if ($allocationValue > 0) {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Allocation: {$allocationValue} | {$duration}ms");
+            // Clear logging with status indication
+            if (!$skuFoundInOracle) {
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: NOT FOUND IN ORACLE | Set to 0 | {$duration}ms");
+            } elseif ($allocationValue > 0) {
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FOUND | Allocation: {$allocationValue} | {$duration}ms");
             } else {
-                Log::debug("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Not in warehouse (0) | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FOUND (ZERO STOCK) | Allocation: 0 | {$duration}ms");
             }
         } catch (\Throwable $e) {
             Log::error("[FetchAllocationJob] ✗ Unexpected error for SKU {$this->sku} | WH: {$this->warehouseCode}: " . $e->getMessage());
