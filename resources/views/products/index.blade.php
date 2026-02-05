@@ -419,6 +419,14 @@
                                         loader.classList.add('hidden');
                                         button.disabled = false;
 
+                                        // Check flag BEFORE building HTML (more efficient)
+                                        if (sessionStorage.getItem("allocUpdateDone")) {
+                                            console.log("Completion popup already shown, reloading...");
+                                            stopPolling();
+                                            window.location.reload();
+                                            return;
+                                        }
+
                                         let summaryHtml = '<p class="mb-2">Update completed successfully!</p>';
 
                                         if (data.summary) {
@@ -447,17 +455,19 @@
                                             summaryHtml += '</ul></div>';
                                         }
 
-                                        // FIXED: Show the SweetAlert popup
+                                        // Set flag BEFORE showing popup
+                                        sessionStorage.setItem("allocUpdateDone", "1");
+
                                         Swal.fire({
                                             title: 'Completed!',
                                             html: summaryHtml,
                                             icon: 'success',
                                             confirmButtonText: 'OK',
-                                            confirmButtonColor: '#10b981'
+                                            confirmButtonColor: '#10b981',
+                                            allowOutsideClick: false, // Prevent accidental dismissal
+                                            allowEscapeKey: false
                                         }).then(() => {
                                             stopPolling();
-                                            // Clear the flag AFTER showing popup and before reload
-                                            sessionStorage.removeItem("allocUpdateDone");
                                             window.location.reload();
                                         });
 
