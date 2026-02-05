@@ -105,6 +105,8 @@
 
                                 const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]').value;
 
+                                sessionStorage.removeItem("allocUpdateDone");
+
                                 let checkStatusInterval = null;
                                 let progressPercentage = 0;
                                 let consecutiveIdleCount = 0;
@@ -421,9 +423,8 @@
 
                                         // Check flag BEFORE building HTML (more efficient)
                                         if (sessionStorage.getItem("allocUpdateDone")) {
-                                            console.log("Completion popup already shown, reloading...");
+                                            console.log("Completion already handled. Not reloading.");
                                             stopPolling();
-                                            window.location.reload();
                                             return;
                                         }
 
@@ -469,6 +470,7 @@
                                         }).then(() => {
                                             stopPolling();
                                             window.location.reload();
+                                            sessionStorage.removeItem("allocUpdateDone");
                                         });
 
                                         progressPercentage = 0;
@@ -503,7 +505,9 @@
                                 setTimeout(() => {
                                     checkConnection().then(connected => {
                                         if (connected) {
-                                            checkStatus();
+                                            if (!sessionStorage.getItem("allocUpdateDone")) {
+                                                checkStatus();
+                                            }
                                         }
                                     });
                                 }, 500);

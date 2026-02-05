@@ -1618,10 +1618,7 @@ class ProductController extends Controller
             // Check if completed
             if ($processed >= $totalSkus && $totalSkus > 0) {
                 // Keep "done" status alive for a few minutes
-                Cache::put($cacheKeys['running'], array_merge($cache, [
-                    'completed' => true,
-                    'completed_at' => now()->toDateTimeString(),
-                ]), now()->addMinutes(5));
+                Cache::forget($cacheKeys['running']);
 
                 Log::info('WMS Update Completed', [
                     'warehouse_code' => $warehouseCode,
