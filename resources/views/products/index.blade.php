@@ -407,6 +407,7 @@
                                     }
                                 }
 
+
                                 // -----------------------------------
                                 // ✅ COMPLETION
                                 // -----------------------------------
@@ -446,12 +447,7 @@
                                             summaryHtml += '</ul></div>';
                                         }
 
-                                        if (sessionStorage.getItem("allocUpdateDone")) {
-                                            return; // prevent popup loop
-                                        }
-
-                                        sessionStorage.setItem("allocUpdateDone", "1");
-
+                                        // FIXED: Show the SweetAlert popup
                                         Swal.fire({
                                             title: 'Completed!',
                                             html: summaryHtml,
@@ -460,6 +456,8 @@
                                             confirmButtonColor: '#10b981'
                                         }).then(() => {
                                             stopPolling();
+                                            // Clear the flag AFTER showing popup and before reload
+                                            sessionStorage.removeItem("allocUpdateDone");
                                             window.location.reload();
                                         });
 
