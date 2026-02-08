@@ -361,10 +361,14 @@ class OracleTransferController extends Controller
                 ->exists();
 
             if ($picking) {
-                $status = 'Picking';
                 Log::info('Order is currently being picked', [
                     'store_order_no' => $storeOrderNo
                 ]);
+
+                return response()->json([
+                    'status' => 'Picking',
+                    'store_order_no' => $storeOrderNo
+                ], 200);
             }
 
             // Step 2: Check oracle_wms database - container_item table with rwms schema
@@ -386,7 +390,7 @@ class OracleTransferController extends Controller
             }
 
             // If found in container_item OR bol_nbr exists in container, status becomes Shipped
-            if ($containerItem || $container) {
+            if (!$picking && ($containerItem || $container)) {
                 $status = 'Shipped';
                 Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
 

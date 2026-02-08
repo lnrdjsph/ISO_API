@@ -108,31 +108,31 @@ class FetchAllocationJob implements ShouldQueue
             }
 
             // Update case pack data (optional)
-            try {
-                $caseRows = $oracle->select("
-                    SELECT item_id, unit_qty
-                    FROM (
-                        SELECT ci.item_id, ci.unit_qty,
-                               ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
-                        FROM rwms.container_item ci
-                        WHERE ci.facility_id = ?
-                          AND ci.item_id = ?
-                    )
-                    WHERE rn <= 5
-                ", [$this->facilityId, $this->sku]);
+            // try {
+            //     $caseRows = $oracle->select("
+            //         SELECT item_id, unit_qty
+            //         FROM (
+            //             SELECT ci.item_id, ci.unit_qty,
+            //                    ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
+            //             FROM rwms.container_item ci
+            //             WHERE ci.facility_id = ?
+            //               AND ci.item_id = ?
+            //         )
+            //         WHERE rn <= 5
+            //     ", [$this->facilityId, $this->sku]);
 
-                if (!empty($caseRows)) {
-                    $casePacks = array_unique(array_map(fn($row) => $row->unit_qty, $caseRows));
-                    $mysql->table($this->productTable)
-                        ->where('sku', $this->sku)
-                        ->update([
-                            'case_pack' => implode(' | ', $casePacks),
-                            'updated_at' => now()
-                        ]);
-                }
-            } catch (\Exception $e) {
-                Log::debug("[FetchAllocationJob] Case pack skipped for SKU {$this->sku}: {$e->getMessage()}");
-            }
+            //     if (!empty($caseRows)) {
+            //         $casePacks = array_unique(array_map(fn($row) => $row->unit_qty, $caseRows));
+            //         $mysql->table($this->productTable)
+            //             ->where('sku', $this->sku)
+            //             ->update([
+            //                 'case_pack' => implode(' | ', $casePacks),
+            //                 'updated_at' => now()
+            //             ]);
+            //     }
+            // } catch (\Exception $e) {
+            //     Log::debug("[FetchAllocationJob] Case pack skipped for SKU {$this->sku}: {$e->getMessage()}");
+            // }
 
             // SUCCESS: mark as processed
             Cache::increment($processedKey);

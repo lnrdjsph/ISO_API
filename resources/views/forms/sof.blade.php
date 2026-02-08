@@ -233,7 +233,7 @@
                                 <label
                                     for="warehouse"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                                    Warehouse
+                                    Serving Warehouse
                                 </label>
                             </div>
 
@@ -1113,16 +1113,16 @@
                                                         <div class="text-right font-medium text-black">
                                                             <span class="freebies-cs-display block text-green-600">0</span>
                                                             <div class="breakdown-freebie-qty text-xs text-green-600"></div>
-                                                            <input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
+                                                            {{-- <input type="hidden" name="orders[{{ $i }}][freebies_per_cs]"
                                                                 value="{{ old("orders.$i.freebies_per_cs") }}"
-                                                                class="computed-freebies" />
+                                                                class="computed-freebies" /> --}}
                                                         </div>
                                                     </div>
 
 
                                                     <!-- Total QTY -->
                                                     <div class="flex items-start justify-between">
-                                                        <label class="block text-sm text-gray-600">Total QTY/CS</label>
+                                                        <label class="block text-sm text-gray-600">Total Cases Ordered</label>
                                                         <div class="text-right font-medium text-black">
                                                             <span class="total-qty-display">0</span>
                                                             <input
@@ -1180,7 +1180,7 @@
 
                                                     <!-- Total Amount -->
                                                     <div class="mx-[-1rem] flex items-start justify-between bg-blue-50 px-4 py-2">
-                                                        <label class="block text-sm text-indigo-600">Total Amount</label>
+                                                        <label class="block text-sm text-indigo-600">Total Payable</label>
                                                         <div class="text-right font-bold text-blue-600">
                                                             ₱<span class="amount-display">0.00</span>
                                                             <input

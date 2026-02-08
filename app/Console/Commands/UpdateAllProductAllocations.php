@@ -448,75 +448,75 @@ class UpdateAllProductAllocations extends Command
             $grandTotalUpdated += $updated;
             $grandTotalInserted += $inserted;
 
-            // Query Oracle for case pack data
-            $this->log("Querying Oracle WMS for case pack data...");
-            $caseMap = [];
+            // // Query Oracle for case pack data
+            // $this->log("Querying Oracle WMS for case pack data...");
+            // $caseMap = [];
             
-            foreach ($skuChunks as $chunkIndex => $skuChunk) {
-                $chunkNum = $chunkIndex + 1;
-                $inClause = "'" . implode("','", $skuChunk) . "'";
+            // foreach ($skuChunks as $chunkIndex => $skuChunk) {
+            //     $chunkNum = $chunkIndex + 1;
+            //     $inClause = "'" . implode("','", $skuChunk) . "'";
                 
-                try {
-                    $queryStart = microtime(true);
+            //     try {
+            //         $queryStart = microtime(true);
                     
-                    $caseRows = DB::connection('oracle_wms')->select("
-                        SELECT item_id, unit_qty
-                        FROM (
-                            SELECT ci.item_id, ci.unit_qty,
-                                ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-                            FROM rwms.container_item ci
-                            WHERE ci.facility_id = '{$facilityId}'
-                            AND ci.item_id IN ({$inClause})
-                        )
-                        WHERE rn <= 5
-                    ");
+            //         $caseRows = DB::connection('oracle_wms')->select("
+            //             SELECT item_id, unit_qty
+            //             FROM (
+            //                 SELECT ci.item_id, ci.unit_qty,
+            //                     ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
+            //                 FROM rwms.container_item ci
+            //                 WHERE ci.facility_id = '{$facilityId}'
+            //                 AND ci.item_id IN ({$inClause})
+            //             )
+            //             WHERE rn <= 5
+            //         ");
                     
-                    $queryEnd = microtime(true);
-                    $queryDuration = round($queryEnd - $queryStart, 2);
+            //         $queryEnd = microtime(true);
+            //         $queryDuration = round($queryEnd - $queryStart, 2);
                     
-                    foreach ($caseRows as $row) {
-                        $caseMap[$row->item_id][] = $row->unit_qty;
-                    }
+            //         foreach ($caseRows as $row) {
+            //             $caseMap[$row->item_id][] = $row->unit_qty;
+            //         }
                     
-                    $this->log("Case pack chunk {$chunkNum} completed in {$queryDuration}s");
-                } catch (\Exception $e) {
-                    $this->log("ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
-                    continue;
-                }
-            }
+            //         $this->log("Case pack chunk {$chunkNum} completed in {$queryDuration}s");
+            //     } catch (\Exception $e) {
+            //         $this->log("ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
+            //         continue;
+            //     }
+            // }
             
-            $this->log("Total case packs retrieved: " . count($caseMap) . " SKUs");
+            // $this->log("Total case packs retrieved: " . count($caseMap) . " SKUs");
 
-            // Update case pack in products tables for each store
-            $casePackProcessed = 0;
-            foreach ($stores as $store) {
-                $tableName = "products_{$store}";
+            // // Update case pack in products tables for each store
+            // $casePackProcessed = 0;
+            // foreach ($stores as $store) {
+            //     $tableName = "products_{$store}";
                 
-                if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
-                    continue;
-                }
+            //     if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
+            //         continue;
+            //     }
                 
-                $storeSkus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
+            //     $storeSkus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
                 
-                foreach ($storeSkus as $sku) {
-                    if (isset($caseMap[$sku])) {
-                        try {
-                            DB::connection('mysql')->table($tableName)
-                                ->where('sku', $sku)
-                                ->update([
-                                    'case_pack' => implode(' | ', array_unique($caseMap[$sku])),
-                                    'updated_at' => now()
-                                ]);
-                            $casePackProcessed++;
-                        } catch (\Exception $e) {
-                            $this->log("Case pack update failed for SKU {$sku}: " . $e->getMessage());
-                        }
-                    }
-                }
-            }
+            //     foreach ($storeSkus as $sku) {
+            //         if (isset($caseMap[$sku])) {
+            //             try {
+            //                 DB::connection('mysql')->table($tableName)
+            //                     ->where('sku', $sku)
+            //                     ->update([
+            //                         'case_pack' => implode(' | ', array_unique($caseMap[$sku])),
+            //                         'updated_at' => now()
+            //                     ]);
+            //                 $casePackProcessed++;
+            //             } catch (\Exception $e) {
+            //                 $this->log("Case pack update failed for SKU {$sku}: " . $e->getMessage());
+            //             }
+            //         }
+            //     }
+            // }
 
-            $this->log("Case packs: {$casePackProcessed} updated");
-            $grandTotalCasePack += $casePackProcessed;
+            // $this->log("Case packs: {$casePackProcessed} updated");
+            // $grandTotalCasePack += $casePackProcessed;
         }
 
         // Final summary
@@ -528,7 +528,7 @@ class UpdateAllProductAllocations extends Command
         $this->log("=== All warehouses processed ===");
         $this->log("Total allocations updated: {$grandTotalUpdated}");
         $this->log("Total allocations inserted: {$grandTotalInserted}");
-        $this->log("Total case packs updated: {$grandTotalCasePack}");
+        // $this->log("Total case packs updated: {$grandTotalCasePack}");
         $this->log("Process completed in {$minutes}m {$seconds}s");
 
         return Command::SUCCESS;
