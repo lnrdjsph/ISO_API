@@ -1423,20 +1423,20 @@
                                                     title: 'Approve Order',
                                                     html: `
             <div style="text-align:center; font-size:14px; color:#444;">
-
-
-
                 <!-- Upload Section -->
                 <div id="uploadSection">
-                    <p style="margin-bottom:12px;">Upload approval document (PDF, Word, or Image):</p>
+                    <p style="margin-bottom:12px; font-weight:500;">Upload approval document (required):</p>
+                    <p style="margin-bottom:12px; font-size:12px; color:#666;">
+                        PDF, Word, or Image files only
+                    </p>
 
                     <div id="uploadBox"
                         style="border:2px dashed #2563EB; border-radius:8px;
-                               padding:20px; background:#f9fafb; cursor:pointer;
-                               transition:0.2s ease-in-out;">
+                            padding:20px; background:#f9fafb; cursor:pointer;
+                            transition:0.2s ease-in-out;">
                         <input type="file" id="approvalFile"
                             accept=".pdf,.doc,.docx,image/*"
-                            style="display:none;" />
+                            style="display:none;" required />
 
                         <label for="approvalFile"
                             style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
@@ -1448,13 +1448,11 @@
                             No file chosen
                         </p>
                     </div>
-                </div>
-                                <!-- Checkbox -->
-                <div class="mt-2">
-                    <label style="font-size:13px; cursor:pointer;">
-                        <input type="checkbox" id="noDocumentCheckbox" style="margin-right:6px;">
-                        Approve this order without an approval document.
-                    </label>
+                    
+                    <!-- Required note -->
+                    <p style="margin-top:8px; font-size:11px; color:#DC2626;">
+                        * Approval document is required
+                    </p>
                 </div>
             </div>
         `,
@@ -1465,19 +1463,12 @@
                                                     confirmButtonText: 'Approve',
 
                                                     didOpen: () => {
-                                                        const noDocCheckbox = document.getElementById('noDocumentCheckbox');
-                                                        const uploadSection = document.getElementById('uploadSection');
                                                         const uploadBox = document.getElementById('uploadBox');
                                                         const fileInput = document.getElementById('approvalFile');
                                                         const fileName = document.getElementById('fileName');
 
-                                                        // Toggle upload section
-                                                        noDocCheckbox.addEventListener('change', () => {
-                                                            uploadSection.style.display = noDocCheckbox.checked ? 'none' : 'block';
-                                                        });
-
                                                         // Clicking the box opens file picker
-                                                        uploadBox.addEventListener('click', () => !noDocCheckbox.checked && fileInput.click());
+                                                        uploadBox.addEventListener('click', () => fileInput.click());
 
                                                         // Show selected file name
                                                         fileInput.addEventListener('change', () => {
@@ -1488,10 +1479,8 @@
 
                                                         // Drag & drop
                                                         uploadBox.addEventListener('dragover', (e) => {
-                                                            if (!noDocCheckbox.checked) {
-                                                                e.preventDefault();
-                                                                uploadBox.style.background = "#eef2ff";
-                                                            }
+                                                            e.preventDefault();
+                                                            uploadBox.style.background = "#eef2ff";
                                                         });
 
                                                         uploadBox.addEventListener('dragleave', () => {
@@ -1499,43 +1488,31 @@
                                                         });
 
                                                         uploadBox.addEventListener('drop', (e) => {
-                                                            if (!noDocCheckbox.checked) {
-                                                                e.preventDefault();
-                                                                uploadBox.style.background = "#f9fafb";
-                                                                if (e.dataTransfer.files.length) {
-                                                                    fileInput.files = e.dataTransfer.files;
-                                                                    fileName.textContent = e.dataTransfer.files[0].name;
-                                                                }
+                                                            e.preventDefault();
+                                                            uploadBox.style.background = "#f9fafb";
+                                                            if (e.dataTransfer.files.length) {
+                                                                fileInput.files = e.dataTransfer.files;
+                                                                fileName.textContent = e.dataTransfer.files[0].name;
                                                             }
                                                         });
                                                     },
 
                                                     preConfirm: () => {
-                                                        const noDocCheckbox = document.getElementById('noDocumentCheckbox');
                                                         const file = document.getElementById('approvalFile').files[0];
 
-                                                        // If checkbox is checked → skip validation
-                                                        if (noDocCheckbox.checked) {
-                                                            return {
-                                                                skip: true,
-                                                                file: null
-                                                            };
-                                                        }
-
-                                                        // Otherwise require a file
+                                                        // Always require a file
                                                         if (!file) {
-                                                            Swal.showValidationMessage('Please upload a document or check the box.');
+                                                            Swal.showValidationMessage('Please upload an approval document.');
                                                             return false;
                                                         }
 
                                                         return {
-                                                            skip: false,
                                                             file: file
                                                         };
                                                     }
                                                 }).then((result) => {
                                                     if (result.isConfirmed) {
-                                                        const file = result.value.file ?? null;
+                                                        const file = result.value.file;
                                                         submitForm('approve', null, file);
                                                     } else {
                                                         actionSelect.value = '';

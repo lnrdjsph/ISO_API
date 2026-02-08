@@ -31,7 +31,7 @@ class BulkUpdateProductsRequest extends FormRequest
             'product_ids.required' => 'Please select at least one product.',
             'product_ids.*.exists' => 'One or more selected products do not exist.',
             'case_pack.integer' => 'Case pack must be a valid number.',
-            'case_pack.min' => 'Case pack must be at least 1.',
+            'case_pack.min' => 's must be at least 1.',
             'srp.numeric' => 'SRP must be a valid number.',
             'srp.min' => 'SRP cannot be negative.',
             'allocation_per_case.integer' => 'Allocation per case must be a valid number.',

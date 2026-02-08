@@ -910,6 +910,7 @@ class AtomController extends Controller
             ->get();
 
         foreach ($items as $item) {
+
             $sku = strtoupper($item->sku);
 
             // Find product
@@ -926,27 +927,44 @@ class AtomController extends Controller
                 continue;
             }
 
-            // 1. Deduct allocation_per_case by total_qty (cases)
-            $casesDeduction = $item->total_qty;
-            $currentCaseAllocation = $product->allocation_per_case ?? 0;
-            $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
+            /**
+             * ---------------------------------------------------------
+             * 1. Deduct allocation_per_case ONLY if NOT FREEBIE
+             * ---------------------------------------------------------
+             */
+            if (strtoupper(trim($item->item_type)) !== 'FREEBIE') {
 
-            DB::table($tableName)
-                ->where('id', $product->id)
-                ->update([
-                    'allocation_per_case' => $newCaseAllocation,
-                    'updated_at' => now(),
+                $casesDeduction = $item->total_qty;
+                $currentCaseAllocation = $product->allocation_per_case ?? 0;
+                $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
+
+                DB::table($tableName)
+                    ->where('id', $product->id)
+                    ->update([
+                        'allocation_per_case' => $newCaseAllocation,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::channel('orders')->info('Case deduction (NON-FREEBIE)', [
+                    'sku' => $sku,
+                    'type' => $item->item_type,
+                    'cases_deducted' => $casesDeduction,
+                    'previous' => $currentCaseAllocation,
+                    'new_balance' => $newCaseAllocation
                 ]);
+            } else {
 
-            Log::channel('orders')->info('Case deduction', [
-                'sku' => $sku,
-                'type' => $item->item_type,
-                'cases_deducted' => $casesDeduction,
-                'previous' => $currentCaseAllocation,
-                'new_balance' => $newCaseAllocation
-            ]);
+                Log::channel('orders')->info('Skipped case deduction (FREEBIE)', [
+                    'sku' => $sku,
+                    'type' => $item->item_type
+                ]);
+            }
 
-            // 2. Deduct wms_virtual_allocation by (total_qty × qty_per_pc) - pieces
+            /**
+             * ---------------------------------------------------------
+             * 2. Deduct wms_virtual_allocation INCLUDING FREEBIES
+             * ---------------------------------------------------------
+             */
             $qtyPerPc = $item->qty_per_pc ?? $product->case_pack ?? 0;
 
             if ($qtyPerPc == 0) {
@@ -983,7 +1001,7 @@ class AtomController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            Log::channel('orders')->info('WMS pieces deduction', [
+            Log::channel('orders')->info('WMS pieces deduction (INCLUDES FREEBIES)', [
                 'sku' => $sku,
                 'type' => $item->item_type,
                 'warehouse' => $warehouseCode,
@@ -1002,6 +1020,7 @@ class AtomController extends Controller
 
         return true;
     }
+
 
     /**
      * Get warehouse name from code
