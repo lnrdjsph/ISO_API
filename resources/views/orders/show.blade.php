@@ -791,8 +791,13 @@
                                                             badgeClass = 'bg-yellow-100 text-yellow-800';
                                                             description = 'Order is being processed for shipment';
                                                         } else if (status === 'Pending') {
-                                                            badgeClass = 'bg-orange-100 text-orange-800';
+                                                            badgeClass = 'bg-purple-100 text-purple-800';
                                                             description = 'Order is pending for shipment';
+                                                        }
+                                                        //picking
+                                                        else if (status === 'Picking') {
+                                                            badgeClass = 'bg-orange-100 text-orange-800';
+                                                            description = 'Order is being picked at the warehouse';
                                                         } else if (status === 'Not Found') {
                                                             badgeClass = 'bg-red-100 text-red-800';
                                                             description = 'Order not found in the system';
@@ -890,8 +895,13 @@
                                                         } else if (status === 'Processing') {
                                                             badgeClass = 'bg-yellow-100 text-yellow-800';
                                                             description = 'Order is being processed for shipment';
-                                                        } else if (status === 'Pending') {
+                                                        }
+                                                        //picking
+                                                        else if (status === 'Picking') {
                                                             badgeClass = 'bg-orange-100 text-orange-800';
+                                                            description = 'Order is being picked at the warehouse';
+                                                        } else if (status === 'Pending') {
+                                                            badgeClass = 'bg-purple-100 text-purple-800';
                                                             description = 'Order is pending for shipment';
                                                         } else if (status === 'Not Found') {
                                                             badgeClass = 'bg-red-100 text-red-800';
