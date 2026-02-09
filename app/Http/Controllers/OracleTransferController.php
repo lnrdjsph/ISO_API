@@ -123,7 +123,7 @@ class OracleTransferController extends Controller
                     'delivery_date' => $order->delivery_date,
                     'dept' => $dept,
                     'freight_code' => 'N',
-                    'tsf_type' => 'AIP',
+                    'tsf_type' => 'EG',
                     'status' => 'A',
                     'user_id' => 'External',
                     'comment_desc' => "Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
@@ -352,9 +352,9 @@ class OracleTransferController extends Controller
             $status = 'Processing';
             Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
-            // Step 2: Check oracle_wms database - pick_directive table
+            // Step 1.5: Check oracle_wms database - pick_directive table
+            // THIS MUST COME BEFORE ANY SHIPPED CHECKS!
             Log::info('Checking pick_directive table', ['store_order_no' => $storeOrderNo]);
-
             $picking = DB::connection('oracle_wms')
                 ->table('rwms.pick_directive')
                 ->where('distro_nbr', $storeOrderNo)
@@ -371,46 +371,10 @@ class OracleTransferController extends Controller
                 ], 200);
             }
 
-            // NEW: Check tsfhead.status after picking check
-            if ($tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
-                $status = 'Shipped';
-                Log::info('Order shipped based on tsfhead status', [
-                    'store_order_no' => $storeOrderNo,
-                    'tsf_status' => $tsfHead->status
-                ]);
+            // Step 2: Now check shipped status - multiple indicators
+            $shipped = false;
 
-                // Check if SKU is empty
-                if (empty($sku)) {
-                    return response()->json(['status' => 'N/A'], 200);
-                }
-
-                // Check shipsku for received status
-                Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
-                $shipSku = DB::connection('oracle_rms')
-                    ->table('shipsku')
-                    ->where('distro_no', $storeOrderNo)
-                    ->where('item', $sku)
-                    ->whereRaw('NVL(qty_received,0) > 0')
-                    ->exists();
-
-                // If qty_received > 0, status becomes Received
-                if ($shipSku) {
-                    $status = 'Received';
-                    Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
-                }
-
-                Log::info('Final status determined', [
-                    'store_order_no' => $storeOrderNo,
-                    'status' => $status
-                ]);
-
-                return response()->json([
-                    'status' => $status,
-                    'store_order_no' => $storeOrderNo
-                ], 200);
-            }
-
-            // Original container_item check (as fallback if tsfhead.status is not S/C)
+            // Check container_item/container first
             Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
             $containerItem = DB::connection('oracle_wms')
                 ->table('rwms.container_item')
@@ -428,16 +392,34 @@ class OracleTransferController extends Controller
                     ->first();
             }
 
-            // If found in container_item OR bol_nbr exists in container, status becomes Shipped
-            if ($containerItem || $container) {
+            // Multiple indicators of shipped status:
+            // 1. Container_item exists
+            // 2. Container has BOL number
+            // 3. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
+            if ($containerItem || $container || ($tsfHead && in_array($tsfHead->status, ['S', 'C']))) {
+                $shipped = true;
                 $status = 'Shipped';
-                Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
 
+                // Log which indicator triggered
+                if ($containerItem || $container) {
+                    Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
+                }
+                if ($tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
+                    Log::info('Order shipped (tsfhead.status is S or C)', [
+                        'store_order_no' => $storeOrderNo,
+                        'tsf_status' => $tsfHead->status
+                    ]);
+                }
+            }
+
+            // Step 3: If shipped, check for received status
+            if ($shipped) {
+                // Check if SKU is empty
                 if (empty($sku)) {
                     return response()->json(['status' => 'N/A'], 200);
                 }
 
-                // Step 3: Check oracle_rms database - shipsku table for received qty
+                // Check shipsku for received qty
                 Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
                 $shipSku = DB::connection('oracle_rms')
                     ->table('shipsku')
