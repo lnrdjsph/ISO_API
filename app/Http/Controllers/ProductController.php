@@ -100,6 +100,7 @@ class ProductController extends Controller
                     "$tableName.department_code",
                     "$tableName.department",
                     "$tableName.allocation_per_case",
+                    "$tableName.initial_allocation_per_case",
                     "$tableName.case_pack",
                     "$tableName.srp",
                     "$tableName.cash_bank_card_scheme",
@@ -107,7 +108,8 @@ class ProductController extends Controller
                     "$tableName.discount_scheme",
                     "$tableName.freebie_sku",
                     "wms.wms_virtual_allocation AS warehouse_allocation",
-                    "wms.wms_actual_allocation AS warehouse_actual_allocation"
+                    "wms.wms_actual_allocation AS warehouse_actual_allocation",
+                    "$tableName.updated_at"
                 )
                 ->leftJoin('product_wms_allocations as wms', function ($join) use ($tableName, $currentWarehouse) {
                     $join->on("$tableName.sku", '=', 'wms.sku')
@@ -1064,7 +1066,7 @@ class ProductController extends Controller
 
                 $formattedSku = strtoupper($sku);
 
-                // --- VALIDATIONS (same as your version, trimmed for brevity) ---
+                // --- VALIDATIONS ---
                 if (!$sku || !preg_match('/^\d+$/', $sku)) {
                     $errors[] = "Row {$rowNumber}: SKU must be numeric and not empty.";
                     continue;
@@ -1099,6 +1101,8 @@ class ProductController extends Controller
                     }
                 }
 
+                // Determine case pack value
+                $casePack = '';
                 if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
                     $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
                     $allNumbers = array_unique(array_merge($existingNumbers, $casePackNumbers));
@@ -1114,7 +1118,7 @@ class ProductController extends Controller
                     continue;
                 }
 
-                // Scheme & freebie validation (same)
+                // Scheme & freebie validation
                 if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
                     $errors[] = "Row {$rowNumber}: CBC Scheme must be in 'number+number' format.";
                     continue;
@@ -1136,7 +1140,7 @@ class ProductController extends Controller
                     continue;
                 }
 
-                // ✅ Get department CODE and NAME from Oracle
+                // Get department CODE and NAME from Oracle
                 $oracleData = DB::connection('oracle_rms')->selectOne("
                 SELECT 
                     item_master.dept AS department_code,
@@ -1151,25 +1155,30 @@ class ProductController extends Controller
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
-                    'department_code' => $oracleData->department_code ?? null, // ✅ save department code
-                    'department' => $oracleData->department_name ?? null,       // ✅ save department name
+                    'department_code' => $oracleData->department_code ?? null,
+                    'department' => $oracleData->department_name ?? null,
                     'allocation_per_case' => intval($allocationPerCase),
+                    'initial_allocation_per_case' => intval($allocationPerCase),
                     'case_pack' => $casePack !== '' ? $casePack : null,
                     'srp' => floatval($srp),
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
                     'discount_scheme' => $discountScheme,
                     'freebie_sku' => $freebieSku,
-                    'archived_at' => null,  // ✅ Clear archive fields
-                    'archived_by' => null,  // ✅ Clear archive fields
-                    'archive_reason' => null, // ✅ Clear archive fields
+                    'archived_at' => null,
+                    'archived_by' => null,
+                    'archive_reason' => null,
                     'updated_at' => now(),
                     'created_at' => now(),
                 ];
 
+                // ✅ Now decide insert vs update
                 if (isset($existingProducts[$formattedSku])) {
+                    // For updates, remove created_at (don't overwrite original creation date)
+                    unset($record['created_at']);
                     $updateData[] = $record;
                 } else {
+                    // For inserts, keep created_at
                     $insertData[] = $record;
                 }
             }
@@ -1182,16 +1191,18 @@ class ProductController extends Controller
                     'department_code',
                     'department',
                     'allocation_per_case',
+                    'initial_allocation_per_case',
                     'case_pack',
                     'srp',
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'discount_scheme',
                     'freebie_sku',
-                    'archived_at',      // ✅ Include in update
-                    'archived_by',      // ✅ Include in update
-                    'archive_reason',  // ✅ Include in update
+                    'archived_at',
+                    'archived_by',
+                    'archive_reason',
                     'updated_at'
+                    // Don't include 'created_at' here
                 ]);
             }
 

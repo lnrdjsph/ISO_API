@@ -972,7 +972,7 @@
                                         <td class="px-2 py-2">
                                             <div class="relative inline-block w-full">
                                                 <div class="peer block max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-semibold text-gray-800">
-                                                    {{ $product->department_code }} - {{ $product->department }}
+                                                    {{ $product->department_code }} - {{ str_replace('Basic Grocery 1 - ', '', $product->department) }}
                                                 </div>
                                                 <div
                                                     class="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-2 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
@@ -982,25 +982,167 @@
                                         </td>
                                         @if (auth()->user()->role === 'super admin')
                                             <td class="whitespace-nowrap px-2 py-2">
-                                                <span
-                                                    class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
-                                                    {{ $product->warehouse_actual_allocation ?? '-' }}
-                                                </span>
+                                                <div class="relative inline-block">
+                                                    @php
+                                                        $wmsActual = $product->warehouse_actual_allocation ?? 0;
+                                                        $casePack = $product->case_pack ?? '';
 
+                                                        // Parse case pack
+                                                        $casePackNumbers = [];
+                                                        if (!empty($casePack)) {
+                                                            $casePackNumbers = array_map('intval', array_filter(array_map('trim', explode('|', $casePack))));
+                                                        }
+                                                        $minCasePack = !empty($casePackNumbers) ? min($casePackNumbers) : 0;
+
+                                                        // Determine color and status
+                                                        if ($wmsActual == 0) {
+                                                            $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                            $status = 'Out of Stock';
+                                                            $statusColor = 'text-red-300';
+                                                        } elseif ($minCasePack > 0 && $wmsActual < $minCasePack) {
+                                                            $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                            $status = 'Below case pack';
+                                                            $statusColor = 'text-red-300';
+                                                        } elseif ($minCasePack > 0 && $wmsActual <= $minCasePack * 10) {
+                                                            $badgeClasses = 'border-orange-200/60 bg-orange-100/60 text-orange-800';
+                                                            $status = 'Low WMS Stocks';
+                                                            $statusColor = 'text-orange-300';
+                                                        } else {
+                                                            $badgeClasses = 'border-green-300/60 bg-green-200/60 text-green-900';
+                                                            $status = 'In Stock';
+                                                            $statusColor = 'text-green-300';
+                                                        }
+                                                    @endphp
+
+                                                    <span class="{{ $badgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                        {{ $wmsActual }}
+                                                    </span>
+                                                    <div
+                                                        class="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 min-w-[120px] -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                        <div class="{{ $statusColor }} text-center font-semibold">{{ $status }}</div>
+                                                    </div>
+                                                </div>
                                             </td>
                                         @endif
 
                                         <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-purple-200/60 bg-purple-100/60 px-3 py-1 text-[10px] font-medium text-purple-800">
-                                                {{ $product->warehouse_allocation ?? '-' }}
-                                            </span>
+                                            <div class="relative inline-block">
+                                                @php
+                                                    $wmsAllocation = $product->warehouse_allocation ?? 0;
+                                                    $casePack = $product->case_pack ?? '';
+
+                                                    // Parse case pack
+                                                    $casePackNumbers = [];
+                                                    if (!empty($casePack)) {
+                                                        $casePackNumbers = array_map('intval', array_filter(array_map('trim', explode('|', $casePack))));
+                                                    }
+                                                    $minCasePack = !empty($casePackNumbers) ? min($casePackNumbers) : 0;
+
+                                                    // Determine color and status
+                                                    if ($wmsAllocation == 0) {
+                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $status = 'Out of Stock';
+                                                        $statusColor = 'text-red-300';
+                                                    } elseif ($minCasePack > 0 && $wmsAllocation < $minCasePack) {
+                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $status = 'Below case pack';
+                                                        $statusColor = 'text-red-300';
+                                                    } elseif ($minCasePack > 0 && $wmsAllocation <= $minCasePack * 10) {
+                                                        $badgeClasses = 'border-orange-200/60 bg-orange-100/60 text-orange-800';
+                                                        $status = 'Low WMS Stocks';
+                                                        $statusColor = 'text-orange-300';
+                                                    } else {
+                                                        $badgeClasses = 'border-green-300/60 bg-green-200/60 text-green-900';
+                                                        $status = 'In Stock';
+                                                        $statusColor = 'text-green-300';
+                                                    }
+                                                @endphp
+
+                                                <span class="{{ $badgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                    {{ $wmsAllocation }}
+                                                </span>
+                                                <div
+                                                    class="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 min-w-[50px] -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    <div class="{{ $statusColor }} font-semibold">{{ $status }}</div>
+                                                </div>
+                                            </div>
                                         </td>
 
 
                                         <td class="px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
-                                                {{ $product->allocation_per_case ?? '-' }}
-                                            </span>
+                                            <div class="relative inline-block">
+                                                @php
+                                                    $current = $product->allocation_per_case ?? 0;
+                                                    $initial = $product->initial_allocation_per_case ?? 0;
+                                                    $casePack = $product->case_pack ?? '';
+
+                                                    // Parse case pack
+                                                    $casePackNumbers = [];
+                                                    if (!empty($casePack)) {
+                                                        $casePackNumbers = array_map('intval', array_filter(array_map('trim', explode('|', $casePack))));
+                                                    }
+                                                    $minCasePack = !empty($casePackNumbers) ? min($casePackNumbers) : 0;
+
+                                                    // Determine color and status
+                                                    if ($current == 0) {
+                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $status = 'Out of Stock';
+                                                        $statusColor = 'text-red-300';
+                                                    } elseif ($minCasePack > 0 && $current < $minCasePack) {
+                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $status = 'Below case pack';
+                                                        $statusColor = 'text-red-300';
+                                                    } elseif ($minCasePack > 0 && $current <= $minCasePack) {
+                                                        $badgeClasses = 'border-orange-200/60 bg-orange-100/60 text-orange-800';
+                                                        $status = 'Low Store Stocks';
+                                                        $statusColor = 'text-orange-300';
+                                                    } else {
+                                                        $badgeClasses = 'border-green-300/60 bg-green-200/60 text-green-900';
+                                                        $status = 'In Stock';
+                                                        $statusColor = 'text-green-300';
+                                                    }
+                                                @endphp
+
+                                                <span class="{{ $badgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                    {{ $current }} / {{ $initial }}
+                                                </span>
+                                                <div
+                                                    class="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 min-w-[280px] -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-1.5 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    <div class="flex items-center space-x-4">
+                                                        <!-- Status -->
+                                                        <div class="{{ $statusColor }} min-w-[50px] font-semibold">{{ $status }}</div>
+
+                                                        <!-- Separator -->
+                                                        <div class="h-4 border-l border-gray-700"></div>
+
+                                                        <!-- Details -->
+                                                        <div class="flex items-center space-x-4">
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-gray-300">Current:</span>
+                                                                <span class="font-semibold">{{ $current }}</span>
+                                                            </div>
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-gray-300">Initial:</span>
+                                                                <span class="font-semibold">{{ $initial }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Timestamp -->
+                                                        @if ($product->updated_at)
+                                                            @php
+                                                                $updatedAt = \Carbon\Carbon::parse($product->updated_at);
+                                                            @endphp
+                                                            <div class="border-l border-gray-700 pl-2 text-[8px] text-gray-300">
+                                                                Last Updated: {{ $updatedAt->format('M d, h:i A') }}
+                                                            </div>
+                                                        @else
+                                                            <div class="border-l border-gray-700 pl-2 text-[8px] text-gray-300">
+                                                                Never updated
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
 
                                         <td class="whitespace-nowrap px-2 py-2">

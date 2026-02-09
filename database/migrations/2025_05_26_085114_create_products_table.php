@@ -27,12 +27,13 @@ return new class extends Migration {
                 $table->string('description');
                 $table->string('department_code')->nullable();
                 $table->string('department')->nullable();
-                
+
 
                 // New columns
                 $table->string('case_pack')->nullable(); // Number of items per case
                 $table->decimal('srp', 10, 2); // Suggested Retail Price
                 $table->integer('allocation_per_case')->nullable();
+                $table->integer('initial_allocation_per_case')->nullable();
                 $table->string('cash_bank_card_scheme', 10)->nullable();
                 $table->string('po15_scheme', 10)->nullable();
                 $table->string('discount_scheme', 10)->nullable();

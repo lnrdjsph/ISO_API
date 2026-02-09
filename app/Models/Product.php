@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,7 @@ class Product extends Model
         'case_pack',
         'srp',
         'allocation_per_case',
+        'initial_allocation_per_case',
         'cash_bank_card_scheme',
         'po15_scheme',
         'discount_scheme',
@@ -101,11 +103,11 @@ class Product extends Model
     public static function bulkUpdateFields(array $ids, array $data)
     {
         $data['updated_at'] = now();
-        
+
         return static::whereIn('id', $ids)->update($data);
     }
 
-        /**
+    /**
      * Relationship with the user who archived the product
      */
     public function archivedBy()
