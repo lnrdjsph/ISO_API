@@ -392,35 +392,12 @@ class OracleTransferController extends Controller
                 if ($containerItem || $container) {
                     Log::info('Order is picking (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
                 }
-
-                return response()->json([
-                    'status' => 'Picking',
-                    'store_order_no' => $storeOrderNo
-                ], 200);
             }
 
-            // Step 2: Now check shipped status - multiple indicators
+            // Step 2: Now check shipped status - ALL indicators required
             $shipped = false;
 
-            // Check container_item/container first
-            Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
-            $containerItem = DB::connection('oracle_wms')
-                ->table('rwms.container_item')
-                ->where('distro_nbr', $storeOrderNo)
-                ->first();
-
-            $container = null;
-
-            // If container_item exists, check container by container_id
-            if ($containerItem) {
-                $container = DB::connection('oracle_wms')
-                    ->table('rwms.container')
-                    ->where('container_id', $containerItem->container_id)
-                    ->whereNotNull('bol_nbr')
-                    ->first();
-            }
-
-            // Multiple indicators of shipped status:
+            // ALL indicators must be present for shipped status:
             // 1. Container_item exists
             // 2. Container has BOL number
             // 3. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
