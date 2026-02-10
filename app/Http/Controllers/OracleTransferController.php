@@ -382,7 +382,6 @@ class OracleTransferController extends Controller
             // 1. Pick_directive exists
             // 2. Container_item exists
             // 3. Container has BOL number
-            // 4. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
             if ($pickDirective || $containerItem || $container) {
                 $status = 'Picking';
 
@@ -392,12 +391,6 @@ class OracleTransferController extends Controller
                 }
                 if ($containerItem || $container) {
                     Log::info('Order is picking (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
-                }
-                if ($tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
-                    Log::info('Order is picking (tsfhead.status is S or C)', [
-                        'store_order_no' => $storeOrderNo,
-                        'tsf_status' => $tsfHead->status
-                    ]);
                 }
 
                 return response()->json([
