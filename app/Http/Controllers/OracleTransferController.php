@@ -353,17 +353,52 @@ class OracleTransferController extends Controller
             Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
             // Step 1.5: Check oracle_wms database - pick_directive table
-            // THIS MUST COME BEFORE ANY SHIPPED CHECKS!
             Log::info('Checking pick_directive table', ['store_order_no' => $storeOrderNo]);
-            $picking = DB::connection('oracle_wms')
+            $pickDirective = DB::connection('oracle_wms')
                 ->table('rwms.pick_directive')
                 ->where('distro_nbr', $storeOrderNo)
-                ->exists();
+                ->first();
 
-            if ($picking) {
-                Log::info('Order is currently being picked', [
-                    'store_order_no' => $storeOrderNo
-                ]);
+            $containerItem = null;
+            $container = null;
+
+            // Check container_item/container
+            Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
+            $containerItem = DB::connection('oracle_wms')
+                ->table('rwms.container_item')
+                ->where('distro_nbr', $storeOrderNo)
+                ->first();
+
+            // If container_item exists, check container by container_id
+            if ($containerItem) {
+                $container = DB::connection('oracle_wms')
+                    ->table('rwms.container')
+                    ->where('container_id', $containerItem->container_id)
+                    ->whereNotNull('bol_nbr')
+                    ->first();
+            }
+
+            // Multiple indicators of picking status (ANY can trigger):
+            // 1. Pick_directive exists
+            // 2. Container_item exists
+            // 3. Container has BOL number
+            // 4. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
+            if ($pickDirective || $containerItem || $container) {
+                $status = 'Picking';
+
+                // Log which indicator triggered
+                if ($pickDirective) {
+                    Log::info('Order is picking (found in pick_directive)', ['store_order_no' => $storeOrderNo]);
+                }
+                if ($containerItem || $container) {
+                    Log::info('Order is picking (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
+                }
+                if ($tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
+                    Log::info('Order is picking (tsfhead.status is S or C)', [
+                        'store_order_no' => $storeOrderNo,
+                        'tsf_status' => $tsfHead->status
+                    ]);
+                }
 
                 return response()->json([
                     'status' => 'Picking',
@@ -396,7 +431,7 @@ class OracleTransferController extends Controller
             // 1. Container_item exists
             // 2. Container has BOL number
             // 3. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
-            if ($containerItem || $container || ($tsfHead && in_array($tsfHead->status, ['S', 'C']))) {
+            if ($containerItem && $container && ($tsfHead && in_array($tsfHead->status, ['S', 'C']))) {
                 $shipped = true;
                 $status = 'Shipped';
 
