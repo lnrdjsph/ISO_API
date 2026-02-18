@@ -852,8 +852,9 @@
                                 }
                             @endphp
                             <thead>
+                                <!-- Main Header Row -->
                                 <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                                    <th class="rounded-tl-xl px-2 py-2 text-left text-sm uppercase">
+                                    <th rowspan="2" class="rounded-tl-xl px-2 py-2 text-left align-middle text-sm uppercase">
                                         <div class="flex items-center">
                                             <input
                                                 type="checkbox"
@@ -861,7 +862,7 @@
                                                 class="h-3 w-3 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
                                         </div>
                                     </th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">
+                                    <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">
                                         <a
                                             href="{{ sortRoute('sku') }}"
                                             class="group flex items-center space-x-2">
@@ -893,7 +894,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">
+                                    <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">
                                         <a
                                             href="{{ sortRoute('description') }}"
                                             class="group flex items-center space-x-2">
@@ -925,19 +926,55 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Sub-Department</th>
+                                    <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">Sub-Department</th>
+                                    <th rowspan="2" class="px-4 py-2 text-left align-middle text-[10px] uppercase">Price</th>
+
+                                    <!-- WMS Header - Conditional based on user role -->
                                     @if (auth()->user()->role === 'super admin')
-                                        <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Actual Inventory</th>
+                                        <!-- For super admin: spans 2 columns -->
+                                        <th colspan="2" class="border-b border-gray-600 px-2 py-1 text-center text-[10px] uppercase">WMS</th>
+                                    @else
+                                        <!-- For regular users: normal single header -->
+                                        <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">WMS Inventory (Pieces)</th>
                                     @endif
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">WMS Inventory (Pieces)</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Store Allocation (Case)</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Case Pack</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">SRP</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">C/BC Scheme</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">PO15 Scheme</th>
-                                    <th class="px-2 py-2 text-left text-[10px] uppercase">Discount Scheme</th>
-                                    <th class="rounded-tr-xl px-2 py-2 text-left text-[10px] uppercase">Freebie SKU</th>
+
+                                    <!-- Store Allocation Header - spans 2 columns (always, for all users) -->
+                                    <th colspan="3" class="border-b border-gray-600 px-2 py-1 text-center text-[10px] uppercase">Store Inventory</th>
+
+                                    <!-- Regular headers that span only 1 column -->
+                                    {{-- <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">Case Pack</th> --}}
+
+                                    <th colspan="3" class="border-b border-gray-600 px-2 py-1 text-center text-[10px] uppercase">Scheme</th>
+                                    <th rowspan="2" class="rounded-tr-xl px-2 py-2 text-left align-middle text-[10px] uppercase">Freebie SKU</th>
                                 </tr>
+
+                                <!-- Sub Header Row - Only show for super admin -->
+                                @if (auth()->user()->role === 'super admin')
+                                    <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                                        <!-- WMS Sub Headers for super admin -->
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Actual Inventory</th>
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Inventory (Pieces)</th>
+
+                                        <!-- Store Allocation Sub Headers (always show for super admin) -->
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Stocks</th>
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Allocation</th>
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Case Pack</th>
+                                        <th class="border-t border-gray-600 py-1 pl-3 text-start text-[9px] font-light uppercase">C / BC</th>
+                                        <th class="border-t border-gray-600 py-1 pl-2 text-start text-[9px] font-light uppercase">PO15%</th>
+                                        <th class="border-t border-gray-600 py-1 pl-2 text-start text-[9px] font-light uppercase">Discount</th>
+                                    </tr>
+                                @else
+                                    <!-- Sub Header Row for non-super admin (only Store Allocation sub headers) -->
+                                    <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                                        <!-- Store Allocation Sub Headers only -->
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Stocks</th>
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Allocation</th>
+                                        <th class="border-t border-gray-600 px-2 py-1 text-start text-[9px] font-light uppercase">Case Pack</th>
+                                        <th class="border-t border-gray-600 py-1 pl-3 text-start text-[9px] font-light uppercase">C / BC</th>
+                                        <th class="border-t border-gray-600 py-1 pl-2 text-start text-[9px] font-light uppercase">PO15%</th>
+                                        <th class="border-t border-gray-600 py-1 pl-2 text-start text-[9px] font-light uppercase">Discount</th>
+                                    </tr>
+                                @endif
                             </thead>
                             <tbody class="divide-y divide-gray-100/60">
                                 @forelse ($products as $product)
@@ -979,6 +1016,11 @@
                                                     {{ $product->department_code }} - {{ $product->department }}
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td class="whitespace-nowrap px-2 py-2">
+                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
+                                                ₱{{ number_format($product->srp ?? 0, 2) }}
+                                            </span>
                                         </td>
                                         @if (auth()->user()->role === 'super admin')
                                             <td class="whitespace-nowrap px-2 py-2">
@@ -1069,11 +1111,11 @@
                                         </td>
 
 
+                                        <!-- Stocks TD -->
                                         <td class="px-2 py-2">
                                             <div class="relative inline-block">
                                                 @php
                                                     $current = $product->allocation_per_case ?? 0;
-                                                    $initial = $product->initial_allocation_per_case ?? 0;
                                                     $casePack = $product->case_pack ?? '';
 
                                                     // Parse case pack
@@ -1083,29 +1125,32 @@
                                                     }
                                                     $minCasePack = !empty($casePackNumbers) ? min($casePackNumbers) : 0;
 
-                                                    // Determine color and status
+                                                    // Determine color and status for STOCKS
                                                     if ($current == 0) {
-                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $stocksBadgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
                                                         $status = 'Out of Stock';
                                                         $statusColor = 'text-red-300';
                                                     } elseif ($minCasePack > 0 && $current < $minCasePack) {
-                                                        $badgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
+                                                        $stocksBadgeClasses = 'border-red-200/60 bg-red-100/60 text-red-800';
                                                         $status = 'Below case pack';
                                                         $statusColor = 'text-red-300';
                                                     } elseif ($minCasePack > 0 && $current <= $minCasePack) {
-                                                        $badgeClasses = 'border-orange-200/60 bg-orange-100/60 text-orange-800';
+                                                        $stocksBadgeClasses = 'border-orange-200/60 bg-orange-100/60 text-orange-800';
                                                         $status = 'Low Store Stocks';
                                                         $statusColor = 'text-orange-300';
                                                     } else {
-                                                        $badgeClasses = 'border-green-300/60 bg-green-200/60 text-green-900';
+                                                        $stocksBadgeClasses = 'border-green-300/60 bg-green-200/60 text-green-900';
                                                         $status = 'In Stock';
                                                         $statusColor = 'text-green-300';
                                                     }
                                                 @endphp
 
-                                                <span class="{{ $badgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
-                                                    {{ $current }} / {{ $initial }}
+                                                <!-- Stocks Badge -->
+                                                <span class="{{ $stocksBadgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                    {{ $current }}
                                                 </span>
+
+                                                <!-- Tooltip -->
                                                 <div
                                                     class="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 min-w-[280px] -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-1.5 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
                                                     <div class="flex items-center space-x-4">
@@ -1118,12 +1163,12 @@
                                                         <!-- Details -->
                                                         <div class="flex items-center space-x-4">
                                                             <div class="flex items-center space-x-1">
-                                                                <span class="text-gray-300">Current:</span>
+                                                                <span class="text-gray-300">Stocks:</span>
                                                                 <span class="font-semibold">{{ $current }}</span>
                                                             </div>
                                                             <div class="flex items-center space-x-1">
-                                                                <span class="text-gray-300">Initial:</span>
-                                                                <span class="font-semibold">{{ $initial }}</span>
+                                                                <span class="text-gray-300">Allocation:</span>
+                                                                <span class="font-semibold">{{ $product->initial_allocation_per_case ?? 0 }}</span>
                                                             </div>
                                                         </div>
 
@@ -1145,6 +1190,22 @@
                                             </div>
                                         </td>
 
+                                        <!-- Allocation TD -->
+                                        <td class="px-2 py-2">
+                                            <div class="relative inline-block">
+                                                @php
+                                                    $initial = $product->initial_allocation_per_case ?? 0;
+                                                    // Allocation badge is always blue
+                                                    $allocationBadgeClasses = 'border-blue-200/60 bg-blue-100/60 text-blue-800';
+                                                @endphp
+
+                                                <!-- Allocation Badge (always blue) -->
+                                                <span class="{{ $allocationBadgeClasses }} inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                    {{ $initial }}
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         <td class="whitespace-nowrap px-2 py-2">
                                             <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ $product->case_pack ?? '-' }}
@@ -1152,11 +1213,7 @@
                                         </td>
 
 
-                                        <td class="whitespace-nowrap px-2 py-2">
-                                            <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
-                                                ₱{{ number_format($product->srp ?? 0, 2) }}
-                                            </span>
-                                        </td>
+
                                         <td class="whitespace-nowrap px-2 py-2">
                                             <span class="inline-flex items-center rounded-full border border-blue-200/60 bg-blue-100/60 px-3 py-1 text-[10px] font-medium text-blue-800">
                                                 {{ !empty($product->cash_bank_card_scheme) ? $product->cash_bank_card_scheme : '-' }}

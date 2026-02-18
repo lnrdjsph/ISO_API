@@ -1041,8 +1041,7 @@ class ProductController extends Controller
 
             $dataLines = array_slice($lines, 1);
             $errors = [];
-            $insertData = [];
-            $updateData = [];
+            $allData = [];
 
             // Get existing SKUs and case_pack
             $existingProducts = DB::table($tableName)
@@ -1151,16 +1150,16 @@ class ProductController extends Controller
                 AND ROWNUM = 1
             ", [$sku]);
 
-                // Build record
+                // Build record - ALL records get created_at
                 $record = [
                     'sku' => $formattedSku,
                     'description' => $description,
                     'department_code' => $oracleData->department_code ?? null,
                     'department' => $oracleData->department_name ?? null,
-                    'allocation_per_case' => intval($allocationPerCase),
-                    'initial_allocation_per_case' => intval($allocationPerCase),
                     'case_pack' => $casePack !== '' ? $casePack : null,
                     'srp' => floatval($srp),
+                    'allocation_per_case' => intval($allocationPerCase),
+                    'initial_allocation_per_case' => intval($allocationPerCase),
                     'cash_bank_card_scheme' => $cashBankCardScheme,
                     'po15_scheme' => $po15Scheme,
                     'discount_scheme' => $discountScheme,
@@ -1168,32 +1167,24 @@ class ProductController extends Controller
                     'archived_at' => null,
                     'archived_by' => null,
                     'archive_reason' => null,
-                    'updated_at' => now(),
                     'created_at' => now(),
+                    'updated_at' => now(),
                 ];
 
-                // ✅ Now decide insert vs update
-                if (isset($existingProducts[$formattedSku])) {
-                    // For updates, remove created_at (don't overwrite original creation date)
-                    unset($record['created_at']);
-                    $updateData[] = $record;
-                } else {
-                    // For inserts, keep created_at
-                    $insertData[] = $record;
-                }
+                // Add to data array
+                $allData[] = $record;
             }
 
-            // ✅ Upsert all valid data
-            $allData = array_merge($insertData, $updateData);
+            // Upsert all valid data
             if (!empty($allData)) {
                 DB::table($tableName)->upsert($allData, ['sku'], [
                     'description',
                     'department_code',
                     'department',
-                    'allocation_per_case',
-                    'initial_allocation_per_case',
                     'case_pack',
                     'srp',
+                    'allocation_per_case',
+                    'initial_allocation_per_case',
                     'cash_bank_card_scheme',
                     'po15_scheme',
                     'discount_scheme',
@@ -1202,11 +1193,23 @@ class ProductController extends Controller
                     'archived_by',
                     'archive_reason',
                     'updated_at'
-                    // Don't include 'created_at' here
+                    // Note: created_at is intentionally NOT in this list
+                    // This means it will only be set on INSERT, not UPDATE
                 ]);
             }
 
-            $summary = "Import complete: " . count($insertData) . " inserted, " . count($updateData) . " updated.";
+            // Calculate insert and update counts for summary
+            $insertCount = 0;
+            $updateCount = 0;
+            foreach ($allData as $record) {
+                if (isset($existingProducts[$record['sku']])) {
+                    $updateCount++;
+                } else {
+                    $insertCount++;
+                }
+            }
+
+            $summary = "Import complete: {$insertCount} inserted, {$updateCount} updated.";
             return redirect()->back()->with('import_success', $summary)->with('import_errors', $errors);
         } catch (\Exception $e) {
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
