@@ -14,7 +14,7 @@ class OracleRibXMLService
     {
         try {
             $tsfNo = $data['tsf_no'];
-            
+
             // 1️⃣ Generate XML
             $filePath = self::generateXML($data);
             $fileName = basename($filePath);
@@ -28,15 +28,21 @@ class OracleRibXMLService
             Log::info("✅ [SFTP] Upload successful: {$fileName}");
 
             // 3️⃣ Run RIB script
-            $scriptResult = self::runRemoteShellScript($fileName);
+            $scriptResult = ['success' => true, 'message' => 'SSH skipped'];
 
-            if (!$scriptResult['success']) {
-                self::deleteFromSFTP($fileName);
-                return [
-                    'success' => false,
-                    'message' => 'File uploaded but RIB processing failed. XML removed from inbound.',
-                    'details' => $scriptResult
-                ];
+            if (env('ORACLE_RIB_EXECUTE_SSH', true)) {
+                $scriptResult = self::runRemoteShellScript($fileName);
+
+                if (!$scriptResult['success']) {
+                    self::deleteFromSFTP($fileName);
+                    return [
+                        'success' => false,
+                        'message' => 'File uploaded but RIB processing failed.',
+                        'details' => $scriptResult
+                    ];
+                }
+            } else {
+                Log::info("⏭️ [SSH] Execution skipped (feature flag disabled)");
             }
 
             // 4️⃣ Check for RIB Message Failures
@@ -57,10 +63,10 @@ class OracleRibXMLService
 
             // 5️⃣ ✨ NEW: Verify TSF was actually created in TSFHEAD table
             $verificationResult = self::verifyTsfInDatabase($tsfNo);
-            
+
             if (!$verificationResult['exists']) {
                 Log::warning("⚠️ [OracleRibXMLService] TSF {$tsfNo} not found in TSFHEAD after processing");
-                
+
                 return [
                     'success' => false,
                     'message' => "TSF {$tsfNo} was not created in Oracle database",
@@ -78,7 +84,6 @@ class OracleRibXMLService
                 'verification' => $verificationResult,
                 'details' => $scriptResult
             ];
-
         } catch (Exception $e) {
             Log::error("🔥 [OracleRibXMLService] " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
@@ -92,10 +97,10 @@ class OracleRibXMLService
     private static function verifyTsfInDatabase(string $tsfNo, int $maxRetries = 3, int $retryDelay = 5): array
     {
         $attempt = 0;
-        
+
         while ($attempt < $maxRetries) {
             $attempt++;
-            
+
             try {
                 // Query TSFHEAD ordered by TSF_NO descending for faster lookup
                 // Note: Using correct Oracle column names (no CREATE_DATETIME in TSFHEAD)
@@ -108,7 +113,7 @@ class OracleRibXMLService
 
                 if ($tsf) {
                     Log::info("✅ [DB VERIFICATION] TSF {$tsfNo} found in TSFHEAD (attempt {$attempt})");
-                    
+
                     return [
                         'exists' => true,
                         'attempt' => $attempt,
@@ -127,11 +132,10 @@ class OracleRibXMLService
                     Log::info("⏳ [DB VERIFICATION] TSF {$tsfNo} not found yet. Retry {$attempt}/{$maxRetries} after {$retryDelay}s...");
                     sleep($retryDelay);
                 }
-
             } catch (Exception $e) {
                 // Log the full error for debugging
                 Log::error("🔥 [DB VERIFICATION ERROR] Attempt {$attempt} for TSF {$tsfNo}: " . $e->getMessage());
-                
+
                 // If this is the last attempt, return user-friendly error
                 if ($attempt >= $maxRetries) {
                     return [
@@ -140,7 +144,7 @@ class OracleRibXMLService
                         'error' => 'Database verification failed. Please check server logs for details.'
                     ];
                 }
-                
+
                 // Wait before retry
                 sleep($retryDelay);
             }
@@ -162,10 +166,19 @@ class OracleRibXMLService
         if (!is_dir(dirname($filePath))) mkdir(dirname($filePath), 0775, true);
 
         $fields = [
-            'tsf_no', 'from_loc_type', 'from_loc',
-            'to_loc_type', 'to_loc', 'delivery_date',
-            'dept', 'freight_code', 'tsf_type',
-            'status', 'user_id', 'comment_desc', 'create_date'
+            'tsf_no',
+            'from_loc_type',
+            'from_loc',
+            'to_loc_type',
+            'to_loc',
+            'delivery_date',
+            'dept',
+            'freight_code',
+            'tsf_type',
+            'status',
+            'user_id',
+            'comment_desc',
+            'create_date'
         ];
 
         $xmlBody = '';
