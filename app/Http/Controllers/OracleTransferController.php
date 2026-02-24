@@ -56,15 +56,16 @@ class OracleTransferController extends Controller
             $grouped = $itemsWithDept->groupBy('department_code');
 
             // 🧮 Generate next TSF number once (base reference)
-            $latest = DB::connection('oracle_rms')->table('tsfhead')
-                ->select('tsf_no')
-                ->whereRaw("REGEXP_LIKE(tsf_no, '^[0-9]+$')")
-                ->orderByRaw('TO_NUMBER(tsf_no) DESC')
-                ->first();
+            $nextTsfBase = DB::transaction(function () {
+                $row = DB::table('local_tsf_lock')->where('id', 1)->lockForUpdate()->first();
+                $nextTsf = $row->last_tsf + 1;
 
-            $nextTsfBase = $latest
-                ? (int)$latest->tsf_no + 1
-                : 3006000001;
+                DB::table('local_tsf_lock')->where('id', 1)->update([
+                    'last_tsf' => $nextTsf
+                ]);
+
+                return $nextTsf;
+            });
 
             $payloads = [];
             $responses = [];

@@ -626,30 +626,29 @@
                             </form>
 
                             <div class="relative w-64">
-                                <!-- Dropdown styled like the search input -->
+                                <!-- Remove default arrow for all browsers -->
                                 <style>
-                                    /* Remove default arrow for Chrome, Safari, Edge */
+                                    /* Remove default arrow for IE */
                                     select::-ms-expand {
                                         display: none;
                                     }
 
-                                    select::-webkit-appearance {
+                                    /* Remove default arrow for Chrome, Safari, Edge */
+                                    select {
                                         -webkit-appearance: none;
-                                    }
-
-                                    select::-moz-appearance {
                                         -moz-appearance: none;
+                                        appearance: none;
                                     }
                                 </style>
 
                                 <select
                                     name="warehouse"
-                                    class="w-full appearance-none rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
+                                    class="{{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'pointer-events-none' : '' }} w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
                                     onchange="
-                                        const params = new URLSearchParams(window.location.search);
-                                        params.set('warehouse', this.value);
-                                        window.location.href = window.location.pathname + '?' + params.toString();
-                                    "
+            const params = new URLSearchParams(window.location.search);
+            params.set('warehouse', this.value);
+            window.location.href = window.location.pathname + '?' + params.toString();
+        "
                                     {{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'disabled' : '' }}>
                                     @foreach ($warehouseMap as $code => $name)
                                         <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
@@ -657,8 +656,6 @@
                                         </option>
                                     @endforeach
                                 </select>
-
-
                             </div>
                         </div>
 
@@ -1248,7 +1245,12 @@
                                 @empty
                                     <tr>
                                         <td
-                                            colspan="12"
+                                            {{-- Adjust colspan to match user role 14 if super admin, 13 if not --}}
+                                            @if (auth()->user()->role === 'super admin') colspan="14"
+                                            @else
+                                                colspan="13" @endif
+
+
                                             class="px-6 py-8 text-center text-gray-500">
                                             No products found.
                                             <div class="mt-4 inline-flex items-center justify-center">
