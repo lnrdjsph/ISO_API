@@ -56,13 +56,39 @@ class OracleTransferController extends Controller
             $grouped = $itemsWithDept->groupBy('department_code');
 
             // 🧮 Generate next TSF number once (base reference)
-            $nextTsfBase = DB::transaction(function () {
-                $row = DB::table('local_tsf_lock')->where('id', 1)->lockForUpdate()->first();
-                $nextTsf = $row->last_tsf + 1;
+            // 1️⃣ Get latest TSF from Oracle RMS BEFORE the transaction
+            //    (cross-DB locks don't participate in your local transaction anyway)
+            $latestRms = DB::connection('oracle_rms')
+                ->table('tsfhead')
+                ->select('tsf_no')
+                ->whereRaw("REGEXP_LIKE(tsf_no, '^[0-9]+$')")
+                ->orderByRaw('TO_NUMBER(tsf_no) DESC')
+                ->first();
 
-                DB::table('local_tsf_lock')->where('id', 1)->update([
-                    'last_tsf' => $nextTsf
-                ]);
+            $latestRmsValue = $latestRms
+                ? (int) $latestRms->tsf_no
+                : 3006000000;
+
+            // 2️⃣ Use local transaction + lock to safely assign the next TSF
+            $nextTsfBase = DB::transaction(function () use ($latestRmsValue) {
+
+                // Lock the local row to prevent race conditions
+                $localRow = DB::table('local_tsf_lock')
+                    ->where('id', 1)
+                    ->lockForUpdate()
+                    ->first();
+
+                $localValue = (int) $localRow->last_tsf;
+
+                // Take the highest between RMS snapshot and local tracker
+                $base = max($latestRmsValue, $localValue);
+
+                $nextTsf = $base + 1;
+
+                // Update local lock with the new value
+                DB::table('local_tsf_lock')
+                    ->where('id', 1)
+                    ->update(['last_tsf' => $nextTsf]);
 
                 return $nextTsf;
             });
@@ -127,7 +153,7 @@ class OracleTransferController extends Controller
                     'tsf_type' => 'EG',
                     'status' => 'A',
                     'user_id' => 'External',
-                    'comment_desc' => "Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
+                    'comment_desc' => "THIS IS FOR MARENGEMS TESTING ONLY !!!! Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
                     'tsf_no' => $nextTsf,
                     'details' => $consolidatedItems,
                 ];
