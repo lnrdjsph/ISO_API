@@ -53,11 +53,11 @@ class OracleTransferController extends Controller
             });
 
             // 🧩 Group items by department_code
+            // Count how many department groups we'll need BEFORE generating TSF numbers
             $grouped = $itemsWithDept->groupBy('department_code');
+            $deptCount = $grouped->count(); // ← know how many we need upfront
 
-            // 🧮 Generate next TSF number once (base reference)
             // 1️⃣ Get latest TSF from Oracle RMS BEFORE the transaction
-            //    (cross-DB locks don't participate in your local transaction anyway)
             $latestRms = DB::connection('oracle_rms')
                 ->table('tsfhead')
                 ->select('tsf_no')
@@ -69,28 +69,25 @@ class OracleTransferController extends Controller
                 ? (int) $latestRms->tsf_no
                 : 3006000000;
 
-            // 2️⃣ Use local transaction + lock to safely assign the next TSF
-            $nextTsfBase = DB::transaction(function () use ($latestRmsValue) {
+            // 2️⃣ Reserve a BLOCK of TSF numbers atomically
+            $nextTsfBase = DB::transaction(function () use ($latestRmsValue, $deptCount) {
 
-                // Lock the local row to prevent race conditions
                 $localRow = DB::table('local_tsf_lock')
                     ->where('id', 1)
                     ->lockForUpdate()
                     ->first();
 
                 $localValue = (int) $localRow->last_tsf;
-
-                // Take the highest between RMS snapshot and local tracker
                 $base = max($latestRmsValue, $localValue);
 
-                $nextTsf = $base + 1;
+                $firstTsf = $base + 1;
+                $lastTsf  = $base + $deptCount; // reserve the whole block
 
-                // Update local lock with the new value
                 DB::table('local_tsf_lock')
                     ->where('id', 1)
-                    ->update(['last_tsf' => $nextTsf]);
+                    ->update(['last_tsf' => $lastTsf]); // ← advance by full count
 
-                return $nextTsf;
+                return $firstTsf;
             });
 
             $payloads = [];
