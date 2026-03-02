@@ -147,7 +147,7 @@ class OracleTransferController extends Controller
                     'delivery_date' => $order->delivery_date,
                     'dept' => $dept,
                     'freight_code' => 'N',
-                    'tsf_type' => 'EG',
+                    'tsf_type' => 'AIP',
                     'status' => 'A',
                     'user_id' => 'External',
                     'comment_desc' => "THIS IS FOR MARENGEMS TESTING ONLY !!!! Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
