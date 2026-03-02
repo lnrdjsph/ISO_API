@@ -26,7 +26,6 @@ class DashboardController extends Controller
             if ($user->user_location && isset($storeMapping[$user->user_location])) {
                 $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
             }
-
         } elseif ($user->role !== 'super admin') {
 
             // Regular user = single store only

@@ -1222,7 +1222,8 @@
                                                     <option value="for approval">Request For Approval</option>
                                                 @endif
 
-                                                @if ($order->order_status === 'approved')
+                                                {{-- approved order status and all item status is received --}}
+                                                @if ($order->order_status === 'approved' && $order->items->where('remarks', '!=', 'Item Cancelled')->every(fn($item) => $item->status === 'Received'))
                                                     <option value="complete">Complete Order</option>
                                                 @endif
 
