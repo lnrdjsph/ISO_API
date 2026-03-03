@@ -690,8 +690,40 @@
                         </ul>
                     </li>
 
+                    <!-- User Guide -->
+                    {{-- <li class="{{ request()->routeIs('user-guide.*') ? 'active' : '' }} group relative">
+
+                        <a href="{{ route('user-guide.personnel') }}"
+                            class="nav-item {{ request()->routeIs('user-guide.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                            <svg
+                                class="h-5 w-5 flex-shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span class="nav-text ml-3">User Guide</span>
+                            <div class="tooltip">User Guide</div>
+                        </a>
+
+                        <ul class="flyout-menu absolute top-0 z-50 hidden w-56 rounded-lg border border-gray-200 bg-white shadow-lg">
+                            <li>
+
+                                <a href="{{ route('user-guide.personnel') }}"
+                                    class="sub-item {{ request()->routeIs('user-guide.personnel') ? 'active' : '' }} block px-4 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                    Store Personnel Guide
+                                </a>
+                            </li>
+
+                        </ul>
+                    </li> --}}
+
                     @auth
-                        @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel' ]))
+                        @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel']))
                             <!-- Products Group -->
                             <li class="{{ request()->routeIs('products*') ? 'active' : '' }} group relative">
                                 @if (request()->routeIs('products*'))

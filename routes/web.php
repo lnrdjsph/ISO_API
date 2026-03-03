@@ -23,7 +23,7 @@ use App\Http\Controllers\OracleTransferController;
 Route::middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard'); // protected home
 
-    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard.view');
+    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard.view');
 
     Route::post('/logout', function () {
         Auth::logout();
@@ -78,7 +78,6 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::get('/rof', [FormsController::class, 'rof'])->name('rof');
         Route::post('/rof', [FormsController::class, 'rof_submit'])->name('rof_submit');
         Route::post('/card-info', [FormsController::class, 'getCardInfo'])->name('get_card_info');
-
     });
 
     // Products Routes
@@ -106,7 +105,6 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
             Route::get('/validate', [ProductController::class, 'validateCsv'])->name('validate');
         });
     });
-
 });
 
 use App\Http\Controllers\UserController;
@@ -123,6 +121,7 @@ Route::prefix('/users')->name('users.')->group(function () {
 
 
 use App\Http\Controllers\InventoryExportController;
+
 Route::prefix('others')->name('others.')->group(function () {
     Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
         ->name('inventory.form');
@@ -136,17 +135,17 @@ Route::prefix('update-allocations')->group(function () {
     Route::post('/', [ProductController::class, 'wmsUpdate'])
         ->name('update.allocations')
         ->middleware(['web', 'auth']);
-    
+
     Route::get('/status', [ProductController::class, 'wmsStatus'])
         ->name('update.allocations.status')
         ->middleware(['web', 'auth']);
 });
 
-    
+
 Route::prefix('reports')->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
-        
+
     Route::get('/payments', [ReportsController::class, 'paymentReport'])
         ->name('reports.payments');
 
@@ -165,7 +164,7 @@ Route::prefix('reports')->group(function () {
     // future reports
     // Route::get('/customers', [ReportsController::class, 'customerReport'])
     //     ->name('reports.customers');
-    
+
     // Route::get('/products', [ReportsController::class, 'productReport'])
     //     ->name('reports.products');
 });
@@ -185,3 +184,8 @@ Route::view('/403', 'errors.403');
 Route::get('/check-session', function () {
     return response()->json(['authenticated' => Auth::check()]);
 })->name('check.session');
+
+Route::prefix('user-guide')->name('user-guide.')->middleware(['auth', 'session.expired'])->group(function () {
+    Route::get('/personnel', fn() => view('user_guide.personnel'))->name('personnel');
+    // Route::get('/manager', fn () => view('user_guide.manager'))->name('manager');
+});
