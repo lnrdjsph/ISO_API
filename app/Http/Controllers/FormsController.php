@@ -782,7 +782,13 @@ class FormsController extends Controller
 
             $user = DB::connection('oracle_mbc')->table('VDC_P_CRD.CRD_DM_CRD AS CRD')
                 ->leftJoin('VDC_P_CRD.CMN_DM_CNTC_DET AS CNTC', 'CRD.CUST_SERIAL_NO', '=', 'CNTC.CNCT_REF')
-                ->select('CRD.NAME_ON_CARD', 'CNTC.CNCT_LINE_TYP', 'CNTC.CNCT_VAL')
+                ->leftJoin('VDC_P_CRD.CRD_DM_CUST AS CUST', 'CRD.CUST_SERIAL_NO', '=', 'CUST.CUST_SERIAL_NO')
+                ->select(
+                    DB::raw("CUST.FIRST_NAME || ' ' || CUST.LAST_NAME AS NAME_ON_CARD"),
+                    'CRD.CARD_NO',
+                    'CNTC.CNCT_LINE_TYP',
+                    'CNTC.CNCT_VAL'
+                )
                 ->where('CRD.CARD_NO', $cardNo)
                 ->where('CRD.CARD_TYP', 'LLTY')
                 ->whereIn('CRD.PRODUCT_TYP', ['INST_CUST_CARD', 'INST_LOY'])
@@ -807,7 +813,6 @@ class FormsController extends Controller
                             $email = $itemArr['cnct_val'] ?? null;
                         }
 
-                        // Stop early if both found
                         if ($mobile && $email) {
                             break;
                         }
@@ -822,7 +827,6 @@ class FormsController extends Controller
                     ];
                 })
                 ->first();
-
 
             if (!$user) {
                 return response()->json([
