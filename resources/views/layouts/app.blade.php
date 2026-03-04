@@ -15,7 +15,7 @@
     <meta
         name="theme-color"
         content="darkblue" />
-    <title>ISO B2B Ordering System</title>
+    <title>ISO B2BC Ordering System</title>
 
     <link
         rel="icon"
@@ -55,7 +55,7 @@
 
         /* Sidebar container — truly fixed, out of document flow */
         #sidebar {
-            transition: width 0.05s ease-in-out, min-width 0.05s ease-in-out, max-width 0.05s ease-in-out, transform 0.05s ease-in-out;
+            transition: width 0.10s ease-in-out, min-width 0.10s ease-in-out, max-width 0.10s ease-in-out, transform 0.10s ease-in-out;
             flex-shrink: 0;
             position: fixed;
             top: 0;
@@ -74,7 +74,7 @@
 
         /* Main content offsets for zoomed sidebar width (13rem * 0.75 = 9.75rem, 4.5rem * 0.75 = 3.375rem) */
         .main-container {
-            transition: margin-left 0.05s ease-in-out;
+            transition: margin-left 0.10s ease-in-out;
         }
 
         @media (min-width: 768px) {
@@ -167,7 +167,7 @@
 
         /* Hide submenus when collapsed — animated */
         .submenu {
-            transition: opacity 0..05s ease, max-height 0.05s ease;
+            transition: opacity 0..05s ease, max-height 0.10s ease;
             max-height: 20rem;
             opacity: 1;
             overflow: hidden;
@@ -197,7 +197,7 @@
             color: #1D4ED8;
             border-radius: 0.8rem;
             width: 11.5rem;
-            transition: width 0.05s ease-in-out;
+            transition: width 0.10s ease-in-out;
         }
 
         .sidebar-collapsed .group.active {
@@ -229,7 +229,7 @@
             width: 14rem;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.05s ease;
+            transition: opacity 0.10s ease;
             border-radius: 0.5rem;
             border: 1px solid rgb(229, 231, 235);
             background: white;
@@ -409,7 +409,7 @@
             background: rgba(0, 0, 0, .5);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.05s ease;
+            transition: opacity 0.10s ease;
         }
 
         #mobile-overlay.active {
@@ -475,7 +475,7 @@
                             src="{{ asset('images/MarengEms_Logo.png') }}"
                             alt="Logo"
                             class="h-10 w-10 flex-shrink-0 rounded-lg">
-                        <span class="logo-text text-lg font-bold text-gray-800">ISO B2B</span>
+                        <span class="logo-text text-lg font-bold text-gray-800">ISO B2BC</span>
                     </div>
                 </div>
             </a>
