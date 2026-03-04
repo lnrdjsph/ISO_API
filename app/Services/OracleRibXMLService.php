@@ -96,12 +96,17 @@ class OracleRibXMLService
      */
     private static function verifyTsfInDatabase(string $tsfNo, int $maxRetries = 3, int $retryDelay = 5): array
     {
+
+        sleep(5);
         $attempt = 0;
 
         while ($attempt < $maxRetries) {
             $attempt++;
 
             try {
+                $connection = DB::connection('oracle_rms');
+                Log::info("🔌 [DB CONNECTION] Database: " . $connection->getDatabaseName());
+
                 // Query TSFHEAD ordered by TSF_NO descending for faster lookup
                 // Note: Using correct Oracle column names (no CREATE_DATETIME in TSFHEAD)
                 $tsf = DB::connection('oracle_rms')

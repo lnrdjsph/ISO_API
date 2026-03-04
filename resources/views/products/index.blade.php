@@ -659,168 +659,128 @@
                             </div>
                         </div>
 
+                        {{-- if personnel cant see bulk and action use if else server side --}}
 
-                        <!-- Bulk Actions Bar -->
-                        <div
-                            id="bulk-actions-bar"
-                            class="hidden">
-                            <div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600">
-                                <div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-xs text-white">
+                        @if (strpos(auth()->user()->role ?? '', 'personnel') === false)
+                            <!-- Bulk Actions Bar -->
+                            <div
+                                id="bulk-actions-bar"
+                                class="hidden">
+                                <div class="w-full rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600">
+                                    <div class="flex items-center justify-between overflow-x-auto whitespace-nowrap px-4 py-2 text-xs text-white">
 
-                                    <!-- Count -->
-                                    <div class="flex items-center gap-2">
-                                        <svg
-                                            class="h-5 w-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <!-- Count -->
+                                        <div class="flex items-center gap-2">
+                                            <svg
+                                                class="h-5 w-5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span
+                                                id="selected-count"
+                                                class="font-semibold">0</span>
+                                            <span>items</span>
+                                        </div>
+
+                                        <!-- Buttons -->
+                                        <div class="flex items-center gap-3">
+                                            <button
+                                                id="bulk-archive-btn"
+                                                class="flex items-center rounded-xl px-3 font-medium hover:underline">
+                                                <svg
+                                                    class="mr-1 h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Archive
+                                            </button>
+
+                                            <button
+                                                id="clear-selection-btn"
+                                                class="flex items-center rounded-xl px-2 hover:underline">
+                                                <svg
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Action Buttons -->
+                            <div class="py-auto flex flex-shrink-0 items-center">
+                                <!-- Export -->
+                                <a href="{{ route('products.export', request()->query()) }}"
+                                    class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
+                                    </svg>
+
+                                    <span class="text-sm font-medium">Export</span>
+                                </a>
+
+                                <!-- Add Products -->
+                                <div class="relative inline-flex items-center">
+                                    <div
+                                        class="flex cursor-pointer items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
+
+                                        <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
                                         </svg>
-                                        <span
-                                            id="selected-count"
-                                            class="font-semibold">0</span>
-                                        <span>items</span>
-                                    </div>
 
-                                    <!-- Buttons -->
-                                    <div class="flex items-center gap-3">
-                                        {{-- <button
-																						id="bulk-edit-btn"
-																						class="flex items-center rounded-xl px-3 font-medium hover:underline"
-																				>
-																						<svg
-																								class="mr-1 h-4 w-4"
-																								fill="none"
-																								stroke="currentColor"
-																								viewBox="0 0 24 24"
-																						>
-																								<path
-																										stroke-linecap="round"
-																										stroke-linejoin="round"
-																										stroke-width="2"
-																										d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-																								/>
-																						</svg>
-																						Bulk Edit
-																				</button> --}}
+                                        <span class="text-sm font-medium">Add Products</span>
 
-                                        <button
-                                            id="bulk-archive-btn"
-                                            class="flex items-center rounded-xl px-3 font-medium hover:underline">
-                                            <svg
-                                                class="mr-1 h-4 w-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M5 8l4 4 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Archive
-                                        </button>
-
-                                        <button
-                                            id="clear-selection-btn"
-                                            class="flex items-center rounded-xl px-2 hover:underline">
-                                            <svg
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
+                                        <select
+                                            id="no-products-action"
+                                            onchange="if(this.value) window.location.href=this.value"
+                                            class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+                                            <option value="" selected disabled>Select Action</option>
+                                            <option value="{{ route('products.create') }}">Add New Product</option>
+                                            <option value="{{ route('products.import.show') }}">Import Products</option>
+                                        </select>
                                     </div>
                                 </div>
+
+                                <!-- Update Allocations -->
+                                <form id="updateAllocationsForm" action="{{ route('update.allocations') }}" method="POST">
+                                    @csrf
+                                    <button
+                                        type="submit"
+                                        id="updateButton"
+                                        class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50">
+
+                                        <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0112-3.464M20 15a8 8 0 01-12 3.464" />
+                                        </svg>
+
+                                        <span id="buttonText" class="text-sm font-medium">Update WMS Inventory</span>
+                                    </button>
+                                </form>
                             </div>
-                        </div>
-                        <!-- Action Buttons -->
-                        <div class="py-auto flex flex-shrink-0 items-center">
-                            <!-- Filter -->
-                            {{-- <button class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-gray-100/60 hover:text-gray-800">
-                                <svg
-                                    class="mr-2 h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                </svg>
-                                Filter
-                            </button> --}}
-
-
-
-                            <!-- Export -->
-                            <a href="{{ route('products.export', request()->query()) }}"
-                                class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
-
-                                <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <!-- Arrow -->
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4" />
-                                    <!-- Horizontal line at bottom -->
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
-                                </svg>
-
-
-                                <span class="text-sm font-medium">Export</span>
-                            </a>
-
-                            <!-- Add Products -->
-                            <div class="relative inline-flex items-center">
-                                <div
-                                    class="flex cursor-pointer items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800">
-
-                                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v16m8-8H4" />
-                                    </svg>
-
-                                    <span class="text-sm font-medium">Add Products</span>
-
-                                    <select
-                                        id="no-products-action"
-                                        onchange="if(this.value) window.location.href=this.value"
-                                        class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
-                                        <option value="" selected disabled>Select Action</option>
-                                        <option value="{{ route('products.create') }}">Add New Product</option>
-                                        <option value="{{ route('products.import.show') }}">Import Products</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <!-- Update Allocations -->
-                            <form id="updateAllocationsForm" action="{{ route('update.allocations') }}" method="POST">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    id="updateButton"
-                                    class="flex items-center rounded-xl px-4 py-2 text-gray-600 transition hover:bg-blue-100/60 hover:text-gray-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-
-                                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0112-3.464M20 15a8 8 0 01-12 3.464" />
-                                    </svg>
-
-
-
-                                    <span id="buttonText" class="text-sm font-medium">Update WMS Inventory</span>
-                                </button>
-                            </form>
-
-                        </div>
+                        @endif
 
                     </div>
                 </div>
@@ -851,14 +811,18 @@
                             <thead>
                                 <!-- Main Header Row -->
                                 <tr class="bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                                    <th rowspan="2" class="rounded-tl-xl px-2 py-2 text-left align-middle text-sm uppercase">
-                                        <div class="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                id="select-all"
-                                                class="h-3 w-3 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
-                                        </div>
-                                    </th>
+                                    @if (strpos(auth()->user()->role ?? '', 'personnel') === false)
+                                        <th rowspan="2" class="rounded-tl-xl px-2 py-2 text-left align-middle text-sm uppercase">
+                                            <div class="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id="select-all"
+                                                    class="h-3 w-3 rounded border-gray-300 bg-gray-100 focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                        </th>
+                                    @else
+                                        <th rowspan="2" class="rounded-tl-xl pl-1 text-left align-middle text-sm uppercase">#</th>
+                                    @endif
                                     <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">
                                         <a
                                             href="{{ sortRoute('sku') }}"
@@ -978,14 +942,21 @@
                                     <tr
                                         class="animate-fade-in product-row group opacity-0 transition-all duration-200 hover:bg-indigo-100/60"
                                         data-product-id="{{ $product->id }}">
-                                        <td class="whitespace-nowrap px-2 py-2">
-                                            <input
-                                                type="checkbox"
-                                                class="product-checkbox h-3 w-3 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                                                value="{{ $product->id }}"
-                                                id="product-{{ $product->id }}">
-                                        </td>
-                                        <td class="whitespace-nowrap px-2 py-2">
+                                        @if (strpos(auth()->user()->role ?? '', 'personnel') === false)
+                                            <td class="whitespace-nowrap px-2 py-2">
+                                                <input
+                                                    type="checkbox"
+                                                    class="product-checkbox h-3 w-3 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                                    value="{{ $product->id }}"
+                                                    id="product-{{ $product->id }}">
+                                            </td>
+                                            {{-- else iterating numbers --}}
+                                        @else
+                                            <td class="whitespace-nowrap px-2 py-2 text-center text-[10px] text-gray-500">
+                                                {{ $loop->iteration }}
+                                            </td>
+                                        @endif
+                                        <td class="whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <span class="font-mono text-[10px] font-semibold text-gray-800">
                                                     {{ $product->sku }}
