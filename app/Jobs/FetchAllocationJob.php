@@ -44,8 +44,8 @@ class FetchAllocationJob implements ShouldQueue
 
         try {
             // Purge old Oracle connection to force a fresh PDO/OCI8 connection
-            DB::purge('oracle_wms');
-            $oracle = DB::connection('oracle_wms');
+            DB::purge('oracle_rms'); // 🔥 CHANGED: from oracle_wms to oracle_rms
+            $oracle = DB::connection('oracle_rms'); // 🔥 CHANGED: from oracle_wms to oracle_rms
             $oracle->getPdo(); // initialize OCI8
             $oracle->select("SELECT 1 FROM DUAL"); // dummy query to force connection
 
@@ -59,32 +59,60 @@ class FetchAllocationJob implements ShouldQueue
                 // ignore if not supported
             }
 
-            // Fetch allocation from Oracle
+            // 🔥 NEW: Fetch allocation from Oracle RMS using ITEM_LOC_SOH
             $allocationValue = 0;
             $skuFoundInOracle = false;
+            $physicalStock = 0;
+            $reservedQty = 0;
 
             try {
+                // Check if TSF_RESERVED_QTY exists in ITEM_LOC_SOH
                 $oracleRows = $oracle->select("
-                    SELECT ci.item_id,
-                           SUM(CASE WHEN c.container_status NOT IN ('X','T','S','D','A') 
-                                    THEN ci.unit_qty ELSE 0 END) AS total_qty
-                    FROM rwms.container_item ci
-                    JOIN rwms.container c
-                      ON ci.facility_id = c.facility_id
-                     AND ci.container_id = c.container_id
-                    WHERE ci.facility_id = ?
-                      AND ci.item_id = ?
-                    GROUP BY ci.item_id
-                ", [$this->facilityId, $this->sku]);
+                    SELECT 
+                        ITEM AS item_id,
+                        STOCK_ON_HAND AS physical_stock,
+                        NVL(TSF_RESERVED_QTY, 0) AS reserved_qty,
+                        (STOCK_ON_HAND - NVL(TSF_RESERVED_QTY, 0)) AS available_qty
+                    FROM ITEM_LOC_SOH
+                    WHERE LOC = ?
+                        AND ITEM = ?
+                ", [$this->warehouseCode, $this->sku]); // 🔥 Use warehouseCode directly
 
                 if (!empty($oracleRows)) {
                     $skuFoundInOracle = true;
-                    $allocationValue = (int) $oracleRows[0]->total_qty;
+                    $row = $oracleRows[0];
+                    $physicalStock = (int) $row->physical_stock;
+                    $reservedQty = (int) $row->reserved_qty;
+                    $allocationValue = (int) $row->available_qty; // This is STOCK_ON_HAND - TSF_RESERVED_QTY
                 }
+
+                // If no row found, SKU might not exist in this location
+                // allocationValue stays 0
+
             } catch (\Exception $e) {
-                Log::warning("[FetchAllocationJob] Oracle query failed for SKU {$this->sku}: " . $e->getMessage());
-                $this->markAsFailed($failedKey, $processedKey);
-                return;
+                // Check if error is because TSF_RESERVED_QTY column doesn't exist
+                if (strpos($e->getMessage(), 'TSF_RESERVED_QTY') !== false) {
+                    Log::warning("[FetchAllocationJob] TSF_RESERVED_QTY column not found, falling back to STOCK_ON_HAND only");
+
+                    // Fallback query without TSF_RESERVED_QTY
+                    $oracleRows = $oracle->select("
+                        SELECT 
+                            ITEM AS item_id,
+                            STOCK_ON_HAND AS available_qty
+                        FROM ITEM_LOC_SOH
+                        WHERE LOC = ?
+                            AND ITEM = ?
+                    ", [$this->warehouseCode, $this->sku]);
+
+                    if (!empty($oracleRows)) {
+                        $skuFoundInOracle = true;
+                        $allocationValue = (int) $oracleRows[0]->available_qty;
+                    }
+                } else {
+                    Log::warning("[FetchAllocationJob] Oracle query failed for SKU {$this->sku}: " . $e->getMessage());
+                    $this->markAsFailed($failedKey, $processedKey);
+                    return;
+                }
             }
 
             // Update allocation in MySQL
@@ -107,32 +135,8 @@ class FetchAllocationJob implements ShouldQueue
                 return;
             }
 
-            // Update case pack data (optional)
-            // try {
-            //     $caseRows = $oracle->select("
-            //         SELECT item_id, unit_qty
-            //         FROM (
-            //             SELECT ci.item_id, ci.unit_qty,
-            //                    ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) rn
-            //             FROM rwms.container_item ci
-            //             WHERE ci.facility_id = ?
-            //               AND ci.item_id = ?
-            //         )
-            //         WHERE rn <= 5
-            //     ", [$this->facilityId, $this->sku]);
-
-            //     if (!empty($caseRows)) {
-            //         $casePacks = array_unique(array_map(fn($row) => $row->unit_qty, $caseRows));
-            //         $mysql->table($this->productTable)
-            //             ->where('sku', $this->sku)
-            //             ->update([
-            //                 'case_pack' => implode(' | ', $casePacks),
-            //                 'updated_at' => now()
-            //             ]);
-            //     }
-            // } catch (\Exception $e) {
-            //     Log::debug("[FetchAllocationJob] Case pack skipped for SKU {$this->sku}: {$e->getMessage()}");
-            // }
+            // 🔥 OPTIONAL: Remove case pack logic if not needed
+            // If you still need case pack data from WMS, keep it separate
 
             // SUCCESS: mark as processed
             Cache::increment($processedKey);
@@ -140,11 +144,11 @@ class FetchAllocationJob implements ShouldQueue
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             if (!$skuFoundInOracle) {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: NOT FOUND | Set to 0 | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: NOT IN RMS | Set to 0 | {$duration}ms");
             } elseif ($allocationValue > 0) {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FOUND | Allocation: {$allocationValue} | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: {$allocationValue} | {$duration}ms");
             } else {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FOUND (ZERO STOCK) | Allocation: 0 | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: ZERO AVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | {$duration}ms");
             }
         } catch (\Throwable $e) {
             Log::error("[FetchAllocationJob] ✗ Unexpected error for SKU {$this->sku} | WH: {$this->warehouseCode}: " . $e->getMessage());
