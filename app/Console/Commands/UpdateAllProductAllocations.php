@@ -336,7 +336,7 @@ class UpdateAllProductAllocations extends Command
                     $inventoryRows = DB::connection('oracle_rms')->select("
                         SELECT /*+ PARALLEL(4) */ 
                             ITEM AS item_id,
-                            (STOCK_ON_HAND - NVL(TSF_RESERVED_QTY, 0)) AS available_qty
+                            (STOCK_ON_HAND - TSF_RESERVED_QTY) AS available_qty  // No NVL needed
                         FROM ITEM_LOC_SOH
                         WHERE LOC = '{$warehouseCode}'
                             AND ITEM IN ({$inClause})
@@ -351,7 +351,7 @@ class UpdateAllProductAllocations extends Command
 
                     $resultCount = 0;
                     foreach ($inventoryRows as $row) {
-                        $allocations[$row->item_id] = (int) $row->total_qty;
+                        $allocations[$row->item_id] = (int) $row->available_qty;  // ✓ FIXED: Use correct alias
                         $resultCount++;
                     }
 

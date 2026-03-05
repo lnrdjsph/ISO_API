@@ -60,62 +60,40 @@ class FetchAllocationJob implements ShouldQueue
             $availableQty = 0;
 
             try {
-                // Check if TSF_RESERVED_QTY column exists first
-                $columnCheck = $oracle->select("
-                    SELECT COUNT(*) as column_exists
-                    FROM USER_TAB_COLUMNS
-                    WHERE TABLE_NAME = 'ITEM_LOC_SOH'
-                    AND COLUMN_NAME = 'TSF_RESERVED_QTY'
-                ");
-
-                $hasTsfReservedColumn = ($columnCheck[0]->column_exists ?? 0) > 0;
-
-                if ($hasTsfReservedColumn) {
-                    // 🔥 CORRECT: Use NVL to handle NULLs and properly subtract
-                    $oracleRows = $oracle->select("
-                        SELECT 
-                            ITEM AS item_id,
-                            STOCK_ON_HAND AS physical_stock,
-                            NVL(TSF_RESERVED_QTY, 0) AS reserved_qty,
-                            (STOCK_ON_HAND - NVL(TSF_RESERVED_QTY, 0)) AS available_qty
-                        FROM ITEM_LOC_SOH
-                        WHERE LOC = ?
-                            AND ITEM = ?
-                    ", [$this->warehouseCode, $this->sku]);
-                } else {
-                    // Fallback if column doesn't exist
-                    Log::warning("[FetchAllocationJob] TSF_RESERVED_QTY column not found for SKU {$this->sku}");
-                    $oracleRows = $oracle->select("
-                        SELECT 
-                            ITEM AS item_id,
-                            STOCK_ON_HAND AS available_qty,
-                            STOCK_ON_HAND AS physical_stock,
-                            0 AS reserved_qty
-                        FROM ITEM_LOC_SOH
-                        WHERE LOC = ?
-                            AND ITEM = ?
-                    ", [$this->warehouseCode, $this->sku]);
-                }
+                // 🔥 FIXED: Properly handle TSF_RESERVED_QTY with explicit casting
+                $oracleRows = $oracle->select("
+        SELECT 
+            ITEM AS item_id,
+            STOCK_ON_HAND AS physical_stock,
+            -- Force numeric conversion and handle NULL
+            COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0) AS reserved_qty,
+            -- Calculate available quantity
+            (STOCK_ON_HAND - COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0)) AS available_qty
+        FROM ITEM_LOC_SOH
+        WHERE LOC = ?
+            AND ITEM = ?
+    ", [$this->warehouseCode, $this->sku]);
 
                 if (!empty($oracleRows)) {
                     $skuFoundInOracle = true;
                     $row = $oracleRows[0];
 
-                    // Cast to integers to ensure proper calculation
-                    $physicalStock = (int) ($row->physical_stock ?? 0);
-                    $reservedQty = (int) ($row->reserved_qty ?? 0);
+                    $physicalStock = (int) $row->physical_stock;
+                    $reservedQty = (int) $row->reserved_qty;
+                    $availableQty = (int) $row->available_qty;
 
-                    // 🔥 CRITICAL: Calculate available quantity
-                    $availableQty = $physicalStock - $reservedQty;
-
-                    // Ensure we don't go negative
+                    // Ensure non-negative
                     $allocationValue = max(0, $availableQty);
 
-                    // Log the breakdown for debugging
-                    Log::debug("[FetchAllocationJob] SKU {$this->sku} | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: {$allocationValue}");
+                    // Log with details
+                    Log::info("[FetchAllocationJob] SKU {$this->sku} | WH: {$this->warehouseCode} | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: {$allocationValue}");
+                } else {
+                    // SKU not found in this location
+                    $allocationValue = 0;
+                    Log::info("[FetchAllocationJob] SKU {$this->sku} | WH: {$this->warehouseCode} | NOT FOUND in ITEM_LOC_SOH");
                 }
             } catch (\Exception $e) {
-                Log::warning("[FetchAllocationJob] Oracle query failed for SKU {$this->sku}: " . $e->getMessage());
+                Log::error("[FetchAllocationJob] Query failed for SKU {$this->sku}: " . $e->getMessage());
                 $this->markAsFailed($failedKey, $processedKey);
                 return;
             }
