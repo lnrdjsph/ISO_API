@@ -117,15 +117,15 @@ class FetchAllocationJob implements ShouldQueue
                     ]
                 );
 
-                // Also update the product table if needed
-                if ($this->productTable) {
-                    $mysql->table($this->productTable)
-                        ->where('sku', $this->sku)
-                        ->update([
-                            'wms_available' => $allocationValue,
-                            'updated_at' => now()
-                        ]);
-                }
+                // // Also update the product table if needed
+                // if ($this->productTable) {
+                //     $mysql->table($this->productTable)
+                //         ->where('sku', $this->sku)
+                //         ->update([
+                //             'wms_available' => $allocationValue,
+                //             'updated_at' => now()
+                //         ]);
+                // }
             } catch (\Exception $e) {
                 Log::warning("[FetchAllocationJob] Failed to update allocation for SKU {$this->sku}: " . $e->getMessage());
                 $this->markAsFailed($failedKey, $processedKey);
