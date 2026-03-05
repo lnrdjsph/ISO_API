@@ -171,7 +171,9 @@ class UpdateAllProductAllocations extends Command
 
         // Dispatch async jobs
         foreach ($allSkus as $sku) {
-            FetchAllocationJob::dispatch($sku, $facilityId, $warehouseCode)
+
+            $tableName = "products_{$stores[0]}";
+            FetchAllocationJob::dispatch($sku, $facilityId, $warehouseCode, $tableName)
                 ->onQueue('wms');
         }
 
