@@ -42,37 +42,24 @@ class FetchAllocationJob implements ShouldQueue
         $processedKey = "wms_processed_{$this->warehouseCode}";
         $failedKey = "wms_failed_{$this->warehouseCode}";
 
-        try {
-            // Purge old Oracle connection
-            DB::purge('oracle_rms');
-            $oracle = DB::connection('oracle_rms');
-            $oracle->getPdo();
-            $oracle->select("SELECT 1 FROM DUAL");
-
-            $mysql = DB::connection('mysql');
-            $mysql->getPdo();
-
-            // 🔥 FIXED: Properly subtract TSF_RESERVED_QTY
-            $allocationValue = 0;
-            $skuFoundInOracle = false;
-            $physicalStock = 0;
-            $reservedQty = 0;
-            $availableQty = 0;
-
             try {
-                // 🔥 FIXED: Properly handle TSF_RESERVED_QTY with explicit casting
+                // 🔥 FIXED: Subtract both TSF_RESERVED_QTY and NON_SELLABLE_QTY
                 $oracleRows = $oracle->select("
-        SELECT 
-            ITEM AS item_id,
-            STOCK_ON_HAND AS physical_stock,
-            -- Force numeric conversion and handle NULL
-            COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0) AS reserved_qty,
-            -- Calculate available quantity
-            (STOCK_ON_HAND - COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0)) AS available_qty
-        FROM ITEM_LOC_SOH
-        WHERE LOC = ?
-            AND ITEM = ?
-    ", [$this->warehouseCode, $this->sku]);
+                    SELECT 
+                        ITEM AS item_id,
+                        STOCK_ON_HAND AS physical_stock,
+                        -- Force numeric conversion and handle NULL
+                        COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0) AS reserved_qty,
+                        COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0) AS non_sellable_qty,
+                        -- Calculate available quantity (subtract both)
+                        (STOCK_ON_HAND 
+                            - COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0)
+                            - COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0)
+                        ) AS available_qty
+                    FROM ITEM_LOC_SOH
+                    WHERE LOC = ?
+                        AND ITEM = ?
+                ", [$this->warehouseCode, $this->sku]);
 
                 if (!empty($oracleRows)) {
                     $skuFoundInOracle = true;
@@ -80,13 +67,14 @@ class FetchAllocationJob implements ShouldQueue
 
                     $physicalStock = (int) $row->physical_stock;
                     $reservedQty = (int) $row->reserved_qty;
+                    $nonSellableQty = (int) $row->non_sellable_qty;
                     $availableQty = (int) $row->available_qty;
 
                     // Ensure non-negative
                     $allocationValue = max(0, $availableQty);
 
-                    // Log with details
-                    Log::info("[FetchAllocationJob] SKU {$this->sku} | WH: {$this->warehouseCode} | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: {$allocationValue}");
+                    // Log with details including non-sellable
+                    Log::info("[FetchAllocationJob] SKU {$this->sku} | WH: {$this->warehouseCode} | Physical: {$physicalStock} | Reserved: {$reservedQty} | Non-Sellable: {$nonSellableQty} | Available: {$allocationValue}");
                 } else {
                     // SKU not found in this location
                     $allocationValue = 0;
