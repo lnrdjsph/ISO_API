@@ -42,16 +42,32 @@ class FetchAllocationJob implements ShouldQueue
         $processedKey = "wms_processed_{$this->warehouseCode}";
         $failedKey = "wms_failed_{$this->warehouseCode}";
 
+        try {
+            // Purge old Oracle connection
+            DB::purge('oracle_rms');
+            $oracle = DB::connection('oracle_rms');
+            $oracle->getPdo();
+            $oracle->select("SELECT 1 FROM DUAL");
+
+            $mysql = DB::connection('mysql');
+            $mysql->getPdo();
+
+            // Initialize variables
+            $allocationValue = 0;
+            $skuFoundInOracle = false;
+            $physicalStock = 0;
+            $reservedQty = 0;
+            $nonSellableQty = 0;
+            $availableQty = 0;
+
             try {
-                // 🔥 FIXED: Subtract both TSF_RESERVED_QTY and NON_SELLABLE_QTY
+                // 🔥 Subtract both TSF_RESERVED_QTY and NON_SELLABLE_QTY
                 $oracleRows = $oracle->select("
                     SELECT 
                         ITEM AS item_id,
                         STOCK_ON_HAND AS physical_stock,
-                        -- Force numeric conversion and handle NULL
                         COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0) AS reserved_qty,
                         COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0) AS non_sellable_qty,
-                        -- Calculate available quantity (subtract both)
                         (STOCK_ON_HAND 
                             - COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0)
                             - COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0)
@@ -96,14 +112,12 @@ class FetchAllocationJob implements ShouldQueue
                     [
                         'wms_actual_allocation'  => $allocationValue,
                         'wms_virtual_allocation' => $allocationValue,
-                        // 'physical_stock' => $physicalStock,  // 🔥 NEW: Store for debugging
-                        // 'reserved_qty' => $reservedQty,      // 🔥 NEW: Store for debugging
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
                 );
 
-                // 🔥 Also update the product table if needed
+                // Also update the product table if needed
                 if ($this->productTable) {
                     $mysql->table($this->productTable)
                         ->where('sku', $this->sku)
@@ -123,17 +137,17 @@ class FetchAllocationJob implements ShouldQueue
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            // 🔥 IMPROVED: More detailed logging
+            // Improved logging
             if (!$skuFoundInOracle) {
                 Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: NOT IN RMS | Set to 0 | {$duration}ms");
             } elseif ($physicalStock == 0) {
                 Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: NO PHYSICAL STOCK | Set to 0 | {$duration}ms");
-            } elseif ($reservedQty >= $physicalStock) {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FULLY RESERVED | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: 0 | {$duration}ms");
+            } elseif ($reservedQty + $nonSellableQty >= $physicalStock) {
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: FULLY UNAVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | Non-Sellable: {$nonSellableQty} | Available: 0 | {$duration}ms");
             } elseif ($allocationValue > 0) {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: AVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | Available: {$allocationValue} | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: AVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | Non-Sellable: {$nonSellableQty} | Available: {$allocationValue} | {$duration}ms");
             } else {
-                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: ZERO AVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | {$duration}ms");
+                Log::info("[FetchAllocationJob] ✓ SKU {$this->sku} | WH: {$this->warehouseCode} | Status: ZERO AVAILABLE | Physical: {$physicalStock} | Reserved: {$reservedQty} | Non-Sellable: {$nonSellableQty} | {$duration}ms");
             }
         } catch (\Throwable $e) {
             Log::error("[FetchAllocationJob] ✗ Unexpected error for SKU {$this->sku} | WH: {$this->warehouseCode}: " . $e->getMessage());
