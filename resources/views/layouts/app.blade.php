@@ -15,7 +15,7 @@
     <meta
         name="theme-color"
         content="darkblue" />
-    <title>ISO B2BC Ordering System</title>
+    <title>ISO B2B2C Ordering System</title>
 
     <link
         rel="icon"
@@ -475,7 +475,7 @@
                             src="{{ asset('images/MarengEms_Logo.png') }}"
                             alt="Logo"
                             class="h-10 w-10 flex-shrink-0 rounded-lg">
-                        <span class="logo-text text-lg font-bold text-gray-800">ISO B2BC</span>
+                        <span class="logo-text text-lg font-bold text-gray-800">ISO B2B2C</span>
                     </div>
                 </div>
             </a>
@@ -796,20 +796,22 @@
                                                 <span class="nav-text">Product List</span>
                                             </a>
                                         </li>
-                                        <li>
-                                            <a
-                                                href="{{ route('products.create') }}"
-                                                class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Add New Product</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                href="{{ route('products.import.show') }}"
-                                                class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Import CSV</span>
-                                            </a>
-                                        </li>
+                                        @if (!in_array(auth()->user()->role, ['store personnel']))
+                                            <li>
+                                                <a
+                                                    href="{{ route('products.create') }}"
+                                                    class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                    <span class="nav-text">Add New Product</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a
+                                                    href="{{ route('products.import.show') }}"
+                                                    class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                    <span class="nav-text">Import CSV</span>
+                                                </a>
+                                            </li>
+                                        @endif
                                     </ul>
                                 @else
                                     <a
@@ -838,18 +840,20 @@
                                             Product List
                                         </a>
                                     </li>
-                                    <li>
-                                        <a href="{{ route('products.create') }}"
-                                            class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }}">
-                                            Add New Product
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('products.import.show') }}"
-                                            class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">
-                                            Import CSV
-                                        </a>
-                                    </li>
+                                    @if (!in_array(auth()->user()->role, ['store personnel']))
+                                        <li>
+                                            <a href="{{ route('products.create') }}"
+                                                class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }}">
+                                                Add New Product
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('products.import.show') }}"
+                                                class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">
+                                                Import CSV
+                                            </a>
+                                        </li>
+                                    @endif
                                 </ul>
                             </li>
                         @endif
