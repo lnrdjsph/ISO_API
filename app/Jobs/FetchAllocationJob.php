@@ -66,11 +66,12 @@ class FetchAllocationJob implements ShouldQueue
                     SELECT 
                         ITEM AS item_id,
                         STOCK_ON_HAND AS physical_stock,
-                        COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0) AS reserved_qty,
-                        COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0) AS non_sellable_qty,
                         (STOCK_ON_HAND 
-                            - COALESCE(CAST(TSF_RESERVED_QTY AS NUMBER), 0)
-                            - COALESCE(CAST(NON_SELLABLE_QTY AS NUMBER), 0)
+                        - COALESCE(TSF_RESERVED_QTY, 0)
+                        - COALESCE(NON_SELLABLE_QTY, 0)
+                        - COALESCE(CUSTOMER_RESV, 0)
+                        - COALESCE(CUSTOMER_BACKORDER, 0)
+                        - COALESCE(RTV_QTY, 0)
                         ) AS available_qty
                     FROM ITEM_LOC_SOH
                     WHERE LOC = ?

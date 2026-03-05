@@ -338,7 +338,13 @@ class UpdateAllProductAllocations extends Command
                     $inventoryRows = DB::connection('oracle_rms')->select("
                         SELECT /*+ PARALLEL(4) */ 
                             ITEM AS item_id,
-                            (STOCK_ON_HAND - TSF_RESERVED_QTY - NON_SELLABLE_QTY) AS available_qty
+                            (STOCK_ON_HAND 
+                            - COALESCE(TSF_RESERVED_QTY, 0) 
+                            - COALESCE(NON_SELLABLE_QTY, 0)
+                            - COALESCE(CUSTOMER_RESV, 0)
+                            - COALESCE(CUSTOMER_BACKORDER, 0)
+                            - COALESCE(RTV_QTY, 0)
+                            ) AS available_qty
                         FROM ITEM_LOC_SOH
                         WHERE LOC = '{$warehouseCode}'
                             AND ITEM IN ({$inClause})
