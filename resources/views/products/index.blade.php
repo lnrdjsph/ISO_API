@@ -821,7 +821,7 @@
                                             </div>
                                         </th>
                                     @else
-                                        <th rowspan="2" class="rounded-tl-xl pl-1 text-left align-middle text-sm uppercase">#</th>
+                                        <th rowspan="2" class="rounded-tl-xl text-center align-middle text-sm uppercase">#</th>
                                     @endif
                                     <th rowspan="2" class="px-2 py-2 text-left align-middle text-[10px] uppercase">
                                         <a
