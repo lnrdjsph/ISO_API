@@ -108,8 +108,8 @@ class FetchAllocationJob implements ShouldQueue
                     [
                         'wms_actual_allocation'  => $allocationValue,
                         'wms_virtual_allocation' => $allocationValue,
-                        'physical_stock' => $physicalStock,  // 🔥 NEW: Store for debugging
-                        'reserved_qty' => $reservedQty,      // 🔥 NEW: Store for debugging
+                        // 'physical_stock' => $physicalStock,  // 🔥 NEW: Store for debugging
+                        // 'reserved_qty' => $reservedQty,      // 🔥 NEW: Store for debugging
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
