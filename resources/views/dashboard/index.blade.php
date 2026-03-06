@@ -224,12 +224,15 @@
                             <li><a
                                     href="{{ route('products.index') }}"
                                     class="text-xl decoration-2 hover:text-green-600 hover:underline">All Products</a></li>
-                            <li><a
-                                    href="{{ route('products.create') }}"
-                                    class="text-xl decoration-2 hover:text-green-600 hover:underline">Add New Product</a></li>
-                            <li><a
-                                    href="{{ route('products.import.show') }}"
-                                    class="text-xl decoration-2 hover:text-green-600 hover:underline">Import Products (CSV)</a></li>
+
+                            @if (auth()->user()->role !== 'personnel')
+                                <li><a
+                                        href="{{ route('products.create') }}"
+                                        class="text-xl decoration-2 hover:text-green-600 hover:underline">Add New Product</a></li>
+                                <li><a
+                                        href="{{ route('products.import.show') }}"
+                                        class="text-xl decoration-2 hover:text-green-600 hover:underline">Import Products (CSV)</a></li>
+                            @endif
                         </ul>
                     </div>
                 @endif

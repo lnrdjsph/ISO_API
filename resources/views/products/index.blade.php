@@ -641,21 +641,49 @@
                                     }
                                 </style>
 
-                                <select
-                                    name="warehouse"
-                                    class="{{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'pointer-events-none' : '' }} w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:shadow-none"
-                                    onchange="
-            const params = new URLSearchParams(window.location.search);
-            params.set('warehouse', this.value);
-            window.location.href = window.location.pathname + '?' + params.toString();
-        "
-                                    {{ strpos(auth()->user()->role ?? '', 'personnel') !== false ? 'disabled' : '' }}>
-                                    @foreach ($warehouseMap as $code => $name)
-                                        <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
-                                            {{ $code }} - {{ $name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative w-64">
+                                    <!-- Remove default arrow for all browsers -->
+                                    <style>
+                                        /* Remove default arrow for IE */
+                                        select::-ms-expand {
+                                            display: none;
+                                        }
+
+                                        /* Remove default arrow for Chrome, Safari, Edge */
+                                        select {
+                                            -webkit-appearance: none;
+                                            -moz-appearance: none;
+                                            appearance: none;
+                                        }
+                                    </style>
+
+                                    @if (strpos(auth()->user()->role ?? '', 'personnel') !== false)
+                                        <!-- Personnel View: Display only -->
+                                        <div class="w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 backdrop-blur-sm">
+                                            @foreach ($warehouseMap as $code => $name)
+                                                @if ($currentWarehouse == $code)
+                                                    <span class="font-medium">{{ $code }} - {{ $name }}</span>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <!-- Non-Personnel View: Dropdown select -->
+                                        <select
+                                            name="warehouse"
+                                            class="w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            onchange="
+                                            const params = new URLSearchParams(window.location.search);
+                                            params.set('warehouse', this.value);
+                                            window.location.href = window.location.pathname + '?' + params.toString();
+                                        ">
+                                            @foreach ($warehouseMap as $code => $name)
+                                                <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
+                                                    {{ $code }} - {{ $name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
@@ -1168,9 +1196,46 @@
                                                 @endphp
 
                                                 <!-- Allocation Badge (always blue) -->
-                                                <span class="{{ $allocationBadgeClasses }} inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
+                                                <span class="{{ $allocationBadgeClasses }} peer inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-medium">
                                                     {{ $initial }}
                                                 </span>
+                                                <!-- Tooltip -->
+                                                <div
+                                                    class="pointer-events-none absolute left-[calc(100%+4px)] top-1/2 z-50 min-w-[280px] -translate-y-1/2 whitespace-nowrap rounded bg-gray-800 px-3 py-1.5 text-[10px] text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                    <div class="flex items-center space-x-4">
+                                                        <!-- Status -->
+                                                        <div class="{{ $statusColor }} min-w-[50px] font-semibold">{{ $status }}</div>
+
+                                                        <!-- Separator -->
+                                                        <div class="h-4 border-l border-gray-700"></div>
+
+                                                        <!-- Details -->
+                                                        <div class="flex items-center space-x-4">
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-gray-300">Stocks:</span>
+                                                                <span class="font-semibold">{{ $current }}</span>
+                                                            </div>
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-gray-300">Allocation:</span>
+                                                                <span class="font-semibold">{{ $product->initial_allocation_per_case ?? 0 }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Timestamp -->
+                                                        @if ($product->updated_at)
+                                                            @php
+                                                                $updatedAt = \Carbon\Carbon::parse($product->updated_at);
+                                                            @endphp
+                                                            <div class="border-l border-gray-700 pl-2 text-[8px] text-gray-300">
+                                                                Last Updated: {{ $updatedAt->format('M d, h:i A') }}
+                                                            </div>
+                                                        @else
+                                                            <div class="border-l border-gray-700 pl-2 text-[8px] text-gray-300">
+                                                                Never updated
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
 

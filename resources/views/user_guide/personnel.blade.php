@@ -67,7 +67,7 @@
             font-weight: 600;
         }
 
-        /* ── Screenshot placeholder ── */
+        /* ── Screenshot frame ── */
         .screenshot-frame {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
@@ -75,22 +75,29 @@
             background: #f9fafb;
             margin: 14px 0 18px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+
+        .screenshot-frame:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .screenshot-frame .screenshot-img-wrap {
+            height: 280px;
+            overflow: hidden;
+        }
+
+        .screenshot-frame.compact .screenshot-img-wrap {
+            height: 160px;
         }
 
         .screenshot-frame img {
             display: block;
             width: 100%;
-            height: auto;
-        }
-
-        .screenshot-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            gap: 6px;
-            color: #9ca3af;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
         }
 
         .screenshot-caption {
@@ -102,6 +109,115 @@
             border-top: 1px solid #e5e7eb;
             text-align: center;
             font-style: italic;
+        }
+
+        /* ── Image Lightbox Modal (iOS-style) ── */
+        .lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .lightbox-overlay.active {
+            pointer-events: auto;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            transition: background 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            -webkit-backdrop-filter: blur(0px);
+            backdrop-filter: blur(0px);
+        }
+
+        .lightbox-overlay.active .lightbox-backdrop {
+            background: rgba(0, 0, 0, 0.6);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+            transform: scale(0.85);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        .lightbox-overlay.active .lightbox-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .lightbox-overlay.closing .lightbox-backdrop {
+            background: rgba(0, 0, 0, 0);
+            -webkit-backdrop-filter: blur(0px);
+            backdrop-filter: blur(0px);
+        }
+
+        .lightbox-overlay.closing .lightbox-content {
+            transform: scale(0.85);
+            opacity: 0;
+        }
+
+        .lightbox-content img {
+            display: block;
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+        }
+
+        .lightbox-caption {
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #6b7280;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: background 0.15s;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+        }
+
+        .lightbox-close:hover {
+            background: rgba(0, 0, 0, 0.7);
         }
 
         /* ── Callouts ── */
@@ -216,7 +332,7 @@
                     </div>
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">Store Personnel User Guide</h1>
-                        <p class="mt-1 text-gray-600">Quick-start guide for the ISO B2B ordering platform — Version 1.1 · February 2026</p>
+                        <p class="mt-1 text-gray-600">Quick-start guide for the ISO B2B2C ordering platform — Version 1.1 · February 2026</p>
                     </div>
                 </div>
             </div>
@@ -328,30 +444,16 @@
                             </p>
 
                             <div class="screenshot-frame">
-                                {{-- ✅ Replace with: <img src="{{ asset('images/guide/dashboard-full.png') }}" alt="Dashboard overview"> --}}
-                                <div class="screenshot-placeholder">
-                                    <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">dashboard-full.png</span>
-                                </div>
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/dashboard-full.png') }}"
+                                        alt="Dashboard overview with KPI cards, order distribution, and recent activity"></div>
                                 <div class="screenshot-caption">Dashboard — Full overview with KPI cards, order distribution, and recent activity</div>
                             </div>
 
                             <h3 class="mt-5 text-base font-semibold text-gray-800">What You See at a Glance</h3>
                             <p class="mt-1 text-sm text-gray-600">Color-coded badges on the <strong>Orders</strong> card show real-time counts:</p>
 
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">kpi-cards.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/kpi-cards.png') }}" alt="KPI cards showing order counts by status"></div>
                                 <div class="screenshot-caption">KPI cards showing order counts by status</div>
                             </div>
 
@@ -405,14 +507,8 @@
                             <h3 class="mt-6 text-base font-semibold text-gray-800" id="sof-header">Step 1 — Fill in Order Information</h3>
 
                             <div class="screenshot-frame">
-                                <div class="screenshot-placeholder">
-                                    <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">sof-header.png</span>
-                                </div>
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-header.png') }}"
+                                        alt="Header area with Request Details, Customer Info, Payment, and Dispatch"></div>
                                 <div class="screenshot-caption">Header area — Request Details, Customer Info, Payment, and Dispatch</div>
                             </div>
 
@@ -423,15 +519,8 @@
                             </p>
 
                             <h4 class="mt-4 text-sm font-bold text-gray-700">Customer Information</h4>
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">sof-customer-fields.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-customer-fields.png') }}" alt="Customer fields with MBC Card auto-fill"></div>
                                 <div class="screenshot-caption">Customer fields — MBC Card triggers auto-fill</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">
@@ -448,15 +537,8 @@
                             </div>
 
                             <h4 class="mt-4 text-sm font-bold text-gray-700">Payment Information</h4>
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">sof-payment.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-payment.png') }}" alt="Payment Center, Mode of Payment, and Payment Date"></div>
                                 <div class="screenshot-caption">Payment Center (auto-filled), Mode of Payment, and Payment Date</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">
@@ -465,15 +547,8 @@
                             </p>
 
                             <h4 class="mt-4 text-sm font-bold text-gray-700">Dispatch Details</h4>
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">sof-dispatch.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-dispatch.png') }}" alt="Delivery date and dispatch mode selection"></div>
                                 <div class="screenshot-caption">Delivery date and dispatch mode selection</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">
@@ -493,14 +568,8 @@
                             <div class="mt-6 border-t border-gray-100 pt-5">
                                 <h3 class="text-base font-semibold text-gray-800" id="sof-items">Step 2 — Add Order Items</h3>
                                 <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder">
-                                        <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">sof-order-items.png</span>
-                                    </div>
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-order-items.png') }}"
+                                            alt="Order Items section with product search, quantities, and real-time breakdown"></div>
                                     <div class="screenshot-caption">Order Items section — product search, quantities, and real-time breakdown</div>
                                 </div>
 
@@ -515,15 +584,8 @@
                                 </div>
 
                                 <h4 class="mt-4 text-sm font-bold text-gray-700">Item Breakdown Panel</h4>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 28px 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">sof-breakdown.png</span>
-                                    </div>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-breakdown.png') }}" alt="Real-time price and quantity breakdown per item"></div>
                                     <div class="screenshot-caption">Real-time price and quantity breakdown per item</div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">
@@ -535,15 +597,8 @@
                             {{-- Submit --}}
                             <div class="mt-6 border-t border-gray-100 pt-5" id="sof-submit">
                                 <h3 class="text-base font-semibold text-gray-800">Submitting the Order</h3>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">sof-submit-buttons.png</span>
-                                    </div>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/sof-submit-buttons.png') }}" alt="Add Another Item and Submit Order buttons"></div>
                                     <div class="screenshot-caption">Add Another Item and Submit Order buttons</div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">
@@ -565,15 +620,9 @@
                             <p class="text-sm leading-relaxed text-gray-600">Your central view for tracking all submitted sales orders. Use filters to quickly find what you need.</p>
 
                             <h3 class="mt-5 text-base font-semibold text-gray-800" id="orders-filters">Filtering &amp; Searching</h3>
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">orders-filter-bar.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/orders-filter-bar.png') }}"
+                                        alt="Filter bar with search, store, channel, status, and date range"></div>
                                 <div class="screenshot-caption">Filter bar — search, store, channel, status, and date range</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">
@@ -584,13 +633,7 @@
                             <div class="mt-6 border-t border-gray-100 pt-5">
                                 <h3 class="text-base font-semibold text-gray-800" id="orders-table">Order Table</h3>
                                 <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder">
-                                        <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">orders-table.png</span>
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/orders-table.png') }}" alt="Orders table with status badges and channel indicators">
                                     </div>
                                     <div class="screenshot-caption">Orders table with status badges and channel indicators</div>
                                 </div>
@@ -622,14 +665,8 @@
 
                             <h3 class="mt-5 text-base font-semibold text-gray-800" id="od-panels">Information Panels</h3>
                             <div class="screenshot-frame">
-                                <div class="screenshot-placeholder">
-                                    <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">od-info-panels.png</span>
-                                </div>
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-info-panels.png') }}"
+                                        alt="Four info panels: Customer, Payment, Delivery, and Order information"></div>
                                 <div class="screenshot-caption">Four info panels: Customer, Payment, Delivery, and Order information</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">The top area is split into four panels. Fields with editable data can be updated directly inline. Read-only fields show
@@ -637,14 +674,8 @@
 
                             <h4 class="mt-4 text-sm font-bold text-gray-700">Ordered Items Table</h4>
                             <div class="screenshot-frame">
-                                <div class="screenshot-placeholder">
-                                    <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">od-items-table.png</span>
-                                </div>
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-items-table.png') }}"
+                                        alt="Items table with SKU, pricing, quantities, and item-level status"></div>
                                 <div class="screenshot-caption">Items table with SKU, pricing, quantities, and item-level status</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600"><strong>Editable cells</strong> (like Qty/CS, Price/PC) highlight yellow when changed. Use checkboxes to select items for bulk
@@ -653,15 +684,9 @@
                             {{-- Actions --}}
                             <div class="mt-6 border-t border-gray-100 pt-5" id="od-actions">
                                 <h3 class="text-base font-semibold text-gray-800">Sidebar Actions</h3>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">od-sidebar-actions.png</span>
-                                    </div>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-sidebar-actions.png') }}"
+                                            alt="Right sidebar with Order Actions, Print options, and Notes"></div>
                                     <div class="screenshot-caption">Right sidebar — Order Actions, Print options, and Notes</div>
                                 </div>
 
@@ -678,29 +703,16 @@
                                 </div>
 
                                 <h4 class="mt-4 text-sm font-bold text-gray-700">Print Buttons</h4>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">od-print-buttons.png</span>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-print-buttons.png') }}" alt="Print SOF, Invoice, Freebies Form, and Order Slip">
                                     </div>
                                     <div class="screenshot-caption">Print SOF, Invoice, Freebies Form, and Order Slip</div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">Quick-access buttons to generate printable PDFs for the Sales Order Form, Invoice, Freebies Form, and Order Slip.</p>
 
                                 <h4 class="mt-4 text-sm font-bold text-gray-700">Order Notes</h4>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">od-order-notes.png</span>
-                                    </div>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-order-notes.png') }}" alt="Timeline of order notes and status changes"></div>
                                     <div class="screenshot-caption">Timeline of order notes and status changes</div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">A scrollable log of all actions taken on the order, including who made changes and when. Useful for auditing and
@@ -710,15 +722,9 @@
                             {{-- Invoice --}}
                             <div class="mt-6 border-t border-gray-100 pt-5" id="od-invoice">
                                 <h3 class="text-base font-semibold text-gray-800">Invoice Summary</h3>
-                                <div class="screenshot-frame">
-                                    <div class="screenshot-placeholder" style="padding: 28px 20px;">
-                                        <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                            <rect x="4" y="6" width="32" height="22" rx="3" />
-                                            <circle cx="15" cy="15" r="3" />
-                                            <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                        </svg>
-                                        <span class="text-xs font-medium">od-invoice.png</span>
-                                    </div>
+                                <div class="screenshot-frame compact">
+                                    <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/od-invoice.png') }}"
+                                            alt="Invoice panel showing Grand Total, Freebies, and Payable amount"></div>
                                     <div class="screenshot-caption">Invoice panel showing Grand Total, Freebies, and Payable amount</div>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-600">The invoice sidebar recalculates as items are edited. It breaks down the Grand Total, any Freebie or Discount amounts, and
@@ -748,15 +754,8 @@
                             <p class="text-sm leading-relaxed text-gray-600">Your complete inventory catalog. Use search to quickly find products — filtering by warehouse/depot is restricted to
                                 authorized personnel only.</p>
 
-                            <div class="screenshot-frame">
-                                <div class="screenshot-placeholder" style="padding: 24px 20px;">
-                                    <svg class="h-8 w-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">products-search.png</span>
-                                </div>
+                            <div class="screenshot-frame compact">
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/products-search.png') }}" alt="Search bar with keyword search and depot selector"></div>
                                 <div class="screenshot-caption">Search bar — keyword search and depot selector</div>
                             </div>
                             <p class="mt-1 text-sm text-gray-600">Find products by <strong>SKU</strong>, <strong>product description</strong>, or <strong>sub-department</strong>. Results update
@@ -772,13 +771,7 @@
                             </div>
 
                             <div class="screenshot-frame">
-                                <div class="screenshot-placeholder">
-                                    <svg class="h-10 w-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 40 40">
-                                        <rect x="4" y="6" width="32" height="22" rx="3" />
-                                        <circle cx="15" cy="15" r="3" />
-                                        <path d="M4 24l8-5 5 3 7-7 8 9" />
-                                    </svg>
-                                    <span class="text-xs font-medium">products-table.png</span>
+                                <div class="screenshot-img-wrap"><img src="{{ asset('images/guide/products-table.png') }}" alt="Products table with inventory levels and pricing details">
                                 </div>
                                 <div class="screenshot-caption">Products table with inventory levels and pricing details</div>
                             </div>
@@ -983,7 +976,7 @@
 
                     {{-- Footer --}}
                     <div class="mt-8 pb-4 text-center">
-                        <p class="text-xs text-gray-400">ISO B2B Ordering System — Store Personnel User Guide — Version 1.1 — February 2026</p>
+                        <p class="text-xs text-gray-400">ISO B2B2C Ordering System — Store Personnel User Guide — Version 1.1 — February 2026</p>
                     </div>
 
                 </div>
@@ -991,9 +984,25 @@
         </div>
     </div>
 
-    {{-- ═══ Sidebar scroll-spy JS ═══ --}}
+    {{-- ═══ Image Lightbox Modal ═══ --}}
+    <div class="lightbox-overlay" id="lightboxOverlay">
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="lightbox-content" id="lightboxContent">
+            <button class="lightbox-close" id="lightboxClose" aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M1 1l12 12M13 1L1 13" />
+                </svg>
+            </button>
+            <img id="lightboxImg" src="" alt="">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    {{-- ═══ Sidebar scroll-spy + Lightbox JS ═══ --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            // ── Sidebar scroll-spy ──
             const navLinks = document.querySelectorAll('.guide-nav-link[data-section]');
             const subLinks = document.querySelectorAll('.guide-nav-sub');
             const sections = document.querySelectorAll('.guide-section');
@@ -1026,6 +1035,89 @@
                     const sidebar = document.getElementById('guideSidebarCol');
                     if (sidebar) sidebar.classList.remove('open');
                 });
+            });
+
+
+            // ── Image Lightbox (iOS-style) ──
+            const overlay = document.getElementById('lightboxOverlay');
+            const content = document.getElementById('lightboxContent');
+            const lbImg = document.getElementById('lightboxImg');
+            const lbCaption = document.getElementById('lightboxCaption');
+            const lbClose = document.getElementById('lightboxClose');
+            const backdrop = document.getElementById('lightboxBackdrop');
+
+            // Open lightbox from any screenshot-frame click
+            document.querySelectorAll('.screenshot-frame').forEach(frame => {
+                frame.addEventListener('click', function() {
+                    const img = this.querySelector('img');
+                    const caption = this.querySelector('.screenshot-caption');
+                    if (!img) return;
+
+                    // Get source image position for origin transform
+                    const rect = img.getBoundingClientRect();
+                    const vpW = window.innerWidth;
+                    const vpH = window.innerHeight;
+
+                    // Calculate offset from center for transform-origin feel
+                    const originX = rect.left + rect.width / 2;
+                    const originY = rect.top + rect.height / 2;
+                    const translateX = originX - vpW / 2;
+                    const translateY = originY - vpH / 2;
+
+                    // Set initial transform from the clicked image position
+                    content.style.transition = 'none';
+                    content.style.transform = `translate(${translateX}px, ${translateY}px) scale(0.4)`;
+                    content.style.opacity = '0';
+
+                    // Set image and caption
+                    lbImg.src = img.src;
+                    lbImg.alt = img.alt;
+                    lbCaption.textContent = caption ? caption.textContent : '';
+
+                    // Show overlay
+                    overlay.classList.remove('closing');
+                    overlay.classList.add('active');
+
+                    // Animate to center (next frame for transition to kick in)
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            content.style.transition = 'transform 0.45s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+                            content.style.transform = 'translate(0, 0) scale(1)';
+                            content.style.opacity = '1';
+                        });
+                    });
+
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            // Close lightbox
+            function closeLightbox() {
+                overlay.classList.add('closing');
+                content.style.transform = 'translate(0, 0) scale(0.85)';
+                content.style.opacity = '0';
+
+                setTimeout(() => {
+                    overlay.classList.remove('active', 'closing');
+                    content.style.transition = 'none';
+                    content.style.transform = '';
+                    content.style.opacity = '';
+                    lbImg.src = '';
+                    document.body.style.overflow = '';
+                }, 380);
+            }
+
+            lbClose.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeLightbox();
+            });
+
+            backdrop.addEventListener('click', closeLightbox);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeLightbox();
+                }
             });
         });
     </script>

@@ -64,12 +64,12 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            zoom: 0.75;
+            /* zoom: 0.75; */
         }
 
         /* Topbar also scaled down */
         .topbar {
-            zoom: 0.75;
+            /* zoom: 0.75; */
         }
 
         /* Main content offsets for zoomed sidebar width (13rem * 0.75 = 9.75rem, 4.5rem * 0.75 = 3.375rem) */
@@ -79,11 +79,11 @@
 
         @media (min-width: 768px) {
             .sidebar-expanded~.main-container {
-                margin-left: 9.75rem;
+                margin-left: 13rem;
             }
 
             .sidebar-collapsed~.main-container {
-                margin-left: 3.375rem;
+                margin-left: 4.5rem;
             }
         }
 
@@ -1168,7 +1168,7 @@
 
                     // sidebarRect is in viewport coords (zoomed). Flyout is inside sidebar (inherits zoom),
                     // so CSS values need to be divided by zoom to land at the right viewport position.
-                    flyout.style.left = ((sidebarRect.right + 8) / sidebarZoom) + 'px';
+                    flyout.style.left = ((sidebarRect.right - 16) / sidebarZoom) + 'px';
                     flyout.style.top = (groupRect.top / sidebarZoom) + 'px';
                     flyout.classList.add('flyout-visible');
 
