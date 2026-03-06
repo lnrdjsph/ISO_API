@@ -1176,7 +1176,7 @@
                                         type="button"
                                         id="generateSOButton"
                                         class="items-center justify-center rounded-md bg-green-700 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-green-800 focus:outline-none focus:ring-1 focus:ring-green-600 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50">
-                                        Generate SO#
+                                        Generate Transfer Number
                                     </button>
                                     <meta
                                         name="csrf-token"
@@ -1222,8 +1222,8 @@
                                                     <option value="for approval">Request For Approval</option>
                                                 @endif
 
-                                                {{-- approved order status and all item status is received --}}
-                                                @if ($order->order_status === 'approved' && $order->items->where('remarks', '!=', 'Item Cancelled')->every(fn($item) => $item->status === 'Received'))
+                                                {{-- approved order status and all item status is received or shipped --}}
+                                                @if ($order->order_status === 'approved' && $order->items->where('remarks', '!=', 'Item Cancelled')->every(fn($item) => in_array($item->status, ['Received', 'Shipped'])))
                                                     <option value="complete">Complete Order</option>
                                                 @endif
 
