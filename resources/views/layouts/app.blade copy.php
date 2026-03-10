@@ -13,13 +13,13 @@
 				>
 				<meta
 						name="description"
-						content="ISO B2B Ordering System"
+						content="ISO B2B2C Ordering System"
 				>
 				<meta
 						name="theme-color"
 						content="#23282d"
 				/>
-				<title>ISO B2B Ordering System</title>
+				<title>ISO B2B2C Ordering System</title>
 
 				<link
 						rel="icon"
@@ -472,7 +472,7 @@
 												src="{{ asset('images/MarengEms_Logo.png') }}"
 												alt="Logo"
 										>
-										<span class="logo-text">ISO B2B</span>
+										<span class="logo-text">ISO B2B2C</span>
 								</a>
 								<button
 										class="collapse-button"
