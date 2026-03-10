@@ -36,8 +36,6 @@ Route::prefix('iso-api')->group(function () {
     Route::post('/otp-verify', [OtpController::class, 'verifyOtp']);
     Route::post('/loyalty-points', [UserPointsController::class, 'getLoyaltyPoints']);
     Route::post('/transactions', [TransactionHistoryController::class, 'getTransactions']);
-
-   
 });
 
 Route::post('/payment-data', [ECRController::class, 'getPaymentData']);
@@ -55,10 +53,10 @@ Route::prefix('v1')->group(function () {
     Route::prefix('rms-sync')->group(function () {
         // Start synchronization
         Route::post('/synchronize', [RMSCommerceSynchronizationController::class, 'synchronize']);
-        
+
         // Get synchronization status
         Route::get('/status', [RMSCommerceSynchronizationController::class, 'status']);
-        
+
         // Get logs (optional)
         Route::get('/logs', [RMSCommerceSynchronizationController::class, 'getLogs']);
     });
@@ -103,15 +101,19 @@ Route::get('/order-status/{storeOrderNo}/{sku}', [
     'getItemStatus'
 ])->name('order.status');
 
+Route::get('/order-bol/{tsf}/{sku}', [
+    OracleTransferController::class,
+    'getBolNumber'
+])->name('order.bol');
 
 Route::prefix('atom-api')->group(function () {
     // Public endpoint (no auth) - for testing
     Route::post('/test', [AtomController::class, 'test']);
-    
+
     // Protected endpoint with Bearer token
     Route::post('/', [AtomController::class, 'receiveOrder'])
         ->middleware('verify.api.token');
-    
+
     // Alternative: Using Laravel Sanctum (if you prefer)
     // Route::post('/', [AtomController::class, 'receiveOrder'])
     //     ->middleware('auth:sanctum');

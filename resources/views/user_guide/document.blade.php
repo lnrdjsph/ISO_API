@@ -1,0 +1,1152 @@
+@extends('layouts.app')
+
+@section('content')
+    @php
+        $userRole = auth()->user()->role ?? 'store personnel';
+        $availableRoles = match ($userRole) {
+            'super admin' => ['personnel', 'manager', 'admin'],
+            'manager' => ['manager'],
+            default => ['personnel'],
+        };
+        $defaultTab = match ($userRole) {
+            'super admin' => 'admin',
+            'manager' => 'manager',
+            default => 'personnel',
+        };
+    @endphp
+
+    <style>
+        /* ── Only styles Tailwind can't handle ── */
+        [data-roles] {
+            display: none;
+        }
+
+        [data-roles].role-visible {
+            display: block;
+        }
+
+        .guide-nav-link.active {
+            color: #1d4ed8;
+            background: #eff6ff;
+            font-weight: 600;
+        }
+
+        .guide-nav-sub.active {
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        /* Sidebar scroll */
+        .guide-sidebar-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .guide-sidebar-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .guide-sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Screenshot lightbox */
+        .screenshot-frame {
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .screenshot-frame:hover {
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .lightbox-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .lightbox-overlay.active {
+            pointer-events: auto;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            transition: background 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            backdrop-filter: blur(0px);
+        }
+
+        .lightbox-overlay.active .lightbox-backdrop {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+            transform: scale(0.85);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s;
+        }
+
+        .lightbox-overlay.active .lightbox-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .lightbox-overlay.closing .lightbox-backdrop {
+            background: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+        }
+
+        .lightbox-overlay.closing .lightbox-content {
+            transform: scale(0.85);
+            opacity: 0;
+        }
+
+        .lightbox-content img {
+            display: block;
+            max-width: 90vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+        }
+
+        /* Step hover */
+        .step-row {
+            transition: all 0.15s;
+        }
+
+        .step-row:hover {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transform: translateX(4px);
+        }
+
+        /* Section card hover */
+        .section-card {
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .section-card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        /* Mobile sidebar overlay */
+        @media (max-width: 1024px) {
+            .guide-sidebar-col {
+                display: none !important;
+            }
+
+            .guide-sidebar-col.open {
+                display: flex !important;
+                position: fixed;
+                inset: 0;
+                z-index: 100;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(4px);
+                padding: 2rem;
+                align-items: flex-start;
+                justify-content: center;
+            }
+
+            .guide-sidebar-col.open>div {
+                max-height: calc(100vh - 4rem);
+            }
+
+            .guide-main {
+                margin-left: 0 !important;
+            }
+        }
+
+        @media (min-width: 1025px) {
+            .mobile-toggle {
+                display: none !important;
+            }
+        }
+
+        html,
+        body {
+            scroll-behavior: smooth;
+            scroll-padding-top: 2rem;
+            overflow-x: clip !important;
+        }
+    </style>
+
+    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {{-- ═══ PAGE HEADER — high contrast ═══ --}}
+        <div class="mb-8 overflow-hidden rounded-2xl bg-gray-950 p-8 shadow-xl">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                        <svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 id="role-title" class="text-2xl font-bold tracking-tight text-white sm:text-3xl">User Guide</h1>
+                        <p class="mt-1 text-sm text-gray-300">ISO B2B2C Ordering Platform · v1.1 · March 2026</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-gray-200 ring-1 ring-white/20">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Logged in as <span class="font-semibold text-white">{{ ucwords(str_replace('_', ' ', $userRole)) }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- ═══ MOBILE TOGGLE ═══ --}}
+        <button class="mobile-toggle mb-4 flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200"
+            onclick="document.getElementById('guideSidebarCol').classList.toggle('open')">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            {{ count($availableRoles) > 1 ? 'Menu & Switch Role' : 'Navigation' }}
+        </button>
+
+        <div class="relative flex gap-6">
+
+            {{-- ═══ SIDEBAR — sticky, minimal ═══ --}}
+            <div class="guide-sidebar-col w-60 flex-shrink-0 self-stretch" id="guideSidebarCol" onclick="if(event.target===this)this.classList.remove('open')">
+                <div class="sticky top-24 w-60 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" style="max-height: calc(100vh - 7rem);">
+
+                    {{-- Role switcher (only for super admin) --}}
+                    @if (count($availableRoles) > 1)
+                        <div class="border-b border-gray-100 px-3 py-3">
+                            <p class="mb-2 px-2 text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400">Switch view</p>
+                            <div class="flex flex-col gap-0.5">
+                                @if (in_array('personnel', $availableRoles))
+                                    <button
+                                        class="sidebar-role-btn {{ $defaultTab === 'personnel' ? 'active bg-blue-50 !text-blue-700 font-semibold' : '' }} flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-all hover:bg-gray-50"
+                                        data-role="personnel">
+                                        <svg class="h-4 w-4 opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Store Personnel
+                                    </button>
+                                @endif
+                                @if (in_array('manager', $availableRoles))
+                                    <button
+                                        class="sidebar-role-btn {{ $defaultTab === 'manager' ? 'active bg-blue-50 !text-blue-700 font-semibold' : '' }} flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-all hover:bg-gray-50"
+                                        data-role="manager">
+                                        <svg class="h-4 w-4 opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        Manager
+                                    </button>
+                                @endif
+                                @if (in_array('admin', $availableRoles))
+                                    <button
+                                        class="sidebar-role-btn {{ $defaultTab === 'admin' ? 'active bg-blue-50 !text-blue-700 font-semibold' : '' }} flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-all hover:bg-gray-50"
+                                        data-role="admin">
+                                        <svg class="h-4 w-4 opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path
+                                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                        Super Admin
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Nav links --}}
+                    <nav class="guide-sidebar-scroll overflow-y-auto p-2" id="guideSidebar" style="max-height: {{ count($availableRoles) > 1 ? 'calc(100vh - 16rem)' : 'calc(100vh - 8rem)' }};">
+                        {{-- Populated by JS --}}
+                    </nav>
+                </div>
+            </div>
+
+            {{-- ═══ MAIN CONTENT ═══ --}}
+            <div class="guide-main min-w-0 flex-1">
+
+                {{-- ── 1. DASHBOARD ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="dashboard" data-roles="personnel manager admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">01</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Dashboard</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm leading-relaxed text-gray-600">Your command center. Real-time snapshot of order activity the moment you log in.</p>
+
+                        <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                            <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/dashboard-full.png') }}"
+                                    alt="Dashboard"></div>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Dashboard — KPI cards, order distribution, and recent activity</p>
+                        </div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Status Indicators</h3>
+                        <p class="mt-1 text-sm text-gray-500">Color-coded badges show live order counts:</p>
+                        <div class="mt-3 space-y-2">
+                            @foreach ([['New Orders', 'bg-blue-500', 'Awaiting processing'], ['Pending', 'bg-yellow-500', 'In progress'], ['For Approval', 'bg-purple-500', 'Needs manager review']] as $b)
+                                <div class="flex items-center gap-3">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"><span
+                                            class="{{ $b[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $b[0] }}</span>
+                                    <span class="text-sm text-gray-500">{{ $b[2] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Personnel --}}
+                        <div data-roles="personnel">
+                            <h3 class="mt-5 text-sm font-semibold text-gray-900">Quick Access Cards</h3>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                @foreach ([['Orders', 'Status badges'], ['Forms', 'SOF & ROF'], ['Products', 'Catalog'], ['Reports', 'Sales & payments']] as $c)
+                                    <div class="rounded-lg bg-gray-50 px-3 py-2">
+                                        <p class="text-sm font-medium text-gray-800">{{ $c[0] }}</p>
+                                        <p class="text-xs text-gray-400">{{ $c[1] }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        {{-- Manager --}}
+                        <div data-roles="manager">
+                            <div class="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                                <strong>Manager view:</strong> You see Orders (with For Approval count) and Reports. Forms and Products are hidden.
+                            </div>
+                        </div>
+                        {{-- Admin --}}
+                        <div data-roles="admin">
+                            <div class="mt-4 rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                                <strong>Super Admin:</strong> Full visibility across all stores. Your sidebar also includes <strong>Users</strong> and <strong>Others</strong>.
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Start here each day to check pending work.
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── 2. SALES ORDER FORM ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="sales-order-form" data-roles="personnel admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">02</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Sales Order Form (SOF)</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm text-gray-600">Create new B2B sales orders with header fields and dynamic order items.</p>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900" id="sof-header">Step 1 — Fill Order Information</h3>
+                        <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                            <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/sof-header.png') }}"
+                                    alt="SOF header"></div>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Header — Request Details, Customer Info, Payment, Dispatch</p>
+                        </div>
+
+                        <div class="mt-4 space-y-3">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Request Details</h4>
+                                <p class="mt-1 text-sm text-gray-500"><strong>SOF Order ID</strong>, <strong>Store</strong>, <strong>Requested By</strong> are pre-filled. Select
+                                    <strong>Channel</strong> and confirm <strong>Date &amp; Time</strong>.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Customer Information</h4>
+                                <p class="mt-1 text-sm text-gray-500">Enter 16-digit <strong>MBC Card Number</strong> to auto-fill customer details.</p>
+                            </div>
+                            <div class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">MBC Card must be exactly <strong>16 digits</strong>. Incomplete numbers trigger a warning.</div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Payment &amp; Dispatch</h4>
+                                <p class="mt-1 text-sm text-gray-500">Select <strong>Mode of Payment</strong>, choose <strong>Delivery/Pick-up Date</strong> and <strong>Dispatching</strong>
+                                    mode.</p>
+                            </div>
+                            <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Order Items appear only after <strong>all required header fields</strong> are completed.</div>
+                        </div>
+
+                        <div class="mt-6 border-t border-gray-100 pt-5" id="sof-items">
+                            <h3 class="text-sm font-semibold text-gray-900">Step 2 — Add Order Items</h3>
+                            <div class="mt-3 space-y-1.5">
+                                @foreach (['Select <strong>Sale Type</strong> (Freebie or Discount)', 'Search product by SKU or description', 'Set <strong>Case/s Ordered</strong> — breakdown updates live'] as $s)
+                                    <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
+                                            class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
+                                            class="text-sm text-gray-600">{!! $s !!}</span></div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="mt-6 border-t border-gray-100 pt-5" id="sof-submit">
+                            <h3 class="text-sm font-semibold text-gray-900">Submitting</h3>
+                            <p class="mt-1 text-sm text-gray-500">Use <strong>+ Add Another Item</strong> for multiple products. Click <strong>Submit Order</strong> to create.</p>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── 3. ORDERS LIST ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="orders-list" data-roles="personnel manager admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">03</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Orders List</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm text-gray-600">Track all submitted sales orders with filters.</p>
+
+                        <div data-roles="manager">
+                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">Managers see orders from <strong>assigned region only</strong> with statuses: For Approval,
+                                Approved, Rejected.</div>
+                        </div>
+                        <div data-roles="admin">
+                            <div class="mt-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-800">Super Admins see orders from <strong>all stores</strong> with a Requesting Store column.
+                            </div>
+                        </div>
+
+                        <h3 class="mt-5 text-sm font-semibold text-gray-900" id="orders-filters">Filtering &amp; Searching</h3>
+                        <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                            <div class="flex h-36 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/orders-filter-bar.png') }}"
+                                    alt="Filter bar"></div>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Filter by keyword, store, channel, status, date</p>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">Filter by <strong>keyword</strong>, <strong>store</strong>, <strong>channel</strong>, <strong>status</strong>, or <strong>date
+                                range</strong>. Click <strong>Apply</strong> or <strong>Reset</strong>.</p>
+
+                        <div class="mt-5 border-t border-gray-100 pt-5" id="orders-table">
+                            <h3 class="text-sm font-semibold text-gray-900">Order Table</h3>
+                            <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/orders-table.png') }}"
+                                        alt="Orders table"></div>
+                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Orders with status badges and channel indicators</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            AJAX updates — filters and pagination don't reload the page.
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── 4. ORDER DETAILS ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="order-details" data-roles="personnel manager admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">04</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Order Details</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm text-gray-600">View, edit, and take action on individual orders.</p>
+
+                        <h3 class="mt-5 text-sm font-semibold text-gray-900" id="od-panels">Information Panels</h3>
+                        <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                            <div class="flex h-48 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/od-info-panels.png') }}"
+                                    alt="Info panels"></div>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Customer, Payment, Delivery, Order panels</p>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">Four panels with inline editable fields. Read-only fields are shaded.</p>
+
+                        <div class="mt-6 border-t border-gray-100 pt-5" id="od-actions">
+                            <h3 class="text-sm font-semibold text-gray-900">Order Actions</h3>
+
+                            {{-- Personnel --}}
+                            <div data-roles="personnel">
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    @foreach (['Request For Approval', 'Cancel Order', 'Complete Order', 'Restore Order'] as $a)
+                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
+                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            {{-- Manager --}}
+                            <div data-roles="manager">
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    @foreach (['Approve Order', 'Reject Order', 'Cancel Order', 'Complete Order', 'Restore Order'] as $a)
+                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
+                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
+                                    @endforeach
+                                </div>
+                                <div class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Approval <strong>requires</strong> uploading a document (PDF, DOC, DOCX, or image).</div>
+                            </div>
+                            {{-- Admin --}}
+                            <div data-roles="admin">
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    @foreach (['Request For Approval', 'Approve Order', 'Reject Order', 'Cancel Order', 'Complete Order', 'Restore Order', 'Generate SO#'] as $a)
+                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
+                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 border-t border-gray-100 pt-5" id="od-invoice">
+                            <h3 class="text-sm font-semibold text-gray-900">Invoice, Printing &amp; Notes</h3>
+                            <p class="mt-1 text-sm text-gray-500">Invoice recalculates live. Print buttons generate PDFs: <strong>SOF</strong>, <strong>Invoice</strong>, <strong>Freebies
+                                    Form</strong>, <strong>Order Slip</strong>. Order Notes log all actions with timestamps.</p>
+                            <div class="mt-3 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <strong>Update</strong> button activates when fields change. Click to save.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── MANAGER: Approve/Reject ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="approving-orders" data-roles="manager">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-green-600 text-xs font-bold text-white shadow-sm">★</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Approving &amp; Rejecting Orders</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <h3 class="text-sm font-semibold text-gray-900">Approving</h3>
+                        <div class="mt-3 space-y-1.5">
+                            @foreach (['Open order with <strong>"For Approval"</strong> status', 'Review all details', '<strong>Order Actions → Approve Order</strong>', '<strong>Upload required document</strong> (PDF, DOC, JPG)', 'Click <strong>Approve</strong> — requester is notified'] as $s)
+                                <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
+                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
+                                        class="text-sm text-gray-600">{!! $s !!}</span></div>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Document upload is <strong>mandatory</strong> for approval.</div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Rejecting</h3>
+                        <div class="mt-3 space-y-1.5">
+                            @foreach (['Open order with "For Approval" status', '<strong>Order Actions → Reject Order</strong>', 'Provide <strong>rejection reason</strong> (required)', 'Status changes to "Rejected"'] as $s)
+                                <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
+                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
+                                        class="text-sm text-gray-600">{!! $s !!}</span></div>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 flex gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v2a1 1 0 01-1 1z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Always provide a clear rejection reason for store personnel.
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── 5. PRODUCTS ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="products" data-roles="personnel admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">05</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Products Page</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm text-gray-600">Inventory catalog. Search by SKU, description, or sub-department.</p>
+                        <div data-roles="personnel">
+                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">Depot selector is <strong>not available</strong> for store personnel. View-only access.</div>
+                        </div>
+                        <div data-roles="admin">
+                            <div class="mt-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Full access: depot filter, <strong>Add Product</strong>, <strong>Import CSV</strong>.
+                            </div>
+                        </div>
+                        <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                            <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/products-table.png') }}"
+                                    alt="Products"></div>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Inventory levels and pricing</p>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── 6. STATUS REFERENCE ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="statuses" data-roles="personnel manager admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">06</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Status Reference</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <h3 class="text-sm font-semibold text-gray-900">Order Statuses</h3>
+                        <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        <th class="px-4 py-2.5">Status</th>
+                                        <th class="px-4 py-2.5">Meaning</th>
+                                        <th class="px-4 py-2.5">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ([['New Order', 'bg-blue-500', 'Just submitted', 'Review & request approval'], ['Pending', 'bg-yellow-500', 'Processing', 'Wait for updates'], ['For Approval', 'bg-purple-500', 'Sent to manager', 'Manager review'], ['Approved', 'bg-green-500', 'Approved', 'Generate SO#'], ['Completed', 'bg-teal-500', 'Fulfilled', 'No action'], ['Rejected', 'bg-red-500', 'Rejected', 'Check notes, revise'], ['Cancelled', 'bg-gray-400', 'Cancelled', 'Can restore']] as $st)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs font-medium"><span
+                                                        class="{{ $st[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $st[0] }}</span></td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $st[2] }}</td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $st[3] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Item Transfer Statuses</h3>
+                        <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        <th class="px-4 py-2.5">Status</th>
+                                        <th class="px-4 py-2.5">Meaning</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ([['N/A', 'No transfer number'], ['Pending', 'Pending at warehouse'], ['Picking', 'Being picked'], ['Processing', 'Processing for shipment'], ['Shipped', 'In transit'], ['Received', 'Store confirmed'], ['Error / Not Found', 'Contact IT']] as $ts)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5 font-medium text-gray-800">{{ $ts[0] }}</td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $ts[1] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── PERSONNEL: Workflows ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="workflows" data-roles="personnel">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">07</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Common Workflows</h2>
+                        </div>
+                    </div>
+                    <div class="space-y-6 px-6 pb-6 pt-3">
+                        @foreach ([['Creating a New Order', ['Forms → Sales Order Form', 'Complete header, enter 16-digit MBC Card', 'Add products, set quantities', 'Submit Order', 'Request For Approval']], ['After Manager Approval', ['Open approved order', 'Generate SO#', 'Track: Picking → Shipped → Received', 'Complete Order']], ['Editing an Order', ['Open from Orders List', 'Edit fields (yellow highlight)', 'Select items for cancellation', 'Click Update']]] as $wf)
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ $wf[0] }}</h3>
+                                <div class="mt-2 space-y-1.5">
+                                    @foreach ($wf[1] as $s)
+                                        <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2"><span
+                                                class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
+                                                class="text-sm text-gray-600">{!! $s !!}</span></div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @if (!$loop->last)
+                                <hr class="border-gray-100">
+                            @endif
+                        @endforeach
+                    </div>
+                </section>
+
+                {{-- ── ADMIN: User Management ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="user-management" data-roles="admin">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white shadow-sm">★</span>
+                            <h2 class="text-lg font-semibold text-gray-900">User Management</h2>
+                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">Admin Only</span>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="text-sm text-gray-600">Navigate to <strong>Users → User List</strong>. Create, edit, and manage system users.</p>
+
+                        <h3 class="mt-5 text-sm font-semibold text-gray-900">Adding a User</h3>
+                        <div class="mt-2 space-y-1.5">
+                            @foreach (['Click <strong>Add User</strong>', 'Fill: Name, Email, Password, Role, Location', 'Click <strong>Add User</strong> to create'] as $s)
+                                <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
+                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
+                                        class="text-sm text-gray-600">{!! $s !!}</span></div>
+                            @endforeach
+                        </div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Roles</h3>
+                        <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        <th class="px-4 py-2.5">Role</th>
+                                        <th class="px-4 py-2.5">Access</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ([['Super Admin', 'Full system access'], ['Manager', 'Approve/reject, regional reports'], ['Store Admin', 'Store-level management'], ['Store Personnel', 'Create orders, view products'], ['Warehouse Admin', 'Product management + depot filter'], ['Warehouse Personnel', 'View products + depot filter']] as $r)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5 font-medium text-gray-800">{{ $r[0] }}</td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $r[1] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Editing</h3>
+                        <p class="mt-1 text-sm text-gray-500">Click <strong>Edit</strong> → update fields → leave Password blank to keep current → <strong>Update User</strong>.</p>
+                        <div class="mt-3 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Role changes update permissions immediately.
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ── PERSONNEL: Troubleshooting ── --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="troubleshooting" data-roles="personnel">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white shadow-sm">08</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Troubleshooting</h2>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <div class="overflow-hidden rounded-lg ring-1 ring-gray-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        <th class="px-4 py-2.5">Error</th>
+                                        <th class="px-4 py-2.5">Cause</th>
+                                        <th class="px-4 py-2.5">Solution</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ([['MBC Card not found', 'Invalid/incomplete card', 'Check & re-enter'], ['Order Items missing', 'Incomplete header', 'Complete all fields'], ['Cannot submit', 'No products', 'Add product with qty > 0'], ['Update inactive', 'No changes', 'Edit a field first']] as $e)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5"><span class="font-medium text-red-600">"{{ $e[0] }}"</span></td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $e[1] }}</td>
+                                            <td class="px-4 py-2.5 text-gray-600">{{ $e[2] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Quick Tips</h3>
+                        <div class="mt-3 space-y-2">
+                            @foreach (['<strong>Dashboard</strong> refreshes on navigation — use as first stop', '<strong>Orders List</strong> updates via AJAX — no reloads', '<strong>MBC Card</strong> must be 16 digits exactly', '<strong>Yellow highlights</strong> = unsaved changes — click Update', '<strong>Products</strong> is view-only — contact admin for changes', '<strong>Order Notes</strong> log everything — check for audit trail'] as $t)
+                                <div class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" stroke-width="2.5"
+                                        viewBox="0 0 24 24">
+                                        <path d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <p class="text-sm text-gray-600">{!! $t !!}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+
+                <div class="pb-8 pt-4 text-center">
+                    <p class="text-xs text-gray-400">ISO B2B2C Ordering System — User Guide — v1.1 — March 2026</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ LIGHTBOX ═══ --}}
+    <div class="lightbox-overlay" id="lightboxOverlay">
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="lightbox-content" id="lightboxContent">
+            <button
+                class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-md backdrop-blur transition hover:rotate-90 hover:bg-white"
+                id="lightboxClose">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M1 1l12 12M13 1L1 13" />
+                </svg>
+            </button>
+            <img id="lightboxImg" src="" alt="">
+            <div class="border-t border-gray-100 bg-white px-4 py-2.5 text-center text-sm text-gray-500" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    {{-- ═══ JS ═══ --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const availableRoles = @json($availableRoles);
+
+            const sidebarConfig = {
+                personnel: [{
+                        label: 'Getting Started'
+                    },
+                    {
+                        href: '#dashboard',
+                        section: 'dashboard',
+                        icon: 'grid',
+                        text: 'Dashboard'
+                    },
+                    {
+                        label: 'Order Management'
+                    },
+                    {
+                        href: '#sales-order-form',
+                        section: 'sales-order-form',
+                        icon: 'file',
+                        text: 'Sales Order Form'
+                    },
+                    {
+                        href: '#sof-header',
+                        text: 'Header Fields',
+                        sub: true
+                    },
+                    {
+                        href: '#sof-items',
+                        text: 'Order Items',
+                        sub: true
+                    },
+                    {
+                        href: '#sof-submit',
+                        text: 'Submitting',
+                        sub: true
+                    },
+                    {
+                        href: '#orders-list',
+                        section: 'orders-list',
+                        icon: 'list',
+                        text: 'Orders List'
+                    },
+                    {
+                        href: '#order-details',
+                        section: 'order-details',
+                        icon: 'info',
+                        text: 'Order Details'
+                    },
+                    {
+                        href: '#od-actions',
+                        text: 'Actions',
+                        sub: true
+                    },
+                    {
+                        href: '#od-invoice',
+                        text: 'Invoice & Print',
+                        sub: true
+                    },
+                    {
+                        label: 'Catalog'
+                    },
+                    {
+                        href: '#products',
+                        section: 'products',
+                        icon: 'box',
+                        text: 'Products'
+                    },
+                    {
+                        label: 'Reference'
+                    },
+                    {
+                        href: '#statuses',
+                        section: 'statuses',
+                        icon: 'check',
+                        text: 'Statuses'
+                    },
+                    {
+                        href: '#workflows',
+                        section: 'workflows',
+                        icon: 'bolt',
+                        text: 'Workflows'
+                    },
+                    {
+                        href: '#troubleshooting',
+                        section: 'troubleshooting',
+                        icon: 'help',
+                        text: 'Troubleshooting'
+                    },
+                ],
+                manager: [{
+                        label: 'Getting Started'
+                    },
+                    {
+                        href: '#dashboard',
+                        section: 'dashboard',
+                        icon: 'grid',
+                        text: 'Dashboard'
+                    },
+                    {
+                        label: 'Order Review'
+                    },
+                    {
+                        href: '#orders-list',
+                        section: 'orders-list',
+                        icon: 'list',
+                        text: 'Orders List'
+                    },
+                    {
+                        href: '#order-details',
+                        section: 'order-details',
+                        icon: 'info',
+                        text: 'Order Details'
+                    },
+                    {
+                        href: '#od-actions',
+                        text: 'Actions',
+                        sub: true
+                    },
+                    {
+                        label: 'Approval'
+                    },
+                    {
+                        href: '#approving-orders',
+                        section: 'approving-orders',
+                        icon: 'shield',
+                        text: 'Approve / Reject'
+                    },
+                    {
+                        label: 'Reference'
+                    },
+                    {
+                        href: '#statuses',
+                        section: 'statuses',
+                        icon: 'check',
+                        text: 'Statuses'
+                    },
+                ],
+                admin: [{
+                        label: 'Getting Started'
+                    },
+                    {
+                        href: '#dashboard',
+                        section: 'dashboard',
+                        icon: 'grid',
+                        text: 'Dashboard'
+                    },
+                    {
+                        label: 'Orders'
+                    },
+                    {
+                        href: '#sales-order-form',
+                        section: 'sales-order-form',
+                        icon: 'file',
+                        text: 'Sales Order Form'
+                    },
+                    {
+                        href: '#orders-list',
+                        section: 'orders-list',
+                        icon: 'list',
+                        text: 'Orders List'
+                    },
+                    {
+                        href: '#order-details',
+                        section: 'order-details',
+                        icon: 'info',
+                        text: 'Order Details'
+                    },
+                    {
+                        label: 'Administration'
+                    },
+                    {
+                        href: '#user-management',
+                        section: 'user-management',
+                        icon: 'users',
+                        text: 'User Management'
+                    },
+                    {
+                        href: '#products',
+                        section: 'products',
+                        icon: 'box',
+                        text: 'Products'
+                    },
+                    {
+                        label: 'Reference'
+                    },
+                    {
+                        href: '#statuses',
+                        section: 'statuses',
+                        icon: 'check',
+                        text: 'Statuses'
+                    },
+                ]
+            };
+
+            const icons = {
+                grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+                file: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>',
+                list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+                info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+                box: '<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>',
+                check: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+                shield: '<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>',
+                users: '<path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>',
+                bolt: '<path d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+                help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/>',
+            };
+
+            let activeRole = '{{ $defaultTab }}';
+            let observer = null;
+
+            const titles = {
+                personnel: 'Store Personnel User Guide',
+                manager: 'Manager User Guide',
+                admin: 'Super Admin User Guide'
+            };
+
+            function buildSidebar(role) {
+                const nav = document.getElementById('guideSidebar');
+                if (!nav) return;
+                nav.innerHTML = '';
+                (sidebarConfig[role] || []).forEach(item => {
+                    if (item.label) {
+                        const d = document.createElement('div');
+                        d.className = 'px-3 pb-1 pt-4 text-[0.6rem] font-semibold uppercase tracking-wider text-gray-400';
+                        d.textContent = item.label;
+                        nav.appendChild(d);
+                    } else if (item.sub) {
+                        const a = document.createElement('a');
+                        a.href = item.href;
+                        a.className = 'guide-nav-sub block rounded-md px-3 py-1.5 pl-9 text-xs font-medium text-gray-400 transition-all hover:bg-gray-50 hover:text-gray-700';
+                        a.textContent = item.text;
+                        nav.appendChild(a);
+                    } else {
+                        const a = document.createElement('a');
+                        a.href = item.href;
+                        a.className =
+                            'guide-nav-link flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50 hover:text-gray-900';
+                        if (item.section) a.dataset.section = item.section;
+                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.setAttribute('class', 'h-4 w-4 opacity-50');
+                        svg.setAttribute('fill', 'none');
+                        svg.setAttribute('stroke', 'currentColor');
+                        svg.setAttribute('stroke-width', '1.5');
+                        svg.setAttribute('viewBox', '0 0 24 24');
+                        svg.innerHTML = icons[item.icon] || '';
+                        a.appendChild(svg);
+                        const sp = document.createElement('span');
+                        sp.textContent = item.text;
+                        a.appendChild(sp);
+                        nav.appendChild(a);
+                    }
+                });
+            }
+
+            function setActiveRole(role) {
+                activeRole = role;
+                document.querySelectorAll('.sidebar-role-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.role === role);
+                    b.classList.toggle('bg-blue-50', b.dataset.role === role);
+                    b.classList.toggle('!text-blue-700', b.dataset.role === role);
+                    b.classList.toggle('font-semibold', b.dataset.role === role);
+                });
+                const t = document.getElementById('role-title');
+                if (t) t.textContent = titles[role] || 'User Guide';
+                document.querySelectorAll('[data-roles]').forEach(el => {
+                    el.classList.toggle('role-visible', el.dataset.roles.split(' ').includes(role));
+                });
+                buildSidebar(role);
+                setTimeout(initScrollSpy, 50);
+                document.getElementById('guideSidebarCol')?.classList.remove('open');
+            }
+
+            function initScrollSpy() {
+                if (observer) observer.disconnect();
+                const links = document.querySelectorAll('.guide-nav-link[data-section]');
+                const subs = document.querySelectorAll('.guide-nav-sub');
+                const sections = document.querySelectorAll('.section-card.role-visible');
+                observer = new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) {
+                            const id = e.target.id;
+                            links.forEach(l => l.classList.toggle('active', l.dataset.section === id));
+                            subs.forEach(s => {
+                                const target = document.querySelector(s.getAttribute('href'));
+                                if (target) {
+                                    const r = target.getBoundingClientRect();
+                                    s.classList.toggle('active', r.top < innerHeight / 2 && r.bottom > 0);
+                                }
+                            });
+                        }
+                    });
+                }, {
+                    rootMargin: '-80px 0px -60% 0px',
+                    threshold: 0.1
+                });
+                sections.forEach(s => observer.observe(s));
+            }
+
+            if (availableRoles.length > 1) {
+                document.querySelectorAll('.sidebar-role-btn').forEach(b => b.addEventListener('click', () => setActiveRole(b.dataset.role)));
+            }
+            document.addEventListener('click', e => {
+                if (e.target.closest('.guide-nav-link,.guide-nav-sub')) document.getElementById('guideSidebarCol')?.classList.remove('open');
+            });
+
+            // Lightbox
+            const ov = document.getElementById('lightboxOverlay'),
+                ct = document.getElementById('lightboxContent'),
+                li = document.getElementById('lightboxImg'),
+                lc = document.getElementById('lightboxCaption');
+            document.addEventListener('click', e => {
+                const f = e.target.closest('.screenshot-frame');
+                if (!f) return;
+                const img = f.querySelector('img'),
+                    cap = f.querySelector('p');
+                if (!img) return;
+                const r = img.getBoundingClientRect(),
+                    cx = r.left + r.width / 2 - innerWidth / 2,
+                    cy = r.top + r.height / 2 - innerHeight / 2;
+                ct.style.transition = 'none';
+                ct.style.transform = `translate(${cx}px,${cy}px) scale(0.4)`;
+                ct.style.opacity = '0';
+                li.src = img.src;
+                li.alt = img.alt;
+                lc.textContent = cap?.textContent || '';
+                ov.classList.remove('closing');
+                ov.classList.add('active');
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    ct.style.transition = 'transform 0.4s cubic-bezier(0.32,0.72,0,1),opacity 0.3s';
+                    ct.style.transform = 'scale(1)';
+                    ct.style.opacity = '1';
+                }));
+                document.body.style.overflow = 'hidden';
+            });
+
+            function closeLB() {
+                ov.classList.add('closing');
+                ct.style.transform = 'scale(0.85)';
+                ct.style.opacity = '0';
+                setTimeout(() => {
+                    ov.classList.remove('active', 'closing');
+                    ct.style.transition = 'none';
+                    ct.style.transform = '';
+                    ct.style.opacity = '';
+                    li.src = '';
+                    document.body.style.overflow = '';
+                }, 350);
+            }
+            document.getElementById('lightboxClose').addEventListener('click', e => {
+                e.stopPropagation();
+                closeLB();
+            });
+            document.getElementById('lightboxBackdrop').addEventListener('click', closeLB);
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && ov.classList.contains('active')) closeLB();
+            });
+
+            setActiveRole(activeRole);
+        });
+    </script>
+@endsection
