@@ -186,6 +186,5 @@ Route::get('/check-session', function () {
 })->name('check.session');
 
 Route::prefix('user-guide')->name('user-guide.')->middleware(['auth', 'session.expired'])->group(function () {
-    Route::get('/personnel', fn() => view('user_guide.personnel'))->name('personnel');
-    // Route::get('/manager', fn () => view('user_guide.manager'))->name('manager');
+    Route::get('/document', fn() => view('user_guide.document'))->name('document');
 });

@@ -348,13 +348,14 @@ class OracleTransferController extends Controller
     {
         try {
             // Log the incoming request
-            Log::info('Order status request received', ['store_order_no' => $storeOrderNo]);
+            Log::info('Order status request received', ['store_order_no' => $storeOrderNo, 'sku' => $sku]);
 
             // Check if store order number is blank or null
             if (empty($storeOrderNo)) {
                 Log::warning('Empty store order number received');
                 return response()->json([
-                    'status' => 'N/A'
+                    'status' => 'N/A',
+                    'bol_number' => null
                 ], 200);
             }
 
@@ -368,12 +369,14 @@ class OracleTransferController extends Controller
             if (!$tsfHead) {
                 Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
                 return response()->json([
-                    'status' => 'Not Found'
+                    'status' => 'Not Found',
+                    'bol_number' => null
                 ], 200);
             }
 
             // If found in tsfhead, default status is Processing
             $status = 'Processing';
+            $bolNumber = null;
             Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
             // Step 1.5: Check oracle_wms database - pick_directive table
@@ -393,13 +396,17 @@ class OracleTransferController extends Controller
                 ->where('distro_nbr', $storeOrderNo)
                 ->first();
 
-            // If container_item exists, check container by container_id
+            // If container_item exists, check container by container_id for BOL
             if ($containerItem) {
                 $container = DB::connection('oracle_wms')
                     ->table('rwms.container')
                     ->where('container_id', $containerItem->container_id)
                     ->whereNotNull('bol_nbr')
                     ->first();
+
+                if ($container) {
+                    $bolNumber = $container->bol_nbr;
+                }
             }
 
             // Multiple indicators of picking status (ANY can trigger):
@@ -429,27 +436,25 @@ class OracleTransferController extends Controller
                 $shipped = true;
                 $status = 'Shipped';
 
-                // Log which indicator triggered
-                if ($containerItem || $container) {
-                    Log::info('Order shipped (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
-                }
-                if ($tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
-                    Log::info('Order shipped (tsfhead.status is S or C)', [
-                        'store_order_no' => $storeOrderNo,
-                        'tsf_status' => $tsfHead->status
-                    ]);
-                }
+                Log::info('Order shipped', [
+                    'store_order_no' => $storeOrderNo,
+                    'tsf_status' => $tsfHead->status,
+                    'bol_number' => $bolNumber
+                ]);
             }
 
             // Step 3: If shipped, check for received status
             if ($shipped) {
                 // Check if SKU is empty
                 if (empty($sku)) {
-                    return response()->json(['status' => 'N/A'], 200);
+                    return response()->json([
+                        'status' => 'N/A',
+                        'bol_number' => $bolNumber
+                    ], 200);
                 }
 
                 // Check shipsku for received qty
-                Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo]);
+                Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo, 'sku' => $sku]);
                 $shipSku = DB::connection('oracle_rms')
                     ->table('shipsku')
                     ->where('distro_no', $storeOrderNo)
@@ -466,16 +471,19 @@ class OracleTransferController extends Controller
 
             Log::info('Final status determined', [
                 'store_order_no' => $storeOrderNo,
-                'status' => $status
+                'status' => $status,
+                'bol_number' => $bolNumber
             ]);
 
             return response()->json([
                 'status' => $status,
+                'bol_number' => $bolNumber,
                 'store_order_no' => $storeOrderNo
             ], 200);
         } catch (\Exception $e) {
             Log::error('Order status error', [
                 'store_order_no' => $storeOrderNo,
+                'sku' => $sku,
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -484,6 +492,7 @@ class OracleTransferController extends Controller
 
             return response()->json([
                 'status' => 'Error',
+                'bol_number' => null,
                 'store_order_no' => $storeOrderNo
             ], 500);
         }

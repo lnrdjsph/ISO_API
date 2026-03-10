@@ -673,16 +673,41 @@
                                             </td>
 
 
-
-                                            <td class="border p-2 text-center"
+                                            {{-- Store Order No Column with BOL underneath --}}
+                                            <td class="border p-2 text-center align-top"
                                                 contenteditable="false"
                                                 data-field="store_order_no">
-                                                {{ $item->store_order_no }}
 
-                                                <input
-                                                    type="hidden"
-                                                    name="items[{{ $loop->index }}][store_order_no]"
-                                                    value="{{ $item->store_order_no }}">
+                                                <div class="flex flex-col items-center space-y-1 py-1">
+                                                    {{-- Store Order Number --}}
+                                                    <div class="text-sm font-semibold text-blue-600">
+                                                        {{ $item->store_order_no }}
+                                                    </div>
+
+                                                    {{-- BOL Container - Only show if store_order_no exists --}}
+                                                    @if (!empty($item->store_order_no))
+                                                        <div class="bol-container w-full text-xs"
+                                                            data-tsf="{{ $item->store_order_no }}"
+                                                            data-sku="{{ $item->sku ?? '' }}">
+                                                            <div class="flex items-center justify-center">
+                                                                <span class="mr-1 font-medium text-gray-600">BOL:</span>
+                                                                <span class="bol-loading inline-flex items-center text-gray-400">
+                                                                    <svg class="mr-1 h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor"
+                                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                                        </path>
+                                                                    </svg>
+                                                                    Loading...
+                                                                </span>
+                                                                <span class="bol-value hidden font-semibold text-green-600"></span>
+                                                                <span class="bol-na hidden font-semibold text-gray-400">N/A</span>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                <input type="hidden" name="items[{{ $loop->index }}][store_order_no]" value="{{ $item->store_order_no }}">
                                             </td>
 
 
@@ -943,6 +968,52 @@
                                             });
                                         })();
                                     </script>
+                                    <script>
+                                        // BOL Fetcher - Only updates the BOL under store order number
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            // Find all BOL containers
+                                            document.querySelectorAll('.bol-container').forEach(container => {
+                                                const tsf = container.dataset.tsf;
+                                                const sku = container.dataset.sku;
+
+                                                if (tsf && sku && tsf !== 'N/A' && tsf !== '') {
+                                                    // Use your order.status route since it already returns bol_number
+                                                    const url = "{{ route('order.status', ['storeOrderNo' => '__TSF__', 'sku' => '__SKU__']) }}"
+                                                        .replace('__TSF__', tsf)
+                                                        .replace('__SKU__', sku);
+
+                                                    fetch(url)
+                                                        .then(response => response.json())
+                                                        .then(data => {
+                                                            console.log('Order data for BOL:', data);
+
+                                                            const loadingSpan = container.querySelector('.bol-loading');
+                                                            const bolValueSpan = container.querySelector('.bol-value');
+                                                            const bolNaSpan = container.querySelector('.bol-na');
+
+                                                            // Hide loading
+                                                            if (loadingSpan) loadingSpan.classList.add('hidden');
+
+                                                            // Check if BOL number exists in the response
+                                                            if (data.bol_number) {
+                                                                bolValueSpan.textContent = data.bol_number;
+                                                                bolValueSpan.classList.remove('hidden');
+                                                            } else {
+                                                                bolNaSpan.classList.remove('hidden');
+                                                            }
+                                                        })
+                                                        .catch(error => {
+                                                            console.error('Error fetching BOL:', error);
+                                                            const loadingSpan = container.querySelector('.bol-loading');
+                                                            const bolNaSpan = container.querySelector('.bol-na');
+
+                                                            if (loadingSpan) loadingSpan.classList.add('hidden');
+                                                            if (bolNaSpan) bolNaSpan.classList.remove('hidden');
+                                                        });
+                                                }
+                                            });
+                                        });
+                                    </script>
                                 </tbody>
 
                             </table>
@@ -989,10 +1060,28 @@
                                 </div>
 
                                 <script>
+                                    // hide all checkbox if order status is approved or completed
+
                                     (function() {
                                         const cancelBtn = document.getElementById('cancel-items-btn');
                                         const selectedCountSpan = document.getElementById('selected-count');
                                         const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+                                        const selectAllCheckbox = document.getElementById('select-all');
+                                        const orderStatus = '{{ strtolower($order->order_status) }}';
+                                        const lockedStatuses = ['approved', 'completed'];
+
+                                        // Hide checkboxes if order status is approved or completed
+                                        if (lockedStatuses.includes(orderStatus)) {
+                                            itemCheckboxes.forEach(checkbox => {
+                                                checkbox.closest('td').style.display = 'none';
+                                            });
+                                            if (selectAllCheckbox) {
+                                                selectAllCheckbox.closest('th').style.display = 'none';
+                                            }
+                                            cancelBtn.style.display = 'none';
+                                            selectedCountSpan.style.display = 'none';
+                                            return; // Exit early if status is locked
+                                        }
 
                                         // Update selected count and button visibility
                                         function updateSelectedCount() {
@@ -1018,7 +1107,6 @@
                                         });
 
                                         // Also update when select-all changes
-                                        const selectAllCheckbox = document.getElementById('select-all');
                                         if (selectAllCheckbox) {
                                             selectAllCheckbox.addEventListener('change', updateSelectedCount);
                                         }
