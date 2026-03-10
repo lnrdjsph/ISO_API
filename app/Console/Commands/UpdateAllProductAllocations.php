@@ -14,20 +14,14 @@ class UpdateAllProductAllocations extends Command
                             {--warehouse= : Specific warehouse code to process (e.g., 80181, 80141)}
                             {--async : Use async job queue instead of batch processing}';
 
-    protected $description = 'Update product_wms_allocations table (wms_actual_allocation and wms_virtual_allocation) and case pack using oracle_wms config';
+    protected $description = 'Update product_wms_allocations table (wms_actual_allocation and wms_virtual_allocation) and case pack using oracle_rms config';
 
     // Master mapping: Warehouse Code => [Facility Label, Store Codes]
     protected array $warehouseConfig = [
         '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018']],                    // Bacolod Depot
         '80141' => ['facility' => 'SI', 'stores' => ['6012', '3019', '2008', '6009', '6010']],                    // Silangan Warehouse
-        // '80001' => ['facility' => 'BD', 'stores' => ['2010']],                    // Central Warehouse
-        // '80041' => ['facility' => 'BD', 'stores' => ['2017']],                    // Procter Warehouse
-        // '80051' => ['facility' => 'BD', 'stores' => ['2019']],                    // Opao-ISO Warehouse
-        // '80071' => ['facility' => 'BD', 'stores' => ['3018']],                    // Big Blue Warehouse
-        // '80131' => ['facility' => 'BD', 'stores' => ['3019']],                    // Lower Tingub Warehouse
-        // '80201' => ['facility' => 'SL', 'stores' => ['2008']],                    // Sta. Rosa Warehouse
-        // '80191' => ['facility' => 'BD', 'stores' => ['6009', '6010']],            // Tacloban Depot
     ];
+
     protected array $warehouseMap = [
         '80141' => 'Silangan Warehouse',
         '80001' => 'Central Warehouse',
@@ -39,7 +33,6 @@ class UpdateAllProductAllocations extends Command
         '80181' => 'Bacolod Depot',
         '80191' => 'Tacloban Depot',
     ];
-
 
     private $logFile;
     private $processStartTime;
@@ -171,7 +164,6 @@ class UpdateAllProductAllocations extends Command
 
         // Dispatch async jobs
         foreach ($allSkus as $sku) {
-
             $tableName = "products_{$stores[0]}";
             FetchAllocationJob::dispatch($sku, $facilityId, $warehouseCode, $tableName)
                 ->onQueue('wms');
@@ -206,7 +198,6 @@ class UpdateAllProductAllocations extends Command
 
         $grandTotalUpdated = 0;
         $grandTotalInserted = 0;
-        $grandTotalCasePack = 0;
 
         // Process each warehouse
         foreach ($warehousesToProcess as $warehouseCode) {
@@ -240,81 +231,32 @@ class UpdateAllProductAllocations extends Command
 
             $this->log("Total unique SKUs collected: " . count($allSkus));
 
-            // Test Oracle connection with enhanced error reporting
-            // try {
-            //     $this->log("Testing Oracle connection...");
-            //     $this->log("Oracle Host: " . config('database.connections.oracle_wms.host'));
-            //     $this->log("Oracle Database: " . config('database.connections.oracle_wms.database'));
-            //     $this->log("Oracle Port: " . config('database.connections.oracle_wms.port'));
-            //     $this->log("Oracle Username: " . config('database.connections.oracle_wms.username'));
+            // FIX 1: Purge and reconnect oracle_rms (matching FetchAllocationJob behavior)
+            try {
+                $this->log("Establishing fresh Oracle RMS connection...");
+                DB::purge('oracle_rms');
+                $oracle = DB::connection('oracle_rms');
+                $pdo = $oracle->getPdo();
 
-            //     // Check if oci8 extension is loaded
-            //     $this->log("Checking PHP OCI8 extension...");
-            //     if (!extension_loaded('oci8')) {
-            //         throw new \Exception("OCI8 extension not loaded");
-            //     }
-            //     $this->log("OCI8 extension is loaded");
+                // Configure PDO attributes for reliability
+                $pdo->setAttribute(PDO::ATTR_TIMEOUT, 60);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            //     // Check environment variables
-            //     $this->log("Environment check:");
-            //     $this->log("→ ORACLE_HOME: " . (getenv('ORACLE_HOME') ?: 'NOT SET'));
-            //     $this->log("→ LD_LIBRARY_PATH: " . (getenv('LD_LIBRARY_PATH') ?: 'NOT SET'));
-            //     $this->log("→ NLS_LANG: " . (getenv('NLS_LANG') ?: 'NOT SET'));
+                // Verify connection with a test query
+                $testStart = microtime(true);
+                $oracle->select("SELECT 1 AS test FROM DUAL");
+                $testDuration = round((microtime(true) - $testStart) * 1000, 2);
 
-            //     $testStart = microtime(true);
+                $this->log("Oracle RMS connection verified (response time: {$testDuration}ms)");
+            } catch (\Exception $e) {
+                $this->log("ERROR: Oracle RMS connection failed for warehouse {$warehouseCode}");
+                $this->log("Type: " . get_class($e));
+                $this->log("Message: " . $e->getMessage());
+                $this->log("Skipping warehouse {$warehouseCode}");
+                continue;
+            }
 
-            //     // CRITICAL: Reconnect to ensure fresh connection in cron context
-            //     $this->log("Purging existing Oracle connection...");
-            //     DB::purge('oracle_wms');
-            //     $this->log("Getting new Oracle connection...");
-            //     $connection = DB::connection('oracle_wms');
-            //     $this->log("Connection object created");
-
-            //     try {
-            //         $this->log("Attempting to get PDO connection...");
-            //         $pdo = $connection->getPdo();
-            //         $this->log("PDO connection object retrieved");
-
-            //         $pdo->setAttribute(PDO::ATTR_TIMEOUT, 60);
-            //         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            //         $this->log("PDO attributes set (timeout: 60s, error mode: exception)");
-            //     } catch (\Exception $e) {
-            //         $this->log("WARNING: Could not configure PDO - " . $e->getMessage());
-            //         $this->log("Exception type: " . get_class($e));
-            //         // Don't fail here, try to continue
-            //     }
-
-            //     // Test with a simple query
-            //     $this->log("Executing test query...");
-            //     $result = $connection->select("SELECT 1 AS test FROM DUAL");
-
-            //     $testEnd = microtime(true);
-            //     $testDuration = round(($testEnd - $testStart) * 1000, 2);
-            //     $this->log("Oracle connection successful (response time: {$testDuration}ms)");
-            //     $this->log("Test result: " . json_encode($result));
-            //     $this->log("Proceeding to query allocations...");
-            // } catch (\PDOException $e) {
-            //     $this->log("ERROR: Oracle PDO Exception");
-            //     $this->log("Message: " . $e->getMessage());
-            //     $this->log("Code: " . $e->getCode());
-            //     $this->log("File: " . $e->getFile());
-            //     $this->log("Line: " . $e->getLine());
-            //     $this->log("Trace: " . $e->getTraceAsString());
-            //     $this->log("Skipping warehouse {$warehouseCode}");
-            //     continue;
-            // } catch (\Exception $e) {
-            //     $this->log("ERROR: Oracle connection failed");
-            //     $this->log("Type: " . get_class($e));
-            //     $this->log("Message: " . $e->getMessage());
-            //     $this->log("Code: " . $e->getCode());
-            //     $this->log("File: " . $e->getFile());
-            //     $this->log("Line: " . $e->getLine());
-            //     $this->log("Trace: " . $e->getTraceAsString());
-            //     $this->log("Skipping warehouse {$warehouseCode}");
-            //     continue;
-            // }
-
-            // Process SKUs in chunks to avoid query issues
+            // Process SKUs in chunks
             $chunkSize = 500;
             $skuChunks = array_chunk($allSkus, $chunkSize);
             $this->log("Processing in " . count($skuChunks) . " chunks of {$chunkSize} SKUs each");
@@ -325,30 +267,46 @@ class UpdateAllProductAllocations extends Command
                 $chunkNum = $chunkIndex + 1;
                 $this->log("Processing chunk {$chunkNum}/" . count($skuChunks) . " (" . count($skuChunk) . " SKUs)");
 
-                $inClause = "'" . implode("','", $skuChunk) . "'";
+                // FIX 2: Use parameterized placeholders for the IN clause
+                $placeholders = implode(',', array_fill(0, count($skuChunk), '?'));
+                $bindings = array_merge([$warehouseCode], array_values($skuChunk));
 
                 try {
                     $queryStart = microtime(true);
-                    $this->log("Executing Oracle query for chunk {$chunkNum}...");
+                    $this->log("Executing Oracle RMS query for chunk {$chunkNum}...");
                     $this->log("→ Started at: " . date('H:i:s.u'));
 
-                    // Ensure connection is still alive
-                    DB::connection('oracle_wms')->getPdo();
+                    // FIX 3: Use oracle_rms consistently (not oracle_wms) and reuse $oracle
+                    // Verify connection is still alive before each chunk
+                    try {
+                        $oracle->select("SELECT 1 FROM DUAL");
+                    } catch (\Exception $e) {
+                        $this->log("Connection stale, reconnecting...");
+                        DB::purge('oracle_rms');
+                        $oracle = DB::connection('oracle_rms');
+                        $oracle->getPdo();
+                    }
 
-                    $inventoryRows = DB::connection('oracle_rms')->select("
-                        SELECT /*+ PARALLEL(4) */ 
+                    $inventoryRows = $oracle->select("
+                        SELECT /*+ PARALLEL(4) */
                             ITEM AS item_id,
-                            (STOCK_ON_HAND 
-                            - COALESCE(TSF_RESERVED_QTY, 0) 
-                            - COALESCE(NON_SELLABLE_QTY, 0)
-                            - COALESCE(CUSTOMER_RESV, 0)
-                            - COALESCE(CUSTOMER_BACKORDER, 0)
-                            - COALESCE(RTV_QTY, 0)
+                            STOCK_ON_HAND AS physical_stock,
+                            COALESCE(TSF_RESERVED_QTY, 0) AS tsf_reserved_qty,
+                            COALESCE(NON_SELLABLE_QTY, 0) AS non_sellable_qty,
+                            COALESCE(CUSTOMER_RESV, 0) AS customer_resv_qty,
+                            COALESCE(CUSTOMER_BACKORDER, 0) AS backorder_qty,
+                            COALESCE(RTV_QTY, 0) AS rtv_qty,
+                            (STOCK_ON_HAND
+                             - COALESCE(TSF_RESERVED_QTY, 0)
+                             - COALESCE(NON_SELLABLE_QTY, 0)
+                             - COALESCE(CUSTOMER_RESV, 0)
+                             - COALESCE(CUSTOMER_BACKORDER, 0)
+                             - COALESCE(RTV_QTY, 0)
                             ) AS available_qty
                         FROM ITEM_LOC_SOH
-                        WHERE LOC = '{$warehouseCode}'
-                            AND ITEM IN ({$inClause})
-                    ");
+                        WHERE LOC = ?
+                            AND ITEM IN ({$placeholders})
+                    ", $bindings);
 
                     $queryEnd = microtime(true);
                     $queryDuration = round($queryEnd - $queryStart, 2);
@@ -359,7 +317,8 @@ class UpdateAllProductAllocations extends Command
 
                     $resultCount = 0;
                     foreach ($inventoryRows as $row) {
-                        $allocations[$row->item_id] = (int) $row->available_qty;  // ✓ FIXED: Use correct alias
+                        // FIX 4: Guard against negative values (matching FetchAllocationJob)
+                        $allocations[$row->item_id] = max(0, (int) $row->available_qty);
                         $resultCount++;
                     }
 
@@ -409,6 +368,7 @@ class UpdateAllProductAllocations extends Command
                         $after = sprintf("%d / %d", $newAllocation, $newAllocation);
                         $status = "UPDATED";
 
+                        // FIX 5: Use updateOrInsert for consistency with FetchAllocationJob
                         DB::connection('mysql')->table('product_wms_allocations')
                             ->where('sku', $sku)
                             ->where('warehouse_code', $warehouseCode)
@@ -449,76 +409,6 @@ class UpdateAllProductAllocations extends Command
             $this->log("Allocations: {$updated} updated, {$inserted} inserted");
             $grandTotalUpdated += $updated;
             $grandTotalInserted += $inserted;
-
-            // // Query Oracle for case pack data
-            // $this->log("Querying Oracle WMS for case pack data...");
-            // $caseMap = [];
-
-            // foreach ($skuChunks as $chunkIndex => $skuChunk) {
-            //     $chunkNum = $chunkIndex + 1;
-            //     $inClause = "'" . implode("','", $skuChunk) . "'";
-
-            //     try {
-            //         $queryStart = microtime(true);
-
-            //         $caseRows = DB::connection('oracle_wms')->select("
-            //             SELECT item_id, unit_qty
-            //             FROM (
-            //                 SELECT ci.item_id, ci.unit_qty,
-            //                     ROW_NUMBER() OVER (PARTITION BY ci.item_id ORDER BY ci.unit_qty) AS rn
-            //                 FROM rwms.container_item ci
-            //                 WHERE ci.facility_id = '{$facilityId}'
-            //                 AND ci.item_id IN ({$inClause})
-            //             )
-            //             WHERE rn <= 5
-            //         ");
-
-            //         $queryEnd = microtime(true);
-            //         $queryDuration = round($queryEnd - $queryStart, 2);
-
-            //         foreach ($caseRows as $row) {
-            //             $caseMap[$row->item_id][] = $row->unit_qty;
-            //         }
-
-            //         $this->log("Case pack chunk {$chunkNum} completed in {$queryDuration}s");
-            //     } catch (\Exception $e) {
-            //         $this->log("ERROR: Case pack chunk {$chunkNum} failed - " . $e->getMessage());
-            //         continue;
-            //     }
-            // }
-
-            // $this->log("Total case packs retrieved: " . count($caseMap) . " SKUs");
-
-            // // Update case pack in products tables for each store
-            // $casePackProcessed = 0;
-            // foreach ($stores as $store) {
-            //     $tableName = "products_{$store}";
-
-            //     if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
-            //         continue;
-            //     }
-
-            //     $storeSkus = DB::connection('mysql')->table($tableName)->pluck('sku')->toArray();
-
-            //     foreach ($storeSkus as $sku) {
-            //         if (isset($caseMap[$sku])) {
-            //             try {
-            //                 DB::connection('mysql')->table($tableName)
-            //                     ->where('sku', $sku)
-            //                     ->update([
-            //                         'case_pack' => implode(' | ', array_unique($caseMap[$sku])),
-            //                         'updated_at' => now()
-            //                     ]);
-            //                 $casePackProcessed++;
-            //             } catch (\Exception $e) {
-            //                 $this->log("Case pack update failed for SKU {$sku}: " . $e->getMessage());
-            //             }
-            //         }
-            //     }
-            // }
-
-            // $this->log("Case packs: {$casePackProcessed} updated");
-            // $grandTotalCasePack += $casePackProcessed;
         }
 
         // Final summary
@@ -530,7 +420,6 @@ class UpdateAllProductAllocations extends Command
         $this->log("=== All warehouses processed ===");
         $this->log("Total allocations updated: {$grandTotalUpdated}");
         $this->log("Total allocations inserted: {$grandTotalInserted}");
-        // $this->log("Total case packs updated: {$grandTotalCasePack}");
         $this->log("Process completed in {$minutes}m {$seconds}s");
 
         return Command::SUCCESS;
