@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Arr;
 
+use Illuminate\Support\Facades\Storage;
+
+use App\Models\User;
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -736,6 +739,11 @@ class OrderController extends Controller
         // ✅ Save the file
         $filePath = null;
         if ($request->hasFile('attachment')) {
+            // Optional: Delete old file if you want to replace it
+            if ($order->approval_document) {
+                Storage::disk('public')->delete($order->approval_document);
+            }
+
             $filePath = $request->file('attachment')->store(
                 'order_approvals/' . $order->id, // folder per order
                 'public' // use the `public` disk
@@ -744,19 +752,16 @@ class OrderController extends Controller
 
         // ✅ Update order
         $order->order_status = 'approved';
-        $order->approval_document = $filePath; // make sure you add this column in DB (nullable string)
-        // $this->deductAllocationStock($order->id);
+        $order->approval_document = $filePath;
         $order->save();
 
         // ✅ Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
-            'note' =>
-            "Order approved by:<br>" .
+            'note'    => "Order approved by:<br>" .
                 "<strong>" . auth()->user()->name . "</strong><br>" .
                 ucfirst(auth()->user()->role)
-
         ]);
 
         // ✅ Send email to requester
@@ -774,7 +779,6 @@ class OrderController extends Controller
             ->route('orders.show', $order->id)
             ->with('success', $successMessage);
     }
-
 
 
     public function rejectOrder(Request $request)
