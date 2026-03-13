@@ -790,7 +790,7 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'rejected';
-        $this->revertAllocationStock($order->id);
+        // $this->revertAllocationStock($order->id);
         $order->save();
 
         // Log note with reason
@@ -1059,8 +1059,8 @@ class OrderController extends Controller
             '6009' => '80141', // Silangan
             '6010' => '80141', // Silangan
             '6012' => '80141', // Silangan
-            'vs'    => '80141', // Silangan
-            'lz'    => '80181', // LZ
+            'lz'    => '80141', // LZ
+            'vs'    => '80181', // Silangan
 
         ];
 
