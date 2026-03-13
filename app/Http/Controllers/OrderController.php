@@ -1059,6 +1059,9 @@ class OrderController extends Controller
             '6009' => '80141', // Silangan
             '6010' => '80141', // Silangan
             '6012' => '80141', // Silangan
+            'vs'    => '80141', // Silangan
+            'lz'    => '80181', // LZ
+
         ];
 
         $warehouseCode = $locationToWarehouse[$location] ?? null;
