@@ -77,6 +77,11 @@ class UpdateAllProductAllocations extends Command
         $this->log("Memory limit: " . ini_get('memory_limit'));
         $this->log("Output buffering: " . (ob_get_level() > 0 ? 'ON (Level: ' . ob_get_level() . ')' : 'OFF'));
 
+        // Check server/database dependencies
+        if (!$this->checkDependencies()) {
+            $this->log("Dependency check failed. Aborting process.");
+            return Command::FAILURE;
+        }
         // Check if async mode is enabled
         $asyncMode = $this->option('async');
 
@@ -467,5 +472,34 @@ class UpdateAllProductAllocations extends Command
         }
 
         $this->line($message);
+    }
+
+    protected function checkDependencies()
+    {
+        $this->log("Running system dependency checks...");
+
+        // Check MySQL
+        try {
+            DB::connection('mysql')->select('SELECT 1');
+            $this->log("MySQL connection OK");
+        } catch (\Exception $e) {
+            $this->log("CRITICAL: MySQL database is unreachable.");
+            $this->log("Error: " . $e->getMessage());
+            return false;
+        }
+
+        // Check Oracle RMS
+        try {
+            DB::purge('oracle_rms');
+            $oracle = DB::connection('oracle_rms');
+            $oracle->select('SELECT 1 FROM DUAL');
+            $this->log("Oracle RMS connection OK");
+        } catch (\Exception $e) {
+            $this->log("CRITICAL: Oracle RMS database is unreachable.");
+            $this->log("Error: " . $e->getMessage());
+            return false;
+        }
+
+        return true;
     }
 }
