@@ -16,7 +16,6 @@
     @endphp
 
     <style>
-        /* ── Only styles Tailwind can't handle ── */
         [data-roles] {
             display: none;
         }
@@ -36,7 +35,6 @@
             font-weight: 600;
         }
 
-        /* Sidebar scroll */
         .guide-sidebar-scroll {
             scrollbar-width: thin;
             scrollbar-color: #cbd5e1 transparent;
@@ -51,7 +49,6 @@
             border-radius: 3px;
         }
 
-        /* Screenshot lightbox */
         .screenshot-frame {
             cursor: pointer;
             transition: box-shadow 0.2s, transform 0.2s;
@@ -131,7 +128,6 @@
             height: auto;
         }
 
-        /* Step hover */
         .step-row {
             transition: all 0.15s;
         }
@@ -142,7 +138,6 @@
             transform: translateX(4px);
         }
 
-        /* Section card hover */
         .section-card {
             transition: box-shadow 0.2s, transform 0.2s;
         }
@@ -152,8 +147,7 @@
             transform: translateY(-1px);
         }
 
-        /* Mobile sidebar overlay */
-        @media (max-width: 1024px) {
+        @media (max-width:1024px) {
             .guide-sidebar-col {
                 display: none !important;
             }
@@ -179,7 +173,7 @@
             }
         }
 
-        @media (min-width: 1025px) {
+        @media (min-width:1025px) {
             .mobile-toggle {
                 display: none !important;
             }
@@ -191,11 +185,37 @@
             scroll-padding-top: 2rem;
             overflow-x: clip !important;
         }
+
+        .field-row {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .field-row:nth-child(even) {
+            background: #f0f4ff;
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: #1e293b;
+            min-width: 140px;
+            flex-shrink: 0;
+            font-size: 0.8125rem;
+        }
+
+        .field-desc {
+            color: #4b5563;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+        }
     </style>
 
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {{-- ═══ PAGE HEADER — high contrast ═══ --}}
+        {{-- ═══ PAGE HEADER ═══ --}}
         <div class="mb-8 overflow-hidden rounded-2xl bg-gray-950 p-8 shadow-xl">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4">
@@ -207,7 +227,7 @@
                     </div>
                     <div>
                         <h1 id="role-title" class="text-2xl font-bold tracking-tight text-white sm:text-3xl">User Guide</h1>
-                        <p class="mt-1 text-sm text-gray-300">ISO B2B2C Ordering Platform · v1.1 · March 2026</p>
+                        <p class="mt-1 text-sm text-gray-300">ISO B2B2C Ordering Platform · v1.2 · March 2026</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-gray-200 ring-1 ring-white/20">
@@ -230,11 +250,9 @@
 
         <div class="relative flex gap-6">
 
-            {{-- ═══ SIDEBAR — sticky, minimal ═══ --}}
+            {{-- ═══ SIDEBAR ═══ --}}
             <div class="guide-sidebar-col w-60 flex-shrink-0 self-stretch" id="guideSidebarCol" onclick="if(event.target===this)this.classList.remove('open')">
                 <div class="sticky top-24 w-60 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" style="max-height: calc(100vh - 7rem);">
-
-                    {{-- Role switcher (only for super admin) --}}
                     @if (count($availableRoles) > 1)
                         <div class="border-b border-gray-100 px-3 py-3">
                             <p class="mb-2 px-2 text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400">Switch view</p>
@@ -275,10 +293,7 @@
                             </div>
                         </div>
                     @endif
-
-                    {{-- Nav links --}}
                     <nav class="guide-sidebar-scroll overflow-y-auto p-2" id="guideSidebar" style="max-height: {{ count($availableRoles) > 1 ? 'calc(100vh - 16rem)' : 'calc(100vh - 8rem)' }};">
-                        {{-- Populated by JS --}}
                     </nav>
                 </div>
             </div>
@@ -286,7 +301,9 @@
             {{-- ═══ MAIN CONTENT ═══ --}}
             <div class="guide-main min-w-0 flex-1">
 
-                {{-- ── 1. DASHBOARD ── --}}
+                {{-- ══════════════════════════════════════════
+                     1. DASHBOARD
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="dashboard" data-roles="personnel manager admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -297,44 +314,153 @@
                     <div class="px-6 pb-6 pt-3">
                         <p class="text-sm leading-relaxed text-gray-600">Your command center. Real-time snapshot of order activity the moment you log in.</p>
 
-                        <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
-                            <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/dashboard-full.png') }}"
-                                    alt="Dashboard"></div>
-                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Dashboard — KPI cards, order distribution, and recent activity</p>
-                        </div>
-
-                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Status Indicators</h3>
-                        <p class="mt-1 text-sm text-gray-500">Color-coded badges show live order counts:</p>
-                        <div class="mt-3 space-y-2">
-                            @foreach ([['New Orders', 'bg-blue-500', 'Awaiting processing'], ['Pending', 'bg-yellow-500', 'In progress'], ['For Approval', 'bg-purple-500', 'Needs manager review']] as $b)
-                                <div class="flex items-center gap-3">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"><span
-                                            class="{{ $b[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $b[0] }}</span>
-                                    <span class="text-sm text-gray-500">{{ $b[2] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        {{-- Personnel --}}
+                        {{-- Personnel Dashboard Screenshot --}}
                         <div data-roles="personnel">
+                            <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover"
+                                        src="{{ asset('images/guide/dashboard-full.png') }}" alt="Personnel Dashboard"></div>
+                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Store Personnel Dashboard — Order counts, quick access cards, and recent
+                                    activity</p>
+                            </div>
+                        </div>
+
+                        {{-- Manager Dashboard Screenshot --}}
+                        <div data-roles="manager">
+                            <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/dashboard-manager.png') }}"
+                                        alt="Manager Dashboard"></div>
+                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Manager Dashboard — Shows orders from your assigned region only</p>
+                            </div>
+                        </div>
+
+                        {{-- Admin Dashboard Screenshot --}}
+                        <div data-roles="admin">
+                            <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                <div class="flex h-64 items-center justify-center overflow-hidden">
+                                    @php
+                                        $user = auth()->user();
+                                        $dashboardImage = 'dashboard-full.png'; // default admin image
+
+                                        // Check if user is manager or other role to show different dashboard
+                                        if ($user->role === 'manager') {
+                                            $dashboardImage = 'dashboard-manager.png';
+                                        } elseif ($user->role === 'supervisor') {
+                                            $dashboardImage = 'dashboard-supervisor.png';
+                                        } elseif ($user->role === 'staff') {
+                                            $dashboardImage = 'dashboard-staff.png';
+                                        }
+
+                                        // You can also check location
+                                        if (isset($user->user_location)) {
+                                            if ($user->user_location === 'lz') {
+                                                $dashboardImage = 'dashboard-lz.png';
+                                            } elseif ($user->user_location === 'vs') {
+                                                $dashboardImage = 'dashboard-vs.png';
+                                            }
+                                        }
+                                    @endphp
+                                    <img class="h-full w-full object-cover"
+                                        src="{{ asset('images/guide/' . $dashboardImage) }}"
+                                        alt="{{ ucfirst($user->role ?? 'Admin') }} Dashboard">
+                                </div>
+                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">
+                                    @if (auth()->user()->role === 'manager')
+                                        Manager Dashboard — Store-level overview and reports
+                                    @elseif(auth()->user()->role === 'supervisor')
+                                        Supervisor Dashboard — Team performance and monitoring
+                                    @elseif(auth()->user()->role === 'staff')
+                                        Staff Dashboard — Daily tasks and orders
+                                    @else
+                                        Super Admin Dashboard — Full visibility across all stores
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- ── Status Indicators: PERSONNEL ── --}}
+                        <div data-roles="personnel">
+                            <h3 class="mt-6 text-sm font-semibold text-gray-900">Status Indicators</h3>
+                            <p class="mt-1 text-sm text-gray-500">Color-coded badges on the Orders card show live counts of orders that need attention:</p>
+                            <div class="mt-3 space-y-2">
+                                @foreach ([['New Orders', 'bg-blue-500', 'Orders just submitted and awaiting initial processing or approval request.'], ['For Approval', 'bg-purple-500', 'Orders you have sent to the manager for review. Waiting for the manager to approve or reject.']] as $b)
+                                    <div class="flex items-start gap-3">
+                                        <span class="mt-0.5 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"><span
+                                                class="{{ $b[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $b[0] }}</span>
+                                        <span class="text-sm text-gray-500">{{ $b[2] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+
                             <h3 class="mt-5 text-sm font-semibold text-gray-900">Quick Access Cards</h3>
+                            <p class="mt-1 text-sm text-gray-500">The Dashboard provides shortcut cards to the main areas of the system:</p>
                             <div class="mt-2 grid grid-cols-2 gap-2">
-                                @foreach ([['Orders', 'Status badges'], ['Forms', 'SOF & ROF'], ['Products', 'Catalog'], ['Reports', 'Sales & payments']] as $c)
+                                @foreach ([['Orders', 'View all submitted orders with status badges. Click to open the full Orders List.'], ['Forms', 'Access the Sales Order Form (SOF) and Request Order Form (ROF) to create new orders.'], ['Products', 'Browse the product catalog to check SKU, pricing, inventory, and allocation.'], ['Reports', 'View Sales Overview, Orders Report, and Payments Report summaries.']] as $c)
                                     <div class="rounded-lg bg-gray-50 px-3 py-2">
                                         <p class="text-sm font-medium text-gray-800">{{ $c[0] }}</p>
-                                        <p class="text-xs text-gray-400">{{ $c[1] }}</p>
+                                        <p class="mt-0.5 text-xs text-gray-400">{{ $c[1] }}</p>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
-                        {{-- Manager --}}
+
+                        {{-- ── Status Indicators: MANAGER ── --}}
                         <div data-roles="manager">
+                            <h3 class="mt-6 text-sm font-semibold text-gray-900">Status Indicators</h3>
+                            <p class="mt-1 text-sm text-gray-500">As a manager, the Orders card displays badges for the three statuses visible to you:</p>
+                            <div class="mt-3 space-y-2">
+                                @foreach ([['For Approval', 'bg-purple-500', 'Orders submitted by store personnel awaiting your review. This is your primary action item — review and either approve or reject.'], ['Approved', 'bg-green-500', 'Orders you have already approved. Store personnel can now proceed with fulfillment (Generate SO#, track shipments).'], ['Rejected', 'bg-red-500', 'Orders you have rejected with a reason. Store personnel will see your rejection notes and may revise and resubmit for approval.']] as $b)
+                                    <div class="flex items-start gap-3">
+                                        <span class="mt-0.5 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"><span
+                                                class="{{ $b[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $b[0] }}</span>
+                                        <span class="text-sm text-gray-500">{{ $b[2] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+
                             <div class="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                                <strong>Manager view:</strong> You see Orders (with For Approval count) and Reports. Forms and Products are hidden.
+                                <strong>Manager view:</strong> You only see orders from stores in your assigned region. The Dashboard does not include Forms or Products cards — your role is to
+                                review and approve orders submitted by store personnel.
+                            </div>
+
+                            <h3 class="mt-5 text-sm font-semibold text-gray-900">Region Assignment</h3>
+                            <p class="mt-1 text-sm text-gray-500">Your manager account is assigned to a specific region. You will only see orders from the stores within your region:</p>
+                            <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                            <th class="px-4 py-2.5">Region</th>
+                                            <th class="px-4 py-2.5">Stores</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5 font-medium text-gray-800">Visayas (VS)</td>
+                                            <td class="px-4 py-2.5 text-gray-600">F2 – Metro Wholesalemart Colon (4002), S10 – Metro Maasin (2010), S17 – Metro Tacloban (2017), S19 – Metro
+                                                Bay-Bay (2019), F18 – Metro Alang-Alang (3018)</td>
+                                        </tr>
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2.5 font-medium text-gray-800">Luzon (LZ)</td>
+                                            <td class="px-4 py-2.5 text-gray-600">H8 – Super Metro Antipolo (6012), F19 – Metro Hilongos (3019), S8 – Metro Toledo (2008), H9 – Super Metro
+                                                Carcar (6009), H10 – Super Metro Bogo (6010)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                        {{-- Admin --}}
+
+                        {{-- ── Admin ── --}}
                         <div data-roles="admin">
+                            <h3 class="mt-6 text-sm font-semibold text-gray-900">Status Indicators</h3>
+                            <p class="mt-1 text-sm text-gray-500">Color-coded badges show live order counts:</p>
+                            <div class="mt-3 space-y-2">
+                                @foreach ([['New Orders', 'bg-blue-500', 'Awaiting processing'], ['For Approval', 'bg-purple-500', 'Needs manager review'], ['Approved', 'bg-green-500', 'Manager approved']] as $b)
+                                    <div class="flex items-center gap-3">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"><span
+                                                class="{{ $b[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $b[0] }}</span>
+                                        <span class="text-sm text-gray-500">{{ $b[2] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
                             <div class="mt-4 rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
                                 <strong>Super Admin:</strong> Full visibility across all stores. Your sidebar also includes <strong>Users</strong> and <strong>Others</strong>.
                             </div>
@@ -350,7 +476,9 @@
                     </div>
                 </section>
 
-                {{-- ── 2. SALES ORDER FORM ── --}}
+                {{-- ══════════════════════════════════════════
+                     2. SALES ORDER FORM (Personnel & Admin only)
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="sales-order-form" data-roles="personnel admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -359,7 +487,7 @@
                         </div>
                     </div>
                     <div class="px-6 pb-6 pt-3">
-                        <p class="text-sm text-gray-600">Create new B2B sales orders with header fields and dynamic order items.</p>
+                        <p class="text-sm text-gray-600">Create new B2B sales orders. The form has two main parts: header information and order items.</p>
 
                         <h3 class="mt-6 text-sm font-semibold text-gray-900" id="sof-header">Step 1 — Fill Order Information</h3>
                         <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
@@ -368,30 +496,76 @@
                             <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Header — Request Details, Customer Info, Payment, Dispatch</p>
                         </div>
 
-                        <div class="mt-4 space-y-3">
+                        {{-- ── FIELD-BY-FIELD EXPLANATIONS ── --}}
+                        <div class="mt-4 space-y-4">
                             <div>
                                 <h4 class="text-sm font-medium text-gray-800">Request Details</h4>
-                                <p class="mt-1 text-sm text-gray-500"><strong>SOF Order ID</strong>, <strong>Store</strong>, <strong>Requested By</strong> are pre-filled. Select
-                                    <strong>Channel</strong> and confirm <strong>Date &amp; Time</strong>.
-                                </p>
+                                <p class="mb-2 mt-1 text-xs text-gray-400">Fields with a shaded background are auto-filled and cannot be edited.</p>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">SOF Order ID</span><span class="field-desc">Auto-generated unique order number in the format <strong>SOF +
+                                                Year/Month + Sequence</strong> (e.g., SOF202603-001). Read-only — assigned by the system.</span></div>
+                                    <div class="field-row"><span class="field-label">Requesting Store</span><span class="field-desc">Your assigned store location (e.g., "F2 – Metro
+                                            Wholesalemart Colon"). Read-only — set from your user account.</span></div>
+                                    <div class="field-row"><span class="field-label">Requested By</span><span class="field-desc">Your name as the logged-in user who is creating this order.
+                                            Read-only.</span></div>
+                                    <div class="field-row"><span class="field-label">Channel of Order</span><span class="field-desc">Select the sales channel: <strong>E-Commerce</strong>,
+                                            <strong>Store</strong>, <strong>ISO Retail</strong>, or <strong>Wholesale</strong>. This determines how the order is categorized.</span></div>
+                                    <div class="field-row"><span class="field-label">Serving Warehouse</span><span class="field-desc">The warehouse that will fulfill this order, auto-assigned
+                                            based on your store location (e.g., Bacolod Depot or Silangan Warehouse). Read-only.</span></div>
+                                    <div class="field-row"><span class="field-label">Date &amp; Time of Order</span><span class="field-desc">Pre-filled with the current date and time. You can
+                                            adjust it if needed (e.g., for backdated orders).</span></div>
+                                </div>
                             </div>
                             <div>
                                 <h4 class="text-sm font-medium text-gray-800">Customer Information</h4>
-                                <p class="mt-1 text-sm text-gray-500">Enter 16-digit <strong>MBC Card Number</strong> to auto-fill customer details.</p>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">MBC Card Number</span><span class="field-desc">Enter the customer's 16-digit MBC loyalty card number. When
+                                            a valid card is entered, the system auto-fills the customer's name, contact number, and email. If the card is not found, you can enter details
+                                            manually.</span></div>
+                                    <div class="field-row"><span class="field-label">Customer Name</span><span class="field-desc">The customer's full name. Auto-filled from MBC Card lookup,
+                                            or enter manually.</span></div>
+                                    <div class="field-row"><span class="field-label">Contact Number</span><span class="field-desc">The customer's phone number. Auto-filled from MBC Card
+                                            lookup, or enter manually.</span></div>
+                                    <div class="field-row"><span class="field-label">Customer Email</span><span class="field-desc">The customer's email address. Auto-filled from MBC Card
+                                            lookup, or enter manually.</span></div>
+                                </div>
+                                <div class="mt-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">MBC Card must be exactly <strong>16 digits</strong>. Entering fewer digits triggers a
+                                    warning. Only numbers (0–9) are accepted — letters and symbols are ignored.</div>
                             </div>
-                            <div class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">MBC Card must be exactly <strong>16 digits</strong>. Incomplete numbers trigger a warning.</div>
                             <div>
-                                <h4 class="text-sm font-medium text-gray-800">Payment &amp; Dispatch</h4>
-                                <p class="mt-1 text-sm text-gray-500">Select <strong>Mode of Payment</strong>, choose <strong>Delivery/Pick-up Date</strong> and <strong>Dispatching</strong>
-                                    mode.</p>
+                                <h4 class="text-sm font-medium text-gray-800">Payment Information</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">Payment Center</span><span class="field-desc">Auto-assigned to match your store (e.g., "F2 – Metro
+                                            Wholesalemart Colon" for store 4002). Read-only for store personnel.</span></div>
+                                    <div class="field-row"><span class="field-label">Mode of Payment</span><span class="field-desc">Select either <strong>PO15%</strong> (Purchase Order with
+                                            15% terms) or <strong>Cash / Bank Card</strong> (immediate payment). This affects the product scheme applied to order items.</span></div>
+                                    <div class="field-row"><span class="field-label">Payment Date</span><span class="field-desc">Pre-filled with today's date. Editable — set to the customer's
+                                            preferred payment date.</span></div>
+                                </div>
                             </div>
-                            <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Order Items appear only after <strong>all required header fields</strong> are completed.</div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Dispatch Details</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">Delivery/Pick-up Date</span><span class="field-desc">Set the expected date for customer delivery or store
+                                            pick-up.</span></div>
+                                    <div class="field-row"><span class="field-label">Mode of Dispatching</span><span class="field-desc">Select <strong>Customer Pick-up</strong> (customer
+                                            collects at store — no address needed) or <strong>Delivery Direct to Customer</strong> (Address and Landmark fields appear and must be filled).</span>
+                                    </div>
+                                    <div class="field-row"><span class="field-label">Address</span><span class="field-desc">Delivery address. Only appears when "Delivery Direct to Customer"
+                                            is selected.</span></div>
+                                    <div class="field-row"><span class="field-label">Landmark</span><span class="field-desc">A nearby landmark to help with delivery. Only appears when
+                                            "Delivery Direct to Customer" is selected.</span></div>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">The Order Items section only appears after <strong>all required header fields</strong> are
+                            completed. If any required field is empty, the items section stays hidden.</div>
 
                         <div class="mt-6 border-t border-gray-100 pt-5" id="sof-items">
                             <h3 class="text-sm font-semibold text-gray-900">Step 2 — Add Order Items</h3>
                             <div class="mt-3 space-y-1.5">
-                                @foreach (['Select <strong>Sale Type</strong> (Freebie or Discount)', 'Search product by SKU or description', 'Set <strong>Case/s Ordered</strong> — breakdown updates live'] as $s)
+                                @foreach (['Select <strong>Sale Type</strong>: <strong>Freebie</strong> (buy X get Y free — shows Scheme and Freebie Product fields) or <strong>Discount</strong> (fixed amount or percentage off — shows Discount field).', 'Search for a product by typing at least 2 characters of the <strong>SKU number</strong>, <strong>product name</strong>, or <strong>sub-department</strong>. Select from the dropdown.', 'Set <strong>Case/s Ordered</strong>. The Item Breakdown on the right updates live showing Price per Case, Freebies, Total Cases, Freebie Amount, and Total Payable.'] as $s)
                                     <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
                                             class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
                                             class="text-sm text-gray-600">{!! $s !!}</span></div>
@@ -400,13 +574,16 @@
                         </div>
 
                         <div class="mt-6 border-t border-gray-100 pt-5" id="sof-submit">
-                            <h3 class="text-sm font-semibold text-gray-900">Submitting</h3>
-                            <p class="mt-1 text-sm text-gray-500">Use <strong>+ Add Another Item</strong> for multiple products. Click <strong>Submit Order</strong> to create.</p>
+                            <h3 class="text-sm font-semibold text-gray-900">Step 3 — Submit</h3>
+                            <p class="mt-1 text-sm text-gray-500">Use <strong>+ Add Another Item</strong> to add more products. Click <strong>Submit Order</strong> to create the order. The
+                                button changes to "Processing…" and disables to prevent double submission.</p>
                         </div>
                     </div>
                 </section>
 
-                {{-- ── 3. ORDERS LIST ── --}}
+                {{-- ══════════════════════════════════════════
+                     3. ORDERS LIST
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="orders-list" data-roles="personnel manager admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -415,15 +592,17 @@
                         </div>
                     </div>
                     <div class="px-6 pb-6 pt-3">
-                        <p class="text-sm text-gray-600">Track all submitted sales orders with filters.</p>
+                        <p class="text-sm text-gray-600">Track all submitted sales orders with filters and search.</p>
 
                         <div data-roles="manager">
-                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">Managers see orders from <strong>assigned region only</strong> with statuses: For Approval,
-                                Approved, Rejected.</div>
+                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                                <strong>Manager view:</strong> You only see orders from stores in your assigned region (Visayas or Luzon). The Status filter only shows three options: <strong>For
+                                    Approval</strong>, <strong>Approved</strong>, and <strong>Rejected</strong>. The Store dropdown only lists stores within your region.
+                            </div>
                         </div>
                         <div data-roles="admin">
-                            <div class="mt-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-800">Super Admins see orders from <strong>all stores</strong> with a Requesting Store column.
-                            </div>
+                            <div class="mt-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-800">Super Admins see orders from <strong>all stores</strong> with all statuses and a full
+                                store dropdown.</div>
                         </div>
 
                         <h3 class="mt-5 text-sm font-semibold text-gray-900" id="orders-filters">Filtering &amp; Searching</h3>
@@ -432,16 +611,31 @@
                                     alt="Filter bar"></div>
                             <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Filter by keyword, store, channel, status, date</p>
                         </div>
-                        <p class="mt-2 text-sm text-gray-500">Filter by <strong>keyword</strong>, <strong>store</strong>, <strong>channel</strong>, <strong>status</strong>, or <strong>date
-                                range</strong>. Click <strong>Apply</strong> or <strong>Reset</strong>.</p>
+                        <p class="mt-2 text-sm text-gray-500">Use the filter bar to narrow results by <strong>keyword</strong> (customer name, SOF ID, store code), <strong>store</strong>,
+                            <strong>channel</strong>, <strong>status</strong>, or <strong>date range</strong>. Click <strong>Apply</strong> to filter or <strong>Reset</strong> to clear all
+                            filters.
+                        </p>
 
                         <div class="mt-5 border-t border-gray-100 pt-5" id="orders-table">
                             <h3 class="text-sm font-semibold text-gray-900">Order Table</h3>
                             <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
-                                <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/orders-table.png') }}"
-                                        alt="Orders table"></div>
-                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Orders with status badges and channel indicators</p>
+                                <div class="flex h-64 items-center justify-center overflow-hidden">
+                                    @if (auth()->user()->role === 'manager' || auth()->user()->user_type === 'manager')
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ asset('images/guide/orders-table-manager.png') }}"
+                                            alt="Orders table for managers">
+                                    @else
+                                        <img class="h-full w-full object-cover"
+                                            src="{{ asset('images/guide/orders-table-personnel.png') }}"
+                                            alt="Orders table">
+                                    @endif
+                                </div>
+                                <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">
+                                    Orders with status badges and channel indicators
+                                </p>
                             </div>
+                            <p class="mt-2 text-sm text-gray-500">Each row shows the SOF ID, Customer Name, Store, Channel, Status (color-coded badge), and key dates. Click any row to open the
+                                Order Details page.</p>
                         </div>
 
                         <div class="mt-4 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
@@ -454,7 +648,9 @@
                     </div>
                 </section>
 
-                {{-- ── 4. ORDER DETAILS ── --}}
+                {{-- ══════════════════════════════════════════
+                     4. ORDER DETAILS
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="order-details" data-roles="personnel manager admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -471,31 +667,98 @@
                                     alt="Info panels"></div>
                             <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Customer, Payment, Delivery, Order panels</p>
                         </div>
-                        <p class="mt-2 text-sm text-gray-500">Four panels with inline editable fields. Read-only fields are shaded.</p>
+
+                        {{-- ── FIELD EXPLANATIONS FOR ORDER DETAILS ── --}}
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Customer Information Panel</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">MBC Card No.</span><span class="field-desc">The customer's 16-digit MBC loyalty card number used to
+                                            identify them in the system.</span></div>
+                                    <div class="field-row"><span class="field-label">Customer Name</span><span class="field-desc">Full name of the customer who placed the order.</span></div>
+                                    <div class="field-row"><span class="field-label">Contact Number</span><span class="field-desc">Customer's phone number for delivery coordination or
+                                            follow-up.</span></div>
+                                    <div class="field-row"><span class="field-label">Email</span><span class="field-desc">Customer's email address for order notifications.</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Payment Information Panel</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">Payment Center</span><span class="field-desc">The store where payment is processed, auto-assigned based on
+                                            the requesting store.</span></div>
+                                    <div class="field-row"><span class="field-label">Mode of Payment</span><span class="field-desc">How the customer is paying: PO15% (purchase order terms) or
+                                            Cash / Bank Card.</span></div>
+                                    <div class="field-row"><span class="field-label">Payment Date</span><span class="field-desc">The expected date of payment from the customer.</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Delivery/Dispatch Panel</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">Delivery/Pick-up Date</span><span class="field-desc">When the customer will receive or collect their
+                                            order.</span></div>
+                                    <div class="field-row"><span class="field-label">Mode of Dispatching</span><span class="field-desc">Customer Pick-up (collect at store) or Delivery Direct
+                                            to Customer (shipped to address).</span></div>
+                                    <div class="field-row"><span class="field-label">Address / Landmark</span><span class="field-desc">Delivery location details. Only shown for direct
+                                            delivery orders.</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-800">Order Information Panel</h4>
+                                <div class="space-y-1">
+                                    <div class="field-row"><span class="field-label">SOF Order ID</span><span class="field-desc">The unique system-generated order number (e.g.,
+                                            SOF202603-001). Read-only.</span></div>
+                                    <div class="field-row"><span class="field-label">Requesting Store</span><span class="field-desc">The store that created this order. Read-only.</span></div>
+                                    <div class="field-row"><span class="field-label">Requested By</span><span class="field-desc">The store personnel who created the order. Read-only.</span>
+                                    </div>
+                                    <div class="field-row"><span class="field-label">Channel of Order</span><span class="field-desc">The sales channel (E-Commerce, Store, ISO Retail, or
+                                            Wholesale).</span></div>
+                                    <div class="field-row"><span class="field-label">Serving Warehouse</span><span class="field-desc">The warehouse fulfilling this order (Bacolod Depot or
+                                            Silangan Warehouse). Read-only.</span></div>
+                                    <div class="field-row"><span class="field-label">Order Status</span><span class="field-desc">Current lifecycle status of the order (e.g., New Order, For
+                                            Approval, Approved). Read-only — changed via Order Actions.</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-sm text-gray-500">Fields with a shaded background are read-only. Editable fields turn <strong>yellow</strong> when changed — click the
+                            <strong>Update</strong> button to save.
+                        </p>
 
                         <div class="mt-6 border-t border-gray-100 pt-5" id="od-actions">
                             <h3 class="text-sm font-semibold text-gray-900">Order Actions</h3>
+                            <p class="mt-1 text-sm text-gray-500">The Order Actions dropdown lets you change the order's status. Available actions depend on your role and the current order
+                                status:</p>
 
-                            {{-- Personnel --}}
+                            {{-- ── Personnel Actions ── --}}
                             <div data-roles="personnel">
-                                <div class="mt-3 grid grid-cols-2 gap-2">
-                                    @foreach (['Request For Approval', 'Cancel Order', 'Complete Order', 'Restore Order'] as $a)
-                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
-                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
+                                <div class="mt-3 space-y-2">
+                                    @foreach ([['Request For Approval', 'Sends the order to your regional manager for review. The manager receives an email notification. The order status changes to "For Approval." If the order was previously rejected, inventory allocation is re-deducted.'], ['Cancel Order', 'Cancels the entire order. You must provide a reason. Inventory allocation is reverted (added back to stock). The reason is logged in Order Notes.'], ['Complete Order', 'Marks the order as fully fulfilled after all items have been received. Status changes to "Completed."'], ['Restore Order', 'Re-opens a cancelled order. Status changes back to "New Order" so it can go through the approval process again.']] as $a)
+                                        <div class="rounded-lg bg-gray-50 px-4 py-2.5">
+                                            <p class="text-sm font-medium text-gray-800">{{ $a[0] }}</p>
+                                            <p class="mt-0.5 text-xs text-gray-500">{{ $a[1] }}</p>
+                                        </div>
                                     @endforeach
                                 </div>
                             </div>
-                            {{-- Manager --}}
+
+                            {{-- ── Manager Actions ── --}}
                             <div data-roles="manager">
-                                <div class="mt-3 grid grid-cols-2 gap-2">
-                                    @foreach (['Approve Order', 'Reject Order', 'Cancel Order', 'Complete Order', 'Restore Order'] as $a)
-                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
-                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
+                                <div class="mt-3 space-y-2">
+                                    @foreach ([
+            ['Approve Order', 'Approves the order after your review. You may optionally attach a supporting document (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB). The store personnel who submitted the order receives an email notification that it has been approved. Status changes to "Approved" and personnel can then Generate SO# to begin fulfillment.'],
+            ['Reject Order', 'Rejects the order when it has issues (e.g., incorrect pricing, unreasonable quantities). You must provide a rejection reason — this is required and cannot be skipped. The reason is logged in Order Notes and visible to the store personnel. Inventory allocation is reverted. Personnel can revise the order and resubmit for approval.'],
+            ['Cancel Order', 'Cancels the entire order. You must provide a reason. If the order was not already rejected, inventory allocation is reverted. The reason is logged in Order Notes.'],
+            ['Complete Order', 'Marks the order as fully fulfilled. Status changes to "Completed."'],
+            ['Restore Order', 'Re-opens a cancelled order. Status changes back to "New Order."'],
+        ] as $a)
+                                        <div class="rounded-lg bg-gray-50 px-4 py-2.5">
+                                            <p class="text-sm font-medium text-gray-800">{{ $a[0] }}</p>
+                                            <p class="mt-0.5 text-xs text-gray-500">{{ $a[1] }}</p>
+                                        </div>
                                     @endforeach
                                 </div>
-                                <div class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Approval <strong>requires</strong> uploading a document (PDF, DOC, DOCX, or image).</div>
                             </div>
-                            {{-- Admin --}}
+
+                            {{-- ── Admin Actions ── --}}
                             <div data-roles="admin">
                                 <div class="mt-3 grid grid-cols-2 gap-2">
                                     @foreach (['Request For Approval', 'Approve Order', 'Reject Order', 'Cancel Order', 'Complete Order', 'Restore Order', 'Generate SO#'] as $a)
@@ -508,21 +771,34 @@
 
                         <div class="mt-6 border-t border-gray-100 pt-5" id="od-invoice">
                             <h3 class="text-sm font-semibold text-gray-900">Invoice, Printing &amp; Notes</h3>
-                            <p class="mt-1 text-sm text-gray-500">Invoice recalculates live. Print buttons generate PDFs: <strong>SOF</strong>, <strong>Invoice</strong>, <strong>Freebies
-                                    Form</strong>, <strong>Order Slip</strong>. Order Notes log all actions with timestamps.</p>
+                            <p class="mt-1 text-sm text-gray-500">The Invoice sidebar recalculates live as items are modified. Print buttons generate downloadable PDFs:</p>
+                            <div class="mt-2 space-y-1">
+                                <div class="field-row"><span class="field-label">Print SOF</span><span class="field-desc">Generates the full Sales Order Form as a landscape A4 PDF.</span>
+                                </div>
+                                <div class="field-row"><span class="field-label">Print Invoice</span><span class="field-desc">Generates the invoice with totals as a portrait A4 PDF.</span>
+                                </div>
+                                <div class="field-row"><span class="field-label">Print Freebies Form</span><span class="field-desc">Generates a form showing main products paired with their
+                                        freebie products (only for orders with Freebie items).</span></div>
+                                <div class="field-row"><span class="field-label">Print Order Slip</span><span class="field-desc">Generates an order slip for warehouse/dispatch use (excludes
+                                        freebie-only rows).</span></div>
+                            </div>
+                            <p class="mt-3 text-sm text-gray-500"><strong>Order Notes</strong> is a scrollable timeline log of all actions taken on the order — who made changes, what changed,
+                                and when. Every status change, field update, and approval/rejection reason is recorded here.</p>
                             <div class="mt-3 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                                 <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                                         clip-rule="evenodd" />
                                 </svg>
-                                <strong>Update</strong> button activates when fields change. Click to save.
+                                <strong>Update</strong> button activates when fields are changed (yellow highlight). Click to save edits.
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {{-- ── MANAGER: Approve/Reject ── --}}
+                {{-- ══════════════════════════════════════════
+                     MANAGER: Approve/Reject (dedicated section)
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="approving-orders" data-roles="manager">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -531,19 +807,23 @@
                         </div>
                     </div>
                     <div class="px-6 pb-6 pt-3">
-                        <h3 class="text-sm font-semibold text-gray-900">Approving</h3>
+                        <p class="mb-4 text-sm text-gray-600">This is your primary workflow. Store personnel submit orders for your review — you approve or reject them based on your assessment.
+                        </p>
+
+                        <h3 class="text-sm font-semibold text-gray-900">Approving an Order</h3>
                         <div class="mt-3 space-y-1.5">
-                            @foreach (['Open order with <strong>"For Approval"</strong> status', 'Review all details', '<strong>Order Actions → Approve Order</strong>', '<strong>Upload required document</strong> (PDF, DOC, JPG)', 'Click <strong>Approve</strong> — requester is notified'] as $s)
+                            @foreach (['Open an order with <strong>"For Approval"</strong> status (from Orders List or email link).', 'Review all panels: Customer Info, Payment, Delivery, and the Ordered Items table.', 'Verify pricing, quantities, scheme calculations, and totals in the Invoice sidebar.', 'Click <strong>Order Actions → Approve Order</strong>.', 'Required - <strong>Attach a supporting document</strong> (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB).', 'Click <strong>Approve</strong>. The requester (store personnel) receives an email notification that their order has been approved.'] as $s)
                                 <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
                                         class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
                                         class="text-sm text-gray-600">{!! $s !!}</span></div>
                             @endforeach
                         </div>
-                        <div class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">Document upload is <strong>mandatory</strong> for approval.</div>
+                        <div class="mt-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">After approval, the store personnel can <strong>Generate SO#</strong> to create transfer
+                            numbers in Oracle and begin fulfillment tracking (Picking → Shipped → Received).</div>
 
-                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Rejecting</h3>
+                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Rejecting an Order</h3>
                         <div class="mt-3 space-y-1.5">
-                            @foreach (['Open order with "For Approval" status', '<strong>Order Actions → Reject Order</strong>', 'Provide <strong>rejection reason</strong> (required)', 'Status changes to "Rejected"'] as $s)
+                            @foreach (['Open an order with <strong>"For Approval"</strong> status.', 'Identify the issue (e.g., incorrect pricing, unreasonable quantity, wrong customer details).', 'Click <strong>Order Actions → Reject Order</strong>.', 'Provide a <strong>clear rejection reason</strong> — this field is <strong>required</strong> and cannot be skipped.', 'Status changes to <strong>"Rejected"</strong>. Inventory allocation is reverted (stock added back). The reason is logged in Order Notes.'] as $s)
                                 <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
                                         class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
                                         class="text-sm text-gray-600">{!! $s !!}</span></div>
@@ -555,12 +835,15 @@
                                     d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v2a1 1 0 01-1 1z"
                                     clip-rule="evenodd" />
                             </svg>
-                            Always provide a clear rejection reason for store personnel.
+                            Always provide a specific, actionable rejection reason so store personnel know exactly what to fix before resubmitting. Personnel can see your notes and resubmit the
+                            order for approval.
                         </div>
                     </div>
                 </section>
 
-                {{-- ── 5. PRODUCTS ── --}}
+                {{-- ══════════════════════════════════════════
+                     5. PRODUCTS PAGE (Personnel & Admin only)
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="products" data-roles="personnel admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -569,9 +852,11 @@
                         </div>
                     </div>
                     <div class="px-6 pb-6 pt-3">
-                        <p class="text-sm text-gray-600">Inventory catalog. Search by SKU, description, or sub-department.</p>
+                        <p class="text-sm text-gray-600">The product catalog for your store. Search by SKU, description, or sub-department.</p>
                         <div data-roles="personnel">
-                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">Depot selector is <strong>not available</strong> for store personnel. View-only access.</div>
+                            <div class="mt-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">The depot selector is <strong>not available</strong> for store personnel. This page is
+                                <strong>view-only</strong> — contact your admin for product changes.
+                            </div>
                         </div>
                         <div data-roles="admin">
                             <div class="mt-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Full access: depot filter, <strong>Add Product</strong>, <strong>Import CSV</strong>.
@@ -580,12 +865,43 @@
                         <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
                             <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover" src="{{ asset('images/guide/products-table.png') }}"
                                     alt="Products"></div>
-                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Inventory levels and pricing</p>
+                            <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Product catalog with inventory levels and pricing</p>
+                        </div>
+
+                        {{-- ── COLUMN EXPLANATIONS ── --}}
+                        <h3 class="mt-5 text-sm font-semibold text-gray-900">Column Descriptions</h3>
+                        <p class="mb-2 mt-1 text-xs text-gray-400">Each column in the products table provides specific inventory and pricing information:</p>
+                        <div class="space-y-1">
+                            <div class="field-row"><span class="field-label">SKU</span><span class="field-desc">The unique Stock Keeping Unit code that identifies each product in the system
+                                    (e.g., 12345).</span></div>
+                            <div class="field-row"><span class="field-label">Product Description</span><span class="field-desc">The full name and variant of the product (e.g., "Coke 1.5L
+                                    PET").</span></div>
+                            <div class="field-row"><span class="field-label">Sub-Department</span><span class="field-desc">The product category or department classification (e.g., Beverages,
+                                    Snacks, Grocery).</span></div>
+                            <div class="field-row"><span class="field-label">Price (SRP)</span><span class="field-desc">The Suggested Retail Price per piece of the product.</span></div>
+                            <div class="field-row"><span class="field-label">WMS Actual</span><span class="field-desc">The actual physical inventory count from the Warehouse Management System
+                                    (WMS). This reflects real warehouse stock.</span></div>
+                            <div class="field-row"><span class="field-label">Stocks</span><span class="field-desc">The computed available stock after accounting for allocations and pending
+                                    orders.</span></div>
+                            <div class="field-row"><span class="field-label">Allocation</span><span class="field-desc">The number of cases currently allocated (reserved) for pending orders.
+                                    Decreases as orders are placed, increases when orders are cancelled or rejected.</span></div>
+                            <div class="field-row"><span class="field-label">Case Pack</span><span class="field-desc">The number of individual pieces in one case (e.g., 12 means 12 pieces per
+                                    case). Some products have multiple pack sizes shown with "|" separator (e.g., "12|24").</span></div>
+                            <div class="field-row"><span class="field-label">Schedule</span><span class="field-desc">The delivery or replenishment schedule for this product, if
+                                    applicable.</span></div>
+                            <div class="field-row"><span class="field-label">Points</span><span class="field-desc">Loyalty points associated with purchasing this product, if
+                                    applicable.</span></div>
+                            <div class="field-row"><span class="field-label">Discount</span><span class="field-desc">Any standing discount scheme configured for this product (fixed amount or
+                                    percentage).</span></div>
+                            <div class="field-row"><span class="field-label">Freebie SKU</span><span class="field-desc">The SKU of the linked freebie product. When this product is ordered
+                                    with a "Freebie" sale type, the freebie product auto-populates in the order form.</span></div>
                         </div>
                     </div>
                 </section>
 
-                {{-- ── 6. STATUS REFERENCE ── --}}
+                {{-- ══════════════════════════════════════════
+                     6. STATUS REFERENCE
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="statuses" data-roles="personnel manager admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -594,30 +910,62 @@
                         </div>
                     </div>
                     <div class="px-6 pb-6 pt-3">
-                        <h3 class="text-sm font-semibold text-gray-900">Order Statuses</h3>
-                        <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                                        <th class="px-4 py-2.5">Status</th>
-                                        <th class="px-4 py-2.5">Meaning</th>
-                                        <th class="px-4 py-2.5">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['New Order', 'bg-blue-500', 'Just submitted', 'Review & request approval'], ['Pending', 'bg-yellow-500', 'Processing', 'Wait for updates'], ['For Approval', 'bg-purple-500', 'Sent to manager', 'Manager review'], ['Approved', 'bg-green-500', 'Approved', 'Generate SO#'], ['Completed', 'bg-teal-500', 'Fulfilled', 'No action'], ['Rejected', 'bg-red-500', 'Rejected', 'Check notes, revise'], ['Cancelled', 'bg-gray-400', 'Cancelled', 'Can restore']] as $st)
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs font-medium"><span
-                                                        class="{{ $st[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $st[0] }}</span></td>
-                                            <td class="px-4 py-2.5 text-gray-600">{{ $st[2] }}</td>
-                                            <td class="px-4 py-2.5 text-gray-600">{{ $st[3] }}</td>
+
+                        {{-- ── PERSONNEL & ADMIN: Full status table ── --}}
+                        <div data-roles="personnel admin">
+                            <h3 class="text-sm font-semibold text-gray-900">Order Statuses</h3>
+                            <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                            <th class="px-4 py-2.5">Status</th>
+                                            <th class="px-4 py-2.5">Meaning</th>
+                                            <th class="px-4 py-2.5">Action</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @foreach ([['New Order', 'bg-blue-500', 'Order just submitted, not yet sent for approval', 'Review details, then Request For Approval'], ['For Approval', 'bg-purple-500', 'Sent to manager for review', 'Wait for manager to approve or reject'], ['Approved', 'bg-green-500', 'Manager approved the order', 'Generate SO# to begin fulfillment'], ['Completed', 'bg-teal-500', 'Order fully fulfilled and received', 'No further action needed'], ['Rejected', 'bg-red-500', 'Manager rejected — check Order Notes for reason', 'Revise the order and resubmit for approval'], ['Cancelled', 'bg-gray-400', 'Order was cancelled', 'Can be restored if needed']] as $st)
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs font-medium"><span
+                                                            class="{{ $st[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $st[0] }}</span></td>
+                                                <td class="px-4 py-2.5 text-gray-600">{{ $st[2] }}</td>
+                                                <td class="px-4 py-2.5 text-gray-600">{{ $st[3] }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- ── MANAGER: Only 3 statuses ── --}}
+                        <div data-roles="manager">
+                            <h3 class="text-sm font-semibold text-gray-900">Order Statuses</h3>
+                            <p class="mt-1 text-sm text-gray-500">As a manager, you only see orders with the following three statuses:</p>
+                            <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                            <th class="px-4 py-2.5">Status</th>
+                                            <th class="px-4 py-2.5">Meaning</th>
+                                            <th class="px-4 py-2.5">Your Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @foreach ([['For Approval', 'bg-purple-500', 'Store personnel submitted this order for your review. It is waiting for your decision.', 'Review all details. Approve if correct, or reject with a reason if there are issues.'], ['Approved', 'bg-green-500', 'You approved this order. Store personnel can now proceed with fulfillment.', 'No further action needed. Personnel will Generate SO# and track shipments.'], ['Rejected', 'bg-red-500', 'You rejected this order with a reason. Inventory allocation has been reverted.', 'Personnel will see your notes, revise the order, and may resubmit for approval.']] as $st)
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-2.5"><span class="inline-flex items-center gap-1.5 text-xs font-medium"><span
+                                                            class="{{ $st[1] }} inline-block h-2 w-2 rounded-full"></span>{{ $st[0] }}</span></td>
+                                                <td class="px-4 py-2.5 text-gray-600">{{ $st[2] }}</td>
+                                                <td class="px-4 py-2.5 text-gray-600">{{ $st[3] }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <h3 class="mt-6 text-sm font-semibold text-gray-900">Item Transfer Statuses</h3>
+                        <p class="mt-1 text-sm text-gray-500">After SO# is generated, each item is tracked through the warehouse fulfillment process:</p>
                         <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
                             <table class="w-full text-sm">
                                 <thead>
@@ -627,7 +975,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['N/A', 'No transfer number'], ['Pending', 'Pending at warehouse'], ['Picking', 'Being picked'], ['Processing', 'Processing for shipment'], ['Shipped', 'In transit'], ['Received', 'Store confirmed'], ['Error / Not Found', 'Contact IT']] as $ts)
+                                    @foreach ([['N/A', 'No transfer number generated yet'], ['Picking', 'Items are being picked at the warehouse'], ['Processing', 'Transfer is being processed for shipment'], ['Shipped', 'Items are in transit to the store'], ['Received', 'Store has confirmed receipt of the items'], ['Error / Not Found', 'Issue with tracking — contact IT support']] as $ts)
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-4 py-2.5 font-medium text-gray-800">{{ $ts[0] }}</td>
                                             <td class="px-4 py-2.5 text-gray-600">{{ $ts[1] }}</td>
@@ -639,7 +987,9 @@
                     </div>
                 </section>
 
-                {{-- ── PERSONNEL: Workflows ── --}}
+                {{-- ══════════════════════════════════════════
+                     PERSONNEL: Workflows
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="workflows" data-roles="personnel">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -648,7 +998,7 @@
                         </div>
                     </div>
                     <div class="space-y-6 px-6 pb-6 pt-3">
-                        @foreach ([['Creating a New Order', ['Forms → Sales Order Form', 'Complete header, enter 16-digit MBC Card', 'Add products, set quantities', 'Submit Order', 'Request For Approval']], ['After Manager Approval', ['Open approved order', 'Generate SO#', 'Track: Picking → Shipped → Received', 'Complete Order']], ['Editing an Order', ['Open from Orders List', 'Edit fields (yellow highlight)', 'Select items for cancellation', 'Click Update']]] as $wf)
+                        @foreach ([['Creating a New Order', ['Forms → Sales Order Form', 'Complete all header fields (Request Details, Customer Info, Payment, Dispatch)', 'Add products with Sale Type, quantities, and schemes', 'Click Submit Order', 'Open the order from Orders List → Request For Approval']], ['After Manager Approval', ['Open the approved order from Orders List', 'Click Generate SO# to create transfer numbers', 'Track item fulfillment: Picking → Shipped → Received', 'Once all items received, Complete Order']], ['Editing an Order', ['Open the order from Orders List', 'Edit editable fields (yellow highlight appears on changes)', 'To cancel specific items: check boxes → Cancel Selected Items', 'Click Update to save all changes']]] as $wf)
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-900">{{ $wf[0] }}</h3>
                                 <div class="mt-2 space-y-1.5">
@@ -666,7 +1016,9 @@
                     </div>
                 </section>
 
-                {{-- ── ADMIN: User Management ── --}}
+                {{-- ══════════════════════════════════════════
+                     ADMIN: User Management
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="user-management" data-roles="admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -677,7 +1029,6 @@
                     </div>
                     <div class="px-6 pb-6 pt-3">
                         <p class="text-sm text-gray-600">Navigate to <strong>Users → User List</strong>. Create, edit, and manage system users.</p>
-
                         <h3 class="mt-5 text-sm font-semibold text-gray-900">Adding a User</h3>
                         <div class="mt-2 space-y-1.5">
                             @foreach (['Click <strong>Add User</strong>', 'Fill: Name, Email, Password, Role, Location', 'Click <strong>Add User</strong> to create'] as $s)
@@ -686,7 +1037,6 @@
                                         class="text-sm text-gray-600">{!! $s !!}</span></div>
                             @endforeach
                         </div>
-
                         <h3 class="mt-6 text-sm font-semibold text-gray-900">Roles</h3>
                         <div class="mt-3 overflow-hidden rounded-lg ring-1 ring-gray-200">
                             <table class="w-full text-sm">
@@ -706,7 +1056,6 @@
                                 </tbody>
                             </table>
                         </div>
-
                         <h3 class="mt-6 text-sm font-semibold text-gray-900">Editing</h3>
                         <p class="mt-1 text-sm text-gray-500">Click <strong>Edit</strong> → update fields → leave Password blank to keep current → <strong>Update User</strong>.</p>
                         <div class="mt-3 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
@@ -719,7 +1068,9 @@
                     </div>
                 </section>
 
-                {{-- ── PERSONNEL: Troubleshooting ── --}}
+                {{-- ══════════════════════════════════════════
+                     PERSONNEL: Troubleshooting
+                ══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="troubleshooting" data-roles="personnel">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -738,7 +1089,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['MBC Card not found', 'Invalid/incomplete card', 'Check & re-enter'], ['Order Items missing', 'Incomplete header', 'Complete all fields'], ['Cannot submit', 'No products', 'Add product with qty > 0'], ['Update inactive', 'No changes', 'Edit a field first']] as $e)
+                                    @foreach ([['MBC Card not found', 'Invalid/incomplete card', 'Check & re-enter 16 digits'], ['Order Items missing', 'Incomplete header', 'Complete all required fields'], ['Cannot submit', 'No products added', 'Add at least one product with qty > 0'], ['Update inactive', 'No changes detected', 'Edit a field first — yellow highlight appears']] as $e)
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-4 py-2.5"><span class="font-medium text-red-600">"{{ $e[0] }}"</span></td>
                                             <td class="px-4 py-2.5 text-gray-600">{{ $e[1] }}</td>
@@ -748,10 +1099,9 @@
                                 </tbody>
                             </table>
                         </div>
-
                         <h3 class="mt-6 text-sm font-semibold text-gray-900">Quick Tips</h3>
                         <div class="mt-3 space-y-2">
-                            @foreach (['<strong>Dashboard</strong> refreshes on navigation — use as first stop', '<strong>Orders List</strong> updates via AJAX — no reloads', '<strong>MBC Card</strong> must be 16 digits exactly', '<strong>Yellow highlights</strong> = unsaved changes — click Update', '<strong>Products</strong> is view-only — contact admin for changes', '<strong>Order Notes</strong> log everything — check for audit trail'] as $t)
+                            @foreach (['<strong>Dashboard</strong> refreshes on navigation — use as your first stop each day.', '<strong>Orders List</strong> updates via AJAX — filters and pagination don\'t reload the page.', '<strong>MBC Card</strong> must be exactly 16 digits. Only numbers accepted.', '<strong>Yellow highlights</strong> on Order Details = unsaved changes. Click Update to save.', '<strong>Products page</strong> is view-only — contact your admin for product changes.', '<strong>Order Notes</strong> log all actions with timestamps — use as your audit trail.'] as $t)
                                 <div class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" stroke-width="2.5"
                                         viewBox="0 0 24 24">
                                         <path d="M5 13l4 4L19 7" />
@@ -764,7 +1114,7 @@
                 </section>
 
                 <div class="pb-8 pt-4 text-center">
-                    <p class="text-xs text-gray-400">ISO B2B2C Ordering System — User Guide — v1.1 — March 2026</p>
+                    <p class="text-xs text-gray-400">ISO B2B2C Ordering System — User Guide — v1.2 — March 2026</p>
                 </div>
             </div>
         </div>
@@ -903,8 +1253,18 @@
                         text: 'Order Details'
                     },
                     {
+                        href: '#od-panels',
+                        text: 'Info Panels',
+                        sub: true
+                    },
+                    {
                         href: '#od-actions',
                         text: 'Actions',
+                        sub: true
+                    },
+                    {
+                        href: '#od-invoice',
+                        text: 'Invoice & Print',
                         sub: true
                     },
                     {
@@ -998,7 +1358,6 @@
 
             let activeRole = '{{ $defaultTab }}';
             let observer = null;
-
             const titles = {
                 personnel: 'Store Personnel User Guide',
                 manager: 'Manager User Guide',
