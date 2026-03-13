@@ -50,47 +50,48 @@ class UpdateAllProductAllocations extends Command
         ini_set('memory_limit', '512M');
         ini_set('default_socket_timeout', '120');
 
-        $this->processStartTime = microtime(true);
-        $phNow = now()->timezone('Asia/Manila');
-        $date = $phNow->format('Y-m-d');
-        $hour = $phNow->format('H');
+        $lock = cache()->lock('allocation-update-lock', 3600);
 
-        // Logs directory
-        $logDir = storage_path("logs/wms_logs/{$date}");
-        if (!File::exists($logDir)) {
-            File::makeDirectory($logDir, 0777, true);
-        }
-        $this->logFile = "{$logDir}/allocations_{$hour}.log";
-
-        // Register shutdown handler FIRST (before any DB operations)
-        register_shutdown_function(function () {
-            $this->handleShutdown();
-        });
-
-        $this->log("\n" . str_repeat("=", 80) . "\n");
-        $this->log("=== Starting allocation update ===");
-        $this->log("\n" . str_repeat("=", 80) . "\n");
-        $this->log("Running from: " . (php_sapi_name() === 'cli' ? 'CLI' : 'WEB'));
-        $this->log("PID: " . getmypid());
-        $this->log("PHP max_execution_time: " . ini_get('max_execution_time'));
-        $this->log("PHP default_socket_timeout: " . ini_get('default_socket_timeout'));
-        $this->log("Memory limit: " . ini_get('memory_limit'));
-        $this->log("Output buffering: " . (ob_get_level() > 0 ? 'ON (Level: ' . ob_get_level() . ')' : 'OFF'));
-
-        // Check server/database dependencies
-        if (!$this->checkDependencies()) {
-            $this->log("Dependency check failed. Aborting process.");
+        if (!$lock->get()) {
+            $this->log("Another allocation process is already running. Exiting.");
             return Command::FAILURE;
         }
-        // Check if async mode is enabled
-        $asyncMode = $this->option('async');
 
-        if ($asyncMode) {
-            $this->log("Running in ASYNC mode (using job queue)");
-            return $this->handleAsync();
-        } else {
+        try {
+
+            $this->processStartTime = microtime(true);
+            $phNow = now()->timezone('Asia/Manila');
+            $date = $phNow->format('Y-m-d');
+            $hour = $phNow->format('H');
+
+            $logDir = storage_path("logs/wms_logs/{$date}");
+            if (!File::exists($logDir)) {
+                File::makeDirectory($logDir, 0777, true);
+            }
+            $this->logFile = "{$logDir}/allocations_{$hour}.log";
+
+            register_shutdown_function(function () {
+                $this->handleShutdown();
+            });
+
+            $this->log("=== Starting allocation update ===");
+
+            if (!$this->checkDependencies()) {
+                $this->log("Dependency check failed. Aborting process.");
+                return Command::FAILURE;
+            }
+
+            $asyncMode = $this->option('async');
+
+            if ($asyncMode) {
+                $this->log("Running in ASYNC mode (using job queue)");
+                return $this->handleAsync();
+            }
+
             $this->log("Running in BATCH mode (synchronous)");
             return $this->handleBatch();
+        } finally {
+            $lock->release();
         }
     }
 
@@ -218,7 +219,7 @@ class UpdateAllProductAllocations extends Command
                 $tableName = "products_{$store}";
 
                 // Check if table exists
-                if (!DB::connection('mysql')->getSchemaBuilder()->hasTable($tableName)) {
+                if (!DB::getSchemaBuilder()->hasTable($tableName)) {
                     $this->log("Table {$tableName} does not exist. Skipping.");
                     continue;
                 }
