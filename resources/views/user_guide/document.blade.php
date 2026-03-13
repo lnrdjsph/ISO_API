@@ -874,24 +874,43 @@
                         <div class="space-y-1">
                             <div class="field-row"><span class="field-label">SKU</span><span class="field-desc">The unique Stock Keeping Unit code that identifies each product in the system
                                     (e.g., 12345).</span></div>
-                            <div class="field-row"><span class="field-label">Product Description</span><span class="field-desc">The full name and variant of the product (e.g., "Coke 1.5L
-                                    PET").</span></div>
-                            <div class="field-row"><span class="field-label">Sub-Department</span><span class="field-desc">The product category or department classification (e.g., Beverages,
-                                    Snacks, Grocery).</span></div>
+                            <div class="field-row"><span class="field-label">Product Description</span><span class="field-desc">The full name and variant of the product (e.g., "BEARBRAND FORT
+                                    POW MLK 128/33G").</span></div>
+                            <div class="field-row"><span class="field-label">Sub-Department</span><span class="field-desc">The product category or department classification (e.g., Beverage,
+                                    Snacks & Biscuits, Confectionery).</span></div>
                             <div class="field-row"><span class="field-label">Price (SRP)</span><span class="field-desc">The Suggested Retail Price per piece of the product.</span></div>
-                            <div class="field-row"><span class="field-label">WMS Actual</span><span class="field-desc">The actual physical inventory count from the Warehouse Management System
-                                    (WMS). This reflects real warehouse stock.</span></div>
+                            @if ($userRole === 'super admin')
+                                <div class="field-row">
+                                    <span class="field-label">WMS Actual Inventory</span>
+                                    <span class="field-desc">
+                                        The true physical inventory count from the Warehouse Management System (WMS). This reflects the real stock in the warehouse.
+                                    </span>
+                                </div>
+                                <div class="field-row">
+                                    <span class="field-label">WMS Virtual Inventory</span>
+                                    <span class="field-desc">
+                                        The inventory of the warehouse, but updated at the application level first due to API-delayed fulfillment. This may show allocations and reservations
+                                        before the actual warehouse stock is updated.
+                                    </span>
+                                </div>
+                            @else
+                                <div class="field-row">
+                                    <span class="field-label">WMS Inventory</span>
+                                    <span class="field-desc">
+                                        The warehouse stock for your store. This number may change as orders are placed or cancelled.
+                                    </span>
+                                </div>
+                            @endif
                             <div class="field-row"><span class="field-label">Stocks</span><span class="field-desc">The computed available stock after accounting for allocations and pending
                                     orders.</span></div>
                             <div class="field-row"><span class="field-label">Allocation</span><span class="field-desc">The number of cases currently allocated (reserved) for pending orders.
                                     Decreases as orders are placed, increases when orders are cancelled or rejected.</span></div>
                             <div class="field-row"><span class="field-label">Case Pack</span><span class="field-desc">The number of individual pieces in one case (e.g., 12 means 12 pieces per
                                     case). Some products have multiple pack sizes shown with "|" separator (e.g., "12|24").</span></div>
-                            <div class="field-row"><span class="field-label">Schedule</span><span class="field-desc">The delivery or replenishment schedule for this product, if
-                                    applicable.</span></div>
-                            <div class="field-row"><span class="field-label">Points</span><span class="field-desc">Loyalty points associated with purchasing this product, if
-                                    applicable.</span></div>
-                            <div class="field-row"><span class="field-label">Discount</span><span class="field-desc">Any standing discount scheme configured for this product (fixed amount or
+                            <div class="field-row"><span class="field-label">C/BC Scheme </span><span class="field-desc">Use “Buy X, Get Y” format (e.g. 15+1).</span></div>
+                            <div class="field-row"><span class="field-label">PO15 Scheme</span><span class="field-desc">Same “X+Y” format (e.g. 10+2)</span></div>
+                            <div class="field-row"><span class="field-label">Discount Scheme</span><span class="field-desc">Any standing discount scheme configured for this product (fixed
+                                    amount or
                                     percentage).</span></div>
                             <div class="field-row"><span class="field-label">Freebie SKU</span><span class="field-desc">The SKU of the linked freebie product. When this product is ordered
                                     with a "Freebie" sale type, the freebie product auto-populates in the order form.</span></div>
