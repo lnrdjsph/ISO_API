@@ -680,8 +680,8 @@
 
                                                 <div class="flex flex-col items-center space-y-1 py-1">
                                                     {{-- Store Order Number --}}
-                                                    <div class="text-sm font-semibold text-blue-600">
-                                                        {{ $item->store_order_no }}
+                                                    <div class="text-sm font-semibold" :class="$item->store_order_no ? 'text-blue-600' : 'text-gray-400'">
+                                                        {{ $item->store_order_no ? 'TSF: ' . $item->store_order_no : 'N/A' }}
                                                     </div>
 
                                                     {{-- BOL Container - Only show if store_order_no exists --}}
