@@ -1061,7 +1061,7 @@
                 <div class="border-t border-gray-200 pt-4">
                     <a
                         href="{{ route('logout') }}"
-                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                        onclick="event.preventDefault(); if (!this.dataset.clicked) { this.dataset.clicked = 'true'; document.getElementById('logout-form').submit(); }"
                         class="logout-btn nav-item relative flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700">
                         <svg
                             class="h-5 w-5 flex-shrink-0"

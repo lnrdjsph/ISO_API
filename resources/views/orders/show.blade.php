@@ -1325,11 +1325,11 @@
                                             @endif
 
                                             @if (in_array(Auth::user()->role, ['manager', 'super admin']))
-                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                @if (in_array($order->order_status, ['for approval', 'rejected']))
                                                     <option value="approve">Approve Order</option>
                                                 @endif
 
-                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                @if (in_array($order->order_status, ['for approval', 'approved']))
                                                     <option value="rejected">Reject Order</option>
                                                 @endif
                                             @endif
