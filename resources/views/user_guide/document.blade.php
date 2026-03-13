@@ -744,7 +744,7 @@
                             <div data-roles="manager">
                                 <div class="mt-3 space-y-2">
                                     @foreach ([
-            ['Approve Order', 'Approves the order after your review. You may optionally attach a supporting document (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB). The store personnel who submitted the order receives an email notification that it has been approved. Status changes to "Approved" and personnel can then Generate SO# to begin fulfillment.'],
+            ['Approve Order', 'Approves the order after your review. You are required to attach a supporting document (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB). The store personnel who submitted the order receives an email notification that it has been approved. Status changes to "Approved" and personnel can then Generate SO# to begin fulfillment.'],
             ['Reject Order', 'Rejects the order when it has issues (e.g., incorrect pricing, unreasonable quantities). You must provide a rejection reason — this is required and cannot be skipped. The reason is logged in Order Notes and visible to the store personnel. Inventory allocation is reverted. Personnel can revise the order and resubmit for approval.'],
             ['Cancel Order', 'Cancels the entire order. You must provide a reason. If the order was not already rejected, inventory allocation is reverted. The reason is logged in Order Notes.'],
             ['Complete Order', 'Marks the order as fully fulfilled. Status changes to "Completed."'],
