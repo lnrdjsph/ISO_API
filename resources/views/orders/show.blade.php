@@ -1335,45 +1335,151 @@
                                             @endif
                                         </select>
                                     @endif
+
+                                    <!-- Add to your <head> -->
+                                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
+                                    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                                    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+
                                     @if ($order->approval_document)
-                                        <div class="mt-4 rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
+                                        <div class="mt-4 w-full overflow-hidden rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
                                             <h3 class="mb-2 text-sm font-semibold text-gray-700">Approval Document</h3>
-                                            <a
-                                                href="{{ asset('storage/' . $order->approval_document) }}"
-                                                onclick="event.preventDefault(); previewApprovalDocument(this.href);"
-                                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">
-                                                📂 View / Download
-                                            </a>
 
-                                            <script>
-                                                function previewApprovalDocument(url) {
-                                                    const fileExtension = url.split('.').pop().toLowerCase();
-                                                    let content = '';
+                                            @php
+                                                $fileUrl = asset('storage/' . $order->approval_document);
+                                                $extension = pathinfo($order->approval_document, PATHINFO_EXTENSION);
+                                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                                $isPdf = $extension === 'pdf';
+                                                $isOffice = in_array($extension, ['doc', 'docx', 'xls', 'xlsx']);
+                                            @endphp
 
-                                                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
-                                                        content =
-                                                            `<img src="${url}" style="width:100%; max-height:600px; object-fit:contain; cursor: zoom-in;" onclick="this.style.transform=this.style.transform==='scale(2)' ? 'scale(1)' : 'scale(3)'; this.style.transition='transform 0.3s';">`;
-                                                    } else {
-                                                        content = `<iframe src="${url}" width="100%" height="600px" frameborder="0"></iframe>`;
-                                                    }
+                                            <!-- Buttons container with flexible wrapping -->
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <!-- View button -->
+                                                <button type="button"
+                                                    onclick="previewDocument('{{ $fileUrl }}', '{{ $extension }}', '{{ $isImage ? 'image' : ($isPdf ? 'pdf' : 'office') }}')"
+                                                    class="inline-flex cursor-pointer items-center justify-center whitespace-nowrap rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">
+                                                    <svg class="mr-1 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                    </svg>
+                                                    <span>{{ $isImage ? 'View Image' : 'View Document' }}</span>
+                                                </button>
 
-                                                    Swal.fire({
-                                                        title: 'Approval Document Preview',
-                                                        html: content,
-                                                        width: '80%',
-                                                        showCloseButton: true,
-                                                        showConfirmButton: true,
-                                                        confirmButtonText: 'Download',
-                                                        scrollbarPadding: false,
-                                                    }).then((result) => {
-                                                        if (result.isConfirmed) {
-                                                            window.open(url, '_blank');
-                                                        }
-                                                    });
-                                                }
-                                            </script>
+                                                <!-- Download button -->
+                                                <a href="{{ $fileUrl }}"
+                                                    download
+                                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-gray-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-600">
+                                                    <svg class="mr-1 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                    </svg>
+                                                    <span>Download</span>
+                                                </a>
+                                            </div>
 
+                                            <!-- File info with truncation for long filenames -->
+                                            <p class="mt-2 truncate text-xs text-gray-500" title="{{ basename($order->approval_document) }}">
+                                                File: {{ basename($order->approval_document) }} ({{ strtoupper($extension) }})
+                                            </p>
                                         </div>
+
+                                        <script>
+                                            function previewDocument(url, extension, type) {
+                                                let content = '';
+                                                let title = 'Approval Document';
+                                                let modalWidth = '600px'; // Default smaller width
+
+                                                if (type === 'image') {
+                                                    // Image preview - smaller modal
+                                                    content = `
+                    <div style="text-align: center;">
+                        <img src="${url}" 
+                             style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 4px; cursor: pointer;"
+                             onclick="window.open('${url}', '_blank')"
+                             alt="Document preview">
+                        <p style="margin-top: 8px; color: #666; font-size: 13px;">Click image to open full size</p>
+                    </div>
+                `;
+                                                    modalWidth = '500px';
+
+                                                } else if (type === 'pdf') {
+                                                    // PDF preview - smaller iframe
+                                                    content = `
+                    <div style="width: 100%; height: 450px;">
+                        <iframe src="${url}" 
+                                width="100%" 
+                                height="100%" 
+                                frameborder="0"
+                                style="border: 1px solid #ddd; border-radius: 4px;">
+                        </iframe>
+                    </div>
+                `;
+                                                    modalWidth = '700px';
+
+                                                } else if (type === 'office') {
+                                                    // Office documents using Google Docs Viewer
+                                                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+
+                                                    let fileType = 'Document';
+                                                    if (extension.startsWith('doc')) fileType = 'Word';
+                                                    else if (extension.startsWith('xls')) fileType = 'Excel';
+
+                                                    content = `
+                    <div style="width: 100%; height: 450px;">
+                        <iframe src="${viewerUrl}" 
+                                width="100%" 
+                                height="100%" 
+                                frameborder="0"
+                                style="border: 1px solid #ddd; border-radius: 4px;">
+                        </iframe>
+                    </div>
+                    <p style="text-align: center; margin-top: 8px; color: #666; font-size: 13px;">
+                        ${fileType} preview
+                    </p>
+                `;
+                                                    modalWidth = '700px';
+                                                }
+
+                                                Swal.fire({
+                                                    title: title,
+                                                    html: content,
+                                                    width: modalWidth,
+                                                    showCloseButton: true,
+                                                    showConfirmButton: false, // Remove confirm button
+                                                    showCancelButton: true,
+                                                    cancelButtonText: 'Close',
+                                                    showDenyButton: true,
+                                                    denyButtonText: 'Download',
+                                                    denyButtonColor: '#4f46e5',
+                                                    scrollbarPadding: false,
+                                                    customClass: {
+                                                        popup: 'smaller-modal'
+                                                    }
+                                                }).then((result) => {
+                                                    if (result.isDenied) {
+                                                        window.open(url, '_blank');
+                                                    }
+                                                });
+                                            }
+                                        </script>
+
+                                        <style>
+                                            /* Make modal even smaller on mobile */
+                                            @media (max-width: 768px) {
+                                                .swal2-popup.smaller-modal {
+                                                    width: 95% !important;
+                                                }
+                                            }
+
+                                            /* Adjust iframe height on mobile */
+                                            @media (max-width: 640px) {
+                                                .swal2-popup iframe {
+                                                    height: 350px !important;
+                                                }
+                                            }
+                                        </style>
                                     @endif
 
                                     <!-- Print Buttons -->
