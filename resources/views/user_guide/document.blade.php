@@ -638,19 +638,20 @@
                                 Order Details page.</p>
                         </div>
 
-                        <div class="mt-4 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        {{-- <div class="mt-4 flex gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                             <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                                     clip-rule="evenodd" />
                             </svg>
                             AJAX updates — filters and pagination don't reload the page.
-                        </div>
+                        </div> --}}
                     </div>
                 </section>
 
+
                 {{-- ══════════════════════════════════════════
-                     4. ORDER DETAILS
-                ══════════════════════════════════════════ --}}
+     4. ORDER DETAILS
+══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="order-details" data-roles="personnel manager admin">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -724,13 +725,40 @@
                         </p>
 
                         <div class="mt-6 border-t border-gray-100 pt-5" id="od-actions">
-                            <h3 class="text-sm font-semibold text-gray-900">Order Actions</h3>
+                            <h3 class="text-sm font-semibold text-gray-900">Order Actions Dropdown</h3>
                             <p class="mt-1 text-sm text-gray-500">The Order Actions dropdown lets you change the order's status. Available actions depend on your role and the current order
                                 status:</p>
 
+                            {{-- Order Actions Dropdown Screenshot with Context --}}
+                            <div class="mt-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                                <h4 class="mb-2 text-sm font-semibold text-blue-900">📍 Where to Find Order Actions</h4>
+                                <p class="mb-3 text-sm text-blue-800">On any Order Details page, look for the <strong>"Order Actions" dropdown button</strong> in the top-right corner, just
+                                    above the information panels. Click it to see all available actions for the current order.</p>
+
+                                <div class="screenshot-frame mt-2 overflow-hidden rounded-lg bg-white ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden bg-gray-50 p-2">
+                                        <img class="rounded border border-gray-200 object-cover"
+                                            src="{{ asset('images/guide/manager-order-actions.png') }}"
+                                            alt="Manager order actions dropdown showing Approve & Reject options">
+                                    </div>
+                                    <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                        <p class="flex items-center gap-2 text-xs text-gray-600">
+                                            <span class="inline-flex items-center gap-1">
+                                                <svg class="h-3 w-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                                <span class="font-medium">Manager View:</span>
+                                            </span>
+                                            The dropdown shows all actions available to managers: <strong>Approve Order & Reject Order</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             {{-- ── Personnel Actions ── --}}
-                            <div data-roles="personnel">
-                                <div class="mt-3 space-y-2">
+                            <div data-roles="personnel" class="mt-4">
+                                <h4 class="mb-2 text-sm font-medium text-gray-800">Personnel Actions</h4>
+                                <div class="space-y-2">
                                     @foreach ([['Request For Approval', 'Sends the order to your regional manager for review. The manager receives an email notification. The order status changes to "For Approval." If the order was previously rejected, inventory allocation is re-deducted.'], ['Cancel Order', 'Cancels the entire order. You must provide a reason. Inventory allocation is reverted (added back to stock). The reason is logged in Order Notes.'], ['Complete Order', 'Marks the order as fully fulfilled after all items have been received. Status changes to "Completed."'], ['Restore Order', 'Re-opens a cancelled order. Status changes back to "New Order" so it can go through the approval process again.']] as $a)
                                         <div class="rounded-lg bg-gray-50 px-4 py-2.5">
                                             <p class="text-sm font-medium text-gray-800">{{ $a[0] }}</p>
@@ -740,9 +768,10 @@
                                 </div>
                             </div>
 
-                            {{-- ── Manager Actions ── --}}
-                            <div data-roles="manager">
-                                <div class="mt-3 space-y-2">
+                            {{-- ── Manager Actions with Visual Context ── --}}
+                            <div data-roles="manager" class="mt-4">
+                                <h4 class="mb-2 text-sm font-medium text-gray-800">Manager Actions</h4>
+                                <div class="space-y-3">
                                     @foreach ([
             ['Approve Order', 'Approves the order after your review. You are required to attach a supporting document (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB). The store personnel who submitted the order receives an email notification that it has been approved. Status changes to "Approved" and personnel can then Generate SO# to begin fulfillment.'],
             ['Reject Order', 'Rejects the order when it has issues (e.g., incorrect pricing, unreasonable quantities). You must provide a rejection reason — this is required and cannot be skipped. The reason is logged in Order Notes and visible to the store personnel. Inventory allocation is reverted. Personnel can revise the order and resubmit for approval.'],
@@ -754,16 +783,6 @@
                                             <p class="text-sm font-medium text-gray-800">{{ $a[0] }}</p>
                                             <p class="mt-0.5 text-xs text-gray-500">{{ $a[1] }}</p>
                                         </div>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            {{-- ── Admin Actions ── --}}
-                            <div data-roles="admin">
-                                <div class="mt-3 grid grid-cols-2 gap-2">
-                                    @foreach (['Request For Approval', 'Approve Order', 'Reject Order', 'Cancel Order', 'Complete Order', 'Restore Order', 'Generate SO#'] as $a)
-                                        <div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"><span
-                                                class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>{{ $a }}</div>
                                     @endforeach
                                 </div>
                             </div>
@@ -799,6 +818,9 @@
                 {{-- ══════════════════════════════════════════
                      MANAGER: Approve/Reject (dedicated section)
                 ══════════════════════════════════════════ --}}
+                {{-- ══════════════════════════════════════════
+     MANAGER: Approve/Reject with Visual Guides
+══════════════════════════════════════════ --}}
                 <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="approving-orders" data-roles="manager">
                     <div class="px-6 pt-5">
                         <div class="flex items-center gap-3">
@@ -810,37 +832,485 @@
                         <p class="mb-4 text-sm text-gray-600">This is your primary workflow. Store personnel submit orders for your review — you approve or reject them based on your assessment.
                         </p>
 
-                        <h3 class="text-sm font-semibold text-gray-900">Approving an Order</h3>
-                        <div class="mt-3 space-y-1.5">
-                            @foreach (['Open an order with <strong>"For Approval"</strong> status (from Orders List or email link).', 'Review all panels: Customer Info, Payment, Delivery, and the Ordered Items table.', 'Verify pricing, quantities, scheme calculations, and totals in the Invoice sidebar.', 'Click <strong>Order Actions → Approve Order</strong>.', 'Required - <strong>Attach a supporting document</strong> (PDF, DOC, DOCX, JPG, JPEG, PNG — max 5MB).', 'Click <strong>Approve</strong>. The requester (store personnel) receives an email notification that their order has been approved.'] as $s)
-                                <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
-                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
-                                        class="text-sm text-gray-600">{!! $s !!}</span></div>
-                            @endforeach
-                        </div>
-                        <div class="mt-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">After approval, the store personnel can <strong>Generate SO#</strong> to create transfer
-                            numbers in Oracle and begin fulfillment tracking (Picking → Shipped → Received).</div>
+                        {{-- Approving an Order with Visual Guide --}}
+                        <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-green-100 bg-green-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-green-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Approving an Order
+                                </h3>
+                            </div>
+                            <div class="p-4">
+                                <div class="space-y-3">
+                                    @foreach (['Open an order with <strong>"For Approval"</strong> status (from Orders List or email link).', 'Review all panels: Customer Info, Payment, Delivery, and the Ordered Items table.', 'Verify pricing, quantities, scheme calculations, and totals in the Invoice sidebar.', 'Click <strong>Order Actions → Approve Order</strong>.'] as $s)
+                                        <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5">
+                                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span>
+                                            <span class="text-sm text-gray-600">{!! $s !!}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
 
-                        <h3 class="mt-6 text-sm font-semibold text-gray-900">Rejecting an Order</h3>
-                        <div class="mt-3 space-y-1.5">
-                            @foreach (['Open an order with <strong>"For Approval"</strong> status.', 'Identify the issue (e.g., incorrect pricing, unreasonable quantity, wrong customer details).', 'Click <strong>Order Actions → Reject Order</strong>.', 'Provide a <strong>clear rejection reason</strong> — this field is <strong>required</strong> and cannot be skipped.', 'Status changes to <strong>"Rejected"</strong>. Inventory allocation is reverted (stock added back). The reason is logged in Order Notes.'] as $s)
-                                <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5"><span
-                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span><span
-                                        class="text-sm text-gray-600">{!! $s !!}</span></div>
-                            @endforeach
+                                {{-- Approve Modal Screenshot with Context --}}
+                                <div class="mt-4 rounded-lg bg-blue-50 p-4">
+                                    <h4 class="mb-2 text-sm font-semibold text-blue-900">📎 Step 5: Attach Supporting Document</h4>
+                                    <p class="mb-3 text-sm text-blue-800">When you click "Approve Order", this modal appears. <strong>Attaching a document is required</strong> (PDF, DOC, DOCX,
+                                        JPG, JPEG, PNG — max 5MB).</p>
+
+                                    <div class="screenshot-frame overflow-hidden rounded-lg bg-white ring-1 ring-gray-200">
+                                        <div class="flex items-center justify-center overflow-hidden bg-gray-50 p-2">
+                                            <img class="w-full rounded border border-gray-200 object-cover"
+                                                src="{{ asset('images/guide/manager-approve-modal.png') }}"
+                                                alt="Approve Order modal showing required document upload field">
+                                        </div>
+                                        <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                            <p class="flex items-center gap-2 text-xs text-gray-600">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="h-3 w-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                                                            clip-rule="evenodd" />
+                                                    </svg>
+                                                    <span class="font-medium">Required Field:</span>
+                                                </span>
+                                                The document upload is marked with a red asterisk (*) and must be completed before approval
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex items-start gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+                                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>After clicking <strong>Approve</strong>, the requester (store personnel) receives an email notification that their order has been approved.</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mt-3 flex gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v2a1 1 0 01-1 1z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Always provide a specific, actionable rejection reason so store personnel know exactly what to fix before resubmitting. Personnel can see your notes and resubmit the
-                            order for approval.
+
+                        {{-- Rejecting an Order with Visual Guide --}}
+                        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-red-100 bg-red-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-red-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Rejecting an Order
+                                </h3>
+                            </div>
+                            <div class="p-4">
+                                <div class="space-y-3">
+                                    @foreach (['Open an order with <strong>"For Approval"</strong> status.', 'Identify the issue (e.g., incorrect pricing, unreasonable quantity, wrong customer details).', 'Click <strong>Order Actions → Reject Order</strong>.'] as $s)
+                                        <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5">
+                                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration }}</span>
+                                            <span class="text-sm text-gray-600">{!! $s !!}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                {{-- Reject Modal Screenshot with Context --}}
+                                <div class="mt-4 rounded-lg bg-amber-50 p-4">
+                                    <h4 class="mb-2 text-sm font-semibold text-amber-900">📝 Step 4: Provide Rejection Reason</h4>
+                                    <p class="mb-3 text-sm text-amber-800">When you click "Reject Order", this modal appears. <strong>A clear rejection reason is REQUIRED</strong> and cannot be
+                                        skipped.</p>
+
+                                    <div class="screenshot-frame overflow-hidden rounded-lg bg-white ring-1 ring-gray-200">
+                                        <div class="flex items-center justify-center overflow-hidden bg-gray-50 p-2">
+                                            <img class="w-full rounded border border-gray-200 object-cover"
+                                                src="{{ asset('images/guide/manager-reject-modal.png') }}"
+                                                alt="Reject Order modal showing required rejection reason textarea">
+                                        </div>
+                                        <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                            <p class="flex items-center gap-2 text-xs text-gray-600">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="h-3 w-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                                                            clip-rule="evenodd" />
+                                                    </svg>
+                                                    <span class="font-medium">Important:</span>
+                                                </span>
+                                                Be specific and actionable so personnel know exactly what to fix
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 space-y-2">
+                                    @foreach (['Provide a <strong>clear rejection reason</strong> — this field is <strong>required</strong> and cannot be skipped.', 'Status changes to <strong>"Rejected"</strong>. Inventory allocation is reverted (stock added back). The reason is logged in Order Notes.'] as $s)
+                                        <div class="step-row flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2.5">
+                                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[0.65rem] font-bold text-white">{{ $loop->iteration + 3 }}</span>
+                                            <span class="text-sm text-gray-600">{!! $s !!}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <div class="mt-3 flex gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v2a1 1 0 01-1 1z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <strong>Best Practice:</strong> Always provide a specific, actionable rejection reason so store personnel know exactly what to fix before resubmitting.
+                                    Personnel can see your notes and resubmit the order for approval.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
+                {{-- ══════════════════════════════════════════
+     EMAIL NOTIFICATIONS REFERENCE
+══════════════════════════════════════════ --}}
+                <section class="section-card mb-6 scroll-mt-8 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" id="email-notifications" data-roles="manager">
+                    <div class="px-6 pt-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-600 text-xs font-bold text-white shadow-sm">📧</span>
+                            <h2 class="text-lg font-semibold text-gray-900">Email Notifications</h2>
+                            <span class="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">Reference Guide</span>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-6 pt-3">
+                        <p class="mb-4 text-sm text-gray-600">All system notifications are sent automatically. Here's what each email looks like and what it means.</p>
 
+                        {{-- Email 1: Order For Approval --}}
+                        <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-purple-100 bg-purple-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-purple-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    1. Order Submitted for Approval
+                                </h3>
+                                <p class="mt-1 text-xs text-purple-600">Sent to Manager when personnel requests approval</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div class="md:col-span-2">
+                                        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">What happens</h4>
+                                        <ul class="space-y-2 text-sm text-gray-600">
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>Store personnel submits an order and clicks "Request For Approval"</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>Email is sent to the regional manager immediately</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>Contains direct links to Review, Approve, or Reject the order</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <div class="rounded-lg bg-purple-50 p-3">
+                                            <p class="mb-1 text-xs font-medium text-purple-800">⏱️ Action Required</p>
+                                            <p class="text-xs text-purple-600">Review within 24 hours</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-order-for-approval.png') }}"
+                                            alt="Order for approval email showing order summary and action buttons">
+                                    </div>
+                                    <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                        <p class="flex items-center gap-2 text-xs text-gray-600">
+                                            <span class="font-medium text-purple-600">📧 Sample Email:</span>
+                                            Subject: "[ACTION REQUIRED] New Order #SOF202602-002 Awaiting Your Approval"
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Email 2: Order Approved --}}
+                        <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-green-100 bg-green-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-green-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    2. Order Approved
+                                </h3>
+                                <p class="mt-1 text-xs text-green-600">Sent to Store Personnel when manager approves</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div class="md:col-span-2">
+                                        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">What happens</h4>
+                                        <ul class="space-y-2 text-sm text-gray-600">
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span>Manager approves the order and uploads supporting document</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>Email sent to personnel with approval confirmation</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                                <span>Includes link to download the supporting document</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <div class="rounded-lg bg-green-50 p-3">
+                                            <p class="mb-1 text-xs font-medium text-green-800">📎 Document Attached</p>
+                                            <p class="text-xs text-green-600">Personnel can now Generate SO#</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-order-approved.png') }}"
+                                            alt="Order approved email showing approval details and document attachment">
+                                    </div>
+                                    <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                        <p class="flex items-center gap-2 text-xs text-gray-600">
+                                            <span class="font-medium text-green-600">📧 Sample Email:</span>
+                                            Subject: "✅ Order #SOF202602-002 Has Been APPROVED"
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Email 3: Order Rejected --}}
+                        {{-- <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-red-100 bg-red-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-red-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    3. Order Rejected
+                                </h3>
+                                <p class="mt-1 text-xs text-red-600">Sent to Store Personnel when manager rejects</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div class="md:col-span-2">
+                                        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">What happens</h4>
+                                        <ul class="space-y-2 text-sm text-gray-600">
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                <span>Manager rejects with a specific reason</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>Email includes the rejection reason prominently</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                <span>Personnel can click "Revise & Resubmit" to fix the order</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <div class="rounded-lg bg-red-50 p-3">
+                                            <p class="mb-1 text-xs font-medium text-red-800">📝 Reason Required</p>
+                                            <p class="text-xs text-red-600">Be specific and actionable</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-order-rejected.png') }}"
+                                            alt="Order rejected email showing rejection reason and revise button">
+                                    </div>
+                                    <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                        <p class="flex items-center gap-2 text-xs text-gray-600">
+                                            <span class="font-medium text-red-600">📧 Sample Email:</span>
+                                            Subject: "❌ Order #SOF202603-001 Has Been REJECTED"
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> --}}
+
+                        {{-- Email 4: Order Cancelled --}}
+                        {{-- <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                    4. Order Cancelled
+                                </h3>
+                                <p class="mt-1 text-xs text-gray-600">Sent to both Manager and Personnel</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div class="md:col-span-2">
+                                        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">What happens</h4>
+                                        <ul class="space-y-2 text-sm text-gray-600">
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                <span>Order is cancelled by either manager or personnel</span>
+                                            </li>
+                                            <li class="flex items-start gap-2">
+                                                <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                </svg>
+                                                <span>Inventory allocation is automatically reverted</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <div class="rounded-lg bg-gray-50 p-3">
+                                            <p class="mb-1 text-xs font-medium text-gray-800">↩️ Restore Available</p>
+                                            <p class="text-xs text-gray-600">Cancelled orders can be restored</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-order-cancelled.png') }}"
+                                            alt="Order cancelled email with cancellation reason">
+                                    </div>
+                                    <div class="border-t border-gray-100 bg-white px-4 py-3">
+                                        <p class="text-xs text-gray-600">Subject: "⚠️ Order #SOF202603-001 Has Been CANCELLED"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> --}}
+
+                        {{-- Email 5: Order Completed --}}
+                        {{-- <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-teal-100 bg-teal-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-teal-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    5. Order Completed
+                                </h3>
+                                <p class="mt-1 text-xs text-teal-600">Sent when fulfillment is complete</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="screenshot-frame mt-2 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-order-completed.png') }}"
+                                            alt="Order completed email with fulfillment summary">
+                                    </div>
+                                </div>
+                            </div>
+                        </div> --}}
+
+                        {{-- Email 6: Daily Summary --}}
+                        {{-- <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-blue-100 bg-blue-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-blue-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    6. Daily Summary (End of Day)
+                                </h3>
+                                <p class="mt-1 text-xs text-blue-600">Sent to Managers only</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="screenshot-frame mt-2 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-daily-summary.png') }}"
+                                            alt="Daily summary email showing pending orders by status">
+                                    </div>
+                                </div>
+                            </div>
+                        </div> --}}
+
+                        {{-- Email 7: Document Upload Confirmation --}}
+                        {{-- <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <div class="border-b border-indigo-100 bg-indigo-50 px-4 py-3">
+                                <h3 class="flex items-center gap-2 text-sm font-semibold text-indigo-800">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                    7. Document Upload Confirmation
+                                </h3>
+                                <p class="mt-1 text-xs text-indigo-600">Confirmation when supporting document is uploaded</p>
+                            </div>
+                            <div class="p-4">
+                                <div class="screenshot-frame mt-2 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
+                                    <div class="flex items-center justify-center overflow-hidden">
+                                        <img class="w-full object-cover" src="{{ asset('images/guide/email-document-uploaded.png') }}"
+                                            alt="Document upload confirmation email">
+                                    </div>
+                                </div>
+                            </div>
+                        </div> --}}
+
+                        {{-- Email Quick Reference Table --}}
+                        <div class="mt-6 overflow-hidden rounded-lg ring-1 ring-gray-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                        <th class="px-4 py-2.5">Email Type</th>
+                                        <th class="px-4 py-2.5">Recipient</th>
+                                        <th class="px-4 py-2.5">When Sent</th>
+                                        <th class="px-4 py-2.5">Action Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2.5 font-medium text-gray-800">Order For Approval</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Manager</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Personnel requests approval</td>
+                                        <td class="px-4 py-2.5"><span class="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">Review &
+                                                Decide</span></td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2.5 font-medium text-gray-800">Order Approved</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Personnel</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Manager approves</td>
+                                        <td class="px-4 py-2.5"><span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Generate
+                                                SO#</span></td>
+                                    </tr>
+                                    {{-- <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2.5 font-medium text-gray-800">Order Rejected</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Personnel</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Manager rejects</td>
+                                        <td class="px-4 py-2.5"><span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Revise &
+                                                Resubmit</span></td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2.5 font-medium text-gray-800">Order Cancelled</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Both</td>
+                                        <td class="px-4 py-2.5 text-gray-600">Order is cancelled</td>
+                                        <td class="px-4 py-2.5"><span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">Optional:
+                                                Restore</span></td>
+                                    </tr> --}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
                 {{-- ══════════════════════════════════════════
                      5. PRODUCTS PAGE (Personnel & Admin only)
                 ══════════════════════════════════════════ --}}
@@ -994,7 +1464,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['N/A', 'No transfer number generated yet'], ['Picking', 'Items are being picked at the warehouse'], ['Processing', 'Transfer is being processed for shipment'], ['Shipped', 'Items are in transit to the store'], ['Received', 'Store has confirmed receipt of the items'], ['Error / Not Found', 'Issue with tracking — contact IT support']] as $ts)
+                                    @foreach ([['N/A', 'No transfer number generated yet'], ['Processing', 'Transfer is being processed for warehouse picking'], ['Picking', 'Items are being picked at the warehouse'], ['Shipped', 'Items are in transit to the store'], ['Received', 'Store has confirmed receipt of the items'], ['Error / Not Found', 'Issue with tracking — contact IT support']] as $ts)
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-4 py-2.5 font-medium text-gray-800">{{ $ts[0] }}</td>
                                             <td class="px-4 py-2.5 text-gray-600">{{ $ts[1] }}</td>
@@ -1295,6 +1765,20 @@
                         icon: 'shield',
                         text: 'Approve / Reject'
                     },
+                    {
+                        label: 'Notifications'
+                    },
+                    {
+                        href: '#email-notifications',
+                        section: 'email-notifications',
+                        icon: 'mail',
+                        text: 'Email Notifications'
+                    },
+                    // {
+                    //     href: '#email-notifications',
+                    //     text: 'Email Samples',
+                    //     sub: true
+                    // },
                     {
                         label: 'Reference'
                     },
