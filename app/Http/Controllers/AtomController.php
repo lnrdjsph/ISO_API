@@ -29,7 +29,7 @@ class AtomController extends Controller
      * Warehouse to store mapping
      */
     protected array $warehouseConfig = [
-        '80141' => ['stores' => ['4002']],
+        '80141' => ['stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],
         '80181' => ['stores' => ['6012']],
     ];
 
