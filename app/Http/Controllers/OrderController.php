@@ -790,7 +790,7 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->id);
         $order->order_status = 'rejected';
-        // $this->revertAllocationStock($order->id);
+        $this->revertAllocationStock($order->id);
         $order->save();
 
         // Log note with reason
