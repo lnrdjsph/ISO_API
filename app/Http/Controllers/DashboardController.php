@@ -16,8 +16,8 @@ class DashboardController extends Controller
 
         // Store grouping by region
         $storeMapping = [
-            'lz' => ['6012', '3019', '2008', '6009', '6010'], // Luzon
-            'vs' => ['4002', '2010', '2017', '2019', '3018'], // Visayas
+            'lz' => ['6012'], // Luzon
+            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
         ];
 
         // Restrict accessible orders

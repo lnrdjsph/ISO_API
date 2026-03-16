@@ -18,8 +18,8 @@ class UpdateAllProductAllocations extends Command
 
     // Master mapping: Warehouse Code => [Facility Label, Store Codes]
     protected array $warehouseConfig = [
-        '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018']],                    // Bacolod Depot
-        '80141' => ['facility' => 'SI', 'stores' => ['6012', '3019', '2008', '6009', '6010']],                    // Silangan Warehouse
+        '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],                    // Bacolod Depot
+        '80141' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
     ];
 
     protected array $warehouseMap = [
