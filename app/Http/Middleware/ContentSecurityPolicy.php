@@ -1,4 +1,3 @@
-cat > app/Http/Middleware/ContentSecurityPolicy.php << 'EOF'
 <?php
 
 namespace App\Http\Middleware;
@@ -38,4 +37,3 @@ class ContentSecurityPolicy
         return $response;
     }
 }
-EOF
