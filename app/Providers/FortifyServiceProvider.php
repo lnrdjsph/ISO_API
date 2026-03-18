@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
@@ -24,7 +23,7 @@ class FortifyServiceProvider extends ServiceProvider
             \Laravel\Fortify\Contracts\LoginResponse::class,
             LoginResponse::class
         );
-
+        
         $this->app->singleton(
             \Laravel\Fortify\Contracts\LogoutResponse::class,
             LogoutResponse::class
@@ -36,9 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(function () {
             return view('auth.login');
         });
-        Fortify::requestPasswordResetLinkView(function () {
-            return view('auth.forgot-password');
-        });
+        
 
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);

@@ -697,11 +697,11 @@ class OrderController extends Controller
         // 🔔 Determine recipient based on requesting_store
         $recipients = [];
 
-        if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018'])) {
+        if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
             $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
-        if (in_array($order->requesting_store, ['6012', '3019', '2008', '6009', '6010'])) {
+        if (in_array($order->requesting_store, ['6012'])) {
             $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
@@ -1054,10 +1054,10 @@ class OrderController extends Controller
             '2017' => '80181', //bacolod
             '2019' => '80181', //bacolod
             '3018' => '80181', //bacolod
-            '3019' => '80141', //bacolod
-            '2008' => '80141', // Silangan
-            '6009' => '80141', // Silangan
-            '6010' => '80141', // Silangan
+            '3019' => '80181', //bacolod
+            '2008' => '80181', // Bacolod
+            '6009' => '80181', // Bacolod
+            '6010' => '80181', // Bacolod
             '6012' => '80141', // Silangan
             'lz'    => '80141', // LZ
             'vs'    => '80181', // Silangan

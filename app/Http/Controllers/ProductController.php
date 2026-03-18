@@ -56,10 +56,10 @@ class ProductController extends Controller
                 '2017' => '80181', //bacolod
                 '2019' => '80181', //bacolod
                 '3018' => '80181', //bacolod
-                '3019' => '80141', //bacolod
-                '2008' => '80141', // Silangan
-                '6009' => '80141', // Silangan
-                '6010' => '80141', // Silangan
+                '3019' => '80181', //bacolod
+                '2008' => '80181', // Silangan
+                '6009' => '80181', // Silangan
+                '6010' => '80181', // Silangan
                 '6012' => '80141', // Silangan
             ];
 
@@ -1385,15 +1385,15 @@ class ProductController extends Controller
          */
         $locationToWarehouse = [
             '4002' => '80181', // Bacolod
+            '2010' => '80181', // Bacolod
+            '2017' => '80181', // Bacolod
+            '2019' => '80181', // Bacolod
+            '3018' => '80181', // Bacolod
+            '3019' => '80181', // Bacolod
+            '2008' => '80181', // Bacolod
+            '6009' => '80181', // Bacolod
+            '6010' => '80181', // Bacolod
             '6012' => '80141', // Silangan
-            '2010' => '80141', // Silangan
-            '2017' => '80141', // Silangan
-            '2019' => '80141', // Silangan
-            '3018' => '80141', // Silangan
-            '3019' => '80141', // Silangan
-            '2008' => '80141', // Silangan
-            '6009' => '80141', // Silangan
-            '6010' => '80141', // Silangan
         ];
 
         return $locationToWarehouse[$userLocation] ?? null;

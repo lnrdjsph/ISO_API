@@ -8,6 +8,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\OracleTransferController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\InventoryExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,21 +38,16 @@ Route::middleware(['auth', 'session.expired'])->group(function () {
 
 
 
-Route::prefix('b2b2c')->middleware('auth')->group(function () {
+Route::prefix('b2b2c')->middleware(['auth', 'session.expired'])->group(function () {
 
     // Orders Routes
     Route::prefix('orders')->name('orders.')->group(function () {
-        // Route::get('/management', [OrderController::class, 'managementOrders'])->name('management');
-        // Route::get('/management/{id}', [OrderController::class, 'managementOrdersShow'])->name('management.show');
-
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
-        //orders.update route
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
 
         Route::post('/cancel-items', [OrderController::class, 'cancelItems'])->name('cancel-items');
 
-        //orders.archive route
         Route::post('/archive', [OrderController::class, 'archive'])->name('archive');
         Route::post('/cancel', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/restore', [OrderController::class, 'restore'])->name('restore');
@@ -59,15 +56,10 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::post('/approve', [OrderController::class, 'approveOrder'])->name('approve');
         Route::post('/reject', [OrderController::class, 'rejectOrder'])->name('reject');
 
-
         Route::get('/{id}/print-sof', [OrderController::class, 'printSOF'])->name('print.sof');
         Route::get('/{id}/print-sof-invoice', [OrderController::class, 'printSOFInvoice'])->name('print.sof_invoice');
         Route::get('/{id}/freebies-pdf', [OrderController::class, 'generateFreebiesForm'])->name('print.freebies');
         Route::get('/{id}/print-order-slip', [OrderController::class, 'generateOrderSlip'])->name('print.order_slip');
-
-        // Management Orders View
-
-
     });
 
     // Forms Routes
@@ -90,14 +82,12 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
         Route::get('/export', [ProductController::class, 'export'])->name('export');
         Route::get('/allocation', [ProductController::class, 'getAllocation'])->name('allocation');
 
-
-        // New bulk operation routes
         Route::post('/bulk-update', [ProductController::class, 'bulkUpdate'])->name('bulk-update');
         Route::post('/bulk-archive', [ProductController::class, 'bulkArchive'])->name('bulk-archive');
         Route::post('/bulk-restore', [ProductController::class, 'bulkRestore'])->name('bulk-restore');
 
         Route::get('/skus', [ProductController::class, 'getSkus'])->name('get-skus');
-        // CSV Import Routes
+
         Route::prefix('import')->name('import.')->group(function () {
             Route::get('/', [ProductController::class, 'showImport'])->name('show');
             Route::post('/', [ProductController::class, 'import'])->name('upload');
@@ -107,10 +97,9 @@ Route::prefix('b2b2c')->middleware('auth')->group(function () {
     });
 });
 
-use App\Http\Controllers\UserController;
 
-// User Management routes
-Route::prefix('/users')->name('users.')->group(function () {
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
+Route::prefix('/users')->name('users.')->middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/', [UserController::class, 'index'])->name('index');
     Route::get('/create', [UserController::class, 'create'])->name('create');
     Route::post('/', [UserController::class, 'store'])->name('store');
@@ -120,9 +109,8 @@ Route::prefix('/users')->name('users.')->group(function () {
 });
 
 
-use App\Http\Controllers\InventoryExportController;
-
-Route::prefix('others')->name('others.')->group(function () {
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
+Route::prefix('others')->name('others.')->middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
         ->name('inventory.form');
 
@@ -130,19 +118,19 @@ Route::prefix('others')->name('others.')->group(function () {
         ->name('inventory.export');
 });
 
-// manually trigger wms allocations
-Route::prefix('update-allocations')->group(function () {
+
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
+Route::prefix('update-allocations')->middleware(['auth', 'session.expired'])->group(function () {
     Route::post('/', [ProductController::class, 'wmsUpdate'])
-        ->name('update.allocations')
-        ->middleware(['web', 'auth']);
+        ->name('update.allocations');
 
     Route::get('/status', [ProductController::class, 'wmsStatus'])
-        ->name('update.allocations.status')
-        ->middleware(['web', 'auth']);
+        ->name('update.allocations.status');
 });
 
 
-Route::prefix('reports')->group(function () {
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
+Route::prefix('reports')->middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
 
@@ -155,35 +143,29 @@ Route::prefix('reports')->group(function () {
     Route::get('/orders/export', [ReportsController::class, 'exportOrdersReport'])
         ->name('reports.orders.export');
 
-
     Route::get('/freebies', [ReportsController::class, 'freebiesReport'])
         ->name('reports.freebies');
 
     Route::get('/sales/export', [ReportsController::class, 'exportCsv'])
         ->name('reports.sales.export');
-    // future reports
-    // Route::get('/customers', [ReportsController::class, 'customerReport'])
-    //     ->name('reports.customers');
-
-    // Route::get('/products', [ReportsController::class, 'productReport'])
-    //     ->name('reports.products');
 });
 
 
-
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
 Route::post('/oracle/transfer', [OracleTransferController::class, 'send'])
-    ->name('oracle.transfer');
+    ->name('oracle.transfer')
+    ->middleware(['auth', 'session.expired']);
 
-// unauthorized route
+
+// Unauthorized route (intentionally public)
 Route::view('/403', 'errors.403');
 
 
-// Route::middleware(['auth', 'session.expired'])->group(function () {
-//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-// });
+// Session check (intentionally public — used by JS polling)
 Route::get('/check-session', function () {
     return response()->json(['authenticated' => Auth::check()]);
 })->name('check.session');
+
 
 Route::prefix('user-guide')->name('user-guide.')->middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/document', fn() => view('user_guide.document'))->name('document');
