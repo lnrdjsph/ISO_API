@@ -75,6 +75,7 @@
         /* Main content offsets for zoomed sidebar width (13rem * 0.75 = 9.75rem, 4.5rem * 0.75 = 3.375rem) */
         .main-container {
             transition: margin-left 0.10s ease-in-out;
+            padding-top: 1.5rem;
         }
 
         @media (min-width: 768px) {
@@ -1091,7 +1092,7 @@
     </aside>
 
     <!-- Main Content -->
-    <div class="main-container min-h-screen" style="padding-top: 1.5rem;">
+    <div class="main-container min-h-screen">
         <main class="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-6">
             @yield('content')
         </main>
