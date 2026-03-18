@@ -23,7 +23,7 @@
         href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite('resources/css/app.css')
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         /* Prevent horizontal scroll completely */
         html,
         body {
@@ -449,7 +449,7 @@
                 '6010' => 'H10 - Super Metro Bogo',
             ];
 
-            $userLocation = Auth::user()->user_location ?? null;
+            $userLocation = Auth::user()?->user_location ?? null;
             $fullLocation = $locationMap[$userLocation] ?? $userLocation;
         @endphp
 
@@ -465,7 +465,7 @@
         id="sidebar"
         class="sidebar-expanded fixed z-[9999] flex flex-col bg-white shadow-xl">
 
-        <nav class="general-sidebar fixed flex flex-col px-3 pb-4">
+        <nav class="fixed flex flex-col px-3 pb-4">
             <a
                 href="{{ route('dashboard') }}"
                 class="block">
@@ -594,82 +594,78 @@
 
 
                     <!-- Forms Group -->
-                    @auth
-                        @if (!in_array(auth()->user()->role, ['manager']))
-                            <li class="{{ request()->routeIs('forms*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('forms*'))
-                                    <div class="nav-item {{ request()->routeIs('forms*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                        <span class="icon-wrapper">
-                                            <svg
-                                                class="h-5 w-5 flex-shrink-0"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </span>
+                    <li class="{{ request()->routeIs('forms*') ? 'active' : '' }} group relative">
+                        @if (request()->routeIs('forms*'))
+                            <div class="nav-item {{ request()->routeIs('forms*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                                <span class="icon-wrapper">
+                                    <svg
+                                        class="h-5 w-5 flex-shrink-0"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </span>
 
-                                        <span class="nav-text ml-3 font-medium">Forms</span>
-                                        <div class="tooltip">Forms</div>
-                                    </div>
+                                <span class="nav-text ml-3 font-medium">Forms</span>
+                                <div class="tooltip">Forms</div>
+                            </div>
 
-                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                        <li>
-                                            <a
-                                                href="{{ route('forms.sof') }}"
-                                                class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Sales Order Form</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                href="{{ route('forms.rof') }}"
-                                                class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Request Order Form</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                @else
+                            <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
+                                <li>
                                     <a
                                         href="{{ route('forms.sof') }}"
-                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                        <svg
-                                            class="h-5 w-5 flex-shrink-0"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span class="nav-text ml-3">Forms</span>
-                                        <div class="tooltip">Forms</div>
+                                        class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                        <span class="nav-text">Sales Order Form</span>
                                     </a>
-                                @endif
-
-                                <ul class="flyout-menu" data-flyout>
-                                    <li>
-                                        <a href="{{ route('forms.sof') }}"
-                                            class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">
-                                            Sales Order Form
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('forms.rof') }}"
-                                            class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }}">
-                                            Request Order Form
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
+                                </li>
+                                <li>
+                                    <a
+                                        href="{{ route('forms.rof') }}"
+                                        class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                        <span class="nav-text">Request Order Form</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        @else
+                            <a
+                                href="{{ route('forms.sof') }}"
+                                class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                                <svg
+                                    class="h-5 w-5 flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span class="nav-text ml-3">Forms</span>
+                                <div class="tooltip">Forms</div>
+                            </a>
                         @endif
-                    @endauth
+
+                        <ul class="flyout-menu" data-flyout>
+                            <li>
+                                <a href="{{ route('forms.sof') }}"
+                                    class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">
+                                    Sales Order Form
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('forms.rof') }}"
+                                    class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }}">
+                                    Request Order Form
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
 
                     <!-- Reports Group -->
@@ -860,32 +856,9 @@
                                     @endif
                                 </ul>
                             </li>
-
-
                         @endif
                     @endauth
-                    <!-- User Guide - Add this as a new menu item -->
-                    <li class="{{ request()->routeIs('user-guide*') ? 'active' : '' }} group relative">
-                        <a href="{{ route('user-guide.document') }}"
-                            class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                            <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            <span class="nav-text ml-3">User Guide</span>
-                            <div class="tooltip">User Guide</div>
-                        </a>
 
-                        <!-- Flyout menu for sub-sections (optional) -->
-                        <ul class="flyout-menu" data-flyout>
-                            <li>
-                                <a href="{{ route('user-guide.document') }}"
-                                    class="sub-item {{ request()->routeIs('user-guide.document') ? 'active' : '' }}">
-                                    User Guide
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
                     @auth
                         @if (auth()->user()->role === 'super admin')
                             <!-- Users Group -->
@@ -968,8 +941,6 @@
                                     </ul>
                                 @endif
                             </li>
-
-
 
                             <!-- Others Group -->
                             <li class="{{ request()->routeIs('others.*') ? 'active' : '' }} group relative">
@@ -1061,7 +1032,7 @@
                 <div class="border-t border-gray-200 pt-4">
                     <a
                         href="{{ route('logout') }}"
-                        onclick="event.preventDefault(); if (!this.dataset.clicked) { this.dataset.clicked = 'true'; document.getElementById('logout-form').submit(); }"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
                         class="logout-btn nav-item relative flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700">
                         <svg
                             class="h-5 w-5 flex-shrink-0"
@@ -1098,7 +1069,7 @@
     </div>
 
     @vite('resources/js/app.js')
-    <script>
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
@@ -1228,7 +1199,7 @@
             });
 
             // Loading animation for navigation links
-            document.querySelectorAll(".general-sidebar a").forEach(link => {
+            document.querySelectorAll("nav a").forEach(link => {
                 link.addEventListener("click", function() {
                     this.classList.add("loading-bg");
                     setTimeout(() => {
