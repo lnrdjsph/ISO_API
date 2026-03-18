@@ -90,9 +90,9 @@
                             </div>
                         </div>
 
-                        <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                        <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-                        <script nonce="{{ $cspNonce }}">
+                        <script nonce="{{ $cspNonce ?? '' }}">
                             document.addEventListener('DOMContentLoaded', function() {
                                 const form = document.getElementById('updateAllocationsForm');
                                 const button = document.getElementById('updateButton');
@@ -1318,7 +1318,7 @@
                                             /* optional, space for text */
                                         }
                                     </style>
-                                    <script nonce="{{ $cspNonce }}">
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         document.getElementById('no-products-action').addEventListener('change', function() {
                                             const url = this.value;
                                             if (url) {
@@ -1551,8 +1551,8 @@
         </div>
     </div>
 
-    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script nonce="{{ $cspNonce }}">
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         $(document).ready(function() {
             let selectedProducts = new Set();
 

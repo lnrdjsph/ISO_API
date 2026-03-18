@@ -34,6 +34,11 @@ Route::middleware(['auth', 'session.expired'])->group(function () {
 
         return redirect(env('FORTIFY_LOGOUT_REDIRECT', '/login'));
     })->name('logout');
+
+    // Handle GET /logout gracefully (ZAP, browser back button, direct URL access)
+    Route::get('/logout', function () {
+        return redirect()->route('login');
+    })->name('logout.get');
 });
 
 

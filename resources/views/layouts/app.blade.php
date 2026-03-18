@@ -1061,8 +1061,8 @@
                 <!-- Logout -->
                 <div class="border-t border-gray-200 pt-4">
                     <a
-                        href="{{ route('logout') }}"
-                        onclick="event.preventDefault(); if (!this.dataset.clicked) { this.dataset.clicked = 'true'; document.getElementById('logout-form').submit(); }"
+                        href="#"
+                        id="logout-btn"
                         class="logout-btn nav-item relative flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700">
                         <svg
                             class="h-5 w-5 flex-shrink-0"
@@ -1099,7 +1099,7 @@
     </div>
 
     @vite('resources/js/app.js')
-    <script nonce="{{ $cspNonce }}">
+    <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
@@ -1276,6 +1276,17 @@
             });
         });
 
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!this.dataset.clicked) {
+                    this.dataset.clicked = 'true';
+                    document.getElementById('logout-form').submit();
+                }
+            });
+        }
+
         // Session expiry check
         document.addEventListener('DOMContentLoaded', function() {
             let swalOpen = false;
@@ -1297,7 +1308,7 @@
                                 didClose: () => swalOpen = false
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    window.location.href = "{{ route('logout') }}";
+                                    document.getElementById('logout-form').submit();
                                 }
                             });
                         } else if (data.authenticated && swalOpen) {

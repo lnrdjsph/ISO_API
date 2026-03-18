@@ -340,8 +340,8 @@
                             </div>
                         </div>
                     </section>
-                    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-                    <script nonce="{{ $cspNonce }}">
+                    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                    <script nonce="{{ $cspNonce ?? '' }}">
                         document.addEventListener('DOMContentLoaded', function() {
                             const mbcInput = document.getElementById('mbc_card_no');
                             const customerName = document.getElementById('customer_name');
@@ -1149,7 +1149,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <script nonce="{{ $cspNonce }}">
+                                                    <script nonce="{{ $cspNonce ?? '' }}">
                                                         document.addEventListener('DOMContentLoaded', function() {
                                                             document.querySelectorAll('.freebie-block').forEach(function(container) {
                                                                 const input = container.querySelector('.computed-freebie-amount');
@@ -1304,7 +1304,7 @@
             </form>
         </div>
     </div>
-    {{-- <script nonce="{{ $cspNonce }}">
+    {{-- <script nonce="{{ $cspNonce ?? '' }}">
 document.getElementById('order-form').addEventListener('submit', function (e) {
     e.preventDefault(); // prevent actual submission
 
@@ -1335,9 +1335,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
     console.log('Form Data:', data);
 });
 </script> --}}
-    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script nonce="{{ $cspNonce }}">
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         const form = document.querySelector('form');
         const submitBtn = document.getElementById('submitBtn');
 

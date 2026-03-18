@@ -1626,7 +1626,7 @@
     </div>
 
     {{-- ═══ JS ═══ --}}
-    <script nonce="{{ $cspNonce }}">
+    <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             const availableRoles = @json($availableRoles);
 
