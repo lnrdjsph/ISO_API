@@ -47,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <style nonce="{{ $cspNonce }}">
+            <style nonce="{{ $cspNonce ?? '' }}">
                 @keyframes shimmer {
                     0% {
                         background-position: -1000px 0;
@@ -503,7 +503,7 @@
         </div>
     </div>
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         .drag-over {
             @apply border-blue-400 bg-blue-50 scale-105;
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);

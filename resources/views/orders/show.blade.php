@@ -16,7 +16,7 @@
         ];
         $order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
     @endphp
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         .search-results {
             position: absolute;
             top: 100%;
@@ -266,7 +266,7 @@
                                         </select>
                                     </div>
 
-                                    <style nonce="{{ $cspNonce }}">
+                                    <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Hide native dropdown arrow */
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
@@ -1237,7 +1237,7 @@
                                     })();
                                 </script>
 
-                                <style nonce="{{ $cspNonce }}">
+                                <style nonce="{{ $cspNonce ?? '' }}">
                                     /* Optional: Customize SweetAlert2 styles */
                                     .swal2-popup {
                                         font-family: inherit;
@@ -1465,7 +1465,7 @@
                                             }
                                         </script>
 
-                                        <style nonce="{{ $cspNonce }}">
+                                        <style nonce="{{ $cspNonce ?? '' }}">
                                             /* Make modal even smaller on mobile */
                                             @media (max-width: 768px) {
                                                 .swal2-popup.smaller-modal {
@@ -3390,7 +3390,7 @@
 
 
         <!-- Enhanced CSS for better visual feedback -->
-        <style nonce="{{ $cspNonce }}">
+        <style nonce="{{ $cspNonce ?? '' }}">
             /* Minimal custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;

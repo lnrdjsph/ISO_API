@@ -556,7 +556,7 @@
     </script>
     {{-- @endpush --}}
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         .modal {
             opacity: 0;
             visibility: hidden;

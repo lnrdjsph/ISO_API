@@ -15,7 +15,7 @@
         };
     @endphp
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         [data-roles] {
             display: none;
         }

@@ -2812,7 +2812,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         }
     </script>
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         @keyframes glow {
 
             0%,

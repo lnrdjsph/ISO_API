@@ -23,7 +23,7 @@
         href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite('resources/css/app.css')
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         /* Prevent horizontal scroll completely */
         html,
         body {

@@ -552,7 +552,7 @@
                             });
                         </script>
 
-                        <style nonce="{{ $cspNonce }}">
+                        <style nonce="{{ $cspNonce ?? '' }}">
                             @keyframes shimmer {
                                 0% {
                                     background-position: -1000px 0;
@@ -627,7 +627,7 @@
 
                             <div class="relative w-64">
                                 <!-- Remove default arrow for all browsers -->
-                                <style nonce="{{ $cspNonce }}">
+                                <style nonce="{{ $cspNonce ?? '' }}">
                                     /* Remove default arrow for IE */
                                     select::-ms-expand {
                                         display: none;
@@ -643,7 +643,7 @@
 
                                 <div class="relative w-64">
                                     <!-- Remove default arrow for all browsers -->
-                                    <style nonce="{{ $cspNonce }}">
+                                    <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Remove default arrow for IE */
                                         select::-ms-expand {
                                             display: none;
@@ -1306,7 +1306,7 @@
                                         </td>
                                     </tr>
 
-                                    <style nonce="{{ $cspNonce }}">
+                                    <style nonce="{{ $cspNonce ?? '' }}">
                                         #no-products-action {
                                             -webkit-appearance: none;
                                             -moz-appearance: none;
@@ -1976,7 +1976,7 @@
         });
     </script>
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         @keyframes fade-in {
             from {
                 opacity: 0;
