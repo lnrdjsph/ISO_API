@@ -459,159 +459,160 @@
             document.getElementById('exportModal').classList.add('hidden');
         }
     </script>
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
     <script nonce="{{ $cspNonce ?? '' }}">
-        var storeSalesOptions = {
-            chart: {
-                type: 'line',
-                height: 400
-            },
-            series: [
-                @foreach ($by_store_over_time as $store => $rows)
-                    {
-                        name: "{{ $allStoreLocations[$store] ?? $store }}",
-                        data: @json($rows->pluck('sales'))
+        document.addEventListener('app:loaded', function() {
+            var storeSalesOptions = {
+                chart: {
+                    type: 'line',
+                    height: 400
+                },
+                series: [
+                    @foreach ($by_store_over_time as $store => $rows)
+                        {
+                            name: "{{ $allStoreLocations[$store] ?? $store }}",
+                            data: @json($rows->pluck('sales'))
+                        },
+                    @endforeach
+                ],
+                xaxis: {
+                    categories: @json($sales_by_day->pluck('day'))
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 2
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            };
+
+            new ApexCharts(document.querySelector("#salesByStoreOverTimeChart"), storeSalesOptions).render();
+
+            console.log("By store over time:", @json($by_store_over_time));
+
+            // 📊 2. Combined Sales & Freebies by Store (Overlapping Vertical Bar)
+            var storeNames = @json($by_store->pluck('store_name'));
+            var salesData = @json($by_store->pluck('total_sales')->map(fn($v) => (float) $v));
+
+            // Match freebies data to sales stores (fill missing with 0)
+            var freebiesData = storeNames.map(function(storeName) {
+                var freebieStore = @json($freebies_by_store->pluck('store_name')).indexOf(storeName);
+                return freebieStore >= 0 ? @json($freebies_by_store->pluck('total_amount')->map(fn($v) => (float) $v))[freebieStore] : 0;
+            });
+
+            var storeComparisonOptions = {
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: {
+                        show: true
+                    }
+                },
+                series: [{
+                        name: 'Total Sales',
+                        data: salesData,
+                        type: 'bar'
                     },
-                @endforeach
-            ],
-            xaxis: {
-                categories: @json($sales_by_day->pluck('day'))
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2
-            },
-            legend: {
-                position: 'bottom'
-            }
-        };
-
-        new ApexCharts(document.querySelector("#salesByStoreOverTimeChart"), storeSalesOptions).render();
-
-        console.log("By store over time:", @json($by_store_over_time));
-
-        // 📊 2. Combined Sales & Freebies by Store (Overlapping Vertical Bar)
-        var storeNames = @json($by_store->pluck('store_name'));
-        var salesData = @json($by_store->pluck('total_sales')->map(fn($v) => (float) $v));
-
-        // Match freebies data to sales stores (fill missing with 0)
-        var freebiesData = storeNames.map(function(storeName) {
-            var freebieStore = @json($freebies_by_store->pluck('store_name')).indexOf(storeName);
-            return freebieStore >= 0 ? @json($freebies_by_store->pluck('total_amount')->map(fn($v) => (float) $v))[freebieStore] : 0;
-        });
-
-        var storeComparisonOptions = {
-            chart: {
-                type: 'bar',
-                height: 400,
-                toolbar: {
-                    show: true
-                }
-            },
-            series: [{
-                    name: 'Total Sales',
-                    data: salesData,
-                    type: 'bar'
-                },
-                {
-                    name: 'Freebies Value',
-                    data: freebiesData,
-                    type: 'bar'
-                }
-            ],
-            plotOptions: {
-                bar: {
-                    horizontal: false,
-                    columnWidth: '70%',
-                    endingShape: 'rounded',
-                    borderRadius: 4
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                show: true,
-                width: 2,
-                colors: ['transparent']
-            },
-            xaxis: {
-                categories: storeNames,
-                labels: {
-                    rotate: -45,
-                    style: {
-                        fontSize: '11px'
+                    {
+                        name: 'Freebies Value',
+                        data: freebiesData,
+                        type: 'bar'
                     }
-                }
-            },
-            yaxis: {
-                title: {
-                    text: 'Amount (₱)'
-                },
-                labels: {
-                    formatter: function(val) {
-                        return '₱' + (val / 1000).toFixed(0) + 'K';
+                ],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '70%',
+                        endingShape: 'rounded',
+                        borderRadius: 4
                     }
-                }
-            },
-            colors: ['#4F46E5', '#F59E0B'],
-            fill: {
-                opacity: [0.6, 1], // Sales bar semi-transparent, freebies bar solid
-                type: ['solid', 'solid']
-            },
-            tooltip: {
-                shared: true,
-                intersect: false,
-                y: {
-                    formatter: function(val, opts) {
-                        if (opts.seriesIndex === 1) {
-                            // Calculate percentage for freebies
-                            var totalSales = salesData[opts.dataPointIndex];
-                            var percentage = totalSales > 0 ? ((val / totalSales) * 100).toFixed(1) : 0;
-                            return '₱' + val.toLocaleString() + ' (' + percentage + '% of total sales)';
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['transparent']
+                },
+                xaxis: {
+                    categories: storeNames,
+                    labels: {
+                        rotate: -45,
+                        style: {
+                            fontSize: '11px'
                         }
-                        return '₱' + val.toLocaleString();
                     }
-                }
-            },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'left'
-            },
-            grid: {
-                borderColor: '#f1f5f9',
-                strokeDashArray: 3
-            },
-            states: {
-                hover: {
-                    filter: {
-                        type: 'lighten',
-                        value: 0.1
-                    }
-                }
-            },
-            // Make bars overlap by using same position
-            chart: {
-                type: 'bar',
-                height: 400,
-                toolbar: {
-                    show: true
                 },
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 800
+                yaxis: {
+                    title: {
+                        text: 'Amount (₱)'
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return '₱' + (val / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                },
+                colors: ['#4F46E5', '#F59E0B'],
+                fill: {
+                    opacity: [0.6, 1], // Sales bar semi-transparent, freebies bar solid
+                    type: ['solid', 'solid']
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    y: {
+                        formatter: function(val, opts) {
+                            if (opts.seriesIndex === 1) {
+                                // Calculate percentage for freebies
+                                var totalSales = salesData[opts.dataPointIndex];
+                                var percentage = totalSales > 0 ? ((val / totalSales) * 100).toFixed(1) : 0;
+                                return '₱' + val.toLocaleString() + ' (' + percentage + '% of total sales)';
+                            }
+                            return '₱' + val.toLocaleString();
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'left'
+                },
+                grid: {
+                    borderColor: '#f1f5f9',
+                    strokeDashArray: 3
+                },
+                states: {
+                    hover: {
+                        filter: {
+                            type: 'lighten',
+                            value: 0.1
+                        }
+                    }
+                },
+                // Make bars overlap by using same position
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: {
+                        show: true
+                    },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800
+                    }
                 }
-            }
-        };
+            };
 
-        // Custom CSS approach for true overlapping
-        const chartContainer = document.querySelector("#storeComparisonChart");
-        chartContainer.style.position = 'relative';
+            // Custom CSS approach for true overlapping
+            const chartContainer = document.querySelector("#storeComparisonChart");
+            chartContainer.style.position = 'relative';
 
-        // Add custom CSS for overlapping bars
-        const style = document.createElement('style');
-        style.textContent = `
+            // Add custom CSS for overlapping bars
+            const style = document.createElement('style');
+            style.textContent = `
             #storeComparisonChart .apexcharts-series[seriesName="Freebies Value"] {
                 mix-blend-mode: multiply;
             }
@@ -622,154 +623,155 @@
                 opacity: 1 !important;
             }
         `;
-        document.head.appendChild(style);
+            document.head.appendChild(style);
 
-        new ApexCharts(document.querySelector("#storeComparisonChart"), storeComparisonOptions).render();
+            new ApexCharts(document.querySelector("#storeComparisonChart"), storeComparisonOptions).render();
 
-        // 📊 3. Top Performing Stores (Horizontal Bar with Rankings)
-        var storeNames = @json($by_store->take(8)->pluck('store_name'));
-        var storeSales = @json(
-            $by_store->take(8)->pluck('total_sales')->map(function ($v) {
-                    return (float) $v;
-                }));
+            // 📊 3. Top Performing Stores (Horizontal Bar with Rankings)
+            var storeNames = @json($by_store->take(8)->pluck('store_name'));
+            var storeSales = @json(
+                $by_store->take(8)->pluck('total_sales')->map(function ($v) {
+                        return (float) $v;
+                    }));
 
-        var storePerformanceData = storeNames.map(function(name, index) {
-            return {
-                store: name,
-                sales: storeSales[index],
-                rank: index + 1
-            };
-        });
+            var storePerformanceData = storeNames.map(function(name, index) {
+                return {
+                    store: name,
+                    sales: storeSales[index],
+                    rank: index + 1
+                };
+            });
 
-        var topStoresOptions = {
-            chart: {
-                type: 'bar',
-                height: 400,
-                toolbar: {
-                    show: false
-                }
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: true,
-                    barHeight: '70%',
-                    distributed: true
-                }
-            },
-            series: [{
-                name: 'Sales',
-                data: storePerformanceData.map(function(item) {
-                    return {
-                        x: item.store,
-                        y: item.sales,
-                        fillColor: item.rank <= 3 ? '#10B981' : '#6B7280' // Top 3 in green, others in gray
-                    };
-                })
-            }],
-            dataLabels: {
-                enabled: true,
-                textAnchor: 'start',
-                style: {
-                    colors: ['#fff'],
-                    fontWeight: 'bold'
-                },
-                formatter: function(val, opts) {
-                    return '₱' + val.toLocaleString();
-                },
-                offsetX: 10
-            },
-            colors: ['#10B981'],
-            xaxis: {
-                type: 'numeric',
-                labels: {
-                    formatter: function(val) {
-                        return '₱' + (val / 1000).toFixed(0) + 'K';
+            var topStoresOptions = {
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: {
+                        show: false
                     }
-                }
-            },
-            yaxis: {
-                labels: {
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        barHeight: '70%',
+                        distributed: true
+                    }
+                },
+                series: [{
+                    name: 'Sales',
+                    data: storePerformanceData.map(function(item) {
+                        return {
+                            x: item.store,
+                            y: item.sales,
+                            fillColor: item.rank <= 3 ? '#10B981' : '#6B7280' // Top 3 in green, others in gray
+                        };
+                    })
+                }],
+                dataLabels: {
+                    enabled: true,
+                    textAnchor: 'start',
                     style: {
-                        fontSize: '11px'
-                    }
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function(val) {
-                        return '₱' + val.toLocaleString();
-                    }
-                }
-            },
-            legend: {
-                show: false
-            },
-            grid: {
-                borderColor: '#f1f5f9',
-                strokeDashArray: 3
-            }
-        };
-        // new ApexCharts(document.querySelector("#topStoresChart"), topStoresOptions).render();
-
-        // 📊 4. Daily Performance Metrics (Mixed Chart)
-        var performanceOptions = {
-            chart: {
-                type: 'line',
-                height: 400,
-                toolbar: {
-                    show: true
-                }
-            },
-            series: [{
-                    name: 'Orders Count',
-                    type: 'column',
-                    data: @json(
-                        $sales_by_day->map(function ($day) use ($freebies_by_day) {
-                            $freebieDay = $freebies_by_day->where('day', $day['day'])->first();
-                            return ($freebieDay['qty'] ?? 0) > 0 ? 1 : 0; // Simplified: 1 if freebies given, 0 otherwise
-                        }))
-                },
-                {
-                    name: 'Sales Trend',
-                    type: 'line',
-                    data: @json($sales_by_day->pluck('sales')->map(fn($v) => $v / 1000)) // Scale down for better visualization
-                }
-            ],
-            xaxis: {
-                categories: @json($sales_by_day->pluck('day')),
-                labels: {
-                    rotate: -45
-                }
-            },
-            yaxis: [{
-                    title: {
-                        text: "Orders with Freebies"
-                    }
-                },
-                {
-                    opposite: true,
-                    title: {
-                        text: "Sales (K)"
+                        colors: ['#fff'],
+                        fontWeight: 'bold'
                     },
-                    labels: {
-                        formatter: val => "₱" + val.toFixed(0) + "K"
-                    }
-                }
-            ],
-            colors: ['#10B981', '#6366F1'],
-            stroke: {
-                width: [0, 2]
-            },
-            tooltip: {
-                y: {
                     formatter: function(val, opts) {
-                        if (opts.seriesIndex === 0) return val.toString();
-                        return "₱" + (val * 1000).toLocaleString();
+                        return '₱' + val.toLocaleString();
+                    },
+                    offsetX: 10
+                },
+                colors: ['#10B981'],
+                xaxis: {
+                    type: 'numeric',
+                    labels: {
+                        formatter: function(val) {
+                            return '₱' + (val / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            fontSize: '11px'
+                        }
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return '₱' + val.toLocaleString();
+                        }
+                    }
+                },
+                legend: {
+                    show: false
+                },
+                grid: {
+                    borderColor: '#f1f5f9',
+                    strokeDashArray: 3
+                }
+            };
+            // new ApexCharts(document.querySelector("#topStoresChart"), topStoresOptions).render();
+
+            // 📊 4. Daily Performance Metrics (Mixed Chart)
+            var performanceOptions = {
+                chart: {
+                    type: 'line',
+                    height: 400,
+                    toolbar: {
+                        show: true
+                    }
+                },
+                series: [{
+                        name: 'Orders Count',
+                        type: 'column',
+                        data: @json(
+                            $sales_by_day->map(function ($day) use ($freebies_by_day) {
+                                $freebieDay = $freebies_by_day->where('day', $day['day'])->first();
+                                return ($freebieDay['qty'] ?? 0) > 0 ? 1 : 0; // Simplified: 1 if freebies given, 0 otherwise
+                            }))
+                    },
+                    {
+                        name: 'Sales Trend',
+                        type: 'line',
+                        data: @json($sales_by_day->pluck('sales')->map(fn($v) => $v / 1000)) // Scale down for better visualization
+                    }
+                ],
+                xaxis: {
+                    categories: @json($sales_by_day->pluck('day')),
+                    labels: {
+                        rotate: -45
+                    }
+                },
+                yaxis: [{
+                        title: {
+                            text: "Orders with Freebies"
+                        }
+                    },
+                    {
+                        opposite: true,
+                        title: {
+                            text: "Sales (K)"
+                        },
+                        labels: {
+                            formatter: val => "₱" + val.toFixed(0) + "K"
+                        }
+                    }
+                ],
+                colors: ['#10B981', '#6366F1'],
+                stroke: {
+                    width: [0, 2]
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val, opts) {
+                            if (opts.seriesIndex === 0) return val.toString();
+                            return "₱" + (val * 1000).toLocaleString();
+                        }
                     }
                 }
-            }
-        };
-        new ApexCharts(document.querySelector("#performanceChart"), performanceOptions).render();
+            };
+            new ApexCharts(document.querySelector("#performanceChart"), performanceOptions).render();
+        });
     </script>
 
 @endsection

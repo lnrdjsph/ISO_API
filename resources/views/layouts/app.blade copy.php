@@ -21,7 +21,7 @@
 		rel="icon"
 		type="image/png"
 		href="{{ asset('images/MarengEms_Logo.png') }}">
-	@vite('resources/css/app.css')
+	@vite(['resources/css/app.css', 'resources/js/app.js'])
 
 	<style nonce="{{ $cspNonce ?? '' }}">
 		/* WordPress Admin Sidebar Styling */

@@ -150,7 +150,7 @@
         </div>
     </div>
 
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
     <script>
         // 📊 Freebies Over Time (Line Chart with Qty + Amount)
         var freebiesOptions = {

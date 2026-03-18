@@ -1040,7 +1040,7 @@
                                 @endif --}}
 
                                 <!-- Add SweetAlert2 CDN in your layout/head section -->
-                                {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+                                {{--  --}}
 
                                 <!-- Add this button above or below your table -->
                                 <div class="mb-4 flex items-center justify-between">
@@ -1945,7 +1945,7 @@
     @if (request()->routeIs('orders.show'))
         {{-- script jquery --}}
         <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         {{-- script for input change detection --}}
         <!-- Complete Order Editing System -->
 

@@ -509,7 +509,7 @@
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
         }
     </style>
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             const skeleton = document.getElementById('skeletonLoader');

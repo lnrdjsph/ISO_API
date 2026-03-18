@@ -27,8 +27,7 @@ class ContentSecurityPolicy
             "default-src 'self'",
 
             // ✅ Nonce replaces unsafe-inline for scripts
-            "script-src 'self' 'nonce-{$nonce}' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-
+            "script-src 'self' 'nonce-{$nonce}'",
             // ✅ Nonce replaces unsafe-inline for styles
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
 

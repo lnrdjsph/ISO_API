@@ -340,7 +340,7 @@
                             </div>
                         </div>
                     </section>
-                    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
                     <script nonce="{{ $cspNonce ?? '' }}">
                         document.addEventListener('DOMContentLoaded', function() {
                             const mbcInput = document.getElementById('mbc_card_no');
@@ -1336,7 +1336,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 });
 </script> --}}
     <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{--  --}}
     <script nonce="{{ $cspNonce ?? '' }}">
         const form = document.querySelector('form');
         const submitBtn = document.getElementById('submitBtn');

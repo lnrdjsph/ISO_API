@@ -1098,7 +1098,7 @@
         </main>
     </div>
 
-    @vite('resources/js/app.js')
+    {{-- @vite('resources/js/app.js') --}}
     <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
