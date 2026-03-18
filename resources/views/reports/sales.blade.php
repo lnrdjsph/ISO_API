@@ -60,8 +60,8 @@
                     <option value="">All Stores</option>
                     @foreach ($stores as $s)
                         @php
-													$storeCode = strtolower($s->requesting_store);
-													$storeName = $allStoreLocations[$storeCode] ?? $s->requesting_store;
+                            $storeCode = strtolower($s->requesting_store);
+                            $storeName = $allStoreLocations[$storeCode] ?? $s->requesting_store;
                         @endphp
                         <option
                             value="{{ $s->requesting_store }}"
@@ -309,7 +309,7 @@
                 </div>
 
 
-                <script>
+                <script nonce="{{ $cspNonce }}">
                     document.addEventListener("DOMContentLoaded", () => {
                         const select = document.getElementById("dateRangeType");
                         const customFields = document.getElementById("customDateFields");
@@ -450,7 +450,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ $cspNonce }}">
         function showModal() {
             document.getElementById('exportModal').classList.remove('hidden');
         }
@@ -459,9 +459,8 @@
             document.getElementById('exportModal').classList.add('hidden');
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-			
+    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script nonce="{{ $cspNonce }}">
         var storeSalesOptions = {
             chart: {
                 type: 'line',

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>INVOICE-{{ $order->sof_id }}</title>
-    <style>
+    <style nonce="{{ $cspNonce }}">
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 8px;

@@ -515,7 +515,7 @@
     </div>
 
     {{-- @push('scripts') --}}
-    <script>
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('openAddUserModal').addEventListener('click', () => {
                 addUserModal.classList.add('show'); // fade in
@@ -556,7 +556,7 @@
     </script>
     {{-- @endpush --}}
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         .modal {
             opacity: 0;
             visibility: hidden;

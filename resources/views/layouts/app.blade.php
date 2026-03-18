@@ -23,7 +23,7 @@
         href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite('resources/css/app.css')
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         /* Prevent horizontal scroll completely */
         html,
         body {
@@ -449,7 +449,7 @@
                 '6010' => 'H10 - Super Metro Bogo',
             ];
 
-            $userLocation = Auth::user()->user_location ?? null;
+            $userLocation = Auth::user()?->user_location ?? null;
             $fullLocation = $locationMap[$userLocation] ?? $userLocation;
         @endphp
 
@@ -1098,182 +1098,183 @@
     </div>
 
     @vite('resources/js/app.js')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const overlay = document.getElementById('mobile-overlay');
-            const mobileBtn = document.getElementById('mobileMenuBtn');
+    <script nonce="{{ $cspNonce }}">
+        < script >
+            document.addEventListener('DOMContentLoaded', function() {
+                const sidebar = document.getElementById('sidebar');
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                const overlay = document.getElementById('mobile-overlay');
+                const mobileBtn = document.getElementById('mobileMenuBtn');
 
-            // ── Helpers ──
-            function isMobile() {
-                return window.innerWidth < 768;
-            }
+                // ── Helpers ──
+                function isMobile() {
+                    return window.innerWidth < 768;
+                }
 
-            function openMobileDrawer() {
-                sidebar.classList.add('mobile-open');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
+                function openMobileDrawer() {
+                    sidebar.classList.add('mobile-open');
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
 
-            function closeMobileDrawer() {
-                sidebar.classList.remove('mobile-open');
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
+                function closeMobileDrawer() {
+                    sidebar.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
 
-            // Initialize sidebar state from localStorage or default to expanded
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed && sidebar) {
-                sidebar.classList.remove('sidebar-expanded');
-                sidebar.classList.add('sidebar-collapsed');
-            }
+                // Initialize sidebar state from localStorage or default to expanded
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed && sidebar) {
+                    sidebar.classList.remove('sidebar-expanded');
+                    sidebar.classList.add('sidebar-collapsed');
+                }
 
-            // Update main container width when sidebar toggles
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    const isCurrentlyCollapsed = sidebar.classList.contains('sidebar-collapsed');
+                // Update main container width when sidebar toggles
+                if (sidebarToggle) {
+                    sidebarToggle.addEventListener('click', function() {
+                        const isCurrentlyCollapsed = sidebar.classList.contains('sidebar-collapsed');
 
-                    if (isCurrentlyCollapsed) {
-                        sidebar.classList.remove('sidebar-collapsed');
-                        sidebar.classList.add('sidebar-expanded');
-                        localStorage.setItem('sidebarCollapsed', 'false');
-                    } else {
-                        sidebar.classList.remove('sidebar-expanded');
-                        sidebar.classList.add('sidebar-collapsed');
-                        localStorage.setItem('sidebarCollapsed', 'true');
-                    }
-                });
-            }
-
-            // Mobile: hamburger opens sidebar as drawer
-            if (mobileBtn) {
-                mobileBtn.addEventListener('click', function() {
-                    if (sidebar.classList.contains('mobile-open')) {
-                        closeMobileDrawer();
-                    } else {
-                        openMobileDrawer();
-                    }
-                });
-            }
-
-            // Mobile: tap overlay to close
-            if (overlay) {
-                overlay.addEventListener('click', closeMobileDrawer);
-            }
-
-            // Close drawer on nav link click (mobile only)
-            sidebar.querySelectorAll('a').forEach(function(link) {
-                link.addEventListener('click', function() {
-                    if (isMobile()) closeMobileDrawer();
-                });
-            });
-
-            // ══════════════════════════════════════════════
-            // FLYOUT POSITIONING — position:fixed, tooltip-style
-            // Escapes sidebar container, works with zoom:0.75
-            // ══════════════════════════════════════════════
-            document.querySelectorAll('.group').forEach(function(group) {
-                var flyout = group.querySelector('[data-flyout]');
-                if (!flyout) return;
-
-                var hideTimer = null;
-
-                function showFlyout() {
-                    if (isMobile()) return;
-                    // Don't show flyout on active parent when expanded — it already has inline submenu
-                    if (group.classList.contains('active') && sidebar.classList.contains('sidebar-expanded')) return;
-                    clearTimeout(hideTimer);
-
-                    // Hide all other flyouts first
-                    document.querySelectorAll('.flyout-menu.flyout-visible').forEach(function(f) {
-                        if (f !== flyout) f.classList.remove('flyout-visible');
-                    });
-
-                    // Calculate position accounting for sidebar zoom
-                    var sidebarZoom = parseFloat(getComputedStyle(sidebar).zoom) || 1;
-                    var sidebarRect = sidebar.getBoundingClientRect();
-                    var groupRect = group.getBoundingClientRect();
-
-                    // sidebarRect is in viewport coords (zoomed). Flyout is inside sidebar (inherits zoom),
-                    // so CSS values need to be divided by zoom to land at the right viewport position.
-                    flyout.style.left = ((sidebarRect.right - 16) / sidebarZoom) + 'px';
-                    flyout.style.top = (groupRect.top / sidebarZoom) + 'px';
-                    flyout.classList.add('flyout-visible');
-
-                    // Clamp to viewport bottom
-                    requestAnimationFrame(function() {
-                        var flyoutRect = flyout.getBoundingClientRect();
-                        var viewportH = window.innerHeight;
-                        if (flyoutRect.bottom > viewportH) {
-                            flyout.style.top = (((viewportH - flyoutRect.height - 8)) / sidebarZoom) + 'px';
+                        if (isCurrentlyCollapsed) {
+                            sidebar.classList.remove('sidebar-collapsed');
+                            sidebar.classList.add('sidebar-expanded');
+                            localStorage.setItem('sidebarCollapsed', 'false');
+                        } else {
+                            sidebar.classList.remove('sidebar-expanded');
+                            sidebar.classList.add('sidebar-collapsed');
+                            localStorage.setItem('sidebarCollapsed', 'true');
                         }
                     });
                 }
 
-                function scheduleHide() {
-                    hideTimer = setTimeout(function() {
-                        flyout.classList.remove('flyout-visible');
-                    }, 120);
+                // Mobile: hamburger opens sidebar as drawer
+                if (mobileBtn) {
+                    mobileBtn.addEventListener('click', function() {
+                        if (sidebar.classList.contains('mobile-open')) {
+                            closeMobileDrawer();
+                        } else {
+                            openMobileDrawer();
+                        }
+                    });
                 }
 
-                function cancelHide() {
-                    clearTimeout(hideTimer);
+                // Mobile: tap overlay to close
+                if (overlay) {
+                    overlay.addEventListener('click', closeMobileDrawer);
                 }
 
-                group.addEventListener('mouseenter', showFlyout);
-                group.addEventListener('mouseleave', scheduleHide);
-                flyout.addEventListener('mouseenter', cancelHide);
-                flyout.addEventListener('mouseleave', scheduleHide);
-            });
+                // Close drawer on nav link click (mobile only)
+                sidebar.querySelectorAll('a').forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        if (isMobile()) closeMobileDrawer();
+                    });
+                });
 
-            // Loading animation for navigation links
-            document.querySelectorAll(".general-sidebar a").forEach(link => {
-                link.addEventListener("click", function() {
-                    this.classList.add("loading-bg");
-                    setTimeout(() => {
-                        this.classList.remove("loading-bg");
-                    }, 5000);
+                // ══════════════════════════════════════════════
+                // FLYOUT POSITIONING — position:fixed, tooltip-style
+                // Escapes sidebar container, works with zoom:0.75
+                // ══════════════════════════════════════════════
+                document.querySelectorAll('.group').forEach(function(group) {
+                    var flyout = group.querySelector('[data-flyout]');
+                    if (!flyout) return;
+
+                    var hideTimer = null;
+
+                    function showFlyout() {
+                        if (isMobile()) return;
+                        // Don't show flyout on active parent when expanded — it already has inline submenu
+                        if (group.classList.contains('active') && sidebar.classList.contains('sidebar-expanded')) return;
+                        clearTimeout(hideTimer);
+
+                        // Hide all other flyouts first
+                        document.querySelectorAll('.flyout-menu.flyout-visible').forEach(function(f) {
+                            if (f !== flyout) f.classList.remove('flyout-visible');
+                        });
+
+                        // Calculate position accounting for sidebar zoom
+                        var sidebarZoom = parseFloat(getComputedStyle(sidebar).zoom) || 1;
+                        var sidebarRect = sidebar.getBoundingClientRect();
+                        var groupRect = group.getBoundingClientRect();
+
+                        // sidebarRect is in viewport coords (zoomed). Flyout is inside sidebar (inherits zoom),
+                        // so CSS values need to be divided by zoom to land at the right viewport position.
+                        flyout.style.left = ((sidebarRect.right - 16) / sidebarZoom) + 'px';
+                        flyout.style.top = (groupRect.top / sidebarZoom) + 'px';
+                        flyout.classList.add('flyout-visible');
+
+                        // Clamp to viewport bottom
+                        requestAnimationFrame(function() {
+                            var flyoutRect = flyout.getBoundingClientRect();
+                            var viewportH = window.innerHeight;
+                            if (flyoutRect.bottom > viewportH) {
+                                flyout.style.top = (((viewportH - flyoutRect.height - 8)) / sidebarZoom) + 'px';
+                            }
+                        });
+                    }
+
+                    function scheduleHide() {
+                        hideTimer = setTimeout(function() {
+                            flyout.classList.remove('flyout-visible');
+                        }, 120);
+                    }
+
+                    function cancelHide() {
+                        clearTimeout(hideTimer);
+                    }
+
+                    group.addEventListener('mouseenter', showFlyout);
+                    group.addEventListener('mouseleave', scheduleHide);
+                    flyout.addEventListener('mouseenter', cancelHide);
+                    flyout.addEventListener('mouseleave', scheduleHide);
+                });
+
+                // Loading animation for navigation links
+                document.querySelectorAll(".general-sidebar a").forEach(link => {
+                    link.addEventListener("click", function() {
+                        this.classList.add("loading-bg");
+                        setTimeout(() => {
+                            this.classList.remove("loading-bg");
+                        }, 5000);
+                    });
+                });
+
+                // Handle page expired
+                if (document.body.innerText.includes('Page Expired')) {
+                    window.location.reload();
+                }
+
+                // Handle escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeMobileDrawer();
+                    }
+                });
+
+                // Responsive behavior
+                function handleResize() {
+                    if (window.innerWidth >= 768) {
+                        // Desktop: ensure sidebar is visible and drawer state is cleared
+                        sidebar.classList.remove('mobile-open');
+                        sidebar.classList.remove('hidden');
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                    // On mobile: sidebar is off-screen via translateX(-100%), no need for 'hidden'
+                }
+
+                window.addEventListener('resize', handleResize);
+                handleResize(); // Initial call
+
+                // Keyboard shortcut - Alt + S to toggle sidebar
+                document.addEventListener('keydown', function(e) {
+                    if (e.altKey && e.key === 's') {
+                        e.preventDefault();
+                        if (!isMobile() && sidebarToggle) {
+                            sidebarToggle.click();
+                        }
+                    }
                 });
             });
-
-            // Handle page expired
-            if (document.body.innerText.includes('Page Expired')) {
-                window.location.reload();
-            }
-
-            // Handle escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeMobileDrawer();
-                }
-            });
-
-            // Responsive behavior
-            function handleResize() {
-                if (window.innerWidth >= 768) {
-                    // Desktop: ensure sidebar is visible and drawer state is cleared
-                    sidebar.classList.remove('mobile-open');
-                    sidebar.classList.remove('hidden');
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-                // On mobile: sidebar is off-screen via translateX(-100%), no need for 'hidden'
-            }
-
-            window.addEventListener('resize', handleResize);
-            handleResize(); // Initial call
-
-            // Keyboard shortcut - Alt + S to toggle sidebar
-            document.addEventListener('keydown', function(e) {
-                if (e.altKey && e.key === 's') {
-                    e.preventDefault();
-                    if (!isMobile() && sidebarToggle) {
-                        sidebarToggle.click();
-                    }
-                }
-            });
-        });
 
         // Session expiry check
         document.addEventListener('DOMContentLoaded', function() {

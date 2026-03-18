@@ -47,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <style>
+            <style nonce="{{ $cspNonce }}">
                 @keyframes shimmer {
                     0% {
                         background-position: -1000px 0;
@@ -503,14 +503,14 @@
         </div>
     </div>
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         .drag-over {
             @apply border-blue-400 bg-blue-50 scale-105;
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
+    <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const skeleton = document.getElementById('skeletonLoader');
             const realContent = document.querySelector('#realImportContainer'); // wrap your real form in a div with this ID

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <style>
+    <style nonce="{{ $cspNonce }}">
         body {
             font-size: 12px;
         }

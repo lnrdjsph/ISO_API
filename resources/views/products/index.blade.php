@@ -90,9 +90,9 @@
                             </div>
                         </div>
 
-                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                        <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-                        <script>
+                        <script nonce="{{ $cspNonce }}">
                             document.addEventListener('DOMContentLoaded', function() {
                                 const form = document.getElementById('updateAllocationsForm');
                                 const button = document.getElementById('updateButton');
@@ -552,7 +552,7 @@
                             });
                         </script>
 
-                        <style>
+                        <style nonce="{{ $cspNonce }}">
                             @keyframes shimmer {
                                 0% {
                                     background-position: -1000px 0;
@@ -627,7 +627,7 @@
 
                             <div class="relative w-64">
                                 <!-- Remove default arrow for all browsers -->
-                                <style>
+                                <style nonce="{{ $cspNonce }}">
                                     /* Remove default arrow for IE */
                                     select::-ms-expand {
                                         display: none;
@@ -643,7 +643,7 @@
 
                                 <div class="relative w-64">
                                     <!-- Remove default arrow for all browsers -->
-                                    <style>
+                                    <style nonce="{{ $cspNonce }}">
                                         /* Remove default arrow for IE */
                                         select::-ms-expand {
                                             display: none;
@@ -1306,7 +1306,7 @@
                                         </td>
                                     </tr>
 
-                                    <style>
+                                    <style nonce="{{ $cspNonce }}">
                                         #no-products-action {
                                             -webkit-appearance: none;
                                             -moz-appearance: none;
@@ -1318,7 +1318,7 @@
                                             /* optional, space for text */
                                         }
                                     </style>
-                                    <script>
+                                    <script nonce="{{ $cspNonce }}">
                                         document.getElementById('no-products-action').addEventListener('change', function() {
                                             const url = this.value;
                                             if (url) {
@@ -1551,8 +1551,8 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
+    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script nonce="{{ $cspNonce }}">
         $(document).ready(function() {
             let selectedProducts = new Set();
 
@@ -1976,7 +1976,7 @@
         });
     </script>
 
-    <style>
+    <style nonce="{{ $cspNonce }}">
         @keyframes fade-in {
             from {
                 opacity: 0;

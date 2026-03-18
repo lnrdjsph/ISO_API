@@ -16,7 +16,7 @@
         ];
         $order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
     @endphp
-    <style>
+    <style nonce="{{ $cspNonce }}">
         .search-results {
             position: absolute;
             top: 100%;
@@ -266,7 +266,7 @@
                                         </select>
                                     </div>
 
-                                    <style>
+                                    <style nonce="{{ $cspNonce }}">
                                         /* Hide native dropdown arrow */
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
@@ -397,7 +397,7 @@
                             <div class="mb-4 flex items-center justify-between">
                                 <h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
 
-                                {{-- <script>
+                                {{-- <script nonce="{{ $cspNonce }}">
 																		document.getElementById('generateSOButton').addEventListener('click', function() {
 																				const sofId = "{{ $order->sof_id }}";
 
@@ -748,7 +748,7 @@
                                         </tr>
                                     @endforelse
 
-                                    <script>
+                                    <script nonce="{{ $cspNonce }}">
                                         (function() {
                                             // Select/Deselect All functionality
                                             const selectAllCheckbox = document.getElementById('select-all');
@@ -863,7 +863,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script>
+                                    <script nonce="{{ $cspNonce }}">
                                         (function() {
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
@@ -968,7 +968,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script>
+                                    <script nonce="{{ $cspNonce }}">
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             // Find all BOL containers
@@ -1040,7 +1040,7 @@
                                 @endif --}}
 
                                 <!-- Add SweetAlert2 CDN in your layout/head section -->
-                                {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+                                {{-- <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
                                 <!-- Add this button above or below your table -->
                                 <div class="mb-4 flex items-center justify-between">
@@ -1059,7 +1059,7 @@
                                     </div>
                                 </div>
 
-                                <script>
+                                <script nonce="{{ $cspNonce }}">
                                     // hide all checkbox if order status is approved or completed
 
                                     (function() {
@@ -1237,7 +1237,7 @@
                                     })();
                                 </script>
 
-                                <style>
+                                <style nonce="{{ $cspNonce }}">
                                     /* Optional: Customize SweetAlert2 styles */
                                     .swal2-popup {
                                         font-family: inherit;
@@ -1297,7 +1297,7 @@
                                             class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">-- Select Action --</option>
 
-                                            @if (Auth::user()->role !== 'manager')
+                                            @if (Auth::user()?->role !== 'manager')
                                                 @if ($order->order_status !== 'cancelled')
                                                     <option value="cancel">Cancel Order</option>
                                                 @endif
@@ -1324,7 +1324,7 @@
 																						@endif --}}
                                             @endif
 
-                                            @if (in_array(Auth::user()->role, ['manager', 'super admin']))
+                                            @if (in_array(Auth::user()?->role, ['manager', 'super admin']))
                                                 @if (in_array($order->order_status, ['for approval', 'rejected']))
                                                     <option value="approve">Approve Order</option>
                                                 @endif
@@ -1338,8 +1338,8 @@
 
                                     <!-- Add to your <head> -->
                                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
-                                    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-                                    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+                                    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                                    <script nonce="{{ $cspNonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
 
                                     @if ($order->approval_document)
                                         <div class="mt-4 w-full overflow-hidden rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
@@ -1385,7 +1385,7 @@
                                             </p>
                                         </div>
 
-                                        <script>
+                                        <script nonce="{{ $cspNonce }}">
                                             function previewDocument(url, extension, type) {
                                                 let content = '';
                                                 let title = 'Approval Document';
@@ -1465,7 +1465,7 @@
                                             }
                                         </script>
 
-                                        <style>
+                                        <style nonce="{{ $cspNonce }}">
                                             /* Make modal even smaller on mobile */
                                             @media (max-width: 768px) {
                                                 .swal2-popup.smaller-modal {
@@ -1568,7 +1568,7 @@
                                         </div>
                                     @endif
 
-                                    @if (Auth::user()->role !== 'manager')
+                                    @if (Auth::user()?->role !== 'manager')
                                         <div
                                             id="changesCounter"
                                             class="hidden text-center text-xs text-gray-600">
@@ -1590,7 +1590,7 @@
 
 
 
-                            <script>
+                            <script nonce="{{ $cspNonce }}">
                                 document.addEventListener('DOMContentLoaded', function() {
                                     const actionSelect = document.getElementById('orderAction');
                                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1944,14 +1944,14 @@
     </form>
     @if (request()->routeIs('orders.show'))
         {{-- script jquery --}}
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         {{-- script for input change detection --}}
         <!-- Complete Order Editing System -->
 
 
         <!-- Enhanced JavaScript System -->
-        <script>
+        <script nonce="{{ $cspNonce }}">
             $(document).ready(function() {
                 // ========================================
                 // CONSTANTS & CONFIGURATION
@@ -3360,7 +3360,7 @@
                 });
             });
         </script>
-        <script>
+        <script nonce="{{ $cspNonce }}">
             document.addEventListener('beforeinput', function(e) {
                 const el = e.target;
 
@@ -3390,7 +3390,7 @@
 
 
         <!-- Enhanced CSS for better visual feedback -->
-        <style>
+        <style nonce="{{ $cspNonce }}">
             /* Minimal custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;
