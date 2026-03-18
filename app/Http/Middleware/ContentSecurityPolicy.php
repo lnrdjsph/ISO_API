@@ -1,3 +1,4 @@
+cat > app/Http/Middleware/ContentSecurityPolicy.php << 'EOF'
 <?php
 
 namespace App\Http\Middleware;
@@ -8,13 +9,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ContentSecurityPolicy
 {
-    /**
-     * Handle an incoming request.
-     * 
-     * NOTE: 'unsafe-inline' is required for now due to inline scripts/styles
-     * in Blade templates (SweetAlert2, Alpine.js, etc.).
-     * Once HTTPS + domain are set up, migrate to nonce-based CSP to remove unsafe-inline.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
@@ -26,24 +20,22 @@ class ContentSecurityPolicy
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob:",
             "connect-src 'self'",
-            "frame-src 'none'",
+            "frame-ancestors 'none'",
+            "form-action 'self'",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self'",
+            "frame-src 'none'",
+            "worker-src 'self'",
+            "manifest-src 'self'",
         ]));
 
-        // Prevent clickjacking
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-
-        // Prevent MIME type sniffing
+        $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-
-        // Basic XSS protection header (legacy browsers)
         $response->headers->set('X-XSS-Protection', '1; mode=block');
-
-        // Don't send referrer info outside the origin
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
         return $response;
     }
 }
+EOF
