@@ -32,7 +32,23 @@ class Handler extends ExceptionHandler
         }
 
         // For nginx proxy, always redirect to /login (nginx will handle the prefix)
-        return redirect()->guest('/login');
+        return redirect()->guest('/login')
+            ->header(
+                'Content-Security-Policy',
+                "default-src 'self'; " .
+                    "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+                    "img-src 'self' data: blob:; " .
+                    "connect-src 'self'; " .
+                    "frame-ancestors 'none'; " .
+                    "form-action 'self'; " .
+                    "base-uri 'self'; " .
+                    "object-src 'none'; " .
+                    "frame-src 'none'; " .
+                    "worker-src 'self' blob:; " .
+                    "manifest-src 'self';"
+            );
     }
 
     public function render($request, Throwable $exception)
