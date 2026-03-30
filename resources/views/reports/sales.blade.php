@@ -461,7 +461,7 @@
     </script>
     {{-- <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
     <script nonce="{{ $cspNonce }}">
-        document.addEventListener('app:loaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             var storeSalesOptions = {
                 chart: {
                     type: 'line',
