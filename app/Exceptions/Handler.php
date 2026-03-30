@@ -50,8 +50,14 @@ class Handler extends ExceptionHandler
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
                 "img-src 'self' data: blob:; " .
+                "connect-src 'self'; " .
                 "frame-ancestors 'none'; " .
-                "object-src 'none';"
+                "form-action 'self'; " .
+                "base-uri 'self'; " .
+                "object-src 'none'; " .
+                "frame-src 'none'; " .
+                "worker-src 'self' blob:; " .
+                "manifest-src 'self';"
         );
 
         return $response;
