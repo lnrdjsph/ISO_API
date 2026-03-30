@@ -31,24 +31,24 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // For nginx proxy, always redirect to /login (nginx will handle the prefix)
-        return redirect()->guest('/login')
-            ->header(
-                'Content-Security-Policy',
-                "default-src 'self'; " .
-                    "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
-                    "img-src 'self' data: blob:; " .
-                    "connect-src 'self'; " .
-                    "frame-ancestors 'none'; " .
-                    "form-action 'self'; " .
-                    "base-uri 'self'; " .
-                    "object-src 'none'; " .
-                    "frame-src 'none'; " .
-                    "worker-src 'self' blob:; " .
-                    "manifest-src 'self';"
-            );
+        $csp = "default-src 'self'; " .
+            "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+            "img-src 'self' data: blob:; " .
+            "connect-src 'self'; " .
+            "frame-ancestors 'none'; " .
+            "form-action 'self'; " .
+            "base-uri 'self'; " .
+            "object-src 'none'; " .
+            "frame-src 'none'; " .
+            "worker-src 'self' blob:; " .
+            "manifest-src 'self';";
+
+        // Return bare 302 with no body — prevents Big Redirect alert
+        return response('', 302)
+            ->header('Location', '/login')
+            ->header('Content-Security-Policy', $csp);
     }
 
     public function render($request, Throwable $exception)
