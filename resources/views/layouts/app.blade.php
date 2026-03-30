@@ -23,7 +23,7 @@
         href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style nonce="{{ $cspNonce }}">
         /* Prevent horizontal scroll completely */
         html,
         body {
@@ -1098,7 +1098,7 @@
         </main>
     </div>
 
-    <script nonce="{{ $cspNonce ?? '' }}">
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');

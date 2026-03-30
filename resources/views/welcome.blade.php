@@ -11,7 +11,7 @@
     <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style nonce="{{ $cspNonce }}">
         /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
         html {
             line-height: 1.15;
@@ -383,7 +383,7 @@
         }
     </style>
 
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style nonce="{{ $cspNonce }}">
         body {
             font-family: 'Nunito', sans-serif;
         }

@@ -309,7 +309,7 @@
                 </div>
 
 
-                <script nonce="{{ $cspNonce ?? '' }}">
+                <script nonce="{{ $cspNonce }}">
                     document.addEventListener("DOMContentLoaded", () => {
                         const select = document.getElementById("dateRangeType");
                         const customFields = document.getElementById("customDateFields");
@@ -450,7 +450,7 @@
         </div>
     </div>
 
-    <script nonce="{{ $cspNonce ?? '' }}">
+    <script nonce="{{ $cspNonce }}">
         function showModal() {
             document.getElementById('exportModal').classList.remove('hidden');
         }
@@ -459,8 +459,8 @@
             document.getElementById('exportModal').classList.add('hidden');
         }
     </script>
-    {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
-    <script nonce="{{ $cspNonce ?? '' }}">
+    {{-- <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('app:loaded', function() {
             var storeSalesOptions = {
                 chart: {

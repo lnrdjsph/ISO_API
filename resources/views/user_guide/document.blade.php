@@ -15,7 +15,7 @@
         };
     @endphp
 
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style nonce="{{ $cspNonce }}">
         [data-roles] {
             display: none;
         }
@@ -1626,7 +1626,7 @@
     </div>
 
     {{-- ═══ JS ═══ --}}
-    <script nonce="{{ $cspNonce ?? '' }}">
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const availableRoles = @json($availableRoles);
 

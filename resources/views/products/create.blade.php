@@ -521,7 +521,7 @@
         </div>
     </div>
 
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style nonce="{{ $cspNonce }}">
         @keyframes fade-in {
             from {
                 opacity: 0;
@@ -557,7 +557,7 @@
 
 
 
-    <script nonce="{{ $cspNonce ?? '' }}">
+    <script nonce="{{ $cspNonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             const inputRows = document.getElementById('input-rows');
             const addRowBtn = document.getElementById('add-row-btn');
@@ -586,7 +586,7 @@
                                     </svg>
                                 </button>
                             </div>
-<style nonce="{{ $cspNonce ?? '' }}">
+<style nonce="{{ $cspNonce }}">
                             <!-- First Row: SKU & Product Name -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <div class="space-y-2">

@@ -238,7 +238,7 @@
 				@endif --}}
     </div>
 
-    {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
+    {{-- <script nonce="{{ $cspNonce }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script> --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 

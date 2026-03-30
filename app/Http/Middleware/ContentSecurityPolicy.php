@@ -7,18 +7,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
-class ContentSecurityPolicy
+class ContentSecurityPolicyWithEval
 {
     /**
-     * Handle an incoming request.
-     * Generates a per-request nonce and injects it into all views via $cspNonce.
+     * CSP variant for report pages that use ApexCharts.
+     * Applied to: reports.freebies, reports.sales, reports.payments, reports.orders
+     *
+     * ApexCharts uses new Function() internally which requires 'unsafe-eval'.
+     * ApexCharts is also loaded directly from cdn.jsdelivr.net on these pages
+     * (not from the Vite bundle) so the CDN must stay in script-src.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Generate a cryptographically secure nonce for this request
         $nonce = base64_encode(random_bytes(16));
 
-        // Share nonce with all Blade views
         View::share('cspNonce', $nonce);
 
         $response = $next($request);
@@ -26,11 +28,12 @@ class ContentSecurityPolicy
         $response->headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
 
-            // ✅ Nonce replaces unsafe-inline for scripts
-            "script-src 'self' 'nonce-{$nonce}'",
-            // ✅ Nonce replaces unsafe-inline for styles
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+            // unsafe-eval is required by ApexCharts (uses new Function() internally).
+            // Nonce covers all inline <script nonce="..."> blocks on report pages.
+            "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
 
+            // unsafe-inline for styles — same reasoning as standard middleware.
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
 
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob:",
@@ -40,7 +43,7 @@ class ContentSecurityPolicy
             "object-src 'none'",
             "base-uri 'self'",
             "frame-src 'none'",
-            "worker-src 'self'",
+            "worker-src 'self' blob:",
             "manifest-src 'self'",
         ]));
 

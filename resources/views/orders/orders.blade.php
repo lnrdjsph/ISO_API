@@ -180,7 +180,7 @@
             </div>
         </div>
 
-        <script nonce="{{ $cspNonce ?? '' }}">
+        <script nonce="{{ $cspNonce }}">
             function fetchOrders(url) {
                 const overlay = document.getElementById('orders-loading');
                 overlay?.classList.remove('hidden');
