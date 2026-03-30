@@ -68,6 +68,8 @@ class Kernel extends HttpKernel
         'verified'         => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'session.expired'  => \App\Http\Middleware\RedirectIfSessionExpired::class,
         'verify.api.token' => \App\Http\Middleware\VerifyApiToken::class,
-        'csp'              => \App\Http\Middleware\ContentSecurityPolicy::class, // ✅ ADDED (optional per-route use)
+        'csp'              => \App\Http\Middleware\ContentSecurityPolicy::class,
+        'csp.eval'         => \App\Http\Middleware\ContentSecurityPolicyWithEval::class, // ← ADD THIS
+        // ✅ ADDED (optional per-route use)
     ];
 }

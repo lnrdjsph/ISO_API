@@ -135,7 +135,7 @@ Route::prefix('update-allocations')->middleware(['auth', 'session.expired'])->gr
 
 
 // ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
-Route::prefix('reports')->middleware(['auth', 'session.expired'])->group(function () {
+Route::prefix('reports')->middleware(['auth', 'session.expired', 'csp.eval'])->group(function () {
     Route::get('/sales', [ReportsController::class, 'salesReport'])
         ->name('reports.sales');
 
