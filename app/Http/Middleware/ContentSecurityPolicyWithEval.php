@@ -16,7 +16,8 @@ class ContentSecurityPolicyWithEval
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $nonce = base64_encode(random_bytes(16));
+        // Reuse nonce from ContentSecurityPolicy to avoid nonce mismatch
+        $nonce = $request->attributes->get('csp_nonce', base64_encode(random_bytes(16)));
 
         View::share('cspNonce', $nonce);
 
@@ -24,10 +25,7 @@ class ContentSecurityPolicyWithEval
 
         $response->headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
-
-            // unsafe-eval kept here only because ApexCharts requires it
             "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob:",

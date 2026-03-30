@@ -17,38 +17,34 @@ class ContentSecurityPolicy
     {
         $nonce = base64_encode(random_bytes(16));
 
+        $request->attributes->set('csp_nonce', $nonce); // ← ADD THIS
         View::share('cspNonce', $nonce);
 
         $response = $next($request);
 
-        $response->headers->set('Content-Security-Policy', implode('; ', [
-            "default-src 'self'",
+        if (!$response->headers->has('Content-Security-Policy')) {
+            $response->headers->set('Content-Security-Policy', implode('; ', [
+                "default-src 'self'",
+                "script-src 'self' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+                "img-src 'self' data: blob:",
+                "connect-src 'self'",
+                "frame-ancestors 'none'",
+                "form-action 'self'",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "frame-src 'none'",
+                "worker-src 'self' blob:",
+                "manifest-src 'self'",
+            ]));
 
-            // unsafe-eval is required by ApexCharts (uses new Function() internally).
-            // Nonce covers all inline <script nonce="..."> blocks on report pages.
-            "script-src 'self' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
-
-
-            // unsafe-inline for styles — same reasoning as standard middleware.
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-            "img-src 'self' data: blob:",
-            "connect-src 'self'",
-            "frame-ancestors 'none'",
-            "form-action 'self'",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "frame-src 'none'",
-            "worker-src 'self' blob:",
-            "manifest-src 'self'",
-        ]));
-
-        $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+            $response->headers->set('X-Frame-Options', 'DENY');
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+            $response->headers->set('X-XSS-Protection', '1; mode=block');
+            $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+            $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+        }
 
         return $response;
     }
