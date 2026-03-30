@@ -10,12 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 class ContentSecurityPolicy
 {
     /**
-     * CSP variant for report pages that use ApexCharts.
-     * Applied to: reports.freebies, reports.sales, reports.payments, reports.orders
-     *
-     * ApexCharts uses new Function() internally which requires 'unsafe-eval'.
-     * ApexCharts is also loaded directly from cdn.jsdelivr.net on these pages
-     * (not from the Vite bundle) so the CDN must stay in script-src.
+     * Standard CSP — applied globally to all routes via the web middleware group.
+     * Does NOT include unsafe-eval. Report pages override this with ContentSecurityPolicyWithEval.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -30,7 +26,8 @@ class ContentSecurityPolicy
 
             // unsafe-eval is required by ApexCharts (uses new Function() internally).
             // Nonce covers all inline <script nonce="..."> blocks on report pages.
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
+            "script-src 'self' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
+
 
             // unsafe-inline for styles — same reasoning as standard middleware.
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
