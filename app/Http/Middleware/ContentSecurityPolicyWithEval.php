@@ -37,7 +37,7 @@ class ContentSecurityPolicyWithEval
             "object-src 'none'",
             "base-uri 'self'",
             "frame-src 'none'",
-            "worker-src 'self'",
+            "worker-src 'self' blob:",
             "manifest-src 'self'",
         ]));
 
