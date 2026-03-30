@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -40,7 +41,19 @@ class Handler extends ExceptionHandler
             return response()->view('errors.419', [], 419);
         }
 
-        return parent::render($request, $exception);
-    }
+        $response = parent::render($request, $exception);
 
+        $response->headers->set(
+            'Content-Security-Policy',
+            "default-src 'self'; " .
+                "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " .
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+                "img-src 'self' data: blob:; " .
+                "frame-ancestors 'none'; " .
+                "object-src 'none';"
+        );
+
+        return $response;
+    }
 }
