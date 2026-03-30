@@ -22,6 +22,8 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         \App\Http\Middleware\ProxyAwareMiddleware::class,
+        \App\Http\Middleware\ContentSecurityPolicy::class, // ← MOVE HERE
+
     ];
 
     /**
@@ -38,7 +40,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\PreventTimeout::class,
-            \App\Http\Middleware\ContentSecurityPolicy::class, // ✅ ADDED
+            // \App\Http\Middleware\ContentSecurityPolicy::class, // ✅ ADDED
         ],
 
         'api' => [
@@ -69,7 +71,6 @@ class Kernel extends HttpKernel
         'session.expired'  => \App\Http\Middleware\RedirectIfSessionExpired::class,
         'verify.api.token' => \App\Http\Middleware\VerifyApiToken::class,
         'csp'              => \App\Http\Middleware\ContentSecurityPolicy::class,
-        'csp.eval'         => \App\Http\Middleware\ContentSecurityPolicyWithEval::class, // ← ADD THIS
-        // ✅ ADDED (optional per-route use)
+        'csp.eval'         => \App\Http\Middleware\ContentSecurityPolicyWithEval::class,
     ];
 }
