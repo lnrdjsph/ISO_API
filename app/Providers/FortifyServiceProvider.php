@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
@@ -23,7 +24,7 @@ class FortifyServiceProvider extends ServiceProvider
             \Laravel\Fortify\Contracts\LoginResponse::class,
             LoginResponse::class
         );
-        
+
         $this->app->singleton(
             \Laravel\Fortify\Contracts\LogoutResponse::class,
             LogoutResponse::class
@@ -35,7 +36,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(function () {
             return view('auth.login');
         });
-        
+
 
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
@@ -46,7 +47,12 @@ class FortifyServiceProvider extends ServiceProvider
             $throttleKey = Str::transliterate(
                 Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
             );
-            return Limit::perMinute(5)->by($throttleKey);
+
+            return [
+                Limit::perMinute(5)->by($throttleKey),
+                Limit::perHour(10)->by($request->ip()),
+                Limit::perDay(20)->by($request->ip()),
+            ];
         });
 
         RateLimiter::for('two-factor', function (Request $request) {

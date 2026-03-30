@@ -13,4 +13,19 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        chunkSizeWarningLimit: 1000,
+        minify: "terser",
+        terserOptions: {
+            format: { comments: false },  // fixes: Information Disclosure - Suspicious Comments
+        },
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ["axios", "lodash"],
+                    charts: ["apexcharts"],
+                },
+            },
+        },
+    },
 });
