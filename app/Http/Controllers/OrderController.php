@@ -92,11 +92,20 @@ class OrderController extends Controller
             $query->whereDate('time_order', '<=', $endDate);
         }
 
+        // ✅ Apply ordering based on role
+        if ($user->role === 'manager') {
+            // For managers: show 'for approval' first, then order by created_at desc
+            $query->orderByRaw("CASE WHEN order_status = 'for approval' THEN 0 ELSE 1 END")
+                ->orderByDesc('created_at');
+        } else {
+            // For other roles: just order by created_at desc
+            $query->orderByDesc('created_at');
+        }
+
         // ✅ Pagination
         $perPage = $request->input('per_page', 10);
 
-        $orders = $query->orderByDesc('created_at')
-            ->paginate($perPage)
+        $orders = $query->paginate($perPage)
             ->onEachSide(2)
             ->withQueryString();
 
@@ -134,7 +143,6 @@ class OrderController extends Controller
                 $storeLocations = $allStoreLocations;
             }
         }
-
 
         if ($request->ajax()) {
             return view('orders.partials.table', compact('orders'))->render();
