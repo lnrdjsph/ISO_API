@@ -9,17 +9,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 use App\Http\Requests\BulkUpdateProductsRequest;
-use App\Policies\ProductPolicy;
+// use App\Policies\ProductPolicy;
 use Illuminate\Support\Facades\Gate;
 use App\Events\ProductsBulkArchived;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
-use App\Jobs\UpdateWmsAllocationsJob;
+// use Illuminate\Support\Facades\Response;
+// use App\Jobs\UpdateWmsAllocationsJob;
 use App\Jobs\FetchAllocationJob;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Artisan;
+// use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Process\Process;
 
 

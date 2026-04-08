@@ -25,7 +25,7 @@ class ContentSecurityPolicyWithEval
 
         $response->headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+            "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k=' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob:",

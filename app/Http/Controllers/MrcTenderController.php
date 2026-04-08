@@ -74,9 +74,8 @@ class MRCTenderController extends Controller
 
             // Return appropriate HTTP status code based on result
             $statusCode = ($result['code'] ?? '500') == '200' ? 200 : 500;
-            
-            return response()->json($result, $statusCode);
 
+            return response()->json($result, $statusCode);
         } catch (Exception $e) {
             Log::error('MRCTenderController Error: ' . $e->getMessage(), [
                 'card' => $request->input('card', 'N/A'),
@@ -102,7 +101,7 @@ class MRCTenderController extends Controller
         try {
             // Test database connection
             DB::connection('oracle_mbc')->getPdo();
-            
+
             return response()->json([
                 'status' => 'healthy',
                 'message' => 'MRC Tender service is operational',
@@ -110,7 +109,7 @@ class MRCTenderController extends Controller
             ], 200);
         } catch (Exception $e) {
             Log::error('Health check failed: ' . $e->getMessage());
-            
+
             return response()->json([
                 'status' => 'unhealthy',
                 'message' => 'Service unavailable',
