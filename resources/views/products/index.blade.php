@@ -782,7 +782,6 @@
 
                                         <select
                                             id="no-products-action"
-                                            onchange="if(this.value) window.location.href=this.value"
                                             class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
                                             <option value="" selected disabled>Select Action</option>
                                             <option value="{{ route('products.create') }}">Add New Product</option>
