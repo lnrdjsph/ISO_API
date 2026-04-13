@@ -1291,7 +1291,7 @@
                                             <div class="mt-4 inline-flex items-center justify-center">
                                                 <select
                                                     id="no-products-action"
-                                                    onchange="if(this.value) window.location.href=this.value"
+
                                                     class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
                                                     style="border:none; outline:none; width:auto;">
                                                     <option
