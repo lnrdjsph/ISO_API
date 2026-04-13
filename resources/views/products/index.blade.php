@@ -1290,7 +1290,7 @@
                                             No products found.
                                             <div class="mt-4 inline-flex items-center justify-center">
                                                 <select
-                                                    id="no-products-action"
+                                                    id="no-products-action-alt"
 
                                                     class="m-0 cursor-pointer appearance-none bg-transparent p-1 text-sm font-medium text-blue-600 hover:underline focus:outline-none focus:ring-0"
                                                     style="border:none; outline:none; width:auto;">
@@ -1318,11 +1318,11 @@
                                         }
                                     </style>
                                     <script nonce="{{ $cspNonce }}">
-                                        document.getElementById('no-products-action').addEventListener('change', function() {
-                                            const url = this.value;
-                                            if (url) {
-                                                window.location.href = url;
-                                            }
+                                        ['no-products-action', 'no-products-action-alt'].forEach(function(id) {
+                                            var el = document.getElementById(id);
+                                            if (el) el.addEventListener('change', function() {
+                                                if (this.value) window.location.href = this.value;
+                                            });
                                         });
                                     </script>
                                 @endforelse
