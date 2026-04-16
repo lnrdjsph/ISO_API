@@ -23,7 +23,7 @@
 		href="{{ asset('images/MarengEms_Logo.png') }}">
 	@vite(['resources/css/app.css', 'resources/js/app.js'])
 
-	<style nonce="{{ $cspNonce }}">
+	<style nonce="{{ $cspNonce ?? '' }}">
 		/* WordPress Admin Sidebar Styling */
 		* {
 			box-sizing: border-box;

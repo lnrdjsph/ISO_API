@@ -23,7 +23,7 @@
         href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         /* Prevent horizontal scroll completely */
         html,
         body {
@@ -1001,6 +1001,13 @@
                                                 <span class="nav-text">Inventory Form</span>
                                             </a>
                                         </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('others.filemanager.index') }}"
+                                                class="sub-item {{ request()->routeIs('others.filemanager.*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">File Manager</span>
+                                            </a>
+                                        </li>
                                     </ul>
                                 @else
                                     <a
@@ -1027,6 +1034,12 @@
                                         <a href="{{ route('others.inventory.form') }}"
                                             class="sub-item {{ request()->routeIs('others.inventory.form') ? 'active' : '' }}">
                                             Inventory Form
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('others.filemanager.index') }}"
+                                            class="sub-item {{ request()->routeIs('others.filemanager.*') ? 'active' : '' }}">
+                                            File Manager
                                         </a>
                                     </li>
                                 </ul>

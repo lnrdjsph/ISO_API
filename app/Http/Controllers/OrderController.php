@@ -882,6 +882,12 @@ class OrderController extends Controller
             /* -------------------------------
             * 1) REVERT CASE ALLOCATION
             * ------------------------------- */
+            // Skip freebies — they were never deducted from allocation
+            if (strtoupper($item->item_type ?? '') === 'FREEBIE') {
+                Log::info("Revert skipped — freebie item: SKU {$item->sku}");
+                continue;
+            }
+
             $product = DB::table($tableName)
                 ->where('sku', strtoupper($item->sku))
                 ->first();

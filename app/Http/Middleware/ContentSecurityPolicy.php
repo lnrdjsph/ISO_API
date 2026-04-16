@@ -15,6 +15,10 @@ class ContentSecurityPolicy
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!app()->environment('production')) {
+            return $next($request);
+        }
+
         $nonce = base64_encode(random_bytes(16));
 
         $request->attributes->set('csp_nonce', $nonce); // ← ADD THIS

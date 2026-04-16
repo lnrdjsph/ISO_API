@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ $order->sof_id }}</title>
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 8px;

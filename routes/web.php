@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\OracleTransferController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\InventoryExportController;
+use App\Http\Controllers\FileManagerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -114,14 +115,7 @@ Route::prefix('/users')->name('users.')->middleware(['auth', 'session.expired'])
 });
 
 
-// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
-Route::prefix('others')->name('others.')->middleware(['auth', 'session.expired'])->group(function () {
-    Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
-        ->name('inventory.form');
 
-    Route::post('/inventory-export', [InventoryExportController::class, 'export'])
-        ->name('inventory.export');
-});
 
 
 // ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
@@ -174,4 +168,26 @@ Route::get('/check-session', function () {
 
 Route::prefix('user-guide')->name('user-guide.')->middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/document', fn() => view('user_guide.document'))->name('document');
+});
+
+// ✅ FIXED: Added auth + session.expired middleware (was completely unprotected)
+Route::prefix('others')->name('others.')->middleware(['auth', 'session.expired'])->group(function () {
+    Route::get('/inventory-upload', [InventoryExportController::class, 'showForm'])
+        ->name('inventory.form');
+
+    Route::post('/inventory-export', [InventoryExportController::class, 'export'])
+        ->name('inventory.export');
+
+    // others xlsx editor from views/documents/xlsx-editor.blade.php
+    Route::get('/xlsx-editor', fn() => view('documents.xlsx-editor'))->name('xlsx-editor');
+
+    // File Manager under others
+    Route::prefix('filemanager')->name('filemanager.')->group(function () {
+        Route::get('/',           [FileManagerController::class, 'index'])->name('index');
+        Route::post('/upload',    [FileManagerController::class, 'upload'])->name('upload');
+        Route::get('/download',   [FileManagerController::class, 'download'])->name('download');
+        Route::post('/rename',    [FileManagerController::class, 'rename'])->name('rename');
+        Route::post('/delete',    [FileManagerController::class, 'delete'])->name('delete');
+        Route::post('/mkdir',     [FileManagerController::class, 'mkdir'])->name('mkdir');
+    });
 });

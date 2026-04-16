@@ -16,6 +16,10 @@ class ContentSecurityPolicyWithEval
      */
     public function handle(Request $request, Closure $next): Response
     {
+
+        if (!app()->environment('production')) {
+            return $next($request);
+        }
         // Reuse nonce from ContentSecurityPolicy to avoid nonce mismatch
         $nonce = $request->attributes->get('csp_nonce', base64_encode(random_bytes(16)));
 
