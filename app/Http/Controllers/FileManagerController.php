@@ -5,183 +5,198 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\Response;
 
 class FileManagerController extends Controller
 {
-    /**
-     * Constructor - Apply authentication middleware
-     */
     public function __construct()
     {
         $this->middleware('auth');
         $this->middleware('session.expired');
     }
 
-    /**
-     * Get the base path for file storage
-     */
     private function getBasePath(): string
     {
         return storage_path('app/filemanager');
     }
 
     /**
-     * Resolve & validate a relative sub-path against BASE_PATH
+     * Resolve & validate a relative path against the base path.
+     *
+     * The key fix: realpath() returns FALSE for paths that don't exist yet,
+     * so we CANNOT use it to validate — only to normalise after we confirm
+     * the constructed path string is safe. We do the traversal check on the
+     * raw string first, then realpath only on paths that already exist.
      */
     private function resolve(?string $rel = ''): string
     {
-        // Handle null values - convert to empty string
-        $rel = $rel ?? '';
-
+        $rel      = ltrim($rel ?? '', '/');
         $basePath = $this->getBasePath();
 
-        // Ensure base directory exists
+        // Ensure base directory exists BEFORE any realpath calls
         if (!is_dir($basePath)) {
             mkdir($basePath, 0755, true);
         }
 
-        $rel = ltrim($rel, '/');
-        $fullPath = $basePath . ($rel ? DIRECTORY_SEPARATOR . $rel : '');
-        $real = realpath($fullPath);
+        // Build the candidate path without relying on realpath yet
+        $candidate = $rel
+            ? $basePath . DIRECTORY_SEPARATOR . $rel
+            : $basePath;
 
-        // Prevent path-traversal outside BASE_PATH
-        if ($real === false || !str_starts_with($real, realpath($basePath))) {
-            Log::warning('FileManager access denied', [
-                'user_id' => auth()->id(),
-                'requested_path' => $rel,
-                'resolved_path' => $real,
-                'base_path' => $basePath
+        // Manually normalise (resolve . and ..) without requiring existence
+        $candidate = $this->normalisePath($candidate);
+
+        // Safety check on the normalised string — must still start with base
+        $normalisedBase = $this->normalisePath($basePath);
+
+        if (!str_starts_with($candidate, $normalisedBase)) {
+            Log::warning('FileManager path traversal attempt', [
+                'user_id'   => auth()->id(),
+                'requested' => $rel,
+                'candidate' => $candidate,
+                'base'      => $normalisedBase,
             ]);
             abort(403, 'Access denied.');
         }
 
-        return $real;
+        // Now use realpath if the path exists (for symlink resolution),
+        // but fall back to the normalised candidate if it doesn't exist yet.
+        if (file_exists($candidate)) {
+            $real = realpath($candidate);
+
+            // Re-check after symlink resolution
+            if ($real === false || !str_starts_with($real, realpath($basePath))) {
+                abort(403, 'Access denied.');
+            }
+
+            return $real;
+        }
+
+        // Path doesn't exist yet (e.g. mkdir target) — return normalised candidate.
+        // The mkdir/upload callers are responsible for actually creating it.
+        return $candidate;
     }
 
     /**
-     * Build breadcrumb segments from a relative path string
+     * Normalise a path string by resolving . and .. segments,
+     * without requiring the path to exist on disk.
      */
+    private function normalisePath(string $path): string
+    {
+        $path  = str_replace('\\', '/', $path);
+        $parts = explode('/', $path);
+        $stack = [];
+
+        foreach ($parts as $part) {
+            if ($part === '' || $part === '.') {
+                continue;
+            }
+            if ($part === '..') {
+                array_pop($stack);
+            } else {
+                $stack[] = $part;
+            }
+        }
+
+        // Preserve leading slash on Unix
+        $normalised = (str_starts_with($path, '/') ? '/' : '') . implode('/', $stack);
+
+        // Re-apply OS separator
+        return str_replace('/', DIRECTORY_SEPARATOR, $normalised);
+    }
+
     private function breadcrumbs(string $rel): array
     {
         $crumbs = [['label' => 'Home', 'path' => '']];
-        if ($rel === '') {
-            return $crumbs;
-        }
+        if ($rel === '') return $crumbs;
 
         $parts = explode('/', trim($rel, '/'));
         $built = '';
         foreach ($parts as $part) {
-            $built .= ($built ? '/' : '') . $part;
+            $built    .= ($built ? '/' : '') . $part;
             $crumbs[] = ['label' => $part, 'path' => $built];
         }
         return $crumbs;
     }
 
-    /**
-     * Format file size in human readable format
-     */
     private function formatBytes(int $bytes): string
     {
-        if ($bytes < 1024) {
-            return $bytes . ' B';
-        }
-        if ($bytes < 1048576) {
-            return round($bytes / 1024, 1) . ' KB';
-        }
-        if ($bytes < 1073741824) {
-            return round($bytes / 1048576, 1) . ' MB';
-        }
+        if ($bytes < 1024)       return $bytes . ' B';
+        if ($bytes < 1048576)    return round($bytes / 1024, 1) . ' KB';
+        if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
         return round($bytes / 1073741824, 2) . ' GB';
     }
 
-    /**
-     * Validate filename to prevent invalid characters
-     */
     private function isValidFilename(string $name): bool
     {
-        // Check for invalid characters: / \ < > : " | ? * and null bytes
         return preg_match('/^[^\/\\\\<>:"|?*\x00-\x1f]+$/u', $name) === 1;
     }
 
-    /**
-     * Display file manager index
-     */
+    // ── Index ──────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
-        $rel = $request->query('path', '');
+        $rel = $request->query('path', '') ?? '';
         $dir = $this->resolve($rel);
-        $base = $this->getBasePath();
 
-        // Ensure the base folder exists
-        if (!is_dir($base)) {
-            mkdir($base, 0755, true);
+        if (!is_dir($dir)) {
+            abort(404, 'Directory not found.');
         }
 
-        $raw = scandir($dir);
         $entries = [];
+        foreach (scandir($dir) as $name) {
+            if ($name === '.' || $name === '..') continue;
 
-        foreach ($raw as $name) {
-            if ($name === '.' || $name === '..') {
-                continue;
-            }
-
-            $full = $dir . DIRECTORY_SEPARATOR . $name;
-            $isDir = is_dir($full);
-            $subRel = ($rel ? $rel . '/' : '') . $name;
-            $ext = !$isDir ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : '';
-            $size = !$isDir ? filesize($full) : null;
+            $full     = $dir . DIRECTORY_SEPARATOR . $name;
+            $isDir    = is_dir($full);
+            $subRel   = ($rel ? $rel . '/' : '') . $name;
+            $ext      = !$isDir ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : '';
+            $size     = !$isDir ? filesize($full) : null;
             $modified = filemtime($full);
 
             $entries[] = [
-                'name' => $name,
-                'path' => $subRel,
-                'is_dir' => $isDir,
-                'ext' => $ext,
-                'size' => $size,
-                'size_formatted' => $size ? $this->formatBytes($size) : '—',
-                'modified' => $modified,
+                'name'             => $name,
+                'path'             => $subRel,
+                'is_dir'           => $isDir,
+                'ext'              => $ext,
+                'size'             => $size,
+                'size_formatted'   => $size !== null ? $this->formatBytes($size) : '—',
+                'modified'         => $modified,
                 'modified_formatted' => date('Y-m-d H:i', $modified),
             ];
         }
 
-        // Folders first, then files — both alphabetical
         usort($entries, function ($a, $b) {
-            if ($a['is_dir'] !== $b['is_dir']) {
-                return $a['is_dir'] ? -1 : 1;
-            }
+            if ($a['is_dir'] !== $b['is_dir']) return $a['is_dir'] ? -1 : 1;
             return strcasecmp($a['name'], $b['name']);
         });
 
         return view('filemanager.index', [
-            'entries' => $entries,
+            'entries'     => $entries,
             'currentPath' => $rel,
             'breadcrumbs' => $this->breadcrumbs($rel),
-            'baseName' => basename($this->getBasePath()),
+            'baseName'    => basename($this->getBasePath()),
         ]);
     }
 
-    /**
-     * Upload files
-     */
+    // ── Upload ─────────────────────────────────────────────────────
+
     public function upload(Request $request)
     {
         $request->validate([
-            'files.*' => 'required|file|max:51200', // 50 MB per file
-            'path' => 'nullable|string',
+            'files.*' => 'required|file|max:51200',
+            'path'    => 'nullable|string',
         ]);
 
-        $rel = $request->input('path', '');
-        $dir = $this->resolve($rel);
-        $uploadedCount = 0;
+        $rel   = $request->input('path', '') ?? '';
+        $dir   = $this->resolve($rel);
+        $count = 0;
 
         foreach ($request->file('files') as $file) {
             $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $extension = $file->getClientOriginalExtension();
-            $safeName = Str::slug($originalName) . ($extension ? '.' . $extension : '');
+            $extension    = $file->getClientOriginalExtension();
+            $safeName     = Str::slug($originalName) . ($extension ? '.' . $extension : '');
 
-            // Avoid duplicate filenames
-            $counter = 1;
+            $counter   = 1;
             $finalName = $safeName;
             while (file_exists($dir . DIRECTORY_SEPARATOR . $finalName)) {
                 $finalName = Str::slug($originalName) . '-' . $counter . ($extension ? '.' . $extension : '');
@@ -189,132 +204,99 @@ class FileManagerController extends Controller
             }
 
             $file->move($dir, $finalName);
-            $uploadedCount++;
+            $count++;
         }
 
-        return back()->with('success', $uploadedCount . ' file(s) uploaded successfully.');
+        return back()->with('success', $count . ' file(s) uploaded successfully.');
     }
 
-    /**
-     * Download file
-     */
+    // ── Download ───────────────────────────────────────────────────
+
     public function download(Request $request)
     {
-        $rel = $request->query('path', '');
+        $rel  = $request->query('path', '') ?? '';
         $full = $this->resolve($rel);
 
-        if (!is_file($full)) {
-            abort(404, 'File not found.');
-        }
+        if (!is_file($full)) abort(404, 'File not found.');
 
         return response()->download($full);
     }
 
-    /**
-     * Rename file or directory
-     */
+    // ── Rename ─────────────────────────────────────────────────────
+
     public function rename(Request $request)
     {
         $request->validate([
-            'path' => 'required|string',
-            'newname' => [
-                'required',
-                'string',
-                'max:255',
-                function ($attribute, $value, $fail) {
-                    if (!$this->isValidFilename($value)) {
-                        $fail('The ' . $attribute . ' contains invalid characters. Allowed: letters, numbers, spaces, dots, hyphens, and underscores.');
-                    }
-                },
-            ],
+            'path'    => 'required|string',
+            'newname' => ['required', 'string', 'max:255', function ($attr, $value, $fail) {
+                if (!$this->isValidFilename($value)) {
+                    $fail('The name contains invalid characters.');
+                }
+            }],
         ]);
 
-        $rel = $request->input('path');
-        $full = $this->resolve($rel);
-        $parent = dirname($full);
-        $newFull = $parent . DIRECTORY_SEPARATOR . $request->input('newname');
+        $full    = $this->resolve($request->input('path'));
+        $newFull = dirname($full) . DIRECTORY_SEPARATOR . $request->input('newname');
 
         if (file_exists($newFull)) {
             return back()->withErrors(['newname' => 'A file or folder with that name already exists.']);
         }
 
         if (!rename($full, $newFull)) {
-            return back()->withErrors(['error' => 'Failed to rename. Please check permissions.']);
+            return back()->withErrors(['newname' => 'Failed to rename. Check permissions.']);
         }
 
         return back()->with('success', 'Renamed successfully.');
     }
 
-    /**
-     * Delete file or directory
-     */
+    // ── Delete ─────────────────────────────────────────────────────
+
     public function delete(Request $request)
     {
-        $request->validate([
-            'path' => 'required|string',
-        ]);
+        $request->validate(['path' => 'required|string']);
 
         $full = $this->resolve($request->input('path'));
 
         try {
             if (is_dir($full)) {
                 $this->deleteDirectory($full);
-                $message = 'Folder deleted successfully.';
+                $msg = 'Folder deleted successfully.';
             } else {
                 unlink($full);
-                $message = 'File deleted successfully.';
+                $msg = 'File deleted successfully.';
             }
         } catch (\Exception $e) {
-            Log::error('FileManager delete error', [
-                'user_id' => auth()->id(),
-                'path' => $full,
-                'error' => $e->getMessage()
-            ]);
+            Log::error('FileManager delete error', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
             return back()->withErrors(['error' => 'Failed to delete: ' . $e->getMessage()]);
         }
 
-        return back()->with('success', $message);
+        return back()->with('success', $msg);
     }
 
-    /**
-     * Recursively delete a directory and all its contents
-     */
     private function deleteDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $items = array_diff(scandir($dir), ['.', '..']);
-        foreach ($items as $item) {
+        foreach (array_diff(scandir($dir), ['.', '..']) as $item) {
             $path = $dir . DIRECTORY_SEPARATOR . $item;
             is_dir($path) ? $this->deleteDirectory($path) : unlink($path);
         }
         rmdir($dir);
     }
 
-    /**
-     * Create a new directory
-     */
+    // ── Make directory ─────────────────────────────────────────────
+
     public function mkdir(Request $request)
     {
         $request->validate([
-            'path' => 'nullable|string',
-            'dirname' => [
-                'required',
-                'string',
-                'max:255',
-                function ($attribute, $value, $fail) {
-                    if (!$this->isValidFilename($value)) {
-                        $fail('The ' . $attribute . ' contains invalid characters. Allowed: letters, numbers, spaces, dots, hyphens, and underscores.');
-                    }
-                },
-            ],
+            'path'    => 'nullable|string',
+            'dirname' => ['required', 'string', 'max:255', function ($attr, $value, $fail) {
+                if (!$this->isValidFilename($value)) {
+                    $fail('The folder name contains invalid characters.');
+                }
+            }],
         ]);
 
-        // Handle null path - convert to empty string
-        $rel = $request->input('path', '');
-        $parent = $this->resolve($rel);  // This was line 313 - now $rel is always a string
+        $rel    = $request->input('path', '') ?? '';
+        $parent = $this->resolve($rel);
         $newDir = $parent . DIRECTORY_SEPARATOR . $request->input('dirname');
 
         if (is_dir($newDir)) {
@@ -322,7 +304,7 @@ class FileManagerController extends Controller
         }
 
         if (!mkdir($newDir, 0755)) {
-            return back()->withErrors(['error' => 'Failed to create folder. Please check permissions.']);
+            return back()->withErrors(['dirname' => 'Failed to create folder. Check permissions.']);
         }
 
         return back()->with('success', 'Folder created successfully.');
