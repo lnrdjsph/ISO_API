@@ -24,7 +24,8 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="openModal('modalMkdir')"
+                {{-- data-modal replaces onclick="openModal(...)" --}}
+                <button data-modal="modalMkdir"
                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -33,7 +34,7 @@
                     </svg>
                     New Folder
                 </button>
-                <button onclick="openModal('modalUpload')"
+                <button data-modal="modalUpload"
                     class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:opacity-90">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -89,7 +90,9 @@
                 </nav>
 
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-gray-400">{{ count($entries) }} item{{ count($entries) !== 1 ? 's' : '' }}</span>
+                    <span class="text-xs text-gray-400">
+                        {{ count($entries) }} item{{ count($entries) !== 1 ? 's' : '' }}
+                    </span>
                     <div class="relative">
                         <svg xmlns="http://www.w3.org/2000/svg"
                             class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
@@ -105,7 +108,7 @@
 
             {{-- File table --}}
             <div class="overflow-x-auto">
-                <table class="min-w-full text-sm" id="fileTable">
+                <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <th class="w-8 px-4 py-3"></th>
@@ -117,6 +120,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-50" id="fileTableBody">
 
+                        {{-- Up a level --}}
                         @if ($currentPath !== '')
                             @php
                                 $upPath = str_contains($currentPath, '/') ? substr($currentPath, 0, strrpos($currentPath, '/')) : '';
@@ -128,7 +132,6 @@
                                 <td class="px-3 py-3" colspan="4">
                                     <a href="{{ route('others.filemanager.index', ['path' => $upPath]) }}"
                                         class="flex items-center gap-2 font-medium text-gray-600 hover:text-violet-700">
-                                        {{-- <span class="text-lg leading-none">↩</span> --}}
                                         <span>.. (up a level)</span>
                                     </a>
                                 </td>
@@ -158,7 +161,9 @@
                                         <span class="block truncate font-medium text-gray-800"
                                             title="{{ $entry['name'] }}">{{ $entry['name'] }}</span>
                                         @if ($entry['ext'])
-                                            <span class="mt-0.5 text-xs uppercase tracking-wider text-gray-400">{{ $entry['ext'] }}</span>
+                                            <span class="mt-0.5 text-xs uppercase tracking-wider text-gray-400">
+                                                {{ $entry['ext'] }}
+                                            </span>
                                         @endif
                                     @endif
                                 </td>
@@ -173,6 +178,7 @@
 
                                 <td class="px-3 py-3 text-right">
                                     <div class="flex items-center justify-end gap-1">
+
                                         @if (!$entry['is_dir'])
                                             <a href="{{ route('others.filemanager.download', ['path' => $entry['path']]) }}"
                                                 title="Download / Open in external editor"
@@ -186,24 +192,32 @@
                                             </a>
                                         @endif
 
+                                        {{-- data-action="rename" + data-* carry the params instead of onclick --}}
                                         <button type="button"
-                                            onclick="openRename('{{ addslashes($entry['name']) }}', '{{ addslashes($entry['path']) }}')"
+                                            data-action="rename"
+                                            data-name="{{ $entry['name'] }}"
+                                            data-path="{{ $entry['path'] }}"
                                             class="action-btn text-amber-500 hover:bg-amber-50 hover:text-amber-700">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                                                               m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                             <span class="hidden text-xs sm:inline">Rename</span>
                                         </button>
 
                                         <button type="button"
-                                            onclick="confirmDelete('{{ addslashes($entry['name']) }}', '{{ addslashes($entry['path']) }}', {{ $entry['is_dir'] ? 'true' : 'false' }})"
+                                            data-action="delete"
+                                            data-name="{{ $entry['name'] }}"
+                                            data-path="{{ $entry['path'] }}"
+                                            data-isdir="{{ $entry['is_dir'] ? '1' : '0' }}"
                                             class="action-btn text-red-400 hover:bg-red-50 hover:text-red-600">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858
+                                                               L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                             <span class="hidden text-xs sm:inline">Delete</span>
                                         </button>
@@ -233,14 +247,15 @@
         </div>
     </div>
 
-    {{-- ══ Modals ══════════════════════════════════════════════ --}}
+    {{-- ══ Modals ══════════════════════════════════════════════════════ --}}
 
     {{-- Upload --}}
     <div id="modalUpload" class="modal-backdrop hidden">
         <div class="modal-box">
             <div class="modal-header">
                 <h3 class="text-base font-semibold text-gray-800">Upload Files</h3>
-                <button onclick="closeModal('modalUpload')" class="modal-close">✕</button>
+                {{-- data-close replaces onclick="closeModal(...)" --}}
+                <button data-close="modalUpload" class="modal-close">✕</button>
             </div>
             <form action="{{ route('others.filemanager.upload') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -261,7 +276,7 @@
                     </div>
                 </div>
                 <div class="mt-4 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modalUpload')" class="btn-secondary">Cancel</button>
+                    <button type="button" data-close="modalUpload" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Upload</button>
                 </div>
             </form>
@@ -273,7 +288,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3 class="text-base font-semibold text-gray-800">New Folder</h3>
-                <button onclick="closeModal('modalMkdir')" class="modal-close">✕</button>
+                <button data-close="modalMkdir" class="modal-close">✕</button>
             </div>
             <form action="{{ route('others.filemanager.mkdir') }}" method="POST">
                 @csrf
@@ -287,7 +302,7 @@
                     @enderror
                 </div>
                 <div class="mt-4 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modalMkdir')" class="btn-secondary">Cancel</button>
+                    <button type="button" data-close="modalMkdir" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Create</button>
                 </div>
             </form>
@@ -299,7 +314,7 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3 class="text-base font-semibold text-gray-800">Rename</h3>
-                <button onclick="closeModal('modalRename')" class="modal-close">✕</button>
+                <button data-close="modalRename" class="modal-close">✕</button>
             </div>
             <form action="{{ route('others.filemanager.rename') }}" method="POST">
                 @csrf
@@ -313,7 +328,7 @@
                     @enderror
                 </div>
                 <div class="mt-4 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modalRename')" class="btn-secondary">Cancel</button>
+                    <button type="button" data-close="modalRename" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Rename</button>
                 </div>
             </form>
@@ -325,7 +340,7 @@
         <div class="modal-box max-w-sm">
             <div class="modal-header">
                 <h3 class="text-base font-semibold text-gray-800">Confirm Delete</h3>
-                <button onclick="closeModal('modalDelete')" class="modal-close">✕</button>
+                <button data-close="modalDelete" class="modal-close">✕</button>
             </div>
             <div class="mt-3 flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
@@ -349,7 +364,7 @@
                 @csrf
                 <input type="hidden" name="path" id="deletePathInput">
                 <div class="mt-5 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modalDelete')" class="btn-secondary">Cancel</button>
+                    <button type="button" data-close="modalDelete" class="btn-secondary">Cancel</button>
                     <button type="submit"
                         class="inline-flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-600">
                         Delete
@@ -359,7 +374,7 @@
         </div>
     </div>
 
-    {{-- ══ Styles (nonce required by CSP) ═════════════════════ --}}
+    {{-- ══ Styles — nonce satisfies CSP style-src ═════════════════════ --}}
     <style nonce="{{ $cspNonce ?? '' }}">
         .action-btn {
             display: inline-flex;
@@ -477,75 +492,144 @@
         }
     </style>
 
-    {{-- ══ Scripts (nonce required by CSP) ════════════════════ --}}
+    {{-- ══ Script — nonce satisfies CSP script-src ════════════════════
+         NO onclick/onchange/on* attributes anywhere in the HTML above.
+         All handlers are wired here via addEventListener + data-* attrs.
+    ══════════════════════════════════════════════════════════════════ --}}
     <script nonce="{{ $cspNonce ?? '' }}">
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-            var inp = document.querySelector('#' + id + ' input[type=text]');
-            if (inp) setTimeout(function() {
-                inp.focus();
-            }, 50);
-        }
+        (function() {
+            // ── Modal helpers ─────────────────────────────────────────────
+            function openModal(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('hidden');
+                var first = el.querySelector('input[type=text]');
+                if (first) setTimeout(function() {
+                    first.focus();
+                }, 50);
+            }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-        document.querySelectorAll('.modal-backdrop').forEach(function(el) {
-            el.addEventListener('click', function(e) {
-                if (e.target === el) closeModal(el.id);
+            function closeModal(id) {
+                var el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            }
+
+            // ── [data-modal] buttons → open ───────────────────────────────
+            document.querySelectorAll('[data-modal]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    openModal(btn.getAttribute('data-modal'));
+                });
             });
-        });
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
+
+            // ── [data-close] buttons → close ──────────────────────────────
+            document.querySelectorAll('[data-close]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    closeModal(btn.getAttribute('data-close'));
+                });
+            });
+
+            // ── Backdrop click → close ────────────────────────────────────
+            document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
+                backdrop.addEventListener('click', function(e) {
+                    if (e.target === backdrop) closeModal(backdrop.id);
+                });
+            });
+
+            // ── Escape key → close all open modals ───────────────────────
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Escape') return;
                 document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(function(el) {
                     closeModal(el.id);
                 });
+            });
+
+            // ── [data-action="rename"] buttons ────────────────────────────
+            document.querySelectorAll('[data-action="rename"]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var name = btn.getAttribute('data-name');
+                    var path = btn.getAttribute('data-path');
+
+                    document.getElementById('newnameinput').value = name;
+                    document.getElementById('renamePathInput').value = path;
+                    openModal('modalRename');
+
+                    setTimeout(function() {
+                        var inp = document.getElementById('newnameinput');
+                        inp.focus();
+                        var dot = name.lastIndexOf('.');
+                        inp.setSelectionRange(0, dot > 0 ? dot : name.length);
+                    }, 60);
+                });
+            });
+
+            // ── [data-action="delete"] buttons ────────────────────────────
+            document.querySelectorAll('[data-action="delete"]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var name = btn.getAttribute('data-name');
+                    var path = btn.getAttribute('data-path');
+                    var isDir = btn.getAttribute('data-isdir') === '1';
+
+                    document.getElementById('deleteTargetName').textContent = name;
+                    document.getElementById('deletePathInput').value = path;
+
+                    var warn = document.getElementById('deleteFolderWarning');
+                    if (isDir) warn.classList.remove('hidden');
+                    else warn.classList.add('hidden');
+
+                    openModal('modalDelete');
+                });
+            });
+
+            // ── Upload file input → show selected names ───────────────────
+            var uploadInput = document.getElementById('uploadFileInput');
+            if (uploadInput) {
+                uploadInput.addEventListener('change', function() {
+                    var names = Array.from(this.files).map(function(f) {
+                        return f.name;
+                    });
+                    var label = names.length === 0 ? 'No files selected' :
+                        names.length === 1 ? names[0] :
+                        names.length + ' files selected';
+                    document.getElementById('uploadFileNames').textContent = label;
+                });
             }
-        });
 
-        function openRename(name, path) {
-            document.getElementById('newnameinput').value = name;
-            document.getElementById('renamePathInput').value = path;
-            openModal('modalRename');
-            setTimeout(function() {
-                var inp = document.getElementById('newnameinput');
-                inp.focus();
-                var dot = name.lastIndexOf('.');
-                inp.setSelectionRange(0, dot > 0 ? dot : name.length);
-            }, 60);
-        }
+            // ── Search / filter ───────────────────────────────────────────
+            var searchInput = document.getElementById('fileSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    var q = this.value.trim().toLowerCase();
+                    document.querySelectorAll('#fileTableBody .file-row').forEach(function(tr) {
+                        var name = (tr.getAttribute('data-name') || '');
+                        tr.style.display = (!q || name.includes(q)) ? '' : 'none';
+                    });
+                });
+            }
 
-        function confirmDelete(name, path, isDir) {
-            document.getElementById('deleteTargetName').textContent = name;
-            document.getElementById('deletePathInput').value = path;
-            var warn = document.getElementById('deleteFolderWarning');
-            isDir ? warn.classList.remove('hidden') : warn.classList.add('hidden');
-            openModal('modalDelete');
-        }
+            // ── Auto-open modals on validation errors ─────────────────────
+            @if ($errors->has('dirname'))
+                openModal('modalMkdir');
+            @endif
+            @if ($errors->has('newname'))
+                openModal('modalRename');
+            @endif
 
-        document.getElementById('uploadFileInput').addEventListener('change', function() {
-            var names = Array.from(this.files).map(function(f) {
-                return f.name;
-            });
-            document.getElementById('uploadFileNames').textContent =
-                names.length === 0 ? 'No files selected' :
-                names.length === 1 ? names[0] :
-                names.length + ' files selected';
-        });
-
-        document.getElementById('fileSearch').addEventListener('input', function() {
-            var q = this.value.trim().toLowerCase();
-            document.querySelectorAll('#fileTableBody .file-row').forEach(function(tr) {
-                tr.style.display = (!q || (tr.dataset.name || '').includes(q)) ? '' : 'none';
-            });
-        });
-
-        @if ($errors->has('dirname'))
-            openModal('modalMkdir');
-        @endif
-        @if ($errors->has('newname'))
-            openModal('modalRename');
-        @endif
+        }());
     </script>
 
+    @php
+        function fmtBytes(int $bytes): string
+        {
+            if ($bytes < 1024) {
+                return $bytes . ' B';
+            }
+            if ($bytes < 1048576) {
+                return round($bytes / 1024, 1) . ' KB';
+            }
+            if ($bytes < 1073741824) {
+                return round($bytes / 1048576, 1) . ' MB';
+            }
+            return round($bytes / 1073741824, 2) . ' GB';
+        }
+    @endphp
 @endsection

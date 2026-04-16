@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     protected array $warehouses = [
-        '80141', // Silangan Warehouse
+        '80151', // Silangan Warehouse
         '80001', // Central Warehouse
         '80041', // Procter Warehouse
         '80051', // Opao-ISO Warehouse
@@ -22,12 +22,12 @@ return new class extends Migration {
         Schema::connection('mysql')->create('product_wms_allocations', function (Blueprint $table) {
             $table->string('sku');
             $table->string('warehouse_code', 10);
-            
+
             $table->integer('wms_actual_allocation')->nullable();
             $table->integer('wms_virtual_allocation')->nullable();
-            
+
             $table->timestamps();
-            
+
             $table->primary(['sku', 'warehouse_code']);
             $table->index('warehouse_code');
         });

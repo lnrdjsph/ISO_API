@@ -41,11 +41,11 @@ class DashboardController extends Controller
             '2008' => '80181',
             '6009' => '80181',
             '6010' => '80181',
-            '6012' => '80141',
+            '6012' => '80151',
         ];
 
         $warehouseNames = [
-            '80141' => 'Silangan Warehouse',
+            '80151' => 'Silangan Warehouse',
             '80181' => 'Bacolod Depot',
         ];
 

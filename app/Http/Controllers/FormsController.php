@@ -41,7 +41,7 @@ class FormsController extends Controller
 
 
     protected array $warehouseMap = [
-        '80141' => 'Silangan Warehouse',
+        '80151' => 'Silangan Warehouse',
         '80001' => 'Central Warehouse',
         '80041' => 'Procter Warehouse',
         '80051' => 'Opao-ISO Warehouse',
@@ -732,7 +732,7 @@ class FormsController extends Controller
     //         '3018' => '80051',
     //         '3019' => '80071',
     //         '2008' => '80131',
-    //         '6009' => '80141',
+    //         '6009' => '80151',
     //         '6010' => '80191',
     //     ];
 

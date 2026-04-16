@@ -1072,8 +1072,8 @@ class OrderController extends Controller
             '2008' => '80181', // Bacolod
             '6009' => '80181', // Bacolod
             '6010' => '80181', // Bacolod
-            '6012' => '80141', // Silangan
-            'lz'    => '80141', // LZ
+            '6012' => '80151', // Silangan
+            'lz'    => '80151', // LZ
             'vs'    => '80181', // Silangan
 
         ];

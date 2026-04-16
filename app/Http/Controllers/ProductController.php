@@ -60,11 +60,11 @@ class ProductController extends Controller
                 '2008' => '80181', // Silangan
                 '6009' => '80181', // Silangan
                 '6010' => '80181', // Silangan
-                '6012' => '80141', // Silangan
+                '6012' => '80151', // Silangan
             ];
 
             $warehouseMap = [
-                '80141' => 'Silangan Warehouse',
+                '80151' => 'Silangan Warehouse',
                 '80181' => 'Bacolod Depot',
                 // '80001' => 'Central Warehouse',
                 // '80041' => 'Procter Warehouse',
@@ -1338,7 +1338,7 @@ class ProductController extends Controller
         // '80051' => '80051',
         // '80071' => '80071',
         // '80131' => '80131',
-        '80141' => 'SI',
+        '80151' => 'SI',
         // '80191' => '80191',
     ];
 
@@ -1354,7 +1354,7 @@ class ProductController extends Controller
 
         // Allowed warehouses
         $allowedWarehouses = [
-            '80141' => 'Silangan Warehouse',
+            '80151' => 'Silangan Warehouse',
             '80181' => 'Bacolod Depot',
         ];
 
@@ -1393,7 +1393,7 @@ class ProductController extends Controller
             '2008' => '80181', // Bacolod
             '6009' => '80181', // Bacolod
             '6010' => '80181', // Bacolod
-            '6012' => '80141', // Silangan
+            '6012' => '80151', // Silangan
         ];
 
         return $locationToWarehouse[$userLocation] ?? null;
@@ -1407,7 +1407,7 @@ class ProductController extends Controller
     protected function getWarehouseName(string $warehouseCode): string
     {
         $warehouseMap = [
-            '80141' => 'Silangan Warehouse',
+            '80151' => 'Silangan Warehouse',
             '80181' => 'Bacolod Depot',
         ];
 

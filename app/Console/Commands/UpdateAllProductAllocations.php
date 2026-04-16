@@ -11,7 +11,7 @@ use PDO;
 class UpdateAllProductAllocations extends Command
 {
     protected $signature = 'products:update-allocations 
-                            {--warehouse= : Specific warehouse code to process (e.g., 80181, 80141)}
+                            {--warehouse= : Specific warehouse code to process (e.g., 80181, 80151)}
                             {--async : Use async job queue instead of batch processing}';
 
     protected $description = 'Update product_wms_allocations table (wms_actual_allocation and wms_virtual_allocation) and case pack using oracle_rms config';
@@ -19,11 +19,11 @@ class UpdateAllProductAllocations extends Command
     // Master mapping: Warehouse Code => [Facility Label, Store Codes]
     protected array $warehouseConfig = [
         '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],                    // Bacolod Depot
-        '80141' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
+        '80151' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
     ];
 
     protected array $warehouseMap = [
-        '80141' => 'Silangan Warehouse',
+        '80151' => 'Silangan Warehouse',
         '80001' => 'Central Warehouse',
         '80041' => 'Procter Warehouse',
         '80051' => 'Opao-ISO Warehouse',
