@@ -1204,12 +1204,12 @@ class OrderController extends Controller
                 'remarks'         => $item->remarks,
                 'qty_per_case'    => $item->qty_per_pc,
                 'total_qty'       => $totalQty,
-                'punch'           => '???', // placeholder if needed
+                'punch'           => '', // placeholder if needed
                 'sku'             => $item->sku,
                 'price_per_piece' => $item->price_per_pc,
                 'total_amount'    => $item->amount,
                 'trans_no'        => $item->store_order_no,
-                'terminal'        => '???', // you can adjust if stored
+                'terminal'        => '', // you can adjust if stored
             ];
         }
 

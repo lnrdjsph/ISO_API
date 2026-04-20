@@ -659,7 +659,7 @@
 
                                     @if (strpos(auth()->user()->role ?? '', 'personnel') !== false)
                                         <!-- Personnel View: Display only -->
-                                        <div class="w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 backdrop-blur-sm">
+                                        <div class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 backdrop-blur-sm">
                                             @foreach ($warehouseMap as $code => $name)
                                                 @if ($currentWarehouse == $code)
                                                     <span class="font-medium">{{ $code }} - {{ $name }}</span>
@@ -670,7 +670,7 @@
                                         <!-- Non-Personnel View: Dropdown select -->
                                         <select
                                             name="warehouse"
-                                            class="w-full rounded-2xl border border-gray-200/60 bg-white/60 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                             onchange="
                                             const params = new URLSearchParams(window.location.search);
                                             params.set('warehouse', this.value);
