@@ -31,22 +31,23 @@ class DashboardController extends Controller
             '6010' => 'Super Metro Bogo',
         ];
 
-        $locationToWarehouse = [
-            '4002' => '80181',
-            '2010' => '80181',
-            '2017' => '80181',
-            '2019' => '80181',
-            '3018' => '80181',
-            '3019' => '80181',
-            '2008' => '80181',
-            '6009' => '80181',
-            '6010' => '80181',
-            '6012' => '80151',
+        // Warehouse mapping
+        $locationGroups = [
+            '80051' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010', 'vs'],
+            '80141' => ['6012', 'lz'],
         ];
 
+        $locationToWarehouse = [];
+
+        foreach ($locationGroups as $warehouse => $locations) {
+            foreach ($locations as $loc) {
+                $locationToWarehouse[$loc] = $warehouse;
+            }
+        }
+
         $warehouseNames = [
-            '80151' => 'Silangan Warehouse',
-            '80181' => 'Bacolod Depot',
+            '80151' => 'Opao-ISO Warehouse',
+            '80191' => 'Tacloban Depot',
         ];
 
         $query = Order::query();

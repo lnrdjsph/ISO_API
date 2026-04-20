@@ -9,6 +9,7 @@ use App\Models\ISO_B2B\Order;
 use App\Models\ISO_B2B\OrderNote;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Support\LocationConfig;
 
 
 class OracleTransferController extends Controller
@@ -173,31 +174,8 @@ class OracleTransferController extends Controller
                     'verification' => null
                 ];
 
-                $warehouseMap = [
-                    '80151' => 'Silangan Warehouse',
-                    '80001' => 'Central Warehouse',
-                    '80041' => 'Procter Warehouse',
-                    '80051' => 'Opao-ISO Warehouse',
-                    '80071' => 'Big Blue Warehouse',
-                    '80131' => 'Lower Tingub Warehouse',
-                    '80211' => 'Sta. Rosa Warehouse',
-                    '80181' => 'Bacolod Depot',
-                    '80191' => 'Tacloban Depot',
-                ];
-
-
-                $allStoreLocations = [
-                    '4002' => 'F2 - Metro Wholesalemart Colon',
-                    '2010' => 'S10 - Metro Maasin',
-                    '2017' => 'S17 - Metro Tacloban',
-                    '2019' => 'S19 - Metro Bay-Bay',
-                    '3018' => 'F18 - Metro Alang-Alang',
-                    '3019' => 'F19 - Metro Hilongos',
-                    '2008' => 'S8 - Metro Toledo',
-                    '6012' => 'H8 - Super Metro Antipolo',
-                    '6009' => 'H9 - Super Metro Carcar',
-                    '6010' => 'H10 - Super Metro Bogo',
-                ];
+                $warehouseMap      = LocationConfig::warehouses();
+                $allStoreLocations = LocationConfig::stores();
 
 
                 // ⚠️ Check for various failure types

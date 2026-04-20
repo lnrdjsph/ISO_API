@@ -6,32 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Support\LocationConfig;
 
 class AtomController extends Controller
 {
-    /**
-     * Store location code mapping
-     */
-    protected array $locationMap = [
-        'Metro Wholesalemart Colon' => '4002',
-        'Metro Maasin' => '2010',
-        'Metro Tacloban' => '2017',
-        'Metro Bay-Bay' => '2019',
-        'Metro Alang-Alang' => '3018',
-        'Metro Hilongos' => '3019',
-        'Metro Toledo' => '2008',
-        'Super Metro Antipolo' => '6012',
-        'Super Metro Carcar' => '6009',
-        'Super Metro Bogo' => '6010',
-    ];
-
-    /**
-     * Warehouse to store mapping
-     */
-    protected array $warehouseConfig = [
-        '80151' => ['stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],
-        '80181' => ['stores' => ['6012']],
-    ];
 
     /**
      * Receive order from WooCommerce - Updated for flexible field names
@@ -667,7 +645,7 @@ class AtomController extends Controller
         foreach ($metaData as $meta) {
             if (is_array($meta) && ($meta['key'] ?? '') === '_pickup_store') {
                 $storeName = $meta['value'] ?? null;
-                $storeCode = $this->locationMap[$storeName] ?? null;
+                $storeCode = LocationConfig::storeCode($storeName);
 
                 Log::channel('orders')->debug('Store extraction', [
                     'store_name' => $storeName,
@@ -690,13 +668,14 @@ class AtomController extends Controller
      */
     private function resolveWarehouse(string $storeCode): string
     {
-        foreach ($this->warehouseConfig as $warehouse => $config) {
-            if (in_array($storeCode, $config['stores'], true)) {
-                return $warehouse;
-            }
+        $warehouse = LocationConfig::warehouseForStore($storeCode);
+        if (!$warehouse) {
+            throw new \Exception(
+                "No warehouse mapped for store {$storeCode}. Available: "
+                    . implode(', ', array_keys(LocationConfig::warehouses()))
+            );
         }
-
-        throw new \Exception("No warehouse mapped for store {$storeCode}. Available warehouses: " . implode(', ', array_keys($this->warehouseConfig)));
+        return $warehouse;
     }
 
     /**
@@ -1027,11 +1006,6 @@ class AtomController extends Controller
      */
     private function getWarehouseName(string $code): string
     {
-        $warehouseNames = [
-            '80181' => 'Silangan Warehouse',
-            '80151' => 'Bacolod Warehouse',
-        ];
-
-        return $warehouseNames[$code] ?? 'Unknown Warehouse';
+        return LocationConfig::warehouseName($code, 'Unknown Warehouse');
     }
 }

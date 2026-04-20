@@ -86,18 +86,7 @@
                             </div>
 
                             @php
-                                $locationMap = [
-                                    '4002' => 'F2 - Metro Wholesalemart Colon',
-                                    '2010' => 'S10 - Metro Maasin',
-                                    '2017' => 'S17 - Metro Tacloban',
-                                    '2019' => 'S19 - Metro Bay-Bay',
-                                    '3018' => 'F18 - Metro Alang-Alang',
-                                    '3019' => 'F19 - Metro Hilongos',
-                                    '2008' => 'S8 - Metro Toledo',
-                                    '6012' => 'H8 - Super Metro Antipolo',
-                                    '6009' => 'H9 - Super Metro Carcar',
-                                    '6010' => 'H10 - Super Metro Bogo',
-                                ];
+                                $locationMap = config('locations.stores', []);
 
                                 $userLocation = auth()->user()->user_location ?? null;
                                 $mappedLocation = $locationMap[$userLocation] ?? null;
@@ -152,18 +141,21 @@
 
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div class="relative w-full">
+                                @php
+                                    $channels = ['E-Commerce', 'Store', 'ISO Retail', 'Wholesale'];
+                                    $selectedChannel = old('channel_order', 'Wholesale');
+                                @endphp
+
                                 <select
                                     name="channel_order"
                                     class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-                                    <option
-                                        disabled
-                                        {{ old('channel_order') ? '' : 'selected' }}
-                                        value="">Select channel</option>
-                                    @foreach (['E-Commerce', 'Store', 'ISO Retail', 'Wholesale'] as $option)
-                                        <option
-                                            value="{{ $option }}"
-                                            {{ old('channel_order') == $option ? 'selected' : '' }}>{{ $option }}</option>
+
+                                    @foreach ($channels as $option)
+                                        <option value="{{ $option }}" {{ $selectedChannel === $option ? 'selected' : '' }}>
+                                            {{ $option }}
+                                        </option>
                                     @endforeach
+
                                 </select>
                                 <label
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
@@ -172,24 +164,10 @@
                             </div>
 
                             @php
-                                $warehouseMap = [
-                                    '80141' => 'Silangan Warehouse',
-                                    '80181' => 'Bacolod Depot',
-                                ];
+                                $warehouseMap = config('locations.warehouses', []);
 
                                 // Warehouse mapping
-                                $locationToWarehouse = [
-                                    '4002' => '80181',
-                                    '2010' => '80181', //bacolod
-                                    '2017' => '80181', //bacolod
-                                    '2019' => '80181', //bacolod
-                                    '3018' => '80181', //bacolod
-                                    '3019' => '80181', // Silangan
-                                    '2008' => '80181', // Silangan
-                                    '6009' => '80181', // Silangan
-                                    '6010' => '80181', // Silangan
-                                    '6012' => '80141', // Silangan
-                                ];
+                                $locationToWarehouse = config('locations.store_to_warehouse', []);
 
                                 $isPersonnel = Str::contains(strtolower(Auth::user()?->role), 'personnel');
 
@@ -217,6 +195,7 @@
                                         placeholder="Warehouse" />
                                 @else
                                     <!-- Default select for non-personnel -->
+
                                     <select
                                         id="warehouse"
                                         name="warehouse"
@@ -341,7 +320,7 @@
                         </div>
                     </section>
 
-                    <script nonce="{{ $cspNonce }}">
+                    <script nonce="{{ $cspNonce ?? '' }}">
                         document.addEventListener('DOMContentLoaded', function() {
                             const mbcInput = document.getElementById('mbc_card_no');
                             const customerName = document.getElementById('customer_name');
@@ -1149,7 +1128,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <script nonce="{{ $cspNonce }}">
+                                                    <script nonce="{{ $cspNonce ?? '' }}">
                                                         document.addEventListener('DOMContentLoaded', function() {
                                                             document.querySelectorAll('.freebie-block').forEach(function(container) {
                                                                 const input = container.querySelector('.computed-freebie-amount');
@@ -1335,9 +1314,9 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
     console.log('Form Data:', data);
 });
 </script> --}}
-    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     {{--  --}}
-    <script nonce="{{ $cspNonce }}">
+    <script nonce="{{ $cspNonce ?? '' }}">
         const form = document.querySelector('form');
         const submitBtn = document.getElementById('submitBtn');
 
@@ -2812,7 +2791,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         }
     </script>
 
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         @keyframes glow {
 
             0%,

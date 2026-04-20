@@ -7,6 +7,7 @@ use phpseclib3\Net\SSH2;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Support\LocationConfig;
 
 class OracleRibXMLService
 {
@@ -352,17 +353,7 @@ class OracleRibXMLService
                 return [];
             }
 
-            $warehouseMap = [
-                '80151' => 'Silangan Warehouse',
-                '80001' => 'Central Warehouse',
-                '80041' => 'Procter Warehouse',
-                '80051' => 'Opao-ISO Warehouse',
-                '80071' => 'Big Blue Warehouse',
-                '80131' => 'Lower Tingub Warehouse',
-                '80211' => 'Sta. Rosa Warehouse',
-                '80181' => 'Bacolod Depot',
-                '80191' => 'Tacloban Depot',
-            ];
+            $warehouseMap = LocationConfig::warehouses();
 
             $unique = [];
             $final = [];

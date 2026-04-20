@@ -16,7 +16,7 @@ use App\Models\User;
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+use App\Support\LocationConfig;
 
 class OrderController extends Controller
 {
@@ -27,10 +27,10 @@ class OrderController extends Controller
         $query = Order::query()->with('items');
 
         // 🗺️ Region -> store mapping
-        $storeMapping = [
-            'lz' => ['6012'], // Luzon = only Antipolo
-            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
-        ];
+        // $storeMapping = [
+        //     'lz' => ['6012'], // Luzon = only Antipolo
+        //     'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
+        // ];
 
         // Default
         $allowedStatuses = null;
@@ -41,8 +41,11 @@ class OrderController extends Controller
             $query->whereIn('order_status', $allowedStatuses);
 
             // Restrict managers by region
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+            if ($user->user_location) {
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $query->whereIn('requesting_store', $stores);
+                }
             }
         } elseif ($user->role === 'super admin') {
             // 🔓 Super admin sees all — no restrictions
@@ -114,35 +117,8 @@ class OrderController extends Controller
         $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
         // 🏪 All store names
-        $allStoreLocations = [
-            '4002' => 'F2 - Metro Wholesalemart Colon',
-            '2010' => 'S10 - Metro Maasin',
-            '2017' => 'S17 - Metro Tacloban',
-            '2019' => 'S19 - Metro Bay-Bay',
-            '3018' => 'F18 - Metro Alang-Alang',
-            '3019' => 'F19 - Metro Hilongos',
-            '2008' => 'S8 - Metro Toledo',
-            '6012' => 'H8 - Super Metro Antipolo',
-            '6009' => 'H9 - Super Metro Carcar',
-            '6010' => 'H10 - Super Metro Bogo',
-        ];
+        $storeLocations = LocationConfig::accessibleStores($user->role, $user->user_location);
 
-        // 🎯 Dropdown restriction
-        if ($user->role === 'super admin') {
-            $storeLocations = $allStoreLocations; // show all stores
-        } elseif ($user->role === 'manager') {
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        } else {
-            if ($user->user_location) {
-                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        }
 
         if ($request->ajax()) {
             return view('orders.partials.table', compact('orders'))->render();
@@ -706,11 +682,11 @@ class OrderController extends Controller
         $recipients = [];
 
         if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
+            $recipients[] = 'leonard.tomalon@metroretail.ph';
         }
 
         if (in_array($order->requesting_store, ['6012'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
+            $recipients[] = 'leonard.tomalon@metroretail.ph';
         }
 
         // If recipients found, send email
@@ -1061,30 +1037,11 @@ class OrderController extends Controller
      */
     private function getWarehouseCodeByLocation(string $location): string
     {
-        // Warehouse mapping
-        $locationToWarehouse = [
-            '4002' => '80181',
-            '2010' => '80181', //bacolod
-            '2017' => '80181', //bacolod
-            '2019' => '80181', //bacolod
-            '3018' => '80181', //bacolod
-            '3019' => '80181', //bacolod
-            '2008' => '80181', // Bacolod
-            '6009' => '80181', // Bacolod
-            '6010' => '80181', // Bacolod
-            '6012' => '80151', // Silangan
-            'lz'    => '80151', // LZ
-            'vs'    => '80181', // Silangan
-
-        ];
-
-        $warehouseCode = $locationToWarehouse[$location] ?? null;
-
-        if (!$warehouseCode) {
+        $code = LocationConfig::warehouseForStore($location);
+        if (!$code) {
             throw new \Exception("Warehouse code not found for location: {$location}");
         }
-
-        return $warehouseCode;
+        return $code;
     }
 
 

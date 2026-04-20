@@ -2,21 +2,10 @@
 
 @section('content')
     @php
-        $locationMap = [
-            '4002' => 'F2 - Metro Wholesalemart Colon',
-            '2010' => 'S10 - Metro Maasin',
-            '2017' => 'S17 - Metro Tacloban',
-            '2019' => 'S19 - Metro Bay-Bay',
-            '3018' => 'F18 - Metro Alang-Alang',
-            '3019' => 'F19 - Metro Hilongos',
-            '2008' => 'S8 - Metro Toledo',
-            '6012' => 'H8 - Super Metro Antipolo',
-            '6009' => 'H9 - Super Metro Carcar',
-            '6010' => 'H10 - Super Metro Bogo',
-        ];
+        $locationMap = config('locations.stores');
         $order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
     @endphp
-    <style nonce="{{ $cspNonce }}">
+    <style nonce="{{ $cspNonce ?? '' }}">
         .search-results {
             position: absolute;
             top: 100%;
@@ -266,7 +255,7 @@
                                         </select>
                                     </div>
 
-                                    <style nonce="{{ $cspNonce }}">
+                                    <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Hide native dropdown arrow */
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
@@ -362,24 +351,14 @@
 
 
                                     @php
-                                        $warehouseMap = [
-                                            '80141' => 'Silangan Warehouse',
-                                            '80001' => 'Central Warehouse',
-                                            '80041' => 'Procter Warehouse',
-                                            '80051' => 'Opao-ISO Warehouse',
-                                            '80071' => 'Big Blue Warehouse',
-                                            '80131' => 'Lower Tingub Warehouse',
-                                            '80211' => 'Sta. Rosa Warehouse',
-                                            '80181' => 'Bacolod Depot',
-                                            '80191' => 'Tacloban Depot',
-                                            // '80???' => 'Arellano Warehouse',
-                                        ];
-                                        $order->warehouse = $warehouseMap[$order->warehouse] ?? $order->warehouse;
-
+                                        $order->warehouse_name = config('locations.warehouses')[$order->warehouse] ?? $order->warehouse;
                                     @endphp
+
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Warehouse</p>
-                                        <p class="text-xs font-medium text-gray-900">{{ ucwords($order->warehouse) }}</p>
+                                        <p class="text-xs font-medium text-gray-900">
+                                            {{ $order->warehouse_name }}
+                                        </p>
                                     </div>
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Date & Time of Order</p>
@@ -397,7 +376,7 @@
                             <div class="mb-4 flex items-center justify-between">
                                 <h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
 
-                                {{-- <script nonce="{{ $cspNonce }}">
+                                {{-- <script nonce="{{ $cspNonce ?? ''}}">
 																		document.getElementById('generateSOButton').addEventListener('click', function() {
 																				const sofId = "{{ $order->sof_id }}";
 
@@ -748,7 +727,7 @@
                                         </tr>
                                     @endforelse
 
-                                    <script nonce="{{ $cspNonce }}">
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         (function() {
                                             // Select/Deselect All functionality
                                             const selectAllCheckbox = document.getElementById('select-all');
@@ -863,7 +842,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script nonce="{{ $cspNonce }}">
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         (function() {
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
@@ -968,7 +947,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script nonce="{{ $cspNonce }}">
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             // Find all BOL containers
@@ -1059,7 +1038,7 @@
                                     </div>
                                 </div>
 
-                                <script nonce="{{ $cspNonce }}">
+                                <script nonce="{{ $cspNonce ?? '' }}">
                                     // hide all checkbox if order status is approved or completed
 
                                     (function() {
@@ -1237,7 +1216,7 @@
                                     })();
                                 </script>
 
-                                <style nonce="{{ $cspNonce }}">
+                                <style nonce="{{ $cspNonce ?? '' }}">
                                     /* Optional: Customize SweetAlert2 styles */
                                     .swal2-popup {
                                         font-family: inherit;
@@ -1338,8 +1317,8 @@
 
                                     <!-- Add to your <head> -->
                                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
-                                    <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-                                    <script nonce="{{ $cspNonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
+                                    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                                    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js"></script>
 
                                     @if ($order->approval_document)
                                         <div class="mt-4 w-full overflow-hidden rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
@@ -1385,7 +1364,7 @@
                                             </p>
                                         </div>
 
-                                        <script nonce="{{ $cspNonce }}">
+                                        <script nonce="{{ $cspNonce ?? '' }}">
                                             function previewDocument(url, extension, type) {
                                                 let content = '';
                                                 let title = 'Approval Document';
@@ -1465,7 +1444,7 @@
                                             }
                                         </script>
 
-                                        <style nonce="{{ $cspNonce }}">
+                                        <style nonce="{{ $cspNonce ?? '' }}">
                                             /* Make modal even smaller on mobile */
                                             @media (max-width: 768px) {
                                                 .swal2-popup.smaller-modal {
@@ -1590,7 +1569,7 @@
 
 
 
-                            <script nonce="{{ $cspNonce }}">
+                            <script nonce="{{ $cspNonce ?? '' }}">
                                 document.addEventListener('DOMContentLoaded', function() {
                                     const actionSelect = document.getElementById('orderAction');
                                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1944,14 +1923,14 @@
     </form>
     @if (request()->routeIs('orders.show'))
         {{-- script jquery --}}
-        <script nonce="{{ $cspNonce }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
         {{-- script for input change detection --}}
         <!-- Complete Order Editing System -->
 
 
         <!-- Enhanced JavaScript System -->
-        <script nonce="{{ $cspNonce }}">
+        <script nonce="{{ $cspNonce ?? '' }}">
             $(document).ready(function() {
                 // ========================================
                 // CONSTANTS & CONFIGURATION
@@ -3360,7 +3339,7 @@
                 });
             });
         </script>
-        <script nonce="{{ $cspNonce }}">
+        <script nonce="{{ $cspNonce ?? '' }}">
             document.addEventListener('beforeinput', function(e) {
                 const el = e.target;
 
@@ -3390,7 +3369,7 @@
 
 
         <!-- Enhanced CSS for better visual feedback -->
-        <style nonce="{{ $cspNonce }}">
+        <style nonce="{{ $cspNonce ?? '' }}">
             /* Minimal custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;

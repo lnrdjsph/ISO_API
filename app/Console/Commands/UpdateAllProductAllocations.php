@@ -6,33 +6,40 @@ use App\Jobs\FetchAllocationJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use App\Support\LocationConfig;
 use PDO;
+
 
 class UpdateAllProductAllocations extends Command
 {
     protected $signature = 'products:update-allocations 
-                            {--warehouse= : Specific warehouse code to process (e.g., 80181, 80151)}
+                            {--warehouse= : Specific warehouse code to process (e.g., 80051, 80191)}
                             {--async : Use async job queue instead of batch processing}';
 
     protected $description = 'Update product_wms_allocations table (wms_actual_allocation and wms_virtual_allocation) and case pack using oracle_rms config';
 
     // Master mapping: Warehouse Code => [Facility Label, Store Codes]
-    protected array $warehouseConfig = [
-        '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],                    // Bacolod Depot
-        '80151' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
-    ];
+    // protected array $warehouseConfig = [
+    //     '80181' => ['facility' => 'BD', 'stores' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010']],                    // Bacolod Depot
+    //     '80141' => ['facility' => 'SI', 'stores' => ['6012']],                    // Silangan Warehouse
+    // ];
+    // protected array $warehouseConfig = [
+    //     '80151' => ['facility' => 'PB', 'stores' => ['4002', '2002', '5011', '2001']],
+    //     '80191' => ['facility' => 'PB', 'stores' => ['2010', '2017', '2019']],                    // Silangan Warehouse
+    // ];
 
-    protected array $warehouseMap = [
-        '80151' => 'Silangan Warehouse',
-        '80001' => 'Central Warehouse',
-        '80041' => 'Procter Warehouse',
-        '80051' => 'Opao-ISO Warehouse',
-        '80071' => 'Big Blue Warehouse',
-        '80131' => 'Lower Tingub Warehouse',
-        '80211' => 'Sta. Rosa Warehouse',
-        '80181' => 'Bacolod Depot',
-        '80191' => 'Tacloban Depot',
-    ];
+    // protected array $warehouseMap = [
+    //     '80151' => 'Opao Fullfillment Warehouse',
+    //     '80191' => 'Tacloban Depot',
+    //     // '80141' => 'Silangan Warehouse',
+    //     // '80001' => 'Central Warehouse',
+    //     // '80041' => 'Procter Warehouse',
+    //     '80051' => 'Opao-ISO Warehouse',
+    //     // '80071' => 'Big Blue Warehouse',
+    //     // '80131' => 'Lower Tingub Warehouse',
+    //     // '80211' => 'Sta. Rosa Warehouse',
+    //     // '80181' => 'Bacolod Depot',
+    // ];
 
     private $logFile;
     private $processStartTime;
@@ -139,15 +146,12 @@ class UpdateAllProductAllocations extends Command
         }
 
         // Get warehouse configuration
-        $config = $this->warehouseConfig[$warehouseCode] ?? null;
-
-        if (!$config) {
-            $this->log("No configuration found for warehouse {$warehouseCode}. Exiting.");
+        $facilityId = LocationConfig::facilityForWarehouse($warehouseCode);
+        $stores     = LocationConfig::storesForWarehouse($warehouseCode);
+        if (!$facilityId || empty($stores)) {
+            $this->log("No configuration for warehouse {$warehouseCode}. Exiting.");
             return Command::FAILURE;
         }
-
-        $facilityId = $config['facility'];
-        $stores = $config['stores'];
 
         $this->log("Resolved warehouse '{$warehouseCode}' → Facility '{$facilityId}' → Stores: " . implode(', ', $stores));
 
@@ -190,14 +194,14 @@ class UpdateAllProductAllocations extends Command
 
         // Determine which warehouses to process
         if ($specificWarehouse) {
-            if (!isset($this->warehouseConfig[$specificWarehouse])) {
+            if (!array_key_exists($specificWarehouse, LocationConfig::warehouses())) {
                 $this->log("Invalid warehouse code: {$specificWarehouse}. Exiting.");
                 return Command::FAILURE;
             }
-            $warehousesToProcess = [$specificWarehouse];
+            $warehousesToProcess = array_keys(LocationConfig::warehouses());
         } else {
             // Process all configured warehouses
-            $warehousesToProcess = array_keys($this->warehouseConfig);
+            $warehousesToProcess = array_keys(LocationConfig::warehouses());
         }
 
         $this->log("Warehouses to process: " . implode(', ', $warehousesToProcess));
@@ -207,9 +211,8 @@ class UpdateAllProductAllocations extends Command
 
         // Process each warehouse
         foreach ($warehousesToProcess as $warehouseCode) {
-            $config = $this->warehouseConfig[$warehouseCode];
-            $facilityId = $config['facility'];
-            $stores = $config['stores'];
+            $facilityId = LocationConfig::facilityForWarehouse($warehouseCode);
+            $stores     = LocationConfig::storesForWarehouse($warehouseCode);
 
             $this->log("---- Processing Warehouse: {$warehouseCode} (Facility: {$facilityId}, Stores: " . implode(', ', $stores) . ") ----");
 
@@ -353,7 +356,7 @@ class UpdateAllProductAllocations extends Command
             $updated = 0;
             $inserted = 0;
 
-            $warehouseName = strtoupper($this->warehouseMap[$warehouseCode] ?? 'Unknown Warehouse');
+            $warehouseName = LocationConfig::warehouseName($warehouseCode);
 
             $this->log("");
             $this->logRaw(str_repeat("=", 120));

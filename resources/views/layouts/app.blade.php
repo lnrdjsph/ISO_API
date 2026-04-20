@@ -437,26 +437,17 @@
 
         <!-- Right -->
         @php
-            $locationMap = [
-                '4002' => 'F2 - Metro Wholesalemart Colon',
-                '2010' => 'S10 - Metro Maasin',
-                '2017' => 'S17 - Metro Tacloban',
-                '2019' => 'S19 - Metro Bay-Bay',
-                '3018' => 'F18 - Metro Alang-Alang',
-                '3019' => 'F19 - Metro Hilongos',
-                '2008' => 'S8 - Metro Toledo',
-                '6012' => 'H8 - Super Metro Antipolo',
-                '6009' => 'H9 - Super Metro Carcar',
-                '6010' => 'H10 - Super Metro Bogo',
-            ];
+            $user = Auth::user();
 
-            $userLocation = Auth::user()?->user_location ?? null;
-            $fullLocation = $locationMap[$userLocation] ?? $userLocation;
+            $code = trim((string) $user?->user_location);
+
+            $fullLocation = config("locations.stores.$code", $code);
+
         @endphp
 
         <div class="flex items-center space-x-4">
             <span class="text-sm text-white">
-                Howdy, {{ Auth::user()?->name }} ({{ $fullLocation }})
+                Howdy, {{ $user?->name }} ({{ $fullLocation }})
             </span>
         </div>
     </div>
@@ -626,13 +617,13 @@
                                                 <span class="nav-text">Sales Order Form</span>
                                             </a>
                                         </li>
-                                        <li>
+                                        {{-- <li>
                                             <a
                                                 href="{{ route('forms.rof') }}"
                                                 class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
                                                 <span class="nav-text">Request Order Form</span>
                                             </a>
-                                        </li>
+                                        </li> --}}
                                     </ul>
                                 @else
                                     <a
@@ -661,12 +652,12 @@
                                             Sales Order Form
                                         </a>
                                     </li>
-                                    <li>
+                                    {{-- <li>
                                         <a href="{{ route('forms.rof') }}"
                                             class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }}">
                                             Request Order Form
                                         </a>
-                                    </li>
+                                    </li> --}}
                                 </ul>
                             </li>
                         @endif

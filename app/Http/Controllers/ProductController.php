@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 // use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\Process\Process;
+use App\Support\LocationConfig;
 
 
 
@@ -49,31 +50,8 @@ class ProductController extends Controller
                 throw new \Exception("The database table '{$tableName}' does not exist.");
             }
 
-            // Warehouse mapping
-            $locationToWarehouse = [
-                '4002' => '80181',
-                '2010' => '80181', //bacolod
-                '2017' => '80181', //bacolod
-                '2019' => '80181', //bacolod
-                '3018' => '80181', //bacolod
-                '3019' => '80181', //bacolod
-                '2008' => '80181', // Silangan
-                '6009' => '80181', // Silangan
-                '6010' => '80181', // Silangan
-                '6012' => '80151', // Silangan
-            ];
 
-            $warehouseMap = [
-                '80151' => 'Silangan Warehouse',
-                '80181' => 'Bacolod Depot',
-                // '80001' => 'Central Warehouse',
-                // '80041' => 'Procter Warehouse',
-                // '80051' => 'Opao-ISO Warehouse',
-                // '80071' => 'Big Blue Warehouse',
-                // '80131' => 'Lower Tingub Warehouse',
-                // '80201' => 'Sta. Rosa Warehouse',
-                // '80191' => 'Tacloban Depot',
-            ];
+            $warehouseMap = LocationConfig::warehouses();
 
             $isPersonnel = str_contains(strtolower($user->role ?? ''), 'personnel');
 
@@ -156,7 +134,7 @@ class ProductController extends Controller
 
             return view('products.index', [
                 'products' => $products,
-                'warehouseMap' => $warehouseMap,
+                'warehouseMap' => LocationConfig::warehouses(),
                 'currentWarehouse' => $currentWarehouse,
                 'isPersonnel' => $isPersonnel,
                 'totalProducts' => $products->total()
@@ -1338,7 +1316,7 @@ class ProductController extends Controller
         // '80051' => '80051',
         // '80071' => '80071',
         // '80131' => '80131',
-        '80151' => 'SI',
+        '80141' => 'SI',
         // '80191' => '80191',
     ];
 
@@ -1353,10 +1331,7 @@ class ProductController extends Controller
         $userLocation = strtolower($user->user_location ?? '');
 
         // Allowed warehouses
-        $allowedWarehouses = [
-            '80151' => 'Silangan Warehouse',
-            '80181' => 'Bacolod Depot',
-        ];
+        $allowedWarehouses = LocationConfig::warehouses();
 
         Log::info('Warehouse request check', [
             'requested_warehouse' => $request->get('warehouse'),
@@ -1383,20 +1358,7 @@ class ProductController extends Controller
         /**
          * 2️⃣ Fallback: derive from user location
          */
-        $locationToWarehouse = [
-            '4002' => '80181', // Bacolod
-            '2010' => '80181', // Bacolod
-            '2017' => '80181', // Bacolod
-            '2019' => '80181', // Bacolod
-            '3018' => '80181', // Bacolod
-            '3019' => '80181', // Bacolod
-            '2008' => '80181', // Bacolod
-            '6009' => '80181', // Bacolod
-            '6010' => '80181', // Bacolod
-            '6012' => '80151', // Silangan
-        ];
-
-        return $locationToWarehouse[$userLocation] ?? null;
+        return LocationConfig::warehouseForStore($userLocation);
     }
 
 
@@ -1406,12 +1368,7 @@ class ProductController extends Controller
      */
     protected function getWarehouseName(string $warehouseCode): string
     {
-        $warehouseMap = [
-            '80151' => 'Silangan Warehouse',
-            '80181' => 'Bacolod Depot',
-        ];
-
-        return $warehouseMap[$warehouseCode] ?? $warehouseCode;
+        return LocationConfig::warehouseName($warehouseCode);
     }
 
     /**
@@ -1467,7 +1424,7 @@ class ProductController extends Controller
         try {
             $this->validateDatabaseConnections();
 
-            $facilityId = self::WAREHOUSE_TO_FACILITY[$warehouseCode] ?? $warehouseCode;
+            $facilityId = LocationConfig::facilityForWarehouse($warehouseCode);
             $tableName = "products_" . strtolower($userLocation);
 
             if (!Schema::connection('mysql')->hasTable($tableName)) {

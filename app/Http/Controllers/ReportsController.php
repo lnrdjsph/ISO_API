@@ -11,21 +11,16 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Arr;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
+use App\Support\LocationConfig;
 
 class ReportsController extends Controller
 {
-    private array $allStoreLocations = [
-        '4002'  =>  'F2 - Metro Wholesalemart Colon',
-        '2010'  =>  'S10 - Metro Maasin',
-        '2017'  =>  'S17 - Metro Tacloban',
-        '2019'   =>  'S19 - Metro Bay-Bay',
-        '3018'   =>  'F18 - Metro Alang-Alang',
-        '3019'   =>  'F19 - Metro Hilongos',
-        '2008'    =>  'S8 - Metro Toledo',
-        '6012'    =>  'H8 - Super Metro Antipolo',
-        '6009'    =>  'H9 - Super Metro Carcar',
-        '6010'   =>  'H10 - Super Metro Bogo',
-    ];
+    private array $allStoreLocations;
+
+    public function __construct()
+    {
+        $this->allStoreLocations = LocationConfig::stores();
+    }
 
     /**
      * Combined Sales & Freebies Report Dashboard
@@ -755,32 +750,8 @@ class ReportsController extends Controller
         $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
         $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
-        $allStoreLocations = [
-            '4002'  =>  'F2 - Metro Wholesalemart Colon',
-            '2010'  =>  'S10 - Metro Maasin',
-            '2017'  =>  'S17 - Metro Tacloban',
-            '2019'   =>  'S19 - Metro Bay-Bay',
-            '3018'   =>  'F18 - Metro Alang-Alang',
-            '3019'   =>  'F19 - Metro Hilongos',
-            '2008'    =>  'S8 - Metro Toledo',
-            '6012'    =>  'H8 - Super Metro Antipolo',
-            '6009'    =>  'H9 - Super Metro Carcar',
-            '6010'   =>  'H10 - Super Metro Bogo',
-        ];
+        $storeLocations = LocationConfig::accessibleStores($user->role, $user->user_location);
 
-        if ($user->role === 'manager') {
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        } else {
-            if ($user->user_location) {
-                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        }
 
         return view('reports.orders_report', compact('orders', 'channels', 'statuses', 'perPage', 'storeLocations', 'totals'));
     }
@@ -794,20 +765,11 @@ class ReportsController extends Controller
         $user = auth()->user();
         $query = Order::query()->with('items');
 
-        $storeMapping = [
-            'lz' => ['6012'], // Luzon = only Antipolo
-            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas = everything EXCEPT Antipolo
-        ];
-
         $allowedStatuses = null;
-
-        // 👔 Manager restrictions
-        if ($user->role === 'manager') {
-            $allowedStatuses = ['for approval', 'approved', 'rejected'];
-            $query->whereIn('order_status', $allowedStatuses);
-
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+        if ($user->user_location) {
+            $stores = LocationConfig::regionStores($user->user_location);
+            if (!empty($stores)) {
+                $query->whereIn('requesting_store', $stores);
             }
         }
 
@@ -1134,18 +1096,7 @@ class ReportsController extends Controller
         ];
 
         // Store mapping
-        $stores = [
-            '4002'  =>  'F2 - Metro Wholesalemart Colon',
-            '2010'  =>  'S10 - Metro Maasin',
-            '2017'  =>  'S17 - Metro Tacloban',
-            '2019'   =>  'S19 - Metro Bay-Bay',
-            '3018'   =>  'F18 - Metro Alang-Alang',
-            '3019'   =>  'F19 - Metro Hilongos',
-            '2008'    =>  'S8 - Metro Toledo',
-            '6012'    =>  'H8 - Super Metro Antipolo',
-            '6009'    =>  'H9 - Super Metro Carcar',
-            '6010'   =>  'H10 - Super Metro Bogo',
-        ];
+        $stores = LocationConfig::stores();
 
         // Dynamic filename based on range
         $filename = match ($dateRangeType) {

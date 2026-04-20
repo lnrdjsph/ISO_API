@@ -15,16 +15,16 @@
         $storeLocations = [
             'lz' => 'LZ - Luzon',
             'vs' => 'VS - Visayas',
-            '4002' => 'F2 - Metro Wholesalemart Colon',
-            '2010' => 'S10 - Metro Maasin',
-            '2017' => 'S17 - Metro Tacloban',
-            '2019' => 'S19 - Metro Bay-Bay',
-            '3018' => 'F18 - Metro Alang-Alang',
-            '3019' => 'F19 - Metro Hilongos',
-            '2008' => 'S8 - Metro Toledo',
-            '6012' => 'H8 - Super Metro Antipolo',
-            '6009' => 'H9 - Super Metro Carcar',
-            '6010' => 'H10 - Super Metro Bogo',
+            '4002' => 'F2 (4002) - Metro Wholesalemart Colon',
+            '2010' => 'S10 (2010) - Metro Maasin',
+            '2017' => 'S17 (2017) - Metro Tacloban',
+            '2019' => 'S19 (2019) - Metro Bay-Bay',
+            '3018' => 'F18 (3018) - Metro Alang-Alang',
+            '3019' => 'F19 (3019) - Metro Hilongos',
+            '2008' => 'S8 (2008) - Metro Toledo',
+            '6012' => 'H8 (6012) - Super Metro Antipolo',
+            '6009' => 'H9 (6009) - Super Metro Carcar',
+            '6010' => 'H10 (6010) - Super Metro Bogo',
         ];
     @endphp
 
