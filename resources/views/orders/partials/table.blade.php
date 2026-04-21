@@ -1,4 +1,4 @@
-                <!-- Table -->
+<!-- Table -->
                 <div class="mb-4 overflow-x-auto rounded-xl">
                     <table class="min-w-full divide-y divide-gray-200 rounded-xl text-sm">
                         <thead class="bg-gray-50 text-left">
@@ -21,28 +21,10 @@
                                 <tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
-                                    {{-- 👔 Only managers see store --}}
+                                    {{-- Only managers and super admins see the requesting store column --}}
                                     @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
-                                        @php
-                                            // All store names (exclude lz/vs keys)
-                                            $allStoreLocations = [
-                                                '4002' => 'F2 - Metro Wholesalemart Colon',
-                                                '2010' => 'S10 - Metro Maasin',
-                                                '2017' => 'S17 - Metro Tacloban',
-                                                '2019' => 'S19 - Metro Bay-Bay',
-                                                '3018' => 'F18 - Metro Alang-Alang',
-                                                '3019' => 'F19 - Metro Hilongos',
-                                                '2008' => 'S8 - Metro Toledo',
-                                                '6012' => 'H8 - Super Metro Antipolo',
-                                                '6009' => 'H9 - Super Metro Carcar',
-                                                '6010' => 'H10 - Super Metro Bogo',
-                                            ];
-
-                                            $storeName = $allStoreLocations[$order->requesting_store] ?? 'Unknown Store';
-                                        @endphp
-
                                         <td class="whitespace-nowrap px-4 py-3">
-                                            {{ $storeName }}
+                                            {{ config('locations.stores.' . $order->requesting_store, $order->requesting_store) }}
                                         </td>
                                     @endif
                                     <td class="whitespace-nowrap px-4 py-3">

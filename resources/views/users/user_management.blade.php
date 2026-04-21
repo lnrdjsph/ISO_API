@@ -11,27 +11,6 @@
         }
     @endphp
 
-    @php
-        $storeLocations = [
-            'lz' => 'LZ - Luzon',
-            'vs' => 'VS - Visayas',
-            '4002' => 'F2 (4002) - Metro Wholesalemart Colon',
-            '2010' => 'S10 (2010) - Metro Maasin',
-            '2017' => 'S17 (2017) - Metro Tacloban',
-            '2019' => 'S19 (2019) - Metro Bay-Bay',
-            '3018' => 'F18 (3018) - Metro Alang-Alang',
-            '3019' => 'F19 (3019) - Metro Hilongos',
-            '2008' => 'S8 (2008) - Metro Toledo',
-            '6012' => 'H8 (6012) - Super Metro Antipolo',
-            '6009' => 'H9 (6009) - Super Metro Carcar',
-            '6010' => 'H10 (6010) - Super Metro Bogo',
-        ];
-    @endphp
-
-    @php
-        $roles = ['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'];
-    @endphp
-
     <div class="">
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -159,18 +138,25 @@
                     </select>
 
 
-                    <!-- Store Filter -->
+                    <!-- Location Filter -->
                     <select
                         name="user_location"
                         class="rounded border border-gray-300 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="">All Stores</option>
-                        @foreach ($storeLocations as $code => $label)
-                            <option
-                                value="{{ $code }}"
-                                {{ request('user_location') == $code ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
+                        <option value="">All Locations</option>
+                        <optgroup label="Regions">
+                            @foreach ($regionLabels as $regionCode => $regionName)
+                                <option value="{{ $regionCode }}" {{ request('user_location') == $regionCode ? 'selected' : '' }}>
+                                    Region: {{ $regionName }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Individual Stores">
+                            @foreach ($storeLocations as $code => $label)
+                                <option value="{{ $code }}" {{ request('user_location') == $code ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </optgroup>
                     </select>
 
 
@@ -210,30 +196,13 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @php
-                            $locationMap = [
-                                'lz' => 'LZ - Luzon',
-                                'vs' => 'VS - Visayas',
-                                '4002' => 'F2 - Metro Wholesalemart Colon',
-                                '2010' => 'S10 - Metro Maasin',
-                                '2017' => 'S17 - Metro Tacloban',
-                                '2019' => 'S19 - Metro Bay-Bay',
-                                '3018' => 'F18 - Metro Alang-Alang',
-                                '3019' => 'F19 - Metro Hilongos',
-                                '2008' => 'S8 - Metro Toledo',
-                                '6012' => 'H8 - Super Metro Antipolo',
-                                '6009' => 'H9 - Super Metro Carcar',
-                                '6010' => 'H10 - Super Metro Bogo',
-                                // add all your other codes here
-                            ];
-                        @endphp
                         @forelse($users as $user)
                             <tr class="hover:bg-indigo-50">
                                 <td class="px-4 py-4">{{ $user->name }}</td>
                                 <td class="px-4 py-4">{{ $user->email }}</td>
                                 <td class="px-4 py-4 capitalize">{{ $user->role }}</td>
-                                <td class="px-4 py-4 uppercase">
-                                    {{ $locationMap[strtolower($user->user_location)] ?? $user->user_location }}
+                                <td class="px-4 py-4">
+                                    {{ $regionLabels[$user->user_location] ?? $storeLocations[$user->user_location] ?? $user->user_location }}
                                 </td>
                                 <td class="space-x-2 px-6 py-4 text-right">
                                     <button
@@ -369,20 +338,17 @@
                         name="user_location"
                         required
                         class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option
-                            value=""
-                            disabled
-                            {{ request('user_location') ? '' : 'selected' }}>
-                            Select Store Location
-                        </option>
-
-                        @foreach ($storeLocations as $code => $label)
-                            <option
-                                value="{{ $code }}"
-                                {{ request('user_location') == $code ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
+                        <option value="" disabled selected>Select Location</option>
+                        <optgroup label="Regions">
+                            @foreach ($regionLabels as $regionCode => $regionName)
+                                <option value="{{ $regionCode }}">Region: {{ $regionName }}</option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Individual Stores">
+                            @foreach ($storeLocations as $code => $label)
+                                <option value="{{ $code }}">{{ $label }}</option>
+                            @endforeach
+                        </optgroup>
                     </select>
                 </div>
 
@@ -488,16 +454,17 @@
                         name="user_location"
                         required
                         class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option
-                            value=""
-                            disabled>Select Store Location</option>
-                        @foreach ($storeLocations as $code => $name)
-                            <option
-                                value="{{ $code }}"
-                                {{ request('user_location') == $code ? 'selected' : '' }}>
-                                {{ $name }}
-                            </option>
-                        @endforeach
+                        <option value="" disabled>Select Location</option>
+                        <optgroup label="Regions">
+                            @foreach ($regionLabels as $regionCode => $regionName)
+                                <option value="{{ $regionCode }}">Region: {{ $regionName }}</option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Individual Stores">
+                            @foreach ($storeLocations as $code => $label)
+                                <option value="{{ $code }}">{{ $label }}</option>
+                            @endforeach
+                        </optgroup>
                     </select>
                 </div>
 
@@ -515,7 +482,7 @@
     </div>
 
     {{-- @push('scripts') --}}
-    <script nonce="{{ $cspNonce ?? '' }}">
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('openAddUserModal').addEventListener('click', () => {
                 addUserModal.classList.add('show'); // fade in
@@ -556,7 +523,7 @@
     </script>
     {{-- @endpush --}}
 
-    <style nonce="{{ $cspNonce ?? '' }}">
+    <style>
         .modal {
             opacity: 0;
             visibility: hidden;

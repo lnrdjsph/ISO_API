@@ -5,23 +5,6 @@
  *
  * Single source of truth for all store codes, warehouse codes,
  * and their mappings used across the application.
- *
- * Usage (in PHP):
- *   use App\Support\LocationConfig;
- *
- *   LocationConfig::stores()               // all store code → display name
- *   LocationConfig::storeName('4002')      // 'F2 - Metro Wholesalemart Colon'
- *   LocationConfig::storeCode('Metro Maasin') // '2010'  (WooCommerce reverse-lookup)
- *   LocationConfig::warehouses()           // all warehouse code → display name
- *   LocationConfig::warehouseName('80181') // 'Bacolod Depot'
- *   LocationConfig::warehouseForStore('4002')  // '80181'
- *   LocationConfig::storesForWarehouse('80181') // ['4002', ...]
- *   LocationConfig::regionStores('vs')     // ['4002', '2010', ...]
- *   LocationConfig::facilityForWarehouse('80181') // 'BD'
- *
- * Usage (in Blade via config() helper):
- *   config('locations.stores')
- *   config('locations.warehouses')
  */
 
 return [
@@ -31,189 +14,210 @@ return [
     | Store Locations
     |--------------------------------------------------------------------------
     | store_code => Display label shown in the UI.
-    | The "short" name (without prefix) is available via LocationConfig::shortStoreName().
     */
     'stores' => [
+        // Luzon
+        '6012' => 'Super Metro Antipolo',
+
+        // Central Cebu
+        '2093' => 'Metro Ayala (Rebuild)',
+        '3010' => 'Metro Banilad',
+        '3014' => 'Metro Supermarket Canduman',
+        '6005' => 'Super Metro Basak',
+
+        // North Cebu
         '2002' => 'Metro Mandaue',
-        '4002' => 'Metro Wholesalemart Colon',
+        '2015' => 'Metro Store Danao',
+        '3009' => 'Metro Carmen',
         '5011' => 'Super Metro Bogo Pop-up Store',
+        '6003' => 'Super Metro Lapu Lapu',
+
+        // South Cebu
         '2001' => 'Metro Colon',
+        '2008' => 'Metro Toledo',
+        '2011' => 'Metro Naga',
+        '4002' => 'Metro Wholesalemart Colon',
+        '6004' => 'Super Metro Colon',
+        '6009' => 'Super Metro Carcar',
 
+        // Non-Cebu (Visayas)
         '2010' => 'Metro Maasin',
-        '2017' => 'Metro Tacloban',
-        '2019' => 'Metro Bay-Bay',
+        '2017' => 'Metro Store Tacloban',
+        '2019' => 'Metro Store Baybay',
+        '2023' => 'Metro Store Bais',
+        '2025' => 'Metro Hinigaran',
+        '3017' => 'Metro Sum-ag',
+        '3018' => 'Metro Alangalang',
+        '3019' => 'Metro Hilongos',
+        '6001' => 'Super Metro Negros',
 
-        // NOT YET STARTED
-        // '2020' => 'S20 - Metro Store Catbalogan',
-        // '6006' => 'H6 - Super Metro Calbayog',
+        // Non-Cebu (not yet started)
+        '2020' => 'Metro Store Catbalogan',
+        '6006' => 'Super Metro Calbayog',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Store Short Names  (used by WooCommerce/Atom integration)
+    | Region Display Labels
     |--------------------------------------------------------------------------
-    | Short name (no prefix code) => store_code.
-    | Reverse of the display-label map above, stripped of the "F2 - " prefix.
+    | Used by the UI to render human-readable region names from region codes.
+    */
+    'region_labels' => [
+        'lz'        => 'Region: Luzon',
+        'ctc'       => 'Region: Central Cebu',
+        'ntc'       => 'Region: North Cebu',
+        'stc'       => 'Region: South Cebu',
+        'vs'        => 'Region: Non-Cebu (Visayas)',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Store Short Names (used by WooCommerce/Atom integration)
+    |--------------------------------------------------------------------------
     */
     'store_name_to_code' => [
-        'Metro Wholesalemart Colon'     => '4002',
-        'Metro Maasin'                  => '2010',
-        'Metro Tacloban'                => '2017',
-        'Metro Bay-Bay'                 => '2019',
-        'Metro Alang-Alang'             => '3018',
-        'Metro Hilongos'                => '3019',
-        'Metro Toledo'                  => '2008',
-        'Super Metro Antipolo'          => '6012',
-        'Super Metro Carcar'            => '6009',
-        'Super Metro Bogo'              => '6010',
+        // Luzon
+        'Super Metro Antipolo'       => '6012',
+
+        // Central Cebu
+        'Metro Ayala (Rebuild)'      => '2093',
+        'Metro Banilad'              => '3010',
+        'Metro Supermarket Canduman' => '3014',
+        'Super Metro Basak'          => '6005',
+
+        // North Cebu
         'Metro Mandaue'                 => '2002',
-        'Metro Colon'                   => '2001',
+        'Metro Store Danao'             => '2015',
+        'Metro Carmen'                  => '3009',
         'Super Metro Bogo Pop-up Store' => '5011',
+        'Super Metro Lapu Lapu'         => '6003',
+
+        // South Cebu
+        'Metro Colon'               => '2001',
+        'Metro Toledo'              => '2008',
+        'Metro Naga'                => '2011',
+        'Metro Wholesalemart Colon' => '4002',
+        'Super Metro Colon'         => '6004',
+        'Super Metro Carcar'        => '6009',
+
+        // Non-Cebu
+        'Metro Maasin'           => '2010',
+        'Metro Store Tacloban'   => '2017',
+        'Metro Store Baybay'     => '2019',
+        'Metro Store Bais'       => '2023',
+        'Metro Hinigaran'        => '2025',
+        'Metro Sum-ag'           => '3017',
+        'Metro Alangalang'       => '3018',
+        'Metro Hilongos'         => '3019',
+        'Super Metro Negros'     => '6001',
+        'Metro Store Catbalogan' => '2020',
+        'Super Metro Calbayog'   => '6006',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Warehouses
     |--------------------------------------------------------------------------
-    | warehouse_code => Display name shown in the UI.
-    | Comment-out rather than delete codes that are temporarily inactive.
     */
     'warehouses' => [
-
-        // =========================
-        // ACTIVE WAREHOUSES
-        // =========================
-        '80151' => 'Opao Fulfillment Warehouse',
-        '80191' => 'Tacloban Depot',
-
-        // =========================
-        // OLD / DISABLED WAREHOUSES
-        // =========================
-        // '80181' => 'Bacolod Depot',
-        // '80141' => 'Silangan Warehouse',
-
-        // '80051' => 'Opao-ISO Warehouse',
-        // '80071' => 'Big Blue Warehouse',
-        // '80131' => 'Lower Tingub Warehouse',
-        // '80211' => 'Sta. Rosa Warehouse',
+        // '80141' => 'Silangan Fulfillment Warehouse',  // Serves Luzon stores
+        '80151' => 'Opao Fulfillment Warehouse',      // Serves all Cebu stores
+        '80191' => 'Tacloban Depot',                  // Serves Non-Cebu (Visayas) stores
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Store → Warehouse Mapping
     |--------------------------------------------------------------------------
-    | Which warehouse serves each store code (and region alias).
     */
     'store_to_warehouse' => [
+        // Luzon → Silangan
+        // '6012' => '80141',
 
-        // =========================
-        // OPERATIONAL (ACTIVE)
-        // =========================
+        // Central Cebu → Opao
+        '2093' => '80151',
+        '3010' => '80151',
+        '3014' => '80151',
+        '6005' => '80151',
 
-        // Opao Fulfillment
+        // North Cebu → Opao
         '2002' => '80151',
-        '4002' => '80151',
+        '2015' => '80151',
+        '3009' => '80151',
         '5011' => '80151',
-        '2001' => '80151',
+        '6003' => '80151',
 
-        // Tacloban cluster
+        // South Cebu → Opao
+        '2001' => '80151',
+        '2008' => '80151',
+        '2011' => '80151',
+        '4002' => '80151',
+        '6004' => '80151',
+        '6009' => '80151',
+
+        // Non-Cebu → Tacloban Depot
         '2010' => '80191',
         '2017' => '80191',
         '2019' => '80191',
-
-        // NOT YET STARTED
-        // '2020' => '80191',
-        // '6006' => '80191',
-
-
-        // =========================
-        // REGION ALIASES
-        // =========================
-        'vs' => '80151',
-        'lz' => '80191',
-
-        // =========================
-        // OLD BACOLOD CLUSTER (DISABLED)
-        // =========================
-        // '4002' => '80181',
-        // '2010' => '80181',
-        // '2017' => '80181',
-        // '2019' => '80181',
-        // '3018' => '80181',
-        // '3019' => '80181',
-        // '2008' => '80181',
-        // '6009' => '80181',
-        // '6010' => '80181',
-
-        // =========================
-        // OLD SILANGAN CLUSTER (DISABLED)
-        // =========================
-        // '6012' => '80141',
+        '2020' => '80191',
+        '2023' => '80191',
+        '2025' => '80191',
+        '3017' => '80191',
+        '3018' => '80191',
+        '3019' => '80191',
+        '6001' => '80191',
+        '6006' => '80191',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Warehouse → Stores Mapping  (inverse of store_to_warehouse)
+    | Warehouse → Stores Mapping (inverse of store_to_warehouse)
     |--------------------------------------------------------------------------
-    | All store codes served by each warehouse.
-    | Used by allocation jobs and WMS sync commands.
     */
     'warehouse_to_stores' => [
-
-        // =========================
-        // OPERATIONAL
-        // =========================
-        '80151' => ['2002', '4002', '5011', '2001'],
-
-        '80191' => [
-            '2010',
-            '2017',
-            '2019',
-
-            // NOT YET STARTED
-            // '2020',
-            // '6006',
+        '80141' => [
+            '6012',
         ],
-
-        // =========================
-        // OLD BACOLOD (DISABLED)
-        // =========================
-        // '80181' => [
-        //     '4002','2010','2017','2019','3018','3019','2008','6009','6010'
-        // ],
-
-        // =========================
-        // OLD SILANGAN (DISABLED)
-        // =========================
-        // '80141' => ['6012'],
+        '80151' => [
+            // Central Cebu
+            '2093', '3010', '3014', '6005',
+            // North Cebu
+            '2002', '2015', '3009', '5011', '6003',
+            // South Cebu
+            '2001', '2008', '2011', '4002', '6004', '6009',
+        ],
+        '80191' => [
+            '2010', '2017', '2019', '2020', '2023', '2025',
+            '3017', '3018', '3019', '6001', '6006',
+        ],
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Warehouse → Oracle WMS Facility ID
     |--------------------------------------------------------------------------
-    | Used when dispatching FetchAllocationJob / UpdateAllProductAllocations.
     */
     'warehouse_to_facility' => [
-
-        // ACTIVE
-        '80151' => 'LT',
-        '80191' => 'TD',
-
-        // OLD
-        // '80181' => 'BD',
-        // '80141' => 'SI',
+        // '80141' => 'SL',  // Silangan
+        '80151' => 'LT',  // Opao
+        '80191' => 'TD',  // Tacloban Depot
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Region / Manager Groups
+    | Regions
     |--------------------------------------------------------------------------
-    | Maps a manager's user_location alias to the store codes they oversee.
+    | Manager region code => store codes that belong to that region.
     */
     'regions' => [
-        'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'],
-        'lz' => ['6012'],
+        'lz'        => ['6012'],
+        'ctc' => ['2093', '3010', '3014', '6005'],
+        'ntc'   => ['2002', '2015', '3009', '5011', '6003'],
+        'stc'   => ['2001', '2008', '2011', '4002', '6004', '6009'],
+        'vs'     => [
+            '2010', '2017', '2019', '2020', '2023', '2025',
+            '3017', '3018', '3019', '6001', '6006',
+        ],
     ],
 
 ];

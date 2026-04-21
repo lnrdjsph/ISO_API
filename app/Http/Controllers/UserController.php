@@ -22,9 +22,17 @@ class UserController extends Controller
             $query->where('role', $request->role);
         }
 
-        // Filter by user_location
+        // Filter by location — region code matches users assigned to the region itself
+        // AND users assigned to any individual store within that region.
         if ($request->filled('user_location')) {
-            $query->where('user_location', $request->user_location);
+            $locationCode = $request->user_location;
+            $regionStores = config('locations.regions.' . $locationCode, []);
+
+            if (!empty($regionStores)) {
+                $query->whereIn('user_location', array_merge([$locationCode], $regionStores));
+            } else {
+                $query->where('user_location', $locationCode);
+            }
         }
 
         // Search by name or email
@@ -32,13 +40,16 @@ class UserController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%");
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $users = $query->orderBy('name')->paginate(10)->withQueryString();
+        $users          = $query->orderBy('name')->paginate(10)->withQueryString();
+        $storeLocations = config('locations.stores', []);
+        $regionLabels   = config('locations.region_labels', []);
+        $roles          = ['store admin', 'store personnel', 'warehouse admin', 'warehouse personnel', 'manager', 'super admin'];
 
-        return view('users.user_management', compact('users'));
+        return view('users.user_management', compact('users', 'storeLocations', 'regionLabels', 'roles'));
     }
 
 
