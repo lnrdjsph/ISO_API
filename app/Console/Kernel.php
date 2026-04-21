@@ -24,7 +24,7 @@ class Kernel extends ConsoleKernel
         //     return $hour == 11; // Only in the 10:00 hour
         // });
         // $schedule->command('products:update-allocations')->dailyAt('12:00');
-        $schedule->command('products:update-allocations')->dailyAt('14:30');
+        $schedule->command('products:update-allocations')->dailyAt('14:45');
     }
 
     /**
