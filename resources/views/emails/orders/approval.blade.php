@@ -30,7 +30,7 @@
                     <tr>
                         <td style="padding:20px; font-size:14px; color:#333;">
                             Asking for approval from
-                            <strong>{{ $storeName }} - {{ $order->requested_by }}</strong>.
+                            <strong>{{ $storeName }} - {{ $requesterName }}</strong>.
                         </td>
                     </tr>
 

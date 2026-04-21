@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\ISO_B2B\Order;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -34,14 +35,16 @@ class OrderApprovalRequestMail extends Mailable
         ];
 
         $storeName = $stores[$this->order->requesting_store] ?? $this->order->requesting_store;
+        
+        // Simple fix - get the requester name
+        $requesterName = User::find($this->order->requested_by)?->name ?? 'Unknown User';
 
         return $this->subject('Order Approval Request')
             ->view('emails.orders.approval')
             ->with([
                 'order' => $this->order,
                 'storeName' => $storeName,
+                'requesterName' => $requesterName, // Add this line
             ]);
     }
-
-
 }
