@@ -202,7 +202,7 @@
                                 <td class="px-4 py-4">{{ $user->email }}</td>
                                 <td class="px-4 py-4 capitalize">{{ $user->role }}</td>
                                 <td class="px-4 py-4">
-                                    {{ $regionLabels[$user->user_location] ?? $storeLocations[$user->user_location] ?? $user->user_location }}
+                                    {{ $regionLabels[$user->user_location] ?? ($storeLocations[$user->user_location] ?? $user->user_location) }}
                                 </td>
                                 <td class="space-x-2 px-6 py-4 text-right">
                                     <button
@@ -482,7 +482,7 @@
     </div>
 
     {{-- @push('scripts') --}}
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('openAddUserModal').addEventListener('click', () => {
                 addUserModal.classList.add('show'); // fade in
@@ -523,7 +523,7 @@
     </script>
     {{-- @endpush --}}
 
-    <style>
+    <style nonce="{{ $cspNonce ?? '' }}">
         .modal {
             opacity: 0;
             visibility: hidden;
