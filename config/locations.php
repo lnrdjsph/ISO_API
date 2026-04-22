@@ -21,7 +21,7 @@ return [
 
         // MBC 2 PAYMENT CENTER STORES ONLY
         // =================================
-        
+
         // Central Cebu (MBC 2)
         // '2093' => 'Metro Ayala (Rebuild)',  // MBC 1 only
         // '3010' => 'Metro Banilad',          // MBC 1 only
@@ -64,11 +64,11 @@ return [
     | Used by the UI to render human-readable region names from region codes.
     */
     'region_labels' => [
-        'lz'        => 'Region: Luzon',
-        'ctc'       => 'Region: Central Cebu',
-        'ntc'       => 'Region: North Cebu',
-        'stc'       => 'Region: South Cebu',
-        'vs'        => 'Region: Non-Cebu (Visayas)',
+        'lz'        => 'Luzon',
+        'ctc'       => 'Central Cebu',
+        'ntc'       => 'North Cebu',
+        'stc'       => 'South Cebu',
+        'vs'        => 'Non-Cebu (Visayas)',
     ],
 
     /*
@@ -95,7 +95,7 @@ return [
         'Metro Store Baybay'     => '2019',
         'Metro Store Catbalogan' => '2020',
         'Super Metro Calbayog'   => '6006',
-        
+
         // MBC 1 STORES (COMMENTED OUT)
         // 'Metro Ayala (Rebuild)'      => '2093',
         // 'Metro Banilad'              => '3010',
@@ -151,25 +151,25 @@ return [
         '2019' => '80191',
         '2020' => '80191',  // not yet started
         '6006' => '80191',  // not yet started
-        
+
         // MBC 1 STORES (COMMENTED OUT)
         // Central Cebu → Opao (MBC 1)
         // '2093' => '80151',
         // '3010' => '80151',
         // '3014' => '80151',
         // '6005' => '80151',
-        
+
         // North Cebu → Opao (MBC 1)
         // '2015' => '80151',
         // '3009' => '80151',
         // '6003' => '80151',
-        
+
         // South Cebu → Opao (MBC 1)
         // '2008' => '80151',
         // '2011' => '80151',
         // '6004' => '80151',
         // '6009' => '80151',
-        
+
         // Non-Cebu → Tacloban Depot (MBC 1)
         // '2023' => '80191',
         // '2025' => '80191',
@@ -190,12 +190,18 @@ return [
         ],
         '80151' => [
             // MBC 2 PAYMENT CENTER STORES ONLY
-            '2002', '5011',  // North Cebu
-            '2001', '4002',  // South Cebu
+            '2002',
+            '5011',  // North Cebu
+            '2001',
+            '4002',  // South Cebu
         ],
         '80191' => [
             // MBC 2 PAYMENT CENTER STORES ONLY
-            '2010', '2017', '2019', '2020', '6006',
+            '2010',
+            '2017',
+            '2019',
+            '2020',
+            '6006',
         ],
     ],
 
@@ -218,14 +224,18 @@ return [
     */
     'regions' => [
         'lz'        => ['6012'],
-        
+
         // MBC 2 PAYMENT CENTER REGIONS
         'ntc'   => ['2002', '5011'],           // North Cebu (MBC 2 only)
         'stc'   => ['2001', '4002'],           // South Cebu (MBC 2 only)
         'vs'     => [                          // Visayas (MBC 2 only)
-            '2010', '2017', '2019', '2020', '6006',
+            '2010',
+            '2017',
+            '2019',
+            '2020',
+            '6006',
         ],
-        
+
         // MBC 1 REGIONS (COMMENTED OUT)
         // 'ctc' => ['2093', '3010', '3014', '6005'],  // Central Cebu (MBC 1)
         // 'ntc'   => ['2002', '2015', '3009', '5011', '6003'],  // Full North Cebu

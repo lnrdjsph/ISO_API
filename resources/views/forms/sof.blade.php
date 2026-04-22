@@ -90,14 +90,13 @@
                                 $userLocation = auth()->user()->user_location ?? null;
                                 $isSuperAdmin = strtolower(Auth::user()?->role ?? '') === 'super admin';
 
-                                // Purely location-based: region code → dropdown, store code → readonly
                                 $regionStores = config('locations.regions.' . $userLocation, []);
                                 $hasRegion = !empty($regionStores);
+                                $mappedLocation = $locationMap[$userLocation] ?? null;
 
                                 $dropdownStores = $isSuperAdmin ? $locationMap : array_intersect_key($locationMap, array_flip($regionStores));
 
-                                $mappedLocation = $locationMap[$userLocation] ?? null;
-                                $selectedRequestingStore = old('requesting_store', '');
+                                $selectedRequestingStore = old('requesting_store', $isSuperAdmin ? $userLocation ?? '' : '');
                             @endphp
 
                             <div class="relative mb-6 w-full">
@@ -108,35 +107,30 @@
                                         class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
                                         <option value="" disabled {{ $selectedRequestingStore === '' ? 'selected' : '' }}>Select Store</option>
                                         @foreach ($dropdownStores as $code => $name)
-                                            <option value="{{ $code }}" {{ $selectedRequestingStore === $code ? 'selected' : '' }}>
-                                                {{ $name }}
+                                            <option value="{{ $code }}" {{ $selectedRequestingStore === $code ?: '' }}>
+                                                {{ $code }} - {{ $name }}
                                             </option>
                                         @endforeach
                                     </select>
+                                    <label for="requesting_store" class="absolute left-3 top-1.5 text-xs text-gray-500">
+                                        Requesting Store
+                                    </label>
                                 @else
-                                    <input
-                                        id="requesting_store"
-                                        value="{{ old('requesting_store', $userLocation) }}"
-                                        type="text"
-                                        name="requesting_store"
-                                        class="peer hidden"
-                                        placeholder="Requesting Store" />
+                                    <input type="hidden" name="requesting_store" value="{{ $userLocation }}" />
                                     <input
                                         id="requesting_store_view"
-                                        value="{{ old('requesting_store_view', $mappedLocation) }}"
+                                        value="{{ $mappedLocation }}"
                                         type="text"
-                                        name="requesting_store_view"
                                         readonly
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
                                         placeholder="Requesting Store" />
+                                    <label
+                                        for="requesting_store"
+                                        class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                        Requesting Store
+                                    </label>
                                 @endif
-                                <label
-                                    for="requesting_store"
-                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                                    Requesting Store
-                                </label>
                             </div>
-
                             <div class="relative mb-6 w-full">
                                 <input
                                     id="requested_by"
@@ -447,7 +441,7 @@ if (!($selectedWarehouseCode = old('warehouse'))) {
                                         <option value="" disabled {{ $selectedPaymentCenter === '' ? 'selected' : '' }}>Select Payment Center</option>
                                         @foreach ($dropdownStores as $code => $name)
                                             <option value="{{ $code }}" {{ $selectedPaymentCenter === $code ? 'selected' : '' }}>
-                                                {{ $name }}
+                                                {{ $code }} - {{ $name }}
                                             </option>
                                         @endforeach
                                     </select>

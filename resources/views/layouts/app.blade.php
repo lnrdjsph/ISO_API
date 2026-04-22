@@ -435,14 +435,11 @@
             </button>
         </div>
 
-        <!-- Right -->
         @php
             $user = Auth::user();
-
             $code = trim((string) $user?->user_location);
 
-            $fullLocation = config("locations.stores.$code", $code);
-
+            $fullLocation = config("locations.stores.$code") ?? (config("locations.region_labels.$code") ?? $code);
         @endphp
 
         <div class="flex items-center space-x-4">
