@@ -879,10 +879,11 @@
                     </li>
                     @auth
                         @if (auth()->user()->role === 'super admin')
-                            <!-- Users Group -->
-                            <li class="{{ request()->routeIs('users*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('users*'))
-                                    <div class="nav-item {{ request()->routeIs('users*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                            <!-- Admin Group -->
+                            <li class="{{ request()->routeIs('users*') || request()->routeIs('settings*') ? 'active' : '' }} group relative">
+                                @if (request()->routeIs('users*') || request()->routeIs('settings*'))
+                                    <div
+                                        class="nav-item {{ request()->routeIs('users*') || request()->routeIs('settings*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
                                         <span class="icon-wrapper">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -894,16 +895,13 @@
                                                 stroke-linejoin="round"
                                                 class="h-5 w-5 flex-shrink-0">
                                                 <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
-                                                <circle
-                                                    cx="9"
-                                                    cy="7"
-                                                    r="4" />
+                                                <circle cx="9" cy="7" r="4" />
                                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                             </svg>
                                         </span>
-                                        <span class="nav-text ml-3">Users</span>
-                                        <div class="tooltip">Users</div>
+                                        <span class="nav-text ml-3">Admin</span>
+                                        <div class="tooltip">Admin</div>
                                     </div>
 
                                     <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
@@ -923,6 +921,13 @@
                                                 </a>
                                             </li>
                                         @endif
+                                        <li>
+                                            <a
+                                                href="{{ route('settings.index') }}"
+                                                class="sub-item {{ request()->routeIs('settings*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">System Settings</span>
+                                            </a>
+                                        </li>
                                     </ul>
                                 @else
                                     <a
@@ -938,29 +943,28 @@
                                             stroke-linejoin="round"
                                             class="h-5 w-5 flex-shrink-0">
                                             <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
-                                            <circle
-                                                cx="9"
-                                                cy="7"
-                                                r="4" />
+                                            <circle cx="9" cy="7" r="4" />
                                             <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                         </svg>
-                                        <span class="nav-text ml-3">Users</span>
-                                        <div class="tooltip">Users</div>
+                                        <span class="nav-text ml-3">Admin</span>
+                                        <div class="tooltip">Admin</div>
                                     </a>
 
                                     <ul class="flyout-menu" data-flyout>
                                         <li>
-                                            <a href="{{ route('users.index') }}"
-                                                class="sub-item">
+                                            <a href="{{ route('users.index') }}" class="sub-item">
                                                 User List
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('settings.index') }}" class="sub-item">
+                                                System Settings
                                             </a>
                                         </li>
                                     </ul>
                                 @endif
                             </li>
-
-
 
                             <!-- Others Group -->
                             <li class="{{ request()->routeIs('others.*') ? 'active' : '' }} group relative">
