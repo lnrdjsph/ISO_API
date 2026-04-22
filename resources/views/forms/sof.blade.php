@@ -87,26 +87,49 @@
 
                             @php
                                 $locationMap = config('locations.stores', []);
-
                                 $userLocation = auth()->user()->user_location ?? null;
+                                $isSuperAdmin = strtolower(Auth::user()?->role ?? '') === 'super admin';
+
+                                // Purely location-based: region code → dropdown, store code → readonly
+                                $regionStores = config('locations.regions.' . $userLocation, []);
+                                $hasRegion = !empty($regionStores);
+
+                                $dropdownStores = $isSuperAdmin ? $locationMap : array_intersect_key($locationMap, array_flip($regionStores));
+
                                 $mappedLocation = $locationMap[$userLocation] ?? null;
+                                $selectedRequestingStore = old('requesting_store', '');
                             @endphp
+
                             <div class="relative mb-6 w-full">
-                                <input
-                                    id="requesting_store"
-                                    value="{{ old('requesting_store', $userLocation) }}"
-                                    type="text"
-                                    name="requesting_store"
-                                    class="peer hidden w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    placeholder="Requesting Store" />
-                                <input
-                                    id="requesting_store_view"
-                                    value="{{ old('requesting_store_view', $mappedLocation) }}"
-                                    type="text"
-                                    name="requesting_store_view"
-                                    readonly
-                                    class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    placeholder="Requesting Store" />
+                                @if ($isSuperAdmin || $hasRegion)
+                                    <select
+                                        id="requesting_store"
+                                        name="requesting_store"
+                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                        <option value="" disabled {{ $selectedRequestingStore === '' ? 'selected' : '' }}>Select Store</option>
+                                        @foreach ($dropdownStores as $code => $name)
+                                            <option value="{{ $code }}" {{ $selectedRequestingStore === $code ? 'selected' : '' }}>
+                                                {{ $name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input
+                                        id="requesting_store"
+                                        value="{{ old('requesting_store', $userLocation) }}"
+                                        type="text"
+                                        name="requesting_store"
+                                        class="peer hidden"
+                                        placeholder="Requesting Store" />
+                                    <input
+                                        id="requesting_store_view"
+                                        value="{{ old('requesting_store_view', $mappedLocation) }}"
+                                        type="text"
+                                        name="requesting_store_view"
+                                        readonly
+                                        class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                        placeholder="Requesting Store" />
+                                @endif
                                 <label
                                     for="requesting_store"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
@@ -165,37 +188,17 @@
 
                             @php
                                 $warehouseMap = config('locations.warehouses', []);
-
-                                // Warehouse mapping
                                 $locationToWarehouse = config('locations.store_to_warehouse', []);
 
-                                $isPersonnel = Str::contains(strtolower(Auth::user()?->role), 'personnel');
-
-                                // Determine selected warehouse CODE
-                                $selectedWarehouseCode = old('warehouse'); // old input takes priority
-
-                                if (!$selectedWarehouseCode && isset($locationToWarehouse[$userLocation])) {
-                                    // Fallback to user location mapping if no old input
-                                    $selectedWarehouseCode = $locationToWarehouse[$userLocation];
+                                // Resolve warehouse from region's first store, or directly from store code
+if (!($selectedWarehouseCode = old('warehouse'))) {
+                                    $firstStore = $hasRegion ? $regionStores[0] ?? null : $userLocation;
+                                    $selectedWarehouseCode = $firstStore ? $locationToWarehouse[$firstStore] ?? null : null;
                                 }
                             @endphp
 
                             <div class="relative mb-6 w-full">
-                                @if ($isPersonnel)
-                                    <!-- Hidden input to store the actual code -->
-                                    <input type="hidden" name="warehouse" value="{{ $selectedWarehouseCode }}" />
-
-                                    <!-- Readonly display showing the name -->
-                                    <input
-                                        id="warehouse_display"
-                                        value="{{ $selectedWarehouseCode ? $warehouseMap[$selectedWarehouseCode] ?? $selectedWarehouseCode : '' }}"
-                                        type="text"
-                                        readonly
-                                        class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                        placeholder="Warehouse" />
-                                @else
-                                    <!-- Default select for non-personnel -->
-
+                                @if ($isSuperAdmin)
                                     <select
                                         id="warehouse"
                                         name="warehouse"
@@ -207,20 +210,22 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                @else
+                                    <input type="hidden" name="warehouse" value="{{ $selectedWarehouseCode }}" />
+                                    <input
+                                        id="warehouse_display"
+                                        value="{{ $selectedWarehouseCode ? $warehouseMap[$selectedWarehouseCode] ?? $selectedWarehouseCode : '' }}"
+                                        type="text"
+                                        readonly
+                                        class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                        placeholder="Warehouse" />
                                 @endif
-
                                 <label
                                     for="warehouse"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
                                     Serving Warehouse
                                 </label>
                             </div>
-
-
-
-
-
-
 
 
                             <div class="relative w-full">
@@ -427,62 +432,35 @@
                             @php
                                 use Illuminate\Support\Str;
 
-                                $paymentCenters = [
-                                    '4002' => 'F2 - Metro Wholesalemart Colon',
-                                    '2010' => 'S10 - Metro Maasin',
-                                    '2017' => 'S17 - Metro Tacloban',
-                                    '2019' => 'S19 - Metro Bay-Bay',
-                                    '3018' => 'F18 - Metro Alang-Alang',
-                                    '3019' => 'F19 - Metro Hilongos',
-                                    '2008' => 'S8 - Metro Toledo',
-                                    '6012' => 'H8 - Super Metro Antipolo',
-                                    '6009' => 'H9 - Super Metro Carcar',
-                                    '6010' => 'H10 - Super Metro Bogo',
-                                ];
+                                // Reuses $locationMap, $userLocation, $isSuperAdmin, $hasRegion,
+                                // $regionStores, $dropdownStores, $mappedLocation from Request Details above
 
-                                $userLocation = auth()->user()->user_location ?? null;
-                                $isPersonnel = Str::contains(strtolower(auth()->user()->role), 'personnel');
-
-                                // Resolve selected payment center
-                                $selectedPaymentCenter = old('payment_center');
-
-                                if (!$selectedPaymentCenter && isset($paymentCenters[$userLocation])) {
-                                    $selectedPaymentCenter = $paymentCenters[$userLocation];
-                                }
+                                $selectedPaymentCenter = old('payment_center', $hasRegion || $isSuperAdmin ? '' : $userLocation);
                             @endphp
 
                             <div class="relative mb-6 w-full">
-                                @if ($isPersonnel)
-                                    <!-- Hidden value (submitted) -->
-                                    <input type="hidden" name="payment_center" value="{{ $selectedPaymentCenter }}">
-
-                                    <!-- Readonly display -->
-                                    <input
-                                        id="payment_center_display"
-                                        type="text"
-                                        readonly
-                                        value="{{ $selectedPaymentCenter }}"
-                                        class="peer w-full rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                        placeholder="Payment Center">
-                                @else
-                                    <!-- Editable select -->
+                                @if ($isSuperAdmin || $hasRegion)
                                     <select
                                         name="payment_center"
                                         id="payment_center"
-                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 bg-indigo-50 px-3 pb-2 pt-6 text-sm text-gray-900 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-
-                                        <option value="" disabled {{ !$selectedPaymentCenter ? 'selected' : '' }}>
-                                            Select Payment Center
-                                        </option>
-
-                                        @foreach ($paymentCenters as $code => $name)
-                                            <option value="{{ $name }}" {{ $selectedPaymentCenter === $name ? 'selected' : '' }}>
+                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                        <option value="" disabled {{ $selectedPaymentCenter === '' ? 'selected' : '' }}>Select Payment Center</option>
+                                        @foreach ($dropdownStores as $code => $name)
+                                            <option value="{{ $code }}" {{ $selectedPaymentCenter === $code ? 'selected' : '' }}>
                                                 {{ $name }}
                                             </option>
                                         @endforeach
                                     </select>
+                                @else
+                                    <input type="hidden" name="payment_center" value="{{ $selectedPaymentCenter }}" />
+                                    <input
+                                        id="payment_center_display"
+                                        type="text"
+                                        readonly
+                                        value="{{ $locationMap[$selectedPaymentCenter] ?? $selectedPaymentCenter }}"
+                                        class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                        placeholder="Payment Center" />
                                 @endif
-
                                 <label
                                     for="payment_center"
                                     class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all">
