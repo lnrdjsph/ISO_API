@@ -86,11 +86,12 @@
                             </div>
 
                             @php
-                                $locationMap = config('locations.stores', []);
+                                use App\Support\LocationConfig;
+                                $locationMap = LocationConfig::stores();
                                 $userLocation = auth()->user()->user_location ?? null;
                                 $isSuperAdmin = strtolower(Auth::user()?->role ?? '') === 'super admin';
 
-                                $regionStores = config('locations.regions.' . $userLocation, []);
+                                $regionStores = LocationConfig::regionStores($userLocation ?? '');
                                 $hasRegion = !empty($regionStores);
                                 $mappedLocation = $locationMap[$userLocation] ?? null;
 
@@ -181,13 +182,12 @@
                             </div>
 
                             @php
-                                $warehouseMap = config('locations.warehouses', []);
-                                $locationToWarehouse = config('locations.store_to_warehouse', []);
+                                $warehouseMap = LocationConfig::warehouses();
 
                                 // Resolve warehouse from region's first store, or directly from store code
 if (!($selectedWarehouseCode = old('warehouse'))) {
                                     $firstStore = $hasRegion ? $regionStores[0] ?? null : $userLocation;
-                                    $selectedWarehouseCode = $firstStore ? $locationToWarehouse[$firstStore] ?? null : null;
+                                    $selectedWarehouseCode = $firstStore ? LocationConfig::warehouseForStore($firstStore) : null;
                                 }
                             @endphp
 

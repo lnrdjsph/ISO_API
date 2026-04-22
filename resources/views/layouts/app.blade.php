@@ -436,10 +436,12 @@
         </div>
 
         @php
+            use App\Support\LocationConfig;
             $user = Auth::user();
             $code = trim((string) $user?->user_location);
 
-            $fullLocation = config("locations.stores.$code") ?? (config("locations.region_labels.$code") ?? $code);
+            // Try store name first, then region label, fallback to code
+            $fullLocation = LocationConfig::storeName($code) ?? (LocationConfig::regionLabels()[$code] ?? $code);
         @endphp
 
         <div class="flex items-center space-x-4">

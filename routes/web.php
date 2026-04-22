@@ -11,6 +11,7 @@ use App\Http\Controllers\OracleTransferController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\InventoryExportController;
 use App\Http\Controllers\FileManagerController;
+use App\Http\Controllers\SettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -190,4 +191,22 @@ Route::prefix('others')->name('others.')->middleware(['auth', 'session.expired']
         Route::post('/delete',    [FileManagerController::class, 'delete'])->name('delete');
         Route::post('/mkdir',     [FileManagerController::class, 'mkdir'])->name('mkdir');
     });
+});
+
+Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(function () {
+
+    Route::get('/',                        [SettingsController::class, 'index'])->name('index');
+
+    // Stores
+    Route::post('stores/enroll',           [SettingsController::class, 'enrollStore'])->name('stores.enroll');
+    Route::put('stores/{code}',            [SettingsController::class, 'updateStore'])->name('stores.update');
+    Route::delete('stores/{code}',         [SettingsController::class, 'deactivateStore'])->name('stores.deactivate');
+
+    // Warehouses
+    Route::post('warehouses',              [SettingsController::class, 'storeWarehouse'])->name('warehouses.store');
+    Route::put('warehouses/{code}',        [SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
+
+    // Regions
+    Route::post('regions',                 [SettingsController::class, 'storeRegion'])->name('regions.store');
+    Route::put('regions/{key}',            [SettingsController::class, 'updateRegion'])->name('regions.update');
 });
