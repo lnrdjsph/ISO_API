@@ -40,7 +40,7 @@ class ProductController extends Controller
         try {
             $user = auth()->user();
             $userLocation = strtolower($user->user_location ?? '');
-            $tableStoreCode = $this->resolveTableStoreCode();
+            $tableStoreCode = $this->resolveTableStoreCode($request->get('store'));
             $tableName = "products_{$tableStoreCode}";
 
             if (!Schema::connection('mysql')->hasTable($tableName)) {
@@ -1069,7 +1069,7 @@ class ProductController extends Controller
             $facilityId = LocationConfig::facilityForWarehouse($warehouseCode);
 
             // If user_location is a region code, resolve to a store code for the table name
-            $tableName = "products_" . $this->resolveTableStoreCode();
+            $tableName = "products_" . $this->resolveTableStoreCode($request->get('store'));
             if (!Schema::connection('mysql')->hasTable($tableName)) {
                 throw new \Exception("Table '{$tableName}' does not exist for location '{$userLocation}'.");
             }
@@ -1139,37 +1139,90 @@ class ProductController extends Controller
      * If user_location is a region code, returns the first store in that region.
      * If it's already a store code, returns it as-is.
      */
+    /**
+     * Resolve the store code to use for the products table.
+     * Always returns an actual store code, never a region code.
+     */
     protected function resolveTableStoreCode(?string $requestedStore = null): string
     {
-        $userLocation = strtolower(auth()->user()->user_location ?? '');
-        $isSuperAdmin = strtolower(auth()->user()->role ?? '') === 'super admin';
-        $regionStores = LocationConfig::regionStores($userLocation);
+        $user = auth()->user();
+        $userLocation = strtolower($user->user_location ?? '');
+        $userRole = strtolower($user->role ?? '');
 
-        if ($isSuperAdmin) {
-            $accessibleStores = array_map('strtolower', array_keys(LocationConfig::stores()));
-        } elseif (!empty($regionStores)) {
-            $accessibleStores = array_map('strtolower', $regionStores);
-        } else {
-            // Single store — no switching
-            return $userLocation;
-        }
+        // Get accessible stores based on role and location
+        $accessibleStores = array_keys(LocationConfig::accessibleStores($userRole, $userLocation));
+        $accessibleStores = array_map('strtolower', $accessibleStores);
 
-        // Honour requested store if it's within accessible stores
-        if ($requestedStore && in_array(strtolower($requestedStore), $accessibleStores, true)) {
-            $code = strtolower($requestedStore);
-            if (Schema::connection('mysql')->hasTable("products_{$code}")) {
-                return $code;
+        // Helper to find first store with an existing products table
+        $findFirstValidStore = function (array $storesToCheck): ?string {
+            foreach ($storesToCheck as $storeCode) {
+                if (Schema::connection('mysql')->hasTable("products_{$storeCode}")) {
+                    return $storeCode;
+                }
+            }
+            return null;
+        };
+
+        // 1. If a specific store was requested and it's accessible
+        if ($requestedStore) {
+            $requestedStoreLower = strtolower($requestedStore);
+
+            // Check if requested is a region code
+            $regionStores = LocationConfig::regionStores($requestedStoreLower);
+            if (!empty($regionStores)) {
+                // User selected a region - pick first store in that region with a table
+                $regionStoresLower = array_map('strtolower', $regionStores);
+                $validStore = $findFirstValidStore($regionStoresLower);
+                if ($validStore) {
+                    return $validStore;
+                }
+            }
+
+            // Requested is a store code
+            if (in_array($requestedStoreLower, $accessibleStores, true)) {
+                if (Schema::connection('mysql')->hasTable("products_{$requestedStoreLower}")) {
+                    return $requestedStoreLower;
+                }
             }
         }
 
-        // Fallback: first accessible store with an existing table
-        foreach ($accessibleStores as $code) {
-            if (Schema::connection('mysql')->hasTable("products_{$code}")) {
-                return $code;
+        // 2. Check user's assigned location
+        if (!empty($userLocation)) {
+            // Check if user location is a region code
+            $regionStores = LocationConfig::regionStores($userLocation);
+            if (!empty($regionStores)) {
+                $regionStoresLower = array_map('strtolower', $regionStores);
+                $validStore = $findFirstValidStore($regionStoresLower);
+                if ($validStore) {
+                    return $validStore;
+                }
+            }
+
+            // User location is a store code
+            if (in_array($userLocation, $accessibleStores, true)) {
+                if (Schema::connection('mysql')->hasTable("products_{$userLocation}")) {
+                    return $userLocation;
+                }
             }
         }
 
-        return $accessibleStores[0] ?? $userLocation;
+        // 3. Find first accessible store that has a products table
+        $validStore = $findFirstValidStore($accessibleStores);
+        if ($validStore) {
+            return $validStore;
+        }
+
+        // 4. Last resort: check all stores for any existing table
+        $allStores = array_keys(LocationConfig::stores());
+        $validStore = $findFirstValidStore($allStores);
+        if ($validStore) {
+            return $validStore;
+        }
+
+        // 5. Absolute fallback
+        throw new \Exception(
+            "No valid products table found. User: {$userRole}, Location: {$userLocation}"
+        );
     }
 
 

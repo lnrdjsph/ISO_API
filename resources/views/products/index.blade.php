@@ -93,6 +93,12 @@
 
 
                         <script nonce="{{ $cspNonce ?? '' }}">
+                            function updateUrlParam(key, value) {
+                                const url = new URL(window.location.href);
+                                url.searchParams.set(key, value);
+                                window.location.href = url.toString();
+                            }
+
                             document.addEventListener('DOMContentLoaded', function() {
                                 const form = document.getElementById('updateAllocationsForm');
                                 const button = document.getElementById('updateButton');
@@ -577,6 +583,7 @@
                     <div class="flex flex-nowrap items-start justify-between gap-4">
 
                         <div class="flex flex-1 gap-4">
+                            {{-- Search Form --}}
                             <form
                                 method="GET"
                                 action="{{ route('products.index') }}"
@@ -606,7 +613,6 @@
                                         class="w-full max-w-lg rounded-2xl border border-gray-200/60 bg-white/60 py-2 pl-12 pr-10 text-sm text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Search by SKU, Description, or Sub-Department" />
 
-                                    <!-- Clear (X) button: clears input and submits cleared query -->
                                     <button
                                         type="button"
                                         id="clear-search-btn"
@@ -621,86 +627,177 @@
                                     <ul
                                         id="product-list"
                                         class="absolute z-[999] mt-1 hidden w-full rounded-xl bg-white shadow-xl"></ul>
-
                                 </div>
                             </form>
 
+                            {{-- Store Selector --}}
                             <div class="relative w-64">
-                                <!-- Remove default arrow for all browsers -->
-                                <style nonce="{{ $cspNonce ?? '' }}">
-                                    /* Remove default arrow for IE */
-                                    select::-ms-expand {
-                                        display: none;
-                                    }
 
-                                    /* Remove default arrow for Chrome, Safari, Edge */
-                                    select {
-                                        -webkit-appearance: none;
-                                        -moz-appearance: none;
-                                        appearance: none;
-                                    }
-                                </style>
+                                @php
+                                    $user = auth()->user();
+                                    $userRole = strtolower($user->role ?? '');
+                                    $userLocation = $user->user_location ?? null;
 
-                                <div class="relative w-64">
-                                    <!-- Remove default arrow for all browsers -->
-                                    <style nonce="{{ $cspNonce ?? '' }}">
-                                        /* Remove default arrow for IE */
-                                        select::-ms-expand {
-                                            display: none;
-                                        }
+                                    // Get accessible stores using LocationConfig
+                                    $accessibleStores = \App\Support\LocationConfig::accessibleStores($userRole, $userLocation);
+                                    $hasMultipleStores = count($accessibleStores) > 1;
 
-                                        /* Remove default arrow for Chrome, Safari, Edge */
-                                        select {
-                                            -webkit-appearance: none;
-                                            -moz-appearance: none;
-                                            appearance: none;
-                                        }
-                                    </style>
+                                    // Debug - remove in production
+                                    // \Log::debug('Store Selector', [
+                                    //     'role' => $userRole,
+                                    //     'location' => $userLocation,
+                                    //     'accessible_count' => count($accessibleStores),
+                                    //     'accessible' => array_keys($accessibleStores)
+                                    // ]);
 
+                                @endphp
+
+                                @if (empty($accessibleStores))
+                                    {{-- No stores found - show warning --}}
+                                    <div class="w-full rounded-xl border border-yellow-200/60 bg-yellow-50/60 px-4 py-2 text-xs text-yellow-700 backdrop-blur-sm">
+                                        <span class="font-medium">No stores assigned</span>
+                                    </div>
+                                @elseif (!$hasMultipleStores)
+                                    {{-- Single store: readonly display --}}
                                     @php
-                                        $userLocation = auth()->user()->user_location ?? null;
-                                        $isSuperAdmin = strtolower(auth()->user()->role ?? '') === 'super admin';
-                                        $regionStores = config('locations.regions.' . $userLocation, []);
-                                        $hasRegion = !empty($regionStores);
-
-                                        // Warehouses accessible to this user
-                                        if ($isSuperAdmin) {
-                                            $accessibleWarehouses = $warehouseMap;
-                                        } elseif ($hasRegion) {
-                                            // All stores in the region share one warehouse — collect unique ones
-                                            $storeToWarehouse = config('locations.store_to_warehouse', []);
-                                            $regionWarehouseCodes = collect($regionStores)->map(fn($code) => $storeToWarehouse[$code] ?? null)->filter()->unique()->values();
-                                            $accessibleWarehouses = array_intersect_key($warehouseMap, array_flip($regionWarehouseCodes->toArray()));
-                                        } else {
-                                            $accessibleWarehouses = [];
-                                        }
+                                        $singleStoreCode = array_key_first($accessibleStores);
+                                        $singleStoreName = $accessibleStores[$singleStoreCode] ?? $singleStoreCode;
                                     @endphp
+                                    <div class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 backdrop-blur-sm">
+                                        <span class="font-medium">{{ $singleStoreCode }} - {{ $singleStoreName }}</span>
+                                    </div>
+                                @else
+                                    {{-- Multiple stores: dropdown --}}
+                                    <select
+                                        name="store"
+                                        class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        onchange="updateUrlParam('store', this.value)">
+                                        @foreach ($accessibleStores as $code => $name)
+                                            <option value="{{ $code }}" {{ $currentStore == $code ? 'selected' : '' }}>
+                                                {{ $code }} - {{ $name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            </div>
 
-                                    @if (!$isSuperAdmin && !$hasRegion)
-                                        {{-- Single store: readonly --}}
-                                        <div class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 backdrop-blur-sm">
-                                            <span class="font-medium">{{ $currentWarehouse }} - {{ $warehouseMap[$currentWarehouse] ?? $currentWarehouse }}</span>
-                                        </div>
-                                    @else
-                                        {{-- Super admin or regional: dropdown --}}
-                                        <select
-                                            name="warehouse"
-                                            class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                            onchange="
-            const params = new URLSearchParams(window.location.search);
-            params.set('warehouse', this.value);
-            window.location.href = window.location.pathname + '?' + params.toString();
-        ">
-                                            @foreach ($accessibleWarehouses as $code => $name)
-                                                <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
-                                                    {{ $code }} - {{ $name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    @endif
-                                </div>
+                            {{-- Warehouse Selector --}}
+                            <div class="relative w-64">
+
+
+                                @php
+                                    $isSuperAdmin = $userRole === 'super admin';
+                                    $isPersonnel = str_contains($userRole, 'personnel');
+                                    $isManager = $userRole === 'manager';
+                                    $isWarehouseRole = str_contains($userRole, 'warehouse');
+
+                                    // Get all warehouses from LocationConfig
+                                    $allWarehouses = \App\Support\LocationConfig::warehouses();
+                                    $accessibleWarehouses = [];
+
+                                    // SUPER ADMIN: All warehouses
+                                    if ($isSuperAdmin) {
+                                        $accessibleWarehouses = $allWarehouses;
+                                    }
+                                    // WAREHOUSE ROLES: Their assigned warehouse (user_location is warehouse code)
+                                    elseif ($isWarehouseRole && $userLocation) {
+                                        if (isset($allWarehouses[$userLocation])) {
+                                            $accessibleWarehouses = [$userLocation => $allWarehouses[$userLocation]];
+                                        }
+                                    }
+                                    // MANAGER: Warehouses for stores in their assigned region OR their single store
+                                    elseif ($isManager && $userLocation) {
+                                        // Check if manager is assigned to a region
+                                        $regionStores = \App\Support\LocationConfig::regionStores($userLocation);
+
+                                        if (!empty($regionStores)) {
+                                            // Manager assigned to region - get warehouses for all stores in that region
+                                            foreach ($regionStores as $storeCode) {
+                                                $wh = \App\Support\LocationConfig::warehouseForStore($storeCode);
+                                                if ($wh && isset($allWarehouses[$wh])) {
+                                                    $accessibleWarehouses[$wh] = $allWarehouses[$wh];
+                                                }
+                                            }
+                                        } else {
+                                            // Manager assigned to single store - get that store's warehouse
+                                            $storeWarehouse = \App\Support\LocationConfig::warehouseForStore($userLocation);
+                                            if ($storeWarehouse && isset($allWarehouses[$storeWarehouse])) {
+                                                $accessibleWarehouses = [$storeWarehouse => $allWarehouses[$storeWarehouse]];
+                                            }
+                                        }
+                                    }
+                                    // PERSONNEL (Store/Personnel): Warehouse for their assigned store
+                                    elseif ($isPersonnel && $userLocation) {
+                                        $storeWarehouse = \App\Support\LocationConfig::warehouseForStore($userLocation);
+                                        if ($storeWarehouse && isset($allWarehouses[$storeWarehouse])) {
+                                            $accessibleWarehouses = [$storeWarehouse => $allWarehouses[$storeWarehouse]];
+                                        }
+                                    }
+                                    // DEFAULT: Any other role with a location
+                                    elseif ($userLocation) {
+                                        $storeWarehouse = \App\Support\LocationConfig::warehouseForStore($userLocation);
+                                        if ($storeWarehouse && isset($allWarehouses[$storeWarehouse])) {
+                                            $accessibleWarehouses = [$storeWarehouse => $allWarehouses[$storeWarehouse]];
+                                        }
+                                    }
+
+                                    // FALLBACK: If still empty, use currentWarehouse if it exists
+                                    if (empty($accessibleWarehouses) && $currentWarehouse && isset($allWarehouses[$currentWarehouse])) {
+                                        $accessibleWarehouses = [$currentWarehouse => $allWarehouses[$currentWarehouse]];
+                                    }
+
+                                    $hasMultipleWarehouses = count($accessibleWarehouses) > 1;
+                                @endphp
+
+                                @if (empty($accessibleWarehouses))
+                                    {{-- No warehouse found - show warning --}}
+                                    <div class="w-full rounded-xl border border-yellow-200/60 bg-yellow-50/60 px-4 py-2 text-xs text-yellow-700 backdrop-blur-sm">
+                                        <span class="font-medium">No warehouse assigned</span>
+                                    </div>
+                                @elseif (!$hasMultipleWarehouses)
+                                    {{-- Single warehouse: readonly display --}}
+                                    @php
+                                        $singleWhCode = array_key_first($accessibleWarehouses);
+                                        $singleWhName = $accessibleWarehouses[$singleWhCode];
+                                    @endphp
+                                    <div class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 backdrop-blur-sm">
+                                        <span class="font-medium">{{ $singleWhCode }} - {{ $singleWhName }}</span>
+                                    </div>
+                                @else
+                                    {{-- Multiple warehouses: dropdown --}}
+                                    <select
+                                        name="warehouse"
+                                        class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        onchange="updateUrlParam('warehouse', this.value)">
+                                        @foreach ($accessibleWarehouses as $code => $name)
+                                            <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
+                                                {{ $code }} - {{ $name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
                             </div>
                         </div>
+
+                        {{-- Consolidated Styles --}}
+                        <style nonce="{{ $cspNonce ?? '' }}">
+                            /* Remove default arrow for all browsers */
+                            select {
+                                -webkit-appearance: none;
+                                -moz-appearance: none;
+                                appearance: none;
+                                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+                                background-position: right 0.5rem center;
+                                background-repeat: no-repeat;
+                                background-size: 1.5em 1.5em;
+                                padding-right: 2.5rem;
+                            }
+
+                            /* Remove default arrow for IE */
+                            select::-ms-expand {
+                                display: none;
+                            }
+                        </style>
 
                         {{-- if personnel cant see bulk and action use if else server side --}}
 

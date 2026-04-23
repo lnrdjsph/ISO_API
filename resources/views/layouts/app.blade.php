@@ -882,8 +882,8 @@
                     @auth
                         @if (auth()->user()->role === 'super admin')
                             <!-- Admin Group -->
-                            <li class="{{ request()->routeIs('users*') || request()->routeIs('settings*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('users*') || request()->routeIs('settings*'))
+                            <li class="{{ request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*') ? 'active' : '' }} group relative">
+                                @if (request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*'))
                                     <div
                                         class="nav-item {{ request()->routeIs('users*') || request()->routeIs('settings*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
                                         <span class="icon-wrapper">
@@ -911,7 +911,7 @@
                                             <a
                                                 href="{{ route('users.index') }}"
                                                 class="sub-item {{ request()->routeIs('users.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">User List</span>
+                                                <span class="nav-text">User Management</span>
                                             </a>
                                         </li>
                                         @if (preg_match('/users\/\d+$/', request()->path()))
@@ -963,7 +963,7 @@
                                     <ul class="flyout-menu" data-flyout>
                                         <li>
                                             <a href="{{ route('users.index') }}" class="sub-item">
-                                                User List
+                                                User Management
                                             </a>
                                         </li>
                                         <li>

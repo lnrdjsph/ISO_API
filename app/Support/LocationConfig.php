@@ -260,18 +260,90 @@ class LocationConfig
     {
         $all = self::stores();
 
-        if ($role === 'super admin') return $all;
-
-        if ($role === 'manager' && $location) {
-            $codes = self::regionStores($location);
-            return $codes ? array_intersect_key($all, array_flip($codes)) : $all;
+        // Super admin sees everything
+        if ($role === 'super admin') {
+            return $all;
         }
 
-        if ($location && isset($all[$location])) {
+        // No location = no stores
+        if (empty($location)) {
+            return [];
+        }
+
+        $role = strtolower($role);
+        $location = strtolower($location);
+
+        // Check if the location is a region code
+        $regionStores = self::regionStores($location);
+        $isRegion = !empty($regionStores);
+
+        // MANAGER: Can see all stores in their assigned region or just their single store
+        if ($role === 'manager') {
+            if ($isRegion) {
+                // Manager assigned to region - show all stores in that region
+                $filtered = [];
+                foreach ($regionStores as $storeCode) {
+                    $storeCodeLower = strtolower($storeCode);
+                    if (isset($all[$storeCodeLower])) {
+                        $filtered[$storeCodeLower] = $all[$storeCodeLower];
+                    }
+                }
+                return $filtered;
+            }
+
+            // Manager assigned to single store
+            if (isset($all[$location])) {
+                return [$location => $all[$location]];
+            }
+
+            return [];
+        }
+
+        // STORE PERSONNEL: Can see stores in their region OR just their single store
+        if (str_contains($role, 'personnel') || str_contains($role, 'store')) {
+            if ($isRegion) {
+                // Personnel assigned to region - show all stores in that region
+                $filtered = [];
+                foreach ($regionStores as $storeCode) {
+                    $storeCodeLower = strtolower($storeCode);
+                    if (isset($all[$storeCodeLower])) {
+                        $filtered[$storeCodeLower] = $all[$storeCodeLower];
+                    }
+                }
+
+                // If no stores found for the region, fall back to checking if location is a store
+                if (!empty($filtered)) {
+                    return $filtered;
+                }
+            }
+
+            // Personnel assigned to single store
+            if (isset($all[$location])) {
+                return [$location => $all[$location]];
+            }
+
+            return [];
+        }
+
+        // WAREHOUSE ROLES: Can see all stores served by their warehouse
+        if (str_contains($role, 'warehouse')) {
+            $storesForWarehouse = self::storesForWarehouse($location);
+            $filtered = [];
+            foreach ($storesForWarehouse as $storeCode) {
+                $storeCodeLower = strtolower($storeCode);
+                if (isset($all[$storeCodeLower])) {
+                    $filtered[$storeCodeLower] = $all[$storeCodeLower];
+                }
+            }
+            return $filtered;
+        }
+
+        // Default: only the exact location if it's a store
+        if (isset($all[$location])) {
             return [$location => $all[$location]];
         }
 
-        return $all;
+        return [];
     }
 
     public static function refresh(): void
