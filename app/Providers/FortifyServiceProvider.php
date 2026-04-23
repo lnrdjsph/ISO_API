@@ -50,8 +50,8 @@ class FortifyServiceProvider extends ServiceProvider
 
             return [
                 Limit::perMinute(5)->by($throttleKey),
-                Limit::perHour(10)->by($request->ip()),
-                Limit::perDay(20)->by($request->ip()),
+                Limit::perHour(50)->by($request->ip()),
+                Limit::perDay(100)->by($request->ip()),
             ];
         });
 
