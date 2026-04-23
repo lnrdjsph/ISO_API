@@ -1298,15 +1298,15 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             submitBtn.innerHTML = `
-      <svg class="w-5 h-5 mr-2 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none"
-           viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10"
-                stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
-      Processing…
-    `;
+        <svg class="w-5 h-5 mr-2 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        Processing…
+        `;
         });
         if (!window.orderScriptInitialized) {
             window.orderScriptInitialized = true;
@@ -1929,9 +1929,16 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             e.target.value = e.target.value.replace(/[^0-9+]/g, "");
         });
 
-
+        // When requesting store changes, clear any existing search results
+        $(document).on('change', 'select[name="requesting_store"]', function() {
+            // Clear all product search inputs
+            $('.product-search, .freebie-search').val('');
+            $('.sku-hidden, .desc-hidden').val('');
+            $('.search-results').empty().addClass('hidden');
+        });
         let debounceTimeout;
 
+        // 🔍 Product search on keyup/focus (main + freebie)
         // 🔍 Product search on keyup/focus (main + freebie)
         $(document).on('keyup focus', '.product-search, .freebie-search', function() {
             clearTimeout(debounceTimeout);
@@ -1939,6 +1946,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             const input = $(this);
             const query = input.val().trim().toLowerCase();
             const resultList = input.siblings('.search-results');
+
+            // ✅ Get the current requesting store from the form
+            const requestingStore = $('select[name="requesting_store"]').val() ||
+                $('input[name="requesting_store"]').val();
 
             if (query.length >= 2) {
                 debounceTimeout = setTimeout(() => {
@@ -1956,15 +1967,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     $.ajax({
                         url: '{{ route('forms.sof_search') }}',
                         data: {
-                            query: query
+                            query: query,
+                            store_code: requestingStore // ✅ Pass the requesting store
                         },
                         success: function(data) {
                             input.removeClass('animate-pulse');
                             resultList.removeClass('glow-effect');
-                            // Trigger reflow to restart animation
                             void resultList[0].offsetWidth;
-
-                            // Add glow class
                             resultList.addClass('glow-effect');
                             resultList.empty();
 
@@ -1973,11 +1982,11 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
                             const filtered = data.filter(item => {
                                 const combined = `
-                                    ${item.sku}
-                                    ${item.description}
-                                    ${item.department ?? ''}
-                                    ${item.department_code ?? ''}
-                                `.replace(/[^a-z0-9]/gi, ' ').toLowerCase();
+                            ${item.sku}
+                            ${item.description}
+                            ${item.department ?? ''}
+                            ${item.department_code ?? ''}
+                        `.replace(/[^a-z0-9]/gi, ' ').toLowerCase();
 
                                 return queryWords.some(word => combined.includes(word));
                             });
@@ -1996,9 +2005,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                                     data-cash_bank_card_scheme="${product.cash_bank_card_scheme}"
                                     data-po15_scheme="${product.po15_scheme}"
                                     data-freebie_sku="${product.freebie_sku}"
-                                    data-discount_scheme="${product.discount_scheme}"
- 
-                                    >
+                                    data-discount_scheme="${product.discount_scheme}">
                                     <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
                                     ${product.description}
                                 </li>

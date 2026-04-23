@@ -397,8 +397,13 @@ class OrderController extends Controller
      */
     private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &$changes)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
+        // Get the order from the item
+        $order = $orderItem->order;
+
+        // Use the order's requesting_store, not auth user's location
+        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
+
+        $tableName = 'products_' . strtolower($storeCode);
 
         // === MAIN ITEM ADJUSTMENT ===
         $oldQty = $orderItem->total_qty;
@@ -837,16 +842,15 @@ class OrderController extends Controller
 
     public function revertAllocationStock($orderId)
     {
-        $userLocation = auth()->user()->user_location;
-        if (!$userLocation) return false;
-
-        $tableName = 'products_' . strtolower($userLocation);
-        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-        // Load order with items
         $order = Order::with('items')->findOrFail($orderId);
 
-        // Normalize items (if ever a collection of orders is passed)
+        // Use the order's requesting_store, not auth user's location
+        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
+
+        $tableName = 'products_' . strtolower($storeCode);
+        $warehouseCode = $this->getWarehouseCodeByLocation($storeCode);
+
+        // Normalize items...
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
             $items = $order->pluck('items')->flatten();
         } else {
@@ -935,19 +939,19 @@ class OrderController extends Controller
 
     public function deductAllocationStock($orderId)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
-        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-        // Load order and items
+        // Load order first to get its requesting_store
         $order = Order::with('items')->findOrFail($orderId);
 
-        // Normalize items: handle cases where $order might be a Collection of orders or a single model
+        // Use the order's requesting_store, not auth user's location
+        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
+
+        $tableName = 'products_' . strtolower($storeCode);
+        $warehouseCode = $this->getWarehouseCodeByLocation($storeCode);
+
+        // Normalize items...
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
-            // $order is a collection of orders; collect all items across them
             $items = $order->pluck('items')->flatten();
         } else {
-            // $order is a single model; get relation collection safely
             $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
         }
 
@@ -1037,11 +1041,30 @@ class OrderController extends Controller
      */
     private function getWarehouseCodeByLocation(string $location): string
     {
+        // First try as store code
         $code = LocationConfig::warehouseForStore($location);
-        if (!$code) {
-            throw new \Exception("Warehouse code not found for location: {$location}");
+
+        if ($code) {
+            return $code;
         }
-        return $code;
+
+        // Try as region - get first store's warehouse
+        $regionStores = LocationConfig::regionStores($location);
+
+        if (!empty($regionStores)) {
+            $firstStore = $regionStores[0];
+            $code = LocationConfig::warehouseForStore($firstStore);
+            if ($code) {
+                Log::info("Resolved warehouse from region", [
+                    'region' => $location,
+                    'store' => $firstStore,
+                    'warehouse' => $code
+                ]);
+                return $code;
+            }
+        }
+
+        throw new \Exception("Warehouse code not found for location or region: {$location}");
     }
 
 
@@ -1354,6 +1377,99 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'An error occurred while cancelling items. Please check the application logs.'
             ], 500);
+        }
+    }
+
+    /**
+     * Resolve store code for products table
+     * Converts region codes like "stc" to actual store codes like "4002"
+     */
+    protected function resolveStoreCodeForTable(string $storeOrRegion): string
+    {
+        $location = strtolower($storeOrRegion);
+
+        // Check if it's a region code
+        $regionStores = LocationConfig::regionStores($location);
+
+        if (!empty($regionStores)) {
+            // It's a region - return the first store in that region
+            $firstStore = $regionStores[0];
+            Log::info("Resolved region to store for table", [
+                'region' => $location,
+                'store' => $firstStore
+            ]);
+            return $firstStore;
+        }
+
+        // It's already a store code
+        return $location;
+    }
+
+    /**
+     * Get warehouse code for a store or region
+     */
+    protected function getWarehouseCode(?string $storeCode = null): ?string
+    {
+        $user = auth()->user();
+        $userLocation = strtolower($user->user_location ?? '');
+
+        $locationToCheck = $storeCode ?? $userLocation;
+
+        if (empty($locationToCheck)) {
+            return null;
+        }
+
+        // Check if it's a region
+        $regionStores = LocationConfig::regionStores($locationToCheck);
+        if (!empty($regionStores)) {
+            $firstStore = $regionStores[0] ?? null;
+            if ($firstStore) {
+                $code = LocationConfig::warehouseForStore($firstStore);
+                if ($code) return $code;
+            }
+        }
+
+        // Try as store directly
+        return LocationConfig::warehouseForStore($locationToCheck);
+    }
+
+    /**
+     * Get order status for item badges
+     */
+    public function getOrderStatus($storeOrderNo, $sku)
+    {
+        try {
+            if (empty($storeOrderNo) || $storeOrderNo === 'N/A' || empty($sku)) {
+                return response()->json(['status' => 'N/A', 'bol_number' => null]);
+            }
+
+            $transfer = DB::connection('oracle_wms')
+                ->table('transfers')
+                ->where('tsf_no', $storeOrderNo)
+                ->where('sku', strtoupper($sku))
+                ->first();
+
+            if (!$transfer) {
+                return response()->json(['status' => 'Not Found', 'bol_number' => null]);
+            }
+
+            $statusMap = [
+                'rcv' => 'Received',
+                'shp' => 'Shipped',
+                'pik' => 'Picking',
+                'pen' => 'Pending',
+                'prc' => 'Processing',
+            ];
+
+            $status = $statusMap[strtolower($transfer->status ?? '')] ?? ucfirst($transfer->status ?? 'Pending');
+
+            return response()->json([
+                'status' => $status,
+                'bol_number' => $transfer->bol_no ?? null
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Order status check failed: ' . $e->getMessage());
+            return response()->json(['status' => 'Error', 'bol_number' => null]);
         }
     }
 }

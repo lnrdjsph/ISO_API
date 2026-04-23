@@ -10,32 +10,26 @@ use App\Models\Settings\SettingsStore;
 use App\Models\Settings\SettingsWarehouse;
 use App\Models\Settings\SettingsRegion;
 use App\Models\Settings\SettingsAuditLog;
+use App\Models\Settings\SettingsRegionEmail;
 
 class SettingsController extends Controller
 {
     const CACHE_KEY = 'location_settings';
 
-    // ─────────────────────────────────────────────────────────────────────
-    // INDEX
-    // ─────────────────────────────────────────────────────────────────────
-
     public function index()
     {
         abort_unless(auth()->user()->role === 'super admin', 403);
 
-        $warehouses = SettingsWarehouse::orderBy('name')->get();
-        $regions    = SettingsRegion::orderBy('region_key')->get();
-        $stores     = SettingsStore::with(['warehouse', 'region'])
-            ->orderBy('store_code')->get();
-        $auditLogs  = SettingsAuditLog::with('user')
-            ->orderByDesc('created_at')->limit(50)->get();
+        $warehouses   = SettingsWarehouse::orderBy('name')->get();
+        $regions      = SettingsRegion::orderBy('region_key')->get();
+        $stores       = SettingsStore::with(['warehouse', 'region'])->orderBy('store_code')->get();
+        $auditLogs    = SettingsAuditLog::with('user')->orderByDesc('created_at')->limit(50)->get();
+        $regionEmails = SettingsRegionEmail::orderBy('region_key')->orderBy('email')->get()->groupBy('region_key');
 
-        return view('settings.index', compact('stores', 'warehouses', 'regions', 'auditLogs'));
+        return view('settings.index', compact('stores', 'warehouses', 'regions', 'auditLogs', 'regionEmails'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // STORES
-    // ─────────────────────────────────────────────────────────────────────
+    // ── STORES ───────────────────────────────────────────────────────────
 
     public function enrollStore(Request $request)
     {
@@ -61,7 +55,6 @@ class SettingsController extends Controller
             'updated_by'     => auth()->id(),
         ]);
 
-        // Create products_{code} table — mirrors the products_* migration exactly
         $tableName    = "products_{$store->store_code}";
         $tableCreated = false;
 
@@ -72,7 +65,6 @@ class SettingsController extends Controller
                 $t->string('description');
                 $t->string('department_code')->nullable();
                 $t->string('department')->nullable();
-
                 $t->string('case_pack')->nullable();
                 $t->decimal('srp', 10, 2);
                 $t->integer('allocation_per_case')->nullable();
@@ -81,15 +73,12 @@ class SettingsController extends Controller
                 $t->string('po15_scheme', 10)->nullable();
                 $t->string('discount_scheme', 10)->nullable();
                 $t->string('freebie_sku')->nullable();
-
                 $t->timestamp('archived_at')->nullable();
                 $t->unsignedBigInteger('archived_by')->nullable();
                 $t->string('archive_reason')->nullable();
                 $t->index('archived_at');
-
                 $t->timestamps();
             });
-
             $tableCreated = true;
         }
 
@@ -97,13 +86,10 @@ class SettingsController extends Controller
             $store->toArray(),
             ['products_table_created' => $tableCreated]
         ));
-
         $this->flushCache();
 
-        $msg = "Store {$store->display_name} ({$store->store_code}) enrolled.";
-        $msg .= $tableCreated
-            ? " Table `{$tableName}` created."
-            : " Table `{$tableName}` already existed — skipped.";
+        $msg  = "Store {$store->display_name} ({$store->store_code}) enrolled.";
+        $msg .= $tableCreated ? " Table `{$tableName}` created." : " Table `{$tableName}` already existed — skipped.";
 
         return redirect()->route('settings.index')->with('success', $msg);
     }
@@ -150,7 +136,6 @@ class SettingsController extends Controller
         SettingsAuditLog::record('store', $code, 'deactivated', $before, $store->fresh()->toArray());
         $this->flushCache();
 
-        // JSON for SweetAlert2 fetch(); redirect for standard form posts
         if (request()->wantsJson()) {
             return response()->json(['message' => "Store {$code} ({$store->display_name}) deactivated."]);
         }
@@ -158,9 +143,7 @@ class SettingsController extends Controller
         return redirect()->route('settings.index')->with('success', "Store {$code} deactivated.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // WAREHOUSES
-    // ─────────────────────────────────────────────────────────────────────
+    // ── WAREHOUSES ───────────────────────────────────────────────────────
 
     public function storeWarehouse(Request $request)
     {
@@ -210,9 +193,7 @@ class SettingsController extends Controller
         return redirect()->route('settings.index')->with('success', "Warehouse {$code} updated.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // REGIONS
-    // ─────────────────────────────────────────────────────────────────────
+    // ── REGIONS ──────────────────────────────────────────────────────────
 
     public function storeRegion(Request $request)
     {
@@ -265,7 +246,6 @@ class SettingsController extends Controller
             $region->update(['label' => $data['region_label']]);
         }
 
-        // Detach all, then re-attach selected
         SettingsStore::where('region_key', $key)
             ->update(['region_key' => null, 'updated_by' => auth()->id()]);
 
@@ -283,9 +263,63 @@ class SettingsController extends Controller
         return redirect()->route('settings.index')->with('success', "Region '{$key}' updated.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // CACHE
-    // ─────────────────────────────────────────────────────────────────────
+    // ── REGION EMAILS ────────────────────────────────────────────────────
+
+    /**
+     * Add an approval email to a region.
+     * Called via fetch() from the settings blade — returns JSON.
+     */
+    public function storeRegionEmail(Request $request, string $key)
+    {
+        abort_unless(auth()->user()->role === 'super admin', 403);
+
+        $data = $request->validate([
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                "unique:settings_region_emails,email,NULL,id,region_key,{$key}",
+            ],
+            'label' => 'nullable|string|max:100',
+        ]);
+
+        $email = SettingsRegionEmail::create([
+            'region_key' => $key,
+            'email'      => $data['email'],
+            'label'      => $data['label'] ?? null,
+            'is_active'  => true,
+            'created_by' => auth()->id(),
+        ]);
+
+        SettingsAuditLog::record('region_email', $key, 'created', [], $email->toArray());
+
+        return response()->json([
+            'id'         => $email->id,
+            'email'      => $email->email,
+            'label'      => $email->label,
+            'region_key' => $key,
+            'message'    => "Email {$email->email} added to region {$key}.",
+        ]);
+    }
+
+    /**
+     * Remove a region approval email.
+     * Called via fetch() from the settings blade — returns JSON.
+     */
+    public function destroyRegionEmail(int $id)
+    {
+        abort_unless(auth()->user()->role === 'super admin', 403);
+
+        $email  = SettingsRegionEmail::findOrFail($id);
+        $before = $email->toArray();
+        $email->delete();
+
+        SettingsAuditLog::record('region_email', $email->region_key, 'deleted', $before, []);
+
+        return response()->json(['message' => "Email {$email->email} removed."]);
+    }
+
+    // ── CACHE ────────────────────────────────────────────────────────────
 
     private function flushCache(): void
     {

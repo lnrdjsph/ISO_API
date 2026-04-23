@@ -300,8 +300,17 @@ class FormsController extends Controller
         // split into keywords
         $keywords = preg_split('/\s+/', $query, -1, PREG_SPLIT_NO_EMPTY);
 
-        $userLocation = strtolower(auth()->user()->user_location);
-        $tableName = 'products_' . $userLocation;
+        // ✅ Get store code from request, fallback to user's location
+        $storeCode = $request->query('store_code') ?? $request->input('requesting_store');
+
+        if (!$storeCode) {
+            $storeCode = strtolower(auth()->user()->user_location);
+        }
+
+        // ✅ Resolve region to actual store code if needed
+        $storeCode = $this->resolveStoreCodeForTable($storeCode);
+
+        $tableName = 'products_' . strtolower($storeCode);
 
         $results = DB::connection('mysql')
             ->table($tableName)
@@ -334,7 +343,21 @@ class FormsController extends Controller
         return response()->json($results);
     }
 
+    protected function resolveStoreCodeForTable(string $storeOrRegion): string
+    {
+        $location = strtolower($storeOrRegion);
 
+        // Check if it's a region code
+        $regionStores = LocationConfig::regionStores($location);
+
+        if (!empty($regionStores)) {
+            // It's a region - return the first store in that region
+            return $regionStores[0];
+        }
+
+        // It's already a store code
+        return $location;
+    }
     public function rof()
     {
         // Logic for rendering ROF form
@@ -585,8 +608,6 @@ class FormsController extends Controller
 
             $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
             $warehouseName = strtoupper(LocationConfig::warehouseName($warehouseCode, 'UNKNOWN WAREHOUSE'));
-
-
 
             if ($availableWmsQty < $requiredWmsQty) {
                 throw new \Exception(

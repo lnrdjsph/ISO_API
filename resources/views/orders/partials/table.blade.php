@@ -1,93 +1,93 @@
 <!-- Table -->
-                <div class="mb-4 overflow-x-auto rounded-xl">
-                    <table class="min-w-full divide-y divide-gray-200 rounded-xl text-sm">
-                        <thead class="bg-gray-50 text-left">
-                            <tr>
-                                <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
-                                <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
-                                {{-- 👔 Only managers see this column --}}
-                                @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
-                                    <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
-                                @endif
-                                <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
-                                <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
-                                {{-- <th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th> --}}
-                                <th class="px-4 py-3 font-medium text-gray-700">Status</th>
-                                <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 bg-white">
-                            @forelse($orders as $order)
-                                <tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
-                                    <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
-                                    <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
-                                    {{-- Only managers and super admins see the requesting store column --}}
-                                    @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
-                                        <td class="whitespace-nowrap px-4 py-3">
-                                            {{ config('locations.stores.' . $order->requesting_store, $order->requesting_store) }}
-                                        </td>
-                                    @endif
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        @php
-                                            $channel = strtolower(trim($order->channel_order ?? ''));
-                                            $channelDisplay = ucwords($channel ?: 'Unknown');
+<div class="mb-4 overflow-x-auto rounded-xl">
+    <table class="min-w-full divide-y divide-gray-200 rounded-xl text-sm">
+        <thead class="bg-gray-50 text-left">
+            <tr>
+                <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
+                <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
+                {{-- 👔 Only managers see this column --}}
+                @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
+                    <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
+                @endif
+                <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
+                <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
+                {{-- <th class="px-4 py-3 font-medium text-gray-700">Delivery Date</th> --}}
+                <th class="px-4 py-3 font-medium text-gray-700">Status</th>
+                <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white">
+            @forelse($orders as $order)
+                <tr class="animate-fade-in transition-all duration-200 hover:bg-indigo-100/60">
+                    <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
+                    {{-- Only managers and super admins see the requesting store column --}}
+                    @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
+                        <td class="whitespace-nowrap px-4 py-3">
+                            {{ \App\Support\LocationConfig::storeName($order->requesting_store) }}
+                        </td>
+                    @endif
+                    <td class="whitespace-nowrap px-4 py-3">
+                        {{ \Carbon\Carbon::parse($order->time_order)->format('Y-m-d H:i') }}</td>
+                    <td class="whitespace-nowrap px-4 py-3">
+                        @php
+                            $channel = strtolower(trim($order->channel_order ?? ''));
+                            $channelDisplay = ucwords($channel ?: 'Unknown');
 
-                                            $channelClass = match ($channel) {
-                                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-100 text-green-800',
-                                                'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
-                                                default => 'bg-gray-100 text-gray-800',
-                                            };
-                                        @endphp
+                            $channelClass = match ($channel) {
+                                'e-commerce', 'ecommerce', 'online' => 'bg-yellow-100 text-green-800',
+                                'wholesale', 'wholesaler' => 'bg-blue-100 text-blue-800',
+                                default => 'bg-gray-100 text-gray-800',
+                            };
+                        @endphp
 
-                                        <span class="{{ $channelClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                                            {{ $channelDisplay }}
-                                        </span>
-                                    </td>
+                        <span class="{{ $channelClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                            {{ $channelDisplay }}
+                        </span>
+                    </td>
 
-                                    {{-- <td class="whitespace-nowrap px-4 py-3">
+                    {{-- <td class="whitespace-nowrap px-4 py-3">
 																				{{ \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') }}</td> --}}
-                                    <td class="whitespace-nowrap px-4 py-3">
-                                        @php
-                                            $status = ucwords(strtolower($order->order_status ?? 'New Order'));
-                                            $statusClass = match ($status) {
-                                                'Completed' => 'bg-green-200 text-green-800',
-                                                'Archived' => 'bg-gray-200 text-gray-800',
-                                                'Cancelled' => 'bg-red-200 text-red-800',
-                                                'Pending' => 'bg-yellow-200 text-yellow-800',
-                                                'Rejected' => 'bg-orange-200 text-orange-800',
-                                                'For Approval' => 'bg-purple-100 text-purple-800',
-                                                'Approved' => 'bg-green-100 text-green-800',
-                                                default => 'bg-blue-100 text-blue-800',
-                                            };
-                                        @endphp
+                    <td class="whitespace-nowrap px-4 py-3">
+                        @php
+                            $status = ucwords(strtolower($order->order_status ?? 'New Order'));
+                            $statusClass = match ($status) {
+                                'Completed' => 'bg-green-200 text-green-800',
+                                'Archived' => 'bg-gray-200 text-gray-800',
+                                'Cancelled' => 'bg-red-200 text-red-800',
+                                'Pending' => 'bg-yellow-200 text-yellow-800',
+                                'Rejected' => 'bg-orange-200 text-orange-800',
+                                'For Approval' => 'bg-purple-100 text-purple-800',
+                                'Approved' => 'bg-green-100 text-green-800',
+                                default => 'bg-blue-100 text-blue-800',
+                            };
+                        @endphp
 
-                                        <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                                            {{ $status }}
-                                        </span>
+                        <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                            {{ $status }}
+                        </span>
 
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <a
-                                            href="{{ route('orders.show', $order->id) }}"
-                                            class="inline-block font-medium text-indigo-600 hover:text-indigo-800">
-                                            View
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td
-                                        colspan="7"
-                                        class="px-4 py-4 text-center text-gray-500">No orders found.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <a
+                            href="{{ route('orders.show', $order->id) }}"
+                            class="inline-block font-medium text-indigo-600 hover:text-indigo-800">
+                            View
+                        </a>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td
+                        colspan="7"
+                        class="px-4 py-4 text-center text-gray-500">No orders found.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
 
-                <!-- Pagination -->
-                <div class="flex justify-end p-4">
-                    {{ $orders->links('pagination::tailwind') }}
-                </div>
+<!-- Pagination -->
+<div class="flex justify-end p-4">
+    {{ $orders->links('pagination::tailwind') }}
+</div>

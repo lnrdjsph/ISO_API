@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $locationMap = config('locations.stores');
-        $order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+        $locationMap = \App\Support\LocationConfig::stores();
+        $order->requesting_store = $locationMap[$order->requesting_store] ?? $order->requesting_store;
     @endphp
     <style nonce="{{ $cspNonce ?? '' }}">
         .search-results {
@@ -351,7 +351,8 @@
 
 
                                     @php
-                                        $order->warehouse_name = config('locations.warehouses')[$order->warehouse] ?? $order->warehouse;
+                                        $order->warehouse_name = \App\Support\LocationConfig::warehouseName($order->warehouse, $order->warehouse);
+
                                     @endphp
 
                                     <div>

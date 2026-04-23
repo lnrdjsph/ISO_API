@@ -210,6 +210,10 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     // Regions
     Route::post('regions',                 [SettingsController::class, 'storeRegion'])->name('regions.store');
     Route::put('regions/{key}',            [SettingsController::class, 'updateRegion'])->name('regions.update');
+
+    // Region Emails
+    Route::post('regions/{key}/emails', [SettingsController::class, 'storeRegionEmail'])->name('settings.regions.emails.store');
+    Route::delete('region-emails/{id}', [SettingsController::class, 'destroyRegionEmail'])->name('settings.regions.emails.destroy');
 });
 
 
