@@ -1809,12 +1809,7 @@
                                                 form.method = 'POST';
                                                 form.enctype = 'multipart/form-data'; // CRITICAL for file upload
 
-                                                // Add CSRF token FIRST
-                                                const csrfInput = document.createElement('input');
-                                                csrfInput.type = 'hidden';
-                                                csrfInput.name = '_token';
-                                                csrfInput.value = csrfToken;
-                                                form.appendChild(csrfInput);
+
 
                                                 // Add order ID
                                                 const orderIdInput = document.createElement('input');
