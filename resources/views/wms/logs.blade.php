@@ -3,10 +3,10 @@
 @section('title', 'WMS Allocation Logs')
 
 @section('content')
-    <style>
+    <style nonce="{{ $cspNonce ?? '' }}">
         /* ════════════════════════════════════════════════
-           LAYOUT
-        ════════════════════════════════════════════════ */
+                           LAYOUT
+                        ════════════════════════════════════════════════ */
         .wms-layout {
             display: grid;
             grid-template-columns: 260px 1fr;
@@ -25,8 +25,8 @@
         }
 
         /* ════════════════════════════════════════════════
-           SIDEBAR — FILE TREE
-        ════════════════════════════════════════════════ */
+                           SIDEBAR — FILE TREE
+                        ════════════════════════════════════════════════ */
         .wms-sidebar {
             position: sticky;
             top: 1.5rem;
@@ -238,8 +238,8 @@
         }
 
         /* ════════════════════════════════════════════════
-           MAIN PANEL
-        ════════════════════════════════════════════════ */
+                           MAIN PANEL
+                        ════════════════════════════════════════════════ */
         .wms-main {
             min-width: 0;
         }
@@ -364,8 +364,8 @@
         }
 
         /* ════════════════════════════════════════════════
-           TERMINAL LOG PANE  ——  HIGH CONTRAST
-        ════════════════════════════════════════════════ */
+                           TERMINAL LOG PANE  ——  HIGH CONTRAST
+                        ════════════════════════════════════════════════ */
         .log-pane {
             background: #0d1117;
             border-radius: 0.875rem;
@@ -683,7 +683,7 @@
 
                             {{-- Date header row --}}
                             <div class="date-group-header {{ $isActiveDate ? 'has-active' : '' }}"
-                                onclick="toggleDateGroup(this)">
+                                data-date-group-header>
 
                                 <svg class="date-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -786,19 +786,18 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            <input type="text" id="logSearch" placeholder="Filter lines…"
-                                oninput="filterLog(this.value)">
+                            <input type="text" id="logSearch" placeholder="Filter lines…">
                         </div>
 
                         <div class="ml-auto flex gap-1.5">
-                            <button class="toolbar-btn" onclick="scrollLogBottom()">
+                            <button class="toolbar-btn" id="scrollBottomBtn">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
                                 </svg>
                                 Bottom
                             </button>
-                            <button class="toolbar-btn" onclick="copyLogRaw(this)">
+                            <button class="toolbar-btn" id="copyRawBtn">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -862,7 +861,7 @@
 
     <textarea id="rawLogContent" class="sr-only" aria-hidden="true">{{ $logContent ?? '' }}</textarea>
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         let autoRefreshTimer = null;
         let autoRefreshCountdown = 0;
         const REFRESH_INTERVAL = 30;
@@ -950,11 +949,6 @@
             if (refreshCd) refreshCd.textContent = '';
         }
 
-        refreshToggle?.addEventListener('change', function() {
-            localStorage.setItem('wmsAutoRefresh', this.checked);
-            this.checked ? startAutoRefresh() : stopAutoRefresh();
-        });
-
         // ── Stats ──────────────────────────────────────────────
         function computeStats() {
             const lines = document.querySelectorAll('#logLines .log-line');
@@ -985,10 +979,51 @@
             }
         }
 
+        // ── Setup event listeners (CSP compliant) ──
+        function setupEventListeners() {
+            // Date group toggles
+            document.querySelectorAll('[data-date-group-header]').forEach(header => {
+                header.addEventListener('click', function() {
+                    toggleDateGroup(this);
+                });
+            });
+
+            // Search input
+            const searchInput = document.getElementById('logSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    filterLog(e.target.value);
+                });
+            }
+
+            // Bottom button
+            const bottomBtn = document.getElementById('scrollBottomBtn');
+            if (bottomBtn) {
+                bottomBtn.addEventListener('click', () => scrollLogBottom());
+            }
+
+            // Copy button
+            const copyBtn = document.getElementById('copyRawBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function() {
+                    copyLogRaw(this);
+                });
+            }
+
+            // Auto-refresh toggle
+            if (refreshToggle) {
+                refreshToggle.addEventListener('change', function() {
+                    localStorage.setItem('wmsAutoRefresh', this.checked);
+                    this.checked ? startAutoRefresh() : stopAutoRefresh();
+                });
+            }
+        }
+
         // ── Init ───────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             computeStats();
             scrollLogBottom();
+            setupEventListeners();
 
             if (localStorage.getItem('wmsAutoRefresh') === 'true' && refreshToggle) {
                 refreshToggle.checked = true;
