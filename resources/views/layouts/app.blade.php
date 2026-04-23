@@ -930,6 +930,13 @@
                                                 <span class="nav-text">System Settings</span>
                                             </a>
                                         </li>
+                                        <li>
+                                            <a
+                                                href="{{ route('logs') }}"
+                                                class="sub-item {{ request()->routeIs('logs*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
+                                                <span class="nav-text">Logs</span>
+                                            </a>
+                                        </li>
                                     </ul>
                                 @else
                                     <a
@@ -962,6 +969,11 @@
                                         <li>
                                             <a href="{{ route('settings.index') }}" class="sub-item">
                                                 System Settings
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('logs') }}" class="sub-item">
+                                                Logs
                                             </a>
                                         </li>
                                     </ul>
