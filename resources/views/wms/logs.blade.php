@@ -5,8 +5,8 @@
 @section('content')
     <style>
         /* ════════════════════════════════════════════════
-       LAYOUT
-    ════════════════════════════════════════════════ */
+           LAYOUT
+        ════════════════════════════════════════════════ */
         .wms-layout {
             display: grid;
             grid-template-columns: 260px 1fr;
@@ -25,8 +25,8 @@
         }
 
         /* ════════════════════════════════════════════════
-       SIDEBAR — FILE TREE
-    ════════════════════════════════════════════════ */
+           SIDEBAR — FILE TREE
+        ════════════════════════════════════════════════ */
         .wms-sidebar {
             position: sticky;
             top: 1.5rem;
@@ -238,8 +238,8 @@
         }
 
         /* ════════════════════════════════════════════════
-       MAIN PANEL
-    ════════════════════════════════════════════════ */
+           MAIN PANEL
+        ════════════════════════════════════════════════ */
         .wms-main {
             min-width: 0;
         }
@@ -364,8 +364,8 @@
         }
 
         /* ════════════════════════════════════════════════
-       TERMINAL LOG PANE  ——  HIGH CONTRAST
-    ════════════════════════════════════════════════ */
+           TERMINAL LOG PANE  ——  HIGH CONTRAST
+        ════════════════════════════════════════════════ */
         .log-pane {
             background: #0d1117;
             border-radius: 0.875rem;
@@ -710,7 +710,7 @@
                                     @php
                                         $isActiveHour = $isActiveDate && (int) $selectedHour === (int) $hour;
                                         $padded = str_pad($hour, 2, '0', STR_PAD_LEFT);
-                                        $href = route('wms.logs', ['date' => $date, 'hour' => $hour]);
+                                        $href = route('logs', ['date' => $date, 'hour' => $hour]);
                                     @endphp
                                     <a href="{{ $href }}"
                                         class="hour-row {{ $isActiveHour ? 'active' : '' }}">

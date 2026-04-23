@@ -54,7 +54,7 @@ class WmsLogController extends Controller
             }
         }
 
-        return view('logs', compact(
+        return view('wms.logs', compact(
             'dates',
             'allDateHours',
             'selectedDate',
