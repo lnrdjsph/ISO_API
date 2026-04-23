@@ -757,12 +757,9 @@ class OrderController extends Controller
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
-        // ✅ RETURN JSON INSTEAD OF REDIRECT
-        return response()->json([
-            'success' => true,
-            'message' => 'Order approved successfully',
-            'redirect_url' => route('orders.show', $order->id)
-        ]);
+        // ✅ Return a SIMPLE redirect (like your working import)
+        return redirect()->route('orders.show', $order->id)
+            ->with('success', 'Order approved successfully!');
     }
 
 

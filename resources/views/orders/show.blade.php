@@ -1685,61 +1685,44 @@
                                                     if (result.isConfirmed) {
                                                         const file = result.value.file;
 
-                                                        // Show loading
-                                                        Swal.fire({
-                                                            title: 'Processing...',
-                                                            text: 'Approving order...',
-                                                            allowOutsideClick: false,
-                                                            didOpen: () => {
-                                                                Swal.showLoading();
-                                                            }
-                                                        });
+                                                        // ✅ USE REGULAR FORM SUBMISSION (same as import)
+                                                        const form = document.createElement('form');
+                                                        form.method = 'POST';
+                                                        form.action = '{{ route('orders.approve') }}';
+                                                        form.enctype = 'multipart/form-data';
+                                                        form.style.display = 'none';
 
-                                                        // Create FormData
-                                                        const formData = new FormData();
-                                                        formData.append('_token', csrfToken);
-                                                        formData.append('id', orderId);
-                                                        formData.append('attachment', file);
+                                                        // CSRF token
+                                                        const csrfInput = document.createElement('input');
+                                                        csrfInput.type = 'hidden';
+                                                        csrfInput.name = '_token';
+                                                        csrfInput.value = csrfToken;
+                                                        form.appendChild(csrfInput);
 
-                                                        // Submit via fetch (bypasses WAF redirect blocking)
-                                                        fetch('{{ route('orders.approve') }}', {
-                                                                method: 'POST',
-                                                                headers: {
-                                                                    'X-CSRF-TOKEN': csrfToken,
-                                                                    'Accept': 'application/json'
-                                                                },
-                                                                body: formData
-                                                            })
-                                                            .then(response => response.json())
-                                                            .then(data => {
-                                                                if (data.success) {
-                                                                    Swal.fire({
-                                                                        icon: 'success',
-                                                                        title: 'Approved!',
-                                                                        text: data.message,
-                                                                        timer: 1500,
-                                                                        showConfirmButton: false
-                                                                    }).then(() => {
-                                                                        window.location.href = data.redirect_url;
-                                                                    });
-                                                                } else {
-                                                                    throw new Error(data.message || 'Approval failed');
-                                                                }
-                                                            })
-                                                            .catch(error => {
-                                                                Swal.fire({
-                                                                    icon: 'error',
-                                                                    title: 'Error',
-                                                                    text: error.message,
-                                                                    confirmButtonColor: '#d33'
-                                                                });
-                                                            });
+                                                        // Order ID
+                                                        const idInput = document.createElement('input');
+                                                        idInput.type = 'hidden';
+                                                        idInput.name = 'id';
+                                                        idInput.value = orderId;
+                                                        form.appendChild(idInput);
+
+                                                        // File attachment
+                                                        const fileInput = document.createElement('input');
+                                                        fileInput.type = 'file';
+                                                        fileInput.name = 'attachment';
+                                                        const dataTransfer = new DataTransfer();
+                                                        dataTransfer.items.add(file);
+                                                        fileInput.files = dataTransfer.files;
+                                                        form.appendChild(fileInput);
+
+                                                        document.body.appendChild(form);
+                                                        form.submit(); // Regular form submission, not fetch
                                                     } else {
                                                         actionSelect.value = '';
                                                     }
                                                 });
 
-                                                return; // Prevent further execution
+                                                return;
 
 
 
