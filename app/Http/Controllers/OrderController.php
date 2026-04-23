@@ -718,37 +718,31 @@ class OrderController extends Controller
 
     public function approveOrder(Request $request)
     {
-        // $request->validate([
-        //     'id' => 'required|exists:orders,id',
-        //     'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
-        // ]);
-
         $request->validate([
             'id' => 'required|exists:orders,id',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
 
         $order = Order::findOrFail($request->id);
 
-        // ✅ Save the file
+        // Save the file
         $filePath = null;
         if ($request->hasFile('attachment')) {
-            // Optional: Delete old file if you want to replace it
             if ($order->approval_document) {
                 Storage::disk('public')->delete($order->approval_document);
             }
-
             $filePath = $request->file('attachment')->store(
-                'order_approvals/' . $order->id, // folder per order
-                'public' // use the `public` disk
+                'order_approvals/' . $order->id,
+                'public'
             );
         }
 
-        // ✅ Update order
+        // Update order
         $order->order_status = 'approved';
         $order->approval_document = $filePath;
         $order->save();
 
-        // ✅ Add note
+        // Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
@@ -757,20 +751,18 @@ class OrderController extends Controller
                 ucfirst(auth()->user()->role)
         ]);
 
-        // ✅ Send email to requester
+        // Send email
         $requester = \App\Models\User::find($order->requested_by);
-
         if ($requester && $requester->email) {
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
-        $successMessage = $filePath
-            ? 'Order approved successfully with document attached, and requester notified.'
-            : 'Order approved successfully without an attachment. Requester notified.';
-
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', $successMessage);
+        // ✅ RETURN JSON INSTEAD OF REDIRECT
+        return response()->json([
+            'success' => true,
+            'message' => 'Order approved successfully',
+            'redirect_url' => route('orders.show', $order->id)
+        ]);
     }
 
 

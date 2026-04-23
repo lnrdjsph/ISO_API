@@ -1606,91 +1606,13 @@
                                             case 'approve':
                                                 Swal.fire({
                                                     title: 'Approve Order',
-                                                    html: `
-            <div style="text-align:center; font-size:14px; color:#444;">
-                <!-- Upload Section -->
-                <div id="uploadSection">
-                    <p style="margin-bottom:12px; font-weight:500;">Upload approval document (required):</p>
-                    <p style="margin-bottom:12px; font-size:12px; color:#666;">
-                        PDF, Word, or Image files only
-                    </p>
-
-                    <div id="uploadBox"
-                        style="border:2px dashed #2563EB; border-radius:8px;
-                            padding:20px; background:#f9fafb; cursor:pointer;
-                            transition:0.2s ease-in-out;">
-                        <input type="file" id="approvalFile"
-                            accept=".pdf,.doc,.docx,image/*"
-                            style="display:none;" required />
-
-                        <label for="approvalFile"
-                            style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
-                            Click to select a file
-                        </label>
-
-                        <p id="fileName"
-                            style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
-                            No file chosen
-                        </p>
-                    </div>
-                    
-                    <!-- Required note -->
-                    <p style="margin-top:8px; font-size:11px; color:#DC2626;">
-                        * Approval document is required
-                    </p>
-                </div>
-            </div>
-        `,
-                                                    icon: 'info',
-                                                    showCancelButton: true,
-                                                    confirmButtonColor: '#16A34A',
-                                                    cancelButtonColor: '#aaa',
-                                                    confirmButtonText: 'Approve',
-
-                                                    didOpen: () => {
-                                                        const uploadBox = document.getElementById('uploadBox');
-                                                        const fileInput = document.getElementById('approvalFile');
-                                                        const fileName = document.getElementById('fileName');
-
-                                                        // Clicking the box opens file picker
-                                                        uploadBox.addEventListener('click', () => fileInput.click());
-
-                                                        // Show selected file name
-                                                        fileInput.addEventListener('change', () => {
-                                                            fileName.textContent = fileInput.files.length ?
-                                                                fileInput.files[0].name :
-                                                                'No file chosen';
-                                                        });
-
-                                                        // Drag & drop
-                                                        uploadBox.addEventListener('dragover', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.style.background = "#eef2ff";
-                                                        });
-
-                                                        uploadBox.addEventListener('dragleave', () => {
-                                                            uploadBox.style.background = "#f9fafb";
-                                                        });
-
-                                                        uploadBox.addEventListener('drop', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.style.background = "#f9fafb";
-                                                            if (e.dataTransfer.files.length) {
-                                                                fileInput.files = e.dataTransfer.files;
-                                                                fileName.textContent = e.dataTransfer.files[0].name;
-                                                            }
-                                                        });
-                                                    },
-
+                                                    html: `...`, // Your existing HTML
                                                     preConfirm: () => {
                                                         const file = document.getElementById('approvalFile').files[0];
-
-                                                        // Always require a file
                                                         if (!file) {
                                                             Swal.showValidationMessage('Please upload an approval document.');
                                                             return false;
                                                         }
-
                                                         return {
                                                             file: file
                                                         };
@@ -1698,14 +1620,57 @@
                                                 }).then((result) => {
                                                     if (result.isConfirmed) {
                                                         const file = result.value.file;
-                                                        submitForm('approve', null, file);
-                                                    } else {
-                                                        actionSelect.value = '';
+
+                                                        // Show loading
+                                                        Swal.fire({
+                                                            title: 'Processing...',
+                                                            text: 'Approving order...',
+                                                            allowOutsideClick: false,
+                                                            didOpen: () => {
+                                                                Swal.showLoading();
+                                                            }
+                                                        });
+
+                                                        // Create FormData
+                                                        const formData = new FormData();
+                                                        formData.append('_token', csrfToken);
+                                                        formData.append('id', orderId);
+                                                        formData.append('attachment', file);
+
+                                                        // Submit via fetch
+                                                        fetch('{{ route('orders.approve') }}', {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'X-CSRF-TOKEN': csrfToken,
+                                                                    'Accept': 'application/json'
+                                                                },
+                                                                body: formData
+                                                            })
+                                                            .then(response => response.json())
+                                                            .then(data => {
+                                                                if (data.success) {
+                                                                    Swal.fire({
+                                                                        icon: 'success',
+                                                                        title: 'Approved!',
+                                                                        text: data.message,
+                                                                        timer: 1500
+                                                                    }).then(() => {
+                                                                        window.location.href = data.redirect_url;
+                                                                    });
+                                                                } else {
+                                                                    throw new Error(data.message || 'Approval failed');
+                                                                }
+                                                            })
+                                                            .catch(error => {
+                                                                Swal.fire({
+                                                                    icon: 'error',
+                                                                    title: 'Error',
+                                                                    text: error.message
+                                                                });
+                                                            });
                                                     }
                                                 });
-
-                                                return;
-
+                                                return; // Prevent the default submitForm from running
 
 
 
