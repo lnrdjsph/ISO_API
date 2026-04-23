@@ -718,9 +718,13 @@ class OrderController extends Controller
 
     public function approveOrder(Request $request)
     {
+        // $request->validate([
+        //     'id' => 'required|exists:orders,id',
+        //     'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
+        // ]);
+
         $request->validate([
             'id' => 'required|exists:orders,id',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
         ]);
 
         $order = Order::findOrFail($request->id);

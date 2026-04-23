@@ -42,9 +42,9 @@ class ContentSecurityPolicyWithEval
         }
 
         // For non-production, skip strict CSP
-        if (!app()->environment('production')) {
-            return $next($request);
-        }
+        // if (!app()->environment('production')) {
+        //     return $next($request);
+        // }
 
         // Default CSP for other routes (still without unsafe-eval)
         $nonce = $request->attributes->get('csp_nonce', base64_encode(random_bytes(16)));
