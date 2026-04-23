@@ -270,7 +270,7 @@
                     <h2 class="text-lg font-bold text-gray-900">Enrolled Stores</h2>
                     <p class="text-sm text-gray-500">Enrolling a store creates its <code class="rounded bg-gray-100 px-1 text-xs">products_{code}</code> table automatically</p>
                 </div>
-                <button onclick="openModal('addStoreModal')"
+                <button data-modal-open="addStoreModal"
                     class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow transition-colors hover:bg-indigo-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -367,11 +367,24 @@
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <button
-                                            onclick="openEditStore('{{ $store->store_code }}','{{ addslashes($store->display_name) }}','{{ addslashes($store->short_name) }}','{{ $store->region_key }}','{{ $store->warehouse_code }}','{{ $store->status }}')"
-                                            class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">Edit</button>
+                                            data-edit-store
+                                            data-code="{{ $store->store_code }}"
+                                            data-name="{{ addslashes($store->display_name) }}"
+                                            data-short-name="{{ addslashes($store->short_name) }}"
+                                            data-region="{{ $store->region_key }}"
+                                            data-wh-code="{{ $store->warehouse_code }}"
+                                            data-status="{{ $store->status }}"
+                                            class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">
+                                            Edit
+                                        </button>
                                         @if ($store->status !== 'inactive')
-                                            <button onclick="confirmDeactivate('{{ $store->store_code }}','{{ addslashes($store->display_name) }}')"
-                                                class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 transition-colors hover:bg-red-50">Deactivate</button>
+                                            <button
+                                                data-deactivate-store
+                                                data-code="{{ $store->store_code }}"
+                                                data-name="{{ addslashes($store->display_name) }}"
+                                                class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 transition-colors hover:bg-red-50">
+                                                Deactivate
+                                            </button>
                                         @endif
                                     </div>
                                 </td>
@@ -521,7 +534,7 @@
                     <h2 class="text-lg font-bold text-gray-900">Region Configuration</h2>
                     <p class="text-sm text-gray-500">Manager regions and their assigned stores</p>
                 </div>
-                <button onclick="openAddRegionModal()"
+                <button data-add-region
                     class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -555,7 +568,9 @@
                                 </div>
                             @endforeach
                         </div>
-                        <button onclick="openEditRegion('{{ $region->region_key }}','{{ addslashes($region->label) }}')"
+                        <button data-edit-region
+                            data-key="{{ $region->region_key }}"
+                            data-label="{{ addslashes($region->label) }}"
                             class="mt-3 w-full rounded-lg border border-black/10 bg-white/60 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-white">
                             Manage Stores
                         </button>
@@ -573,7 +588,7 @@
                     <h2 class="text-lg font-bold text-gray-900">Warehouse Registry</h2>
                     <p class="text-sm text-gray-500">Fulfillment warehouses and Oracle WMS facility IDs</p>
                 </div>
-                <button onclick="openAddWarehouseModal()"
+                <button data-add-warehouse
                     class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow transition-colors hover:bg-indigo-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -609,7 +624,10 @@
                             <span class="status-dot {{ $wh->is_active ? 'status-active' : 'status-inactive' }}"></span>
                             <span class="text-xs text-gray-500">{{ $wh->is_active ? 'Active' : 'Inactive' }}</span>
                         </div>
-                        <button onclick="openEditWarehouse('{{ $wh->warehouse_code }}','{{ addslashes($wh->name) }}','{{ $wh->facility_id }}')"
+                        <button data-edit-warehouse
+                            data-code="{{ $wh->warehouse_code }}"
+                            data-name="{{ addslashes($wh->name) }}"
+                            data-facility="{{ $wh->facility_id }}"
                             class="w-full rounded-lg border border-gray-200 bg-white py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">
                             Edit
                         </button>
@@ -684,10 +702,11 @@
         <div class="modal-box w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
                 <h2 class="text-xl font-bold text-gray-900">Enroll New Store</h2>
-                <button onclick="closeModal('addStoreModal')" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button data-modal-close="addStoreModal" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg></button>
+                    </svg>
+                </button>
             </div>
             <form action="{{ route('settings.stores.enroll') }}" method="POST" class="space-y-4">
                 @csrf
@@ -744,7 +763,7 @@
                     <strong>ℹ</strong> Saving creates the <code class="rounded bg-indigo-100 px-1">products_{store_code}</code> table in the database automatically.
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal('addStoreModal')"
+                    <button type="button" data-modal-close="addStoreModal"
                         class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
                     <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700">Enroll Store</button>
                 </div>
@@ -757,10 +776,11 @@
         <div class="modal-box w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
                 <h2 class="text-xl font-bold text-gray-900">Edit Store</h2>
-                <button onclick="closeModal('editStoreModal')" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button data-modal-close="editStoreModal" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg></button>
+                    </svg>
+                </button>
             </div>
             <form id="editStoreForm" method="POST" class="space-y-4">
                 @csrf @method('PUT')
@@ -809,7 +829,7 @@
                     </select>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal('editStoreModal')"
+                    <button type="button" data-modal-close="editStoreModal"
                         class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
                     <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700">Save Changes</button>
                 </div>
@@ -822,10 +842,11 @@
         <div class="modal-box w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
                 <h2 id="whModalTitle" class="text-xl font-bold text-gray-900">Add Warehouse</h2>
-                <button onclick="closeModal('warehouseModal')" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button data-modal-close="warehouseModal" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg></button>
+                    </svg>
+                </button>
             </div>
             <form id="whForm" method="POST" class="space-y-4">
                 @csrf
@@ -847,7 +868,7 @@
                     <p class="mt-1 text-xs text-gray-400">2–5 uppercase letters used in Oracle WMS</p>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal('warehouseModal')"
+                    <button type="button" data-modal-close="warehouseModal"
                         class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
                     <button type="submit" id="whSubmitBtn" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700">Add Warehouse</button>
                 </div>
@@ -860,10 +881,11 @@
         <div class="modal-box w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
             <div class="mb-6 flex items-center justify-between">
                 <h2 id="regionModalTitle" class="text-xl font-bold text-gray-900">Add Region</h2>
-                <button onclick="closeModal('regionModal')" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button data-modal-close="regionModal" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg></button>
+                    </svg>
+                </button>
             </div>
             <form id="regionForm" method="POST" class="space-y-4">
                 @csrf
@@ -893,7 +915,7 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal('regionModal')"
+                    <button type="button" data-modal-close="regionModal"
                         class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</button>
                     <button type="submit" id="regionSubmitBtn" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700">Add Region</button>
                 </div>
@@ -905,130 +927,8 @@
          SCRIPTS
     ══════════════════════════════════════════════════════ --}}
     <script nonce="{{ $cspNonce ?? '' }}">
-        // Make functions globally available for inline onclick handlers		
+        // Make region store codes available globally
         window.regionStoreCodes = @json($regionStoreCodes);
-        window.openModal = function(id) {
-            document.getElementById(id).classList.add('open');
-        }
-
-        window.closeModal = function(id) {
-            document.getElementById(id).classList.remove('open');
-        }
-
-        window.openEditStore = function(code, name, shortName, region, whCode, status) {
-            document.getElementById('editStoreCodeDisplay').textContent = code;
-            document.getElementById('editStoreCode').value = code;
-            document.getElementById('editStoreName').value = name;
-            document.getElementById('editStoreShortName').value = shortName;
-            document.getElementById('editStoreWh').value = whCode;
-            document.getElementById('editStoreRegion').value = region;
-            document.getElementById('editStoreStatus').value = status;
-            document.getElementById('editStoreForm').action = '/settings/stores/' + code;
-            openModal('editStoreModal');
-        }
-
-        window.confirmDeactivate = function(code, name) {
-            Swal.fire({
-                title: 'Deactivate Store?',
-                html: `<p class="text-sm text-gray-600">You are about to deactivate:</p>
-                   <p class="mt-1 font-semibold text-gray-900">${name} <span class="font-mono text-xs text-gray-500">(${code})</span></p>
-                   <p class="mt-2 text-xs text-gray-400">Status set to <strong>inactive</strong>. Product data is preserved.</p>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, deactivate',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-            }).then(result => {
-                if (!result.isConfirmed) return;
-                fetch(`/settings/stores/${code}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success || data.message) {
-                            Toast.fire({
-                                icon: 'success',
-                                title: data.message || 'Store deactivated successfully'
-                            });
-                            const row = document.querySelector(`#storeTableBody tr[data-code="${code}"]`);
-                            if (row) row.remove();
-                            filterStoreTable();
-                        } else {
-                            Toast.fire({
-                                icon: 'error',
-                                title: data.message || 'Something went wrong'
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Toast.fire({
-                            icon: 'error',
-                            title: 'Something went wrong. Please try again.'
-                        });
-                    });
-            });
-        }
-
-        window.openAddWarehouseModal = function() {
-            document.getElementById('whModalTitle').textContent = 'Add Warehouse';
-            document.getElementById('whSubmitBtn').textContent = 'Add Warehouse';
-            document.getElementById('whCode').value = '';
-            document.getElementById('whCode').readOnly = false;
-            document.getElementById('whName').value = '';
-            document.getElementById('whFacility').value = '';
-            document.getElementById('whMethodField').innerHTML = '';
-            document.getElementById('whForm').action = "{{ route('settings.warehouses.store') }}";
-            openModal('warehouseModal');
-        }
-
-        window.openEditWarehouse = function(code, name, facility) {
-            document.getElementById('whModalTitle').textContent = 'Edit Warehouse';
-            document.getElementById('whSubmitBtn').textContent = 'Save Changes';
-            document.getElementById('whCode').value = code;
-            document.getElementById('whCode').readOnly = true;
-            document.getElementById('whName').value = name;
-            document.getElementById('whFacility').value = facility;
-            document.getElementById('whMethodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
-            document.getElementById('whForm').action = '/settings/warehouses/' + code;
-            openModal('warehouseModal');
-        }
-
-        window.openAddRegionModal = function() {
-            document.getElementById('regionModalTitle').textContent = 'Add Region';
-            document.getElementById('regionSubmitBtn').textContent = 'Add Region';
-            document.getElementById('regionKey').value = '';
-            document.getElementById('regionKey').readOnly = false;
-            document.getElementById('regionLabel').value = '';
-            document.getElementById('regionMethodField').innerHTML = '';
-            document.getElementById('regionForm').action = "{{ route('settings.regions.store') }}";
-            document.querySelectorAll('.region-store-check').forEach(cb => cb.checked = false);
-            openModal('regionModal');
-        }
-
-        window.openEditRegion = function(key, label) {
-            document.getElementById('regionModalTitle').textContent = 'Edit Region · ' + key;
-            document.getElementById('regionSubmitBtn').textContent = 'Save Changes';
-            document.getElementById('regionKey').value = key;
-            document.getElementById('regionKey').readOnly = true;
-            document.getElementById('regionLabel').value = label;
-            document.getElementById('regionMethodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
-            document.getElementById('regionForm').action = '/settings/regions/' + key;
-
-            // Safe check for regionStoreCodes
-            const codes = (window.regionStoreCodes && window.regionStoreCodes[key]) ? window.regionStoreCodes[key] : [];
-            document.querySelectorAll('.region-store-check').forEach(cb => {
-                cb.checked = codes.includes(cb.value);
-            });
-            openModal('regionModal');
-        }
 
         // Initialize on DOM ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -1041,11 +941,206 @@
                 timerProgressBar: true,
             });
 
+            // Modal functions
+            window.openModal = function(id) {
+                document.getElementById(id)?.classList.add('open');
+            }
+
+            window.closeModal = function(id) {
+                document.getElementById(id)?.classList.remove('open');
+            }
+
+            window.openEditStore = function(code, name, shortName, region, whCode, status) {
+                document.getElementById('editStoreCodeDisplay').textContent = code;
+                document.getElementById('editStoreCode').value = code;
+                document.getElementById('editStoreName').value = name;
+                document.getElementById('editStoreShortName').value = shortName;
+                document.getElementById('editStoreWh').value = whCode;
+                document.getElementById('editStoreRegion').value = region;
+                document.getElementById('editStoreStatus').value = status;
+                document.getElementById('editStoreForm').action = '/settings/stores/' + code;
+                window.openModal('editStoreModal');
+            }
+
+            window.confirmDeactivate = function(code, name) {
+                Swal.fire({
+                    title: 'Deactivate Store?',
+                    html: `<p class="text-sm text-gray-600">You are about to deactivate:</p>
+                           <p class="mt-1 font-semibold text-gray-900">${name} <span class="font-mono text-xs text-gray-500">(${code})</span></p>
+                           <p class="mt-2 text-xs text-gray-400">Status set to <strong>inactive</strong>. Product data is preserved.</p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, deactivate',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
+                }).then(result => {
+                    if (!result.isConfirmed) return;
+                    fetch(`/settings/stores/${code}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success || data.message) {
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: data.message || 'Store deactivated successfully'
+                                });
+                                const row = document.querySelector(`#storeTableBody tr[data-code="${code}"]`);
+                                if (row) row.remove();
+                                window.filterStoreTable();
+                            } else {
+                                Toast.fire({
+                                    icon: 'error',
+                                    title: data.message || 'Something went wrong'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Toast.fire({
+                                icon: 'error',
+                                title: 'Something went wrong. Please try again.'
+                            });
+                        });
+                });
+            }
+
+            window.openAddWarehouseModal = function() {
+                document.getElementById('whModalTitle').textContent = 'Add Warehouse';
+                document.getElementById('whSubmitBtn').textContent = 'Add Warehouse';
+                document.getElementById('whCode').value = '';
+                document.getElementById('whCode').readOnly = false;
+                document.getElementById('whName').value = '';
+                document.getElementById('whFacility').value = '';
+                document.getElementById('whMethodField').innerHTML = '';
+                document.getElementById('whForm').action = "{{ route('settings.warehouses.store') }}";
+                window.openModal('warehouseModal');
+            }
+
+            window.openEditWarehouse = function(code, name, facility) {
+                document.getElementById('whModalTitle').textContent = 'Edit Warehouse';
+                document.getElementById('whSubmitBtn').textContent = 'Save Changes';
+                document.getElementById('whCode').value = code;
+                document.getElementById('whCode').readOnly = true;
+                document.getElementById('whName').value = name;
+                document.getElementById('whFacility').value = facility;
+                document.getElementById('whMethodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+                document.getElementById('whForm').action = '/settings/warehouses/' + code;
+                window.openModal('warehouseModal');
+            }
+
+            window.openAddRegionModal = function() {
+                document.getElementById('regionModalTitle').textContent = 'Add Region';
+                document.getElementById('regionSubmitBtn').textContent = 'Add Region';
+                document.getElementById('regionKey').value = '';
+                document.getElementById('regionKey').readOnly = false;
+                document.getElementById('regionLabel').value = '';
+                document.getElementById('regionMethodField').innerHTML = '';
+                document.getElementById('regionForm').action = "{{ route('settings.regions.store') }}";
+                document.querySelectorAll('.region-store-check').forEach(cb => cb.checked = false);
+                window.openModal('regionModal');
+            }
+
+            window.openEditRegion = function(key, label) {
+                document.getElementById('regionModalTitle').textContent = 'Edit Region · ' + key;
+                document.getElementById('regionSubmitBtn').textContent = 'Save Changes';
+                document.getElementById('regionKey').value = key;
+                document.getElementById('regionKey').readOnly = true;
+                document.getElementById('regionLabel').value = label;
+                document.getElementById('regionMethodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+                document.getElementById('regionForm').action = '/settings/regions/' + key;
+
+                const codes = (window.regionStoreCodes && window.regionStoreCodes[key]) ? window.regionStoreCodes[key] : [];
+                document.querySelectorAll('.region-store-check').forEach(cb => {
+                    cb.checked = codes.includes(cb.value);
+                });
+                window.openModal('regionModal');
+            }
+
+            // ══════════════════════════════════════════════════════
+            // EVENT DELEGATION - Handle all clicks without inline onclick
+            // ══════════════════════════════════════════════════════
+            document.body.addEventListener('click', function(e) {
+                // Open modal buttons
+                const openBtn = e.target.closest('[data-modal-open]');
+                if (openBtn) {
+                    e.preventDefault();
+                    window.openModal(openBtn.dataset.modalOpen);
+                    return;
+                }
+
+                // Close modal buttons
+                const closeBtn = e.target.closest('[data-modal-close]');
+                if (closeBtn) {
+                    e.preventDefault();
+                    window.closeModal(closeBtn.dataset.modalClose);
+                    return;
+                }
+
+                // Edit store buttons
+                const editStoreBtn = e.target.closest('[data-edit-store]');
+                if (editStoreBtn) {
+                    e.preventDefault();
+                    const data = editStoreBtn.dataset;
+                    window.openEditStore(data.code, data.name, data.shortName || '', data.region, data.whCode, data.status);
+                    return;
+                }
+
+                // Deactivate store buttons
+                const deactivateBtn = e.target.closest('[data-deactivate-store]');
+                if (deactivateBtn) {
+                    e.preventDefault();
+                    window.confirmDeactivate(deactivateBtn.dataset.code, deactivateBtn.dataset.name);
+                    return;
+                }
+
+                // Add warehouse button
+                const addWarehouseBtn = e.target.closest('[data-add-warehouse]');
+                if (addWarehouseBtn) {
+                    e.preventDefault();
+                    window.openAddWarehouseModal();
+                    return;
+                }
+
+                // Edit warehouse button
+                const editWarehouseBtn = e.target.closest('[data-edit-warehouse]');
+                if (editWarehouseBtn) {
+                    e.preventDefault();
+                    const data = editWarehouseBtn.dataset;
+                    window.openEditWarehouse(data.code, data.name, data.facility);
+                    return;
+                }
+
+                // Add region button
+                const addRegionBtn = e.target.closest('[data-add-region]');
+                if (addRegionBtn) {
+                    e.preventDefault();
+                    window.openAddRegionModal();
+                    return;
+                }
+
+                // Edit region button
+                const editRegionBtn = e.target.closest('[data-edit-region]');
+                if (editRegionBtn) {
+                    e.preventDefault();
+                    const data = editRegionBtn.dataset;
+                    window.openEditRegion(data.key, data.label);
+                    return;
+                }
+            });
+
             // Modal close on background click
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.addEventListener('click', function(e) {
                     if (e.target === this) {
-                        closeModal(this.id);
+                        window.closeModal(this.id);
                     }
                 });
             });
@@ -1053,31 +1148,27 @@
             // Escape key closes modals
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal.open').forEach(modal => closeModal(modal.id));
+                    document.querySelectorAll('.modal.open').forEach(modal => window.closeModal(modal.id));
                 }
             });
 
             // Tab switching
             document.querySelectorAll('.settings-tab').forEach(button => {
                 button.addEventListener('click', function() {
-                    // Remove active class from all tabs
                     document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('active'));
-                    // Add active class to clicked tab
                     this.classList.add('active');
-                    // Hide all tab panels
                     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-                    // Show selected tab panel
                     const tabId = 'tab-' + this.dataset.tab;
-                    document.getElementById(tabId).classList.add('active');
+                    document.getElementById(tabId)?.classList.add('active');
                 });
             });
 
             // Store table filter function
             window.filterStoreTable = function() {
-                const search = document.getElementById('storeSearch').value.toLowerCase();
-                const region = document.getElementById('storeRegionFilter').value;
-                const wh = document.getElementById('storeWhFilter').value;
-                const status = document.getElementById('storeStatusFilter').value;
+                const search = document.getElementById('storeSearch')?.value.toLowerCase() || '';
+                const region = document.getElementById('storeRegionFilter')?.value || '';
+                const wh = document.getElementById('storeWhFilter')?.value || '';
+                const status = document.getElementById('storeStatusFilter')?.value || '';
                 let visible = 0;
 
                 document.querySelectorAll('#storeTableBody tr').forEach(row => {
@@ -1110,13 +1201,13 @@
             const whFilter = document.getElementById('storeWhFilter');
             const statusFilter = document.getElementById('storeStatusFilter');
 
-            if (searchInput) searchInput.addEventListener('input', filterStoreTable);
-            if (regionFilter) regionFilter.addEventListener('change', filterStoreTable);
-            if (whFilter) whFilter.addEventListener('change', filterStoreTable);
-            if (statusFilter) statusFilter.addEventListener('change', filterStoreTable);
+            if (searchInput) searchInput.addEventListener('input', window.filterStoreTable);
+            if (regionFilter) regionFilter.addEventListener('change', window.filterStoreTable);
+            if (whFilter) whFilter.addEventListener('change', window.filterStoreTable);
+            if (statusFilter) statusFilter.addEventListener('change', window.filterStoreTable);
 
             // Initial filter
-            filterStoreTable();
+            window.filterStoreTable();
 
             // Flash messages
             @if (session('success'))
@@ -1142,5 +1233,4 @@
             @endif
         });
     </script>
-
 @endsection

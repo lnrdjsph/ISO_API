@@ -441,7 +441,9 @@
             $code = trim((string) $user?->user_location);
 
             // Try store name first, then region label, fallback to code
-            $fullLocation = LocationConfig::storeName($code) ?? (LocationConfig::regionLabels()[$code] ?? $code);
+            $storeLabel = LocationConfig::stores()[$code] ?? null;
+            $regionLabel = LocationConfig::regionLabels()[$code] ?? null;
+            $fullLocation = $storeLabel ?? ($regionLabel ?? $code);
         @endphp
 
         <div class="flex items-center space-x-4">
