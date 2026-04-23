@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\InventoryExportController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\WmsLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -209,4 +210,12 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     // Regions
     Route::post('regions',                 [SettingsController::class, 'storeRegion'])->name('regions.store');
     Route::put('regions/{key}',            [SettingsController::class, 'updateRegion'])->name('regions.update');
+});
+
+
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/wms/logs',       [WmsLogController::class, 'index'])->name('wms.logs');
+    Route::get('/wms/logs/fetch', [WmsLogController::class, 'fetch'])->name('wms.logs.fetch');
 });
