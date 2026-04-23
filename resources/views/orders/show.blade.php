@@ -1778,7 +1778,7 @@
                                     function submitForm(action, note = null, file = null) {
                                         const form = document.createElement('form');
                                         form.method = 'POST';
-                                        form.enctype = 'multipart/form-data'; // ✅ needed for file upload
+                                        form.enctype = 'multipart/form-data';
                                         form.style.display = 'none';
 
                                         switch (action) {
@@ -1795,46 +1795,26 @@
                                             case 'complete':
                                                 form.action = "{{ route('orders.complete') }}";
                                                 break;
-
                                             case 'restore':
                                                 form.action = "{{ route('orders.restore') }}";
                                                 break;
-
                                             case 'for approval':
                                                 form.action = "{{ route('orders.for_approval') }}";
                                                 break;
-
                                             case 'approve':
                                                 form.action = "{{ route('orders.approve') }}";
-                                                form.method = 'POST';
-                                                form.enctype = 'multipart/form-data'; // CRITICAL for file upload
-
-
-
-                                                // Add order ID
-                                                const orderIdInput = document.createElement('input');
-                                                orderIdInput.type = 'hidden';
-                                                orderIdInput.name = 'id';
-                                                orderIdInput.value = orderId;
-                                                form.appendChild(orderIdInput);
-
                                                 // Add file if present
                                                 if (file) {
-                                                    // Create a FileList-like object
                                                     const fileInput = document.createElement('input');
                                                     fileInput.type = 'file';
                                                     fileInput.name = 'attachment';
                                                     fileInput.style.display = 'none';
-
-                                                    // Create a DataTransfer to add the file
                                                     const dataTransfer = new DataTransfer();
                                                     dataTransfer.items.add(file);
                                                     fileInput.files = dataTransfer.files;
-
                                                     form.appendChild(fileInput);
                                                 }
                                                 break;
-
                                             case 'rejected':
                                                 form.action = "{{ route('orders.reject') }}";
                                                 if (note) {
@@ -1845,8 +1825,7 @@
                                                     form.appendChild(noteInput);
                                                 }
                                                 break;
-
-                                            default: // processing, completed
+                                            default:
                                                 form.action = "{{ route('orders.archive') }}";
                                                 const statusInput = document.createElement('input');
                                                 statusInput.type = 'hidden';
@@ -1856,14 +1835,14 @@
                                                 break;
                                         }
 
-                                        // CSRF token
+                                        // CSRF token - ADDED ONLY ONCE HERE
                                         const inputCsrf = document.createElement('input');
                                         inputCsrf.type = 'hidden';
                                         inputCsrf.name = '_token';
                                         inputCsrf.value = csrfToken;
                                         form.appendChild(inputCsrf);
 
-                                        // Order ID
+                                        // Order ID - ADDED ONLY ONCE HERE
                                         const orderIdInput = document.createElement('input');
                                         orderIdInput.type = 'hidden';
                                         orderIdInput.name = 'id';
