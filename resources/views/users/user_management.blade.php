@@ -217,13 +217,18 @@
                                     <form
                                         action="{{ route('users.destroy', $user) }}"
                                         method="POST"
-                                        class="inline"
-                                        onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                        class="delete-user-form inline"
+                                        data-user-id="{{ $user->id }}"
+                                        data-user-name="{{ $user->name }}">
                                         @csrf
                                         @method('DELETE')
                                         <button
-                                            type="submit"
-                                            class="text-red-600 hover:underline">Delete</button>
+                                            type="button"
+                                            class="delete-user-btn text-red-600 hover:underline"
+                                            data-user-id="{{ $user->id }}"
+                                            data-user-name="{{ $user->name }}">
+                                            Delete
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
@@ -484,18 +489,30 @@
     {{-- @push('scripts') --}}
     <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('openAddUserModal').addEventListener('click', () => {
-                addUserModal.classList.add('show'); // fade in
-            });
+            // Modal elements
+            const addUserModal = document.getElementById('addUserModal');
+            const editUserModal = document.getElementById('editUserModal');
 
-            document.getElementById('closeAddUserModal').addEventListener('click', () => {
-                addUserModal.classList.remove('show'); // fade out
-            });
+            // Add User Modal
+            if (document.getElementById('openAddUserModal')) {
+                document.getElementById('openAddUserModal').addEventListener('click', () => {
+                    addUserModal.classList.add('show');
+                });
+            }
 
-            document.getElementById('closeEditUserModal').addEventListener('click', () => {
-                editUserModal.classList.remove('show'); // fade out
-            });
+            if (document.getElementById('closeAddUserModal')) {
+                document.getElementById('closeAddUserModal').addEventListener('click', () => {
+                    addUserModal.classList.remove('show');
+                });
+            }
 
+            if (document.getElementById('closeEditUserModal')) {
+                document.getElementById('closeEditUserModal').addEventListener('click', () => {
+                    editUserModal.classList.remove('show');
+                });
+            }
+
+            // Edit User Modal
             document.addEventListener('click', function(e) {
                 if (e.target && e.target.classList.contains('openEditUserModal')) {
                     const button = e.target;
@@ -515,10 +532,105 @@
                     document.getElementById('edit_location').value = location;
                     document.getElementById('edit_password').value = '';
 
-                    editUserModal.classList.add('show'); // fade in
+                    editUserModal.classList.add('show');
                 }
             });
 
+            // Delete User with SweetAlert2 Countdown
+            const deleteButtons = document.querySelectorAll('.delete-user-btn');
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    const form = this.closest('.delete-user-form');
+                    const userName = this.dataset.userName || 'this user';
+                    const userId = this.dataset.userId;
+
+                    let countdown = 5;
+                    let timerInterval;
+
+                    Swal.fire({
+                        title: '⚠️ Delete User',
+                        html: `
+                        <div class="text-left">
+                            <p class="mb-3">Are you sure you want to delete <strong class="text-red-600">${userName}</strong>?</p>
+                            <p class="mb-2 text-sm text-gray-600">This action cannot be undone!</p>
+                            <div class="mt-4 p-3 bg-red-50 rounded-lg">
+                                <p class="text-sm font-semibold text-red-700">⚠️ Security Check</p>
+                                <p class="text-sm text-red-600">Wait <strong id="countdown">${countdown}</strong> seconds before confirming deletion...</p>
+                            </div>
+                        </div>
+                    `,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: `Delete (${countdown}s)`,
+                        cancelButtonText: 'Cancel',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: true,
+                        showCancelButton: true,
+                        didOpen: () => {
+                            const confirmButton = Swal.getConfirmButton();
+                            confirmButton.disabled = true;
+
+                            timerInterval = setInterval(() => {
+                                countdown--;
+
+                                if (countdown > 0) {
+                                    confirmButton.innerHTML = `Delete (${countdown}s)`;
+                                    const countdownElement = document.getElementById('countdown');
+                                    if (countdownElement) {
+                                        countdownElement.textContent = countdown;
+                                    }
+                                } else {
+                                    clearInterval(timerInterval);
+                                    confirmButton.disabled = false;
+                                    confirmButton.innerHTML = 'Confirm Delete';
+                                    confirmButton.style.backgroundColor = '#d33';
+
+                                    const countdownElement = document.getElementById('countdown');
+                                    if (countdownElement) {
+                                        countdownElement.parentElement.innerHTML = 'You can now confirm deletion.';
+                                    }
+                                }
+                            }, 1000);
+                        },
+                        willClose: () => {
+                            clearInterval(timerInterval);
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading state
+                            Swal.fire({
+                                title: 'Deleting...',
+                                text: 'Please wait while we delete the user.',
+                                icon: 'info',
+                                showConfirmButton: false,
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            // Submit the form
+                            form.submit();
+                        }
+                    });
+                });
+            });
+
+            // Close modals when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === addUserModal) {
+                    addUserModal.classList.remove('show');
+                }
+                if (e.target === editUserModal) {
+                    editUserModal.classList.remove('show');
+                }
+            });
         });
     </script>
     {{-- @endpush --}}
