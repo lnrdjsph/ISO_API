@@ -1806,12 +1806,32 @@
 
                                             case 'approve':
                                                 form.action = "{{ route('orders.approve') }}";
+                                                form.method = 'POST';
+                                                form.enctype = 'multipart/form-data'; // CRITICAL for file upload
+
+                                                // Add CSRF token FIRST
+                                                const csrfInput = document.createElement('input');
+                                                csrfInput.type = 'hidden';
+                                                csrfInput.name = '_token';
+                                                csrfInput.value = csrfToken;
+                                                form.appendChild(csrfInput);
+
+                                                // Add order ID
+                                                const orderIdInput = document.createElement('input');
+                                                orderIdInput.type = 'hidden';
+                                                orderIdInput.name = 'id';
+                                                orderIdInput.value = orderId;
+                                                form.appendChild(orderIdInput);
+
+                                                // Add file if present
                                                 if (file) {
+                                                    // Create a FileList-like object
                                                     const fileInput = document.createElement('input');
                                                     fileInput.type = 'file';
                                                     fileInput.name = 'attachment';
+                                                    fileInput.style.display = 'none';
 
-                                                    // ✅ Attach file object
+                                                    // Create a DataTransfer to add the file
                                                     const dataTransfer = new DataTransfer();
                                                     dataTransfer.items.add(file);
                                                     fileInput.files = dataTransfer.files;
@@ -2974,38 +2994,6 @@
 
                     return true;
                 });
-                // Add this temporarily right before your form submit handler
-                // $('form').on('submit', function(e) {
-                //     e.preventDefault(); // Prevent actual submission temporarily
-
-                //     console.log('=== FORM VALIDATION CHECK ===');
-                //     const itemsData = {};
-
-                //     $("tbody tr[data-index]").each(function() {
-                //         const row = $(this);
-                //         const index = row.data('index');
-
-                //         itemsData[index] = {
-                //             price: row.find(`input[name="items[${index}][price]"]`).val(),
-                //             price_per_pc: row.find(`input[name="items[${index}][price_per_pc]"]`).val(),
-                //             amount: row.find(`input[name="items[${index}][amount]"]`).val(),
-                //             sku: row.find(`input[name="items[${index}][sku]"]`).val(),
-                //             freebies_per_cs: row.find(`input[name="items[${index}][freebies_per_cs]"]`).val(),
-                //         };
-                //     });
-
-                //     console.table(itemsData);
-
-                //     // Check for missing required fields
-                //     Object.keys(itemsData).forEach(index => {
-                //         const item = itemsData[index];
-                //         if (!item.price) console.error(`❌ Item ${index} missing PRICE!`);
-                //         if (!item.price_per_pc) console.error(`❌ Item ${index} missing PRICE_PER_PC!`);
-                //         if (!item.sku) console.error(`❌ Item ${index} missing SKU!`);
-                //     });
-
-                //     // Remove this e.preventDefault() once you verify data is correct
-                // });
 
                 // ========================================
                 // RESET AFTER SUCCESSFUL SUBMISSION
