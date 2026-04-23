@@ -295,12 +295,19 @@
                         <option value="{{ $wh->warehouse_code }}">{{ $wh->name }}</option>
                     @endforeach
                 </select>
-                <select id="storeStatusFilter" class="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <select id="storeStatusFilter" class="rounded-lg border border-gray-300 py-2 pr-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <button id="resetStoreFilters"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-800 shadow-sm transition-colors hover:bg-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset All
+                </button>
                 <span id="storeCount" class="ml-auto text-xs font-medium text-gray-400"></span>
             </div>
 
@@ -1063,7 +1070,16 @@
                 });
                 window.openModal('regionModal');
             }
-
+            const resetBtn = document.getElementById('resetStoreFilters');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    if (searchInput) searchInput.value = '';
+                    if (regionFilter) regionFilter.value = '';
+                    if (whFilter) whFilter.value = '';
+                    if (statusFilter) statusFilter.value = '';
+                    window.filterStoreTable();
+                });
+            }
             // ══════════════════════════════════════════════════════
             // EVENT DELEGATION - Handle all clicks without inline onclick
             // ══════════════════════════════════════════════════════
