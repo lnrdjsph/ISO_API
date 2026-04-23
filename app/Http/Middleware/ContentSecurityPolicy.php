@@ -15,6 +15,10 @@ class ContentSecurityPolicy
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs('orders.approve')) {
+            return $next($request);
+        }
+
         if (!app()->environment('production')) {
             return $next($request);
         }
