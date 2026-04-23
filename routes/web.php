@@ -216,6 +216,6 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
 
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/wms/logs',       [WmsLogController::class, 'index'])->name('wms.logs');
-    Route::get('/wms/logs/fetch', [WmsLogController::class, 'fetch'])->name('wms.logs.fetch');
+    Route::get('/logs',       [WmsLogController::class, 'index'])->name('logs');
+    Route::get('/logs/fetch', [WmsLogController::class, 'fetch'])->name('logs.fetch');
 });
