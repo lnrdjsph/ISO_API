@@ -3591,70 +3591,90 @@
              *         No file in the body → no multipart → WAF never sees file bytes
              *         on the approve endpoint.
              */
+            // confirmBtn.addEventListener('click', function() {
+            //     if (!fileInput.files.length) {
+            //         fileError.textContent = 'Please select an approval document.';
+            //         fileError.classList.remove('hidden');
+            //         return;
+            //     }
+
+            //     const file = fileInput.files[0];
+            //     const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+            //     confirmBtn.disabled = true;
+            //     confirmBtn.textContent = 'Uploading…';
+            //     progressWrap.classList.remove('hidden');
+
+            //     // ── Step 1: upload file ──────────────────────────────────────
+            //     const fd = new FormData();
+            //     fd.append('attachment', file);
+            //     fd.append('_token', csrf);
+
+            //     const xhr = new XMLHttpRequest();
+            //     xhr.open('POST', '{{ route('orders.approve.upload-temp') }}', true);
+            //     xhr.setRequestHeader('X-CSRF-TOKEN', csrf);
+            //     xhr.setRequestHeader('Accept', 'application/json');
+
+            //     xhr.upload.addEventListener('progress', function(ev) {
+            //         if (ev.lengthComputable) {
+            //             const pct = Math.round((ev.loaded / ev.total) * 100);
+            //             progressBar.style.width = pct + '%';
+            //             progressPct.textContent = pct + '%';
+            //         }
+            //     });
+
+            //     xhr.addEventListener('load', function() {
+            //         if (xhr.status >= 200 && xhr.status < 300) {
+            //             let resp = {};
+            //             try {
+            //                 resp = JSON.parse(xhr.responseText);
+            //             } catch (_) {}
+
+            //             if (resp.temp_key) {
+            //                 // ── Step 2: approve with just the key ───────────
+            //                 tempKeyEl.value = resp.temp_key;
+            //                 confirmBtn.textContent = 'Approving…';
+            //                 progressBar.style.width = '100%';
+            //                 progressPct.textContent = '100%';
+            //                 form.submit(); // tiny POST: _token + id + temp_key
+            //             } else {
+            //                 showUploadError(resp.message || 'Upload failed. Please try again.');
+            //             }
+            //         } else {
+            //             let msg = 'Upload failed (HTTP ' + xhr.status + ').';
+            //             try {
+            //                 const e = JSON.parse(xhr.responseText);
+            //                 if (e.message) msg = e.message;
+            //             } catch (_) {}
+            //             showUploadError(msg);
+            //         }
+            //     });
+
+            //     xhr.addEventListener('error', function() {
+            //         showUploadError('Network error during upload. Please try again.');
+            //     });
+
+            //     xhr.send(fd);
+            // });
+
+            // TEMPORARY — no file upload. Comment out the XHR block above and use this.
             confirmBtn.addEventListener('click', function() {
-                if (!fileInput.files.length) {
-                    fileError.textContent = 'Please select an approval document.';
-                    fileError.classList.remove('hidden');
-                    return;
-                }
-
-                const file = fileInput.files[0];
-                const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
-
-                confirmBtn.disabled = true;
-                confirmBtn.textContent = 'Uploading…';
-                progressWrap.classList.remove('hidden');
-
-                // ── Step 1: upload file ──────────────────────────────────────
-                const fd = new FormData();
-                fd.append('attachment', file);
-                fd.append('_token', csrf);
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('orders.approve.upload-temp') }}', true);
-                xhr.setRequestHeader('X-CSRF-TOKEN', csrf);
-                xhr.setRequestHeader('Accept', 'application/json');
-
-                xhr.upload.addEventListener('progress', function(ev) {
-                    if (ev.lengthComputable) {
-                        const pct = Math.round((ev.loaded / ev.total) * 100);
-                        progressBar.style.width = pct + '%';
-                        progressPct.textContent = pct + '%';
-                    }
-                });
-
-                xhr.addEventListener('load', function() {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        let resp = {};
-                        try {
-                            resp = JSON.parse(xhr.responseText);
-                        } catch (_) {}
-
-                        if (resp.temp_key) {
-                            // ── Step 2: approve with just the key ───────────
-                            tempKeyEl.value = resp.temp_key;
-                            confirmBtn.textContent = 'Approving…';
-                            progressBar.style.width = '100%';
-                            progressPct.textContent = '100%';
-                            form.submit(); // tiny POST: _token + id + temp_key
-                        } else {
-                            showUploadError(resp.message || 'Upload failed. Please try again.');
-                        }
+                closeModal();
+                Swal.fire({
+                    title: 'Approve Order?',
+                    text: 'No attachment will be uploaded. You can re-approve with a document later.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#16a34a',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, Approve',
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        document.getElementById('approveForm').submit();
                     } else {
-                        let msg = 'Upload failed (HTTP ' + xhr.status + ').';
-                        try {
-                            const e = JSON.parse(xhr.responseText);
-                            if (e.message) msg = e.message;
-                        } catch (_) {}
-                        showUploadError(msg);
+                        if (actionSel) actionSel.value = '';
                     }
                 });
-
-                xhr.addEventListener('error', function() {
-                    showUploadError('Network error during upload. Please try again.');
-                });
-
-                xhr.send(fd);
             });
 
             function showUploadError(msg) {
