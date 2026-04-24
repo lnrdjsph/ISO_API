@@ -426,21 +426,39 @@
     <div id="mobile-overlay"></div>
 
     <div class="topbar fixed left-0 right-0 top-0 z-[10000] flex h-8 items-center justify-between bg-gradient-to-r from-green-900 via-black to-blue-900 px-4 shadow-sm">
-        <!-- Left: mobile hamburger -->
-        <div class="flex items-center space-x-3">
-            <button id="mobileMenuBtn" class="rounded p-1 text-white hover:bg-white/10 md:hidden" aria-label="Open menu">
+
+        {{-- Left: toggle (desktop) + hamburger (mobile) --}}
+        <div class="flex items-center space-x-2">
+
+            {{-- Desktop sidebar toggle — hidden on mobile --}}
+            <button id="sidebarToggle"
+                class="toggle-btn relative hidden items-center rounded p-2 text-white hover:bg-white/10 md:flex"
+                aria-label="Toggle sidebar">
+                <svg class="h-5 w-5 flex-shrink-0 transition-transform duration-300"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+                <div class="tooltip" id="sidebarToggleTooltip">Collapse Menu</div>
+            </button>
+
+            {{-- Mobile hamburger — hidden on desktop --}}
+            <button id="mobileMenuBtn"
+                class="rounded p-1 text-white hover:bg-white/10 md:hidden"
+                aria-label="Open menu">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
+
         </div>
 
+        {{-- Right: user info --}}
         @php
             use App\Support\LocationConfig;
             $user = Auth::user();
             $code = trim((string) $user?->user_location);
-
-            // Try store name first, then region label, fallback to code
             $storeLabel = LocationConfig::stores()[$code] ?? null;
             $regionLabel = LocationConfig::regionLabels()[$code] ?? null;
             $fullLocation = $storeLabel ?? ($regionLabel ?? $code);
@@ -451,6 +469,7 @@
                 Howdy, {{ $user?->name }} ({{ $fullLocation }})
             </span>
         </div>
+
     </div>
 
 
@@ -474,7 +493,7 @@
             </a>
 
             <div class="nav-content">
-                <ul class="space-y-1 pt-4">
+                <ul class="space-y-1">
                     <!-- Dashboard Group -->
                     <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }} group relative">
                         <a
@@ -1058,26 +1077,20 @@
             </div>
 
             <div class="nav-bottom fixed bottom-2 w-auto">
-                <!-- Toggle Button -->
-                <div class="pb-4">
-                    <button
-                        id="sidebarToggle"
-                        class="toggle-btn relative flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900">
-                        <svg
-                            class="h-5 w-5 flex-shrink-0 transition-transform duration-300"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M15 19l-7-7 7-7" />
+
+                {{-- My Account --}}
+                <li class="{{ request()->routeIs('account.*') ? 'active' : '' }} group relative">
+                    <a href="{{ route('account.show') }}"
+                        class="nav-item {{ request()->routeIs('account.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2" class="h-5 w-5 flex-shrink-0">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.797 5.879 2.11M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <span class="nav-text ml-3">Collapse Menu</span>
-                        <div class="tooltip">Toggle Menu</div>
-                    </button>
-                </div>
+                        <span class="nav-text ml-3">My Account</span>
+                        <div class="tooltip">My Account</div>
+                    </a>
+                </li>
 
                 <!-- Logout -->
                 <div class="border-t border-gray-200 pt-4">
@@ -1148,21 +1161,28 @@
             if (isCollapsed && sidebar) {
                 sidebar.classList.remove('sidebar-expanded');
                 sidebar.classList.add('sidebar-collapsed');
+
+                // ← add this
+                const tooltip = document.getElementById('sidebarToggleTooltip');
+                if (tooltip) tooltip.textContent = 'Expand Menu';
             }
 
             // Update main container width when sidebar toggles
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
                     const isCurrentlyCollapsed = sidebar.classList.contains('sidebar-collapsed');
+                    const tooltip = document.getElementById('sidebarToggleTooltip');
 
                     if (isCurrentlyCollapsed) {
                         sidebar.classList.remove('sidebar-collapsed');
                         sidebar.classList.add('sidebar-expanded');
                         localStorage.setItem('sidebarCollapsed', 'false');
+                        if (tooltip) tooltip.textContent = 'Collapse Menu';
                     } else {
                         sidebar.classList.remove('sidebar-expanded');
                         sidebar.classList.add('sidebar-collapsed');
                         localStorage.setItem('sidebarCollapsed', 'true');
+                        if (tooltip) tooltip.textContent = 'Expand Menu';
                     }
                 });
             }

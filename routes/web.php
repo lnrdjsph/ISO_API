@@ -13,6 +13,9 @@ use App\Http\Controllers\InventoryExportController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WmsLogController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\ChangePasswordController;
+use App\Http\Controllers\Auth\AccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -235,3 +238,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs',       [WmsLogController::class, 'index'])->name('logs');
     Route::get('/logs/fetch', [WmsLogController::class, 'fetch'])->name('logs.fetch');
 });
+
+
+// Forgot password
+Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])
+    ->name('password.request');
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+    ->name('password.email');
+
+// Reset password
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])
+    ->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+    ->name('password.update');
+
+
+
+Route::get('/account', [AccountController::class, 'show'])->name('account.show');
+Route::put('/account', [AccountController::class, 'update'])->name('account.update');
+Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');

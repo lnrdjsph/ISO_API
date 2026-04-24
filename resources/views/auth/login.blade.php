@@ -70,9 +70,9 @@
                             class="mr-2">
                         Remember Me
                     </label>
-                    {{-- <a
+                    <a
             href="{{ route('password.request') }}"
-            class="text-sm text-indigo-600 hover:underline">Forgot Password?</a> --}}
+            class="text-sm text-indigo-600 hover:underline">Forgot Password?</a>
                 </div>
 
                 <button
