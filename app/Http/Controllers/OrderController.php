@@ -12,7 +12,7 @@ use Illuminate\Support\Arr;
 
 use Illuminate\Support\Facades\Storage;
 
-use App\Models\User;
+// use App\Models\User;
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -761,90 +761,59 @@ class OrderController extends Controller
      * Verifies the HMAC-signed key, moves the file from private tmp to public
      * storage, then approves the order.
      */
-    // public function approveOrder(Request $request)
-    // {
-    //     $request->validate([
-    //         'id'         => 'required|exists:orders,id',
-    //         'temp_key'   => 'nullable|string',
-    //         'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-    //     ]);
-
-    //     $order    = Order::findOrFail($request->id);
-    //     $filePath = null;
-
-    //     // ── Two-step path (primary) ──────────────────────────────────────────
-    //     if ($request->filled('temp_key')) {
-    //         $decoded  = base64_decode($request->input('temp_key'));
-    //         $parts    = explode('|', $decoded, 2);
-    //         $tempPath = $parts[0] ?? null;
-    //         $mac      = $parts[1] ?? null;
-
-    //         $valid = $tempPath
-    //             && $mac
-    //             && hash_equals(hash_hmac('sha256', $tempPath, config('app.key')), $mac)
-    //             && Storage::disk('local')->exists($tempPath);
-
-    //         if (!$valid) {
-    //             return redirect()->back()
-    //                 ->withErrors(['temp_key' => 'Invalid or expired upload token. Please try again.']);
-    //         }
-
-    //         if ($order->approval_document) {
-    //             Storage::disk('public')->delete($order->approval_document);
-    //         }
-
-    //         $destPath = 'order_approvals/' . $order->id . '/' . basename($tempPath);
-    //         Storage::disk('public')->put(
-    //             $destPath,
-    //             Storage::disk('local')->get($tempPath)
-    //         );
-    //         Storage::disk('local')->delete($tempPath);
-    //         $filePath = $destPath;
-
-    //         // ── Legacy direct-upload (fallback) ──────────────────────────────────
-    //     } elseif ($request->hasFile('attachment')) {
-    //         if ($order->approval_document) {
-    //             Storage::disk('public')->delete($order->approval_document);
-    //         }
-    //         $filePath = $request->file('attachment')->store(
-    //             'order_approvals/' . $order->id,
-    //             'public'
-    //         );
-    //     }
-
-    //     $order->order_status      = 'approved';
-    //     $order->approval_document = $filePath;
-    //     $order->save();
-
-    //     $order->notes()->create([
-    //         'user_id' => auth()->id(),
-    //         'status'  => 'approved',
-    //         'note'    => "Order approved by:<br>" .
-    //             "<strong>" . auth()->user()->name . "</strong><br>" .
-    //             ucfirst(auth()->user()->role),
-    //     ]);
-
-    //     $requester = \App\Models\User::find($order->requested_by);
-    //     if ($requester && $requester->email) {
-    //         Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
-    //     }
-
-    //     return redirect()
-    //         ->route('orders.show', $order->id)
-    //         ->with('success', 'Order approved successfully!');
-    // }
-
-    // TEMPORARY — no attachment required. Comment out uploadTempApprovalDoc()
-    // and approveOrder() above, then use this until WAF exception is live.
-    public function approveOrderTemp(Request $request)
+    public function approveOrder(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:orders,id',
+            'id'         => 'required|exists:orders,id',
+            'temp_key'   => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
 
-        $order = Order::findOrFail($request->id);
+        $order    = Order::findOrFail($request->id);
+        $filePath = null;
+
+        // ── Two-step path (primary) ──────────────────────────────────────────
+        if ($request->filled('temp_key')) {
+            $decoded  = base64_decode($request->input('temp_key'));
+            $parts    = explode('|', $decoded, 2);
+            $tempPath = $parts[0] ?? null;
+            $mac      = $parts[1] ?? null;
+
+            $valid = $tempPath
+                && $mac
+                && hash_equals(hash_hmac('sha256', $tempPath, config('app.key')), $mac)
+                && Storage::disk('local')->exists($tempPath);
+
+            if (!$valid) {
+                return redirect()->back()
+                    ->withErrors(['temp_key' => 'Invalid or expired upload token. Please try again.']);
+            }
+
+            if ($order->approval_document) {
+                Storage::disk('public')->delete($order->approval_document);
+            }
+
+            $destPath = 'order_approvals/' . $order->id . '/' . basename($tempPath);
+            Storage::disk('public')->put(
+                $destPath,
+                Storage::disk('local')->get($tempPath)
+            );
+            Storage::disk('local')->delete($tempPath);
+            $filePath = $destPath;
+
+            // ── Legacy direct-upload (fallback) ──────────────────────────────────
+        } elseif ($request->hasFile('attachment')) {
+            if ($order->approval_document) {
+                Storage::disk('public')->delete($order->approval_document);
+            }
+            $filePath = $request->file('attachment')->store(
+                'order_approvals/' . $order->id,
+                'public'
+            );
+        }
+
         $order->order_status      = 'approved';
-        $order->approval_document = null;
+        $order->approval_document = $filePath;
         $order->save();
 
         $order->notes()->create([
@@ -864,6 +833,37 @@ class OrderController extends Controller
             ->route('orders.show', $order->id)
             ->with('success', 'Order approved successfully!');
     }
+
+    // TEMPORARY — no attachment required. Comment out uploadTempApprovalDoc()
+    // and approveOrder() above, then use this until WAF exception is live.
+    // public function approveOrderTemp(Request $request)
+    // {
+    //     $request->validate([
+    //         'id' => 'required|exists:orders,id',
+    //     ]);
+
+    //     $order = Order::findOrFail($request->id);
+    //     $order->order_status      = 'approved';
+    //     $order->approval_document = null;
+    //     $order->save();
+
+    //     $order->notes()->create([
+    //         'user_id' => auth()->id(),
+    //         'status'  => 'approved',
+    //         'note'    => "Order approved by:<br>" .
+    //             "<strong>" . auth()->user()->name . "</strong><br>" .
+    //             ucfirst(auth()->user()->role),
+    //     ]);
+
+    //     $requester = \App\Models\User::find($order->requested_by);
+    //     if ($requester && $requester->email) {
+    //         Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
+    //     }
+
+    //     return redirect()
+    //         ->route('orders.show', $order->id)
+    //         ->with('success', 'Order approved successfully!');
+    // }
 
     public function rejectOrder(Request $request)
     {
