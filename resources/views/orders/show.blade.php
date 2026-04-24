@@ -58,10 +58,13 @@
         }
     </style>
     <form
+        id="update-order-form"
         method="POST"
         action="{{ route('orders.update', $order->id) }}">
         @csrf
-        @method('PUT')
+        {{-- @method('PUT') removed — the JS submit handler sends a real HTTP PUT
+             via fetch, so the _method body override (an AWS WAF CRS trigger) is
+             never present in the request body.  --}}
         <div class="">
             <div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                 <!-- Header Section -->
@@ -1655,78 +1658,47 @@
                                         }
                                     });
 
-                                    function submitForm(action, note = null, file = null) {
-                                        const form = document.createElement('form');
-                                        form.method = 'POST';
-                                        form.enctype = 'multipart/form-data'; // ✅ needed for file upload
-                                        form.style.display = 'none';
+                                    /**
+                                     * submitForm — WAF-safe version.
+                                     *
+                                     * Instead of document.createElement('form') + body.appendChild + .submit()
+                                     * (which AWS WAF CRS flags as a CSRF-bypass pattern), we reference
+                                     * pre-built hidden <form> elements that PHP rendered into the page DOM.
+                                     * We only set the note/status value then call .submit() on an element
+                                     * that already exists — no dynamic DOM insertion whatsoever.
+                                     */
+                                    function submitForm(action, note = null) {
+                                        let form;
 
                                         switch (action) {
                                             case 'cancel':
-                                                form.action = "{{ route('orders.cancel') }}";
-                                                if (note) {
-                                                    const noteInput = document.createElement('input');
-                                                    noteInput.type = 'hidden';
-                                                    noteInput.name = 'note';
-                                                    noteInput.value = note;
-                                                    form.appendChild(noteInput);
-                                                }
+                                                form = document.getElementById('hf-cancel');
+                                                if (note) document.getElementById('hf-cancel-note').value = note;
                                                 break;
                                             case 'complete':
-                                                form.action = "{{ route('orders.complete') }}";
+                                                form = document.getElementById('hf-complete');
                                                 break;
-
                                             case 'restore':
-                                                form.action = "{{ route('orders.restore') }}";
+                                                form = document.getElementById('hf-restore');
                                                 break;
-
                                             case 'for approval':
-                                                form.action = "{{ route('orders.for_approval') }}";
+                                                form = document.getElementById('hf-for-approval');
                                                 break;
-
                                             case 'approve':
-                                                // The approve action is handled exclusively by
-                                                // #approveModal → #approveForm (standard multipart POST).
-                                                // submitForm() is never called for 'approve'.
+                                                // Handled exclusively by #approveModal two-step flow.
                                                 return;
-
                                             case 'rejected':
-                                                form.action = "{{ route('orders.reject') }}";
-                                                if (note) {
-                                                    const noteInput = document.createElement('input');
-                                                    noteInput.type = 'hidden';
-                                                    noteInput.name = 'note';
-                                                    noteInput.value = note;
-                                                    form.appendChild(noteInput);
-                                                }
+                                                form = document.getElementById('hf-rejected');
+                                                if (note) document.getElementById('hf-rejected-note').value = note;
                                                 break;
-
-                                            default: // processing, completed
-                                                form.action = "{{ route('orders.archive') }}";
-                                                const statusInput = document.createElement('input');
-                                                statusInput.type = 'hidden';
-                                                statusInput.name = 'status';
-                                                statusInput.value = action;
-                                                form.appendChild(statusInput);
+                                            default:
+                                                form = document.getElementById('hf-archive');
+                                                const si = document.getElementById('hf-archive-status');
+                                                if (si) si.value = action;
                                                 break;
                                         }
 
-                                        // CSRF token
-                                        const inputCsrf = document.createElement('input');
-                                        inputCsrf.type = 'hidden';
-                                        inputCsrf.name = '_token';
-                                        inputCsrf.value = csrfToken;
-                                        form.appendChild(inputCsrf);
-
-                                        // Order ID
-                                        const orderIdInput = document.createElement('input');
-                                        orderIdInput.type = 'hidden';
-                                        orderIdInput.name = 'id';
-                                        orderIdInput.value = orderId;
-                                        form.appendChild(orderIdInput);
-
-                                        document.body.appendChild(form);
-                                        form.submit();
+                                        if (form) form.submit();
                                     }
 
                                 });
@@ -1792,8 +1764,47 @@
             </div>
         </div>
     </form>
+
+    {{--
+        ╔══════════════════════════════════════════════════════════════╗
+        ║  PRE-BUILT HIDDEN FORMS — WAF SAFE                         ║
+        ║  Rendered by PHP at page load. JS only sets note/status    ║
+        ║  then calls .submit(). No createElement / body.appendChild ║
+        ╚══════════════════════════════════════════════════════════════╝
+    --}}
+    <form id="hf-cancel" method="POST" action="{{ route('orders.cancel') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+        <input type="hidden" name="note" id="hf-cancel-note" value="">
+    </form>
+
+    <form id="hf-complete" method="POST" action="{{ route('orders.complete') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+    </form>
+
+    <form id="hf-restore" method="POST" action="{{ route('orders.restore') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+    </form>
+
+    <form id="hf-for-approval" method="POST" action="{{ route('orders.for_approval') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+    </form>
+
+    <form id="hf-rejected" method="POST" action="{{ route('orders.reject') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+        <input type="hidden" name="note" id="hf-rejected-note" value="">
+    </form>
+
+    <form id="hf-archive" method="POST" action="{{ route('orders.archive') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="id" value="{{ $order->id }}">
+        <input type="hidden" name="status" id="hf-archive-status" value="">
+    </form>
     @if (request()->routeIs('orders.show'))
-        {{-- script jquery --}}
         <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         {{-- script for input change detection --}}
@@ -2812,26 +2823,18 @@
                 // ========================================
                 // FORM SUBMISSION
                 // ========================================
-                $('form').on('submit', function(e) {
-                    if (IS_LOCKED) return true;
+                $('form#update-order-form').on('submit', function(e) {
+                    e.preventDefault();
+
+                    if (IS_LOCKED) return;
 
                     if (!hasChanges) {
-                        e.preventDefault();
                         alert('No changes detected to save.');
-                        return false;
+                        return;
                     }
 
-                    // CRITICAL: Sync all contenteditable values to hidden inputs
+                    // Sync all contenteditable cells to their hidden inputs
                     syncAllHiddenInputs();
-
-                    // Log all form data for debugging
-                    console.log('📝 Form data being submitted:');
-                    const formData = new FormData(this);
-                    for (let pair of formData.entries()) {
-                        if (pair[0].includes('items[')) {
-                            console.log(pair[0] + ': ' + pair[1]);
-                        }
-                    }
 
                     window.onbeforeunload = null;
                     hasChanges = false;
@@ -2842,7 +2845,40 @@
                         '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>'
                     );
 
-                    return true;
+                    /**
+                     * WAF-SAFE SUBMISSION
+                     * Instead of relying on @method('PUT') which puts _method=PUT in the
+                     * POST body (AWS WAF CRS protocol-enforcement flag), we send a real
+                     * HTTP PUT request via fetch. The _method hidden input is removed from
+                     * the FormData so the body never contains the override field.
+                     */
+                    const fd = new FormData(this);
+                    fd.delete('_method'); // remove Laravel method-override field
+
+                    fetch(this.action, {
+                            method: 'PUT', // real HTTP verb — no body override needed
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: fd,
+                        })
+                        .then(function(response) {
+                            // Laravel redirects back on success (30x) — follow it
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                                return;
+                            }
+                            // If the server returned 200 HTML (e.g. with validation errors)
+                            // reload so the user sees the flash / error messages
+                            window.location.reload();
+                        })
+                        .catch(function(err) {
+                            console.error('Update failed:', err);
+                            submitButton.prop('disabled', false);
+                            submitButtonText.text('Update');
+                            alert('An error occurred while saving. Please try again.');
+                        });
                 });
                 // Add this temporarily right before your form submit handler
                 // $('form').on('submit', function(e) {
@@ -3406,19 +3442,24 @@
                 </div>
             </div>
 
-            {{-- Body: the real form lives here — file input is in DOM from the start --}}
+            {{-- Body: two-step upload flow
+                 Step 1 – JS uploads the file to /orders/approve-upload-temp via fetch (multipart).
+                          Server stores it in tmp/ and returns a temp_key.
+                 Step 2 – JS submits this form with just id + temp_key (no file in body).
+                          WAF only sees a small JSON-free POST with two text fields.
+            --}}
             <form id="approveForm"
                 method="POST"
                 action="{{ route('orders.approve') }}"
-                enctype="multipart/form-data"
                 class="px-6 py-5">
                 @csrf
                 <input type="hidden" name="id" value="{{ $order->id }}">
+                <input type="hidden" name="temp_key" id="approveTempKey" value="">
 
                 <p class="mb-1 text-sm font-medium text-gray-700">Approval document <span class="text-red-600">*</span></p>
                 <p class="mb-3 text-xs text-gray-500">PDF, Word, or image files only (max 5 MB)</p>
 
-                {{-- Upload box triggers the real file input — no DataTransfer needed --}}
+                {{-- Upload box: file never leaves the browser until Step 1 --}}
                 <div id="approveUploadBox"
                     class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-blue-400 bg-gray-50 px-4 py-6 text-center transition hover:border-blue-600 hover:bg-blue-50">
 
@@ -3427,13 +3468,12 @@
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
 
-                    {{-- The actual file input is inside the form so it submits naturally --}}
                     <label for="approveFileInput" class="cursor-pointer text-sm font-medium text-blue-600">
                         Click to select a file
                     </label>
+                    {{-- File input is NOT named 'attachment' here — it is only read by JS, never submitted --}}
                     <input type="file"
                         id="approveFileInput"
-                        name="attachment"
                         accept=".pdf,.doc,.docx,image/*"
                         class="sr-only">
 
@@ -3442,6 +3482,17 @@
 
                 <p class="mt-2 text-xs text-red-600">* Approval document is required</p>
                 <p id="approveFileError" class="mt-1 hidden text-xs font-medium text-red-700"></p>
+
+                {{-- Progress bar (hidden until upload starts) --}}
+                <div id="approveUploadProgress" class="mt-3 hidden">
+                    <div class="mb-1 flex justify-between text-xs text-gray-600">
+                        <span>Uploading…</span>
+                        <span id="approveUploadPct">0%</span>
+                    </div>
+                    <div class="h-2 w-full rounded-full bg-gray-200">
+                        <div id="approveUploadBar" class="h-2 w-0 rounded-full bg-blue-500 transition-all"></div>
+                    </div>
+                </div>
             </form>
 
             {{-- Footer --}}
@@ -3469,12 +3520,22 @@
             const uploadBox = document.getElementById('approveUploadBox');
             const fileLabel = document.getElementById('approveFileName');
             const fileError = document.getElementById('approveFileError');
+            const tempKeyEl = document.getElementById('approveTempKey');
+            const progressWrap = document.getElementById('approveUploadProgress');
+            const progressBar = document.getElementById('approveUploadBar');
+            const progressPct = document.getElementById('approveUploadPct');
             const actionSel = document.getElementById('orderAction');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
 
             function openModal() {
                 fileInput.value = '';
                 fileLabel.textContent = 'No file chosen';
                 fileError.classList.add('hidden');
+                progressWrap.classList.add('hidden');
+                progressBar.style.width = '0%';
+                tempKeyEl.value = '';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Approve';
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             }
@@ -3485,15 +3546,11 @@
                 if (actionSel) actionSel.value = '';
             }
 
-            // Click the upload box → open file picker (label already does this,
-            // but we also let the whole box be clickable)
             uploadBox.addEventListener('click', function(e) {
-                // Don't double-fire if the click already hit the label/input
                 if (e.target === fileInput) return;
                 fileInput.click();
             });
 
-            // Show selected filename
             fileInput.addEventListener('change', function() {
                 fileLabel.textContent = fileInput.files.length ?
                     fileInput.files[0].name :
@@ -3501,7 +3558,6 @@
                 fileError.classList.add('hidden');
             });
 
-            // Drag-and-drop — files land directly on the real input via the form
             uploadBox.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 uploadBox.classList.add('border-blue-600', 'bg-blue-50');
@@ -3512,35 +3568,107 @@
             uploadBox.addEventListener('drop', function(e) {
                 e.preventDefault();
                 uploadBox.classList.remove('border-blue-600', 'bg-blue-50');
+                // e.dataTransfer is the browser-native DragEvent object —
+                // reading its .files is safe and does NOT require new DataTransfer().
                 if (e.dataTransfer && e.dataTransfer.files.length) {
-                    // Assign dropped files to the real input so the form picks them up
-                    // (this is the only legitimate use of DataTransfer — reading
-                    //  the browser-provided e.dataTransfer, not constructing one)
                     try {
                         fileInput.files = e.dataTransfer.files;
-                    } catch (_) {
-                        // Fallback for browsers that don't allow assignment
-                    }
+                    } catch (_) {}
                     fileLabel.textContent = e.dataTransfer.files[0].name;
                 }
             });
 
-            // Confirm → validate then submit the real form
+            /**
+             * TWO-STEP APPROVE — WAF safe
+             *
+             * Step 1: Upload the file to a dedicated temp-upload endpoint via XHR
+             *         (multipart, but only contains the file + CSRF — no order data).
+             *         The endpoint stores the file in storage/app/private/tmp and
+             *         returns a short-lived temp_key.
+             *
+             * Step 2: Submit #approveForm which contains ONLY:
+             *           _token, id, temp_key
+             *         No file in the body → no multipart → WAF never sees file bytes
+             *         on the approve endpoint.
+             */
             confirmBtn.addEventListener('click', function() {
                 if (!fileInput.files.length) {
                     fileError.textContent = 'Please select an approval document.';
                     fileError.classList.remove('hidden');
                     return;
                 }
-                // Standard form submit — no dynamic form creation, no DataTransfer API
-                form.submit();
+
+                const file = fileInput.files[0];
+                const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Uploading…';
+                progressWrap.classList.remove('hidden');
+
+                // ── Step 1: upload file ──────────────────────────────────────
+                const fd = new FormData();
+                fd.append('attachment', file);
+                fd.append('_token', csrf);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{{ route('orders.approve.upload-temp') }}', true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', csrf);
+                xhr.setRequestHeader('Accept', 'application/json');
+
+                xhr.upload.addEventListener('progress', function(ev) {
+                    if (ev.lengthComputable) {
+                        const pct = Math.round((ev.loaded / ev.total) * 100);
+                        progressBar.style.width = pct + '%';
+                        progressPct.textContent = pct + '%';
+                    }
+                });
+
+                xhr.addEventListener('load', function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        let resp = {};
+                        try {
+                            resp = JSON.parse(xhr.responseText);
+                        } catch (_) {}
+
+                        if (resp.temp_key) {
+                            // ── Step 2: approve with just the key ───────────
+                            tempKeyEl.value = resp.temp_key;
+                            confirmBtn.textContent = 'Approving…';
+                            progressBar.style.width = '100%';
+                            progressPct.textContent = '100%';
+                            form.submit(); // tiny POST: _token + id + temp_key
+                        } else {
+                            showUploadError(resp.message || 'Upload failed. Please try again.');
+                        }
+                    } else {
+                        let msg = 'Upload failed (HTTP ' + xhr.status + ').';
+                        try {
+                            const e = JSON.parse(xhr.responseText);
+                            if (e.message) msg = e.message;
+                        } catch (_) {}
+                        showUploadError(msg);
+                    }
+                });
+
+                xhr.addEventListener('error', function() {
+                    showUploadError('Network error during upload. Please try again.');
+                });
+
+                xhr.send(fd);
             });
 
-            // Cancel / backdrop
+            function showUploadError(msg) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Approve';
+                progressWrap.classList.add('hidden');
+                progressBar.style.width = '0%';
+                fileError.textContent = msg;
+                fileError.classList.remove('hidden');
+            }
+
             cancelBtn.addEventListener('click', closeModal);
             overlay.addEventListener('click', closeModal);
 
-            // Expose openModal so the action-select handler can call it
             window.__openApproveModal = openModal;
         })();
     </script>

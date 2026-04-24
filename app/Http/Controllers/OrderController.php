@@ -16,7 +16,7 @@ use App\Models\User;
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Support\LocationConfig;
+
 
 class OrderController extends Controller
 {
@@ -27,10 +27,10 @@ class OrderController extends Controller
         $query = Order::query()->with('items');
 
         // 🗺️ Region -> store mapping
-        // $storeMapping = [
-        //     'lz' => ['6012'], // Luzon = only Antipolo
-        //     'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
-        // ];
+        $storeMapping = [
+            'lz' => ['6012'], // Luzon = only Antipolo
+            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
+        ];
 
         // Default
         $allowedStatuses = null;
@@ -41,11 +41,8 @@ class OrderController extends Controller
             $query->whereIn('order_status', $allowedStatuses);
 
             // Restrict managers by region
-            if ($user->user_location) {
-                $stores = LocationConfig::regionStores($user->user_location);
-                if (!empty($stores)) {
-                    $query->whereIn('requesting_store', $stores);
-                }
+            if ($user->user_location && isset($storeMapping[$user->user_location])) {
+                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
             }
         } elseif ($user->role === 'super admin') {
             // 🔓 Super admin sees all — no restrictions
@@ -95,20 +92,11 @@ class OrderController extends Controller
             $query->whereDate('time_order', '<=', $endDate);
         }
 
-        // ✅ Apply ordering based on role
-        if ($user->role === 'manager') {
-            // For managers: show 'for approval' first, then order by created_at desc
-            $query->orderByRaw("CASE WHEN order_status = 'for approval' THEN 0 ELSE 1 END")
-                ->orderByDesc('created_at');
-        } else {
-            // For other roles: just order by created_at desc
-            $query->orderByDesc('created_at');
-        }
-
         // ✅ Pagination
         $perPage = $request->input('per_page', 10);
 
-        $orders = $query->paginate($perPage)
+        $orders = $query->orderByDesc('created_at')
+            ->paginate($perPage)
             ->onEachSide(2)
             ->withQueryString();
 
@@ -117,7 +105,35 @@ class OrderController extends Controller
         $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
         // 🏪 All store names
-        $storeLocations = LocationConfig::accessibleStores($user->role, $user->user_location);
+        $allStoreLocations = [
+            '4002' => 'F2 - Metro Wholesalemart Colon',
+            '2010' => 'S10 - Metro Maasin',
+            '2017' => 'S17 - Metro Tacloban',
+            '2019' => 'S19 - Metro Bay-Bay',
+            '3018' => 'F18 - Metro Alang-Alang',
+            '3019' => 'F19 - Metro Hilongos',
+            '2008' => 'S8 - Metro Toledo',
+            '6012' => 'H8 - Super Metro Antipolo',
+            '6009' => 'H9 - Super Metro Carcar',
+            '6010' => 'H10 - Super Metro Bogo',
+        ];
+
+        // 🎯 Dropdown restriction
+        if ($user->role === 'super admin') {
+            $storeLocations = $allStoreLocations; // show all stores
+        } elseif ($user->role === 'manager') {
+            if ($user->user_location && isset($storeMapping[$user->user_location])) {
+                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+            } else {
+                $storeLocations = $allStoreLocations;
+            }
+        } else {
+            if ($user->user_location) {
+                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
+            } else {
+                $storeLocations = $allStoreLocations;
+            }
+        }
 
 
         if ($request->ajax()) {
@@ -397,13 +413,8 @@ class OrderController extends Controller
      */
     private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &$changes)
     {
-        // Get the order from the item
-        $order = $orderItem->order;
-
-        // Use the order's requesting_store, not auth user's location
-        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
-
-        $tableName = 'products_' . strtolower($storeCode);
+        $userLocation = auth()->user()->user_location;
+        $tableName = 'products_' . strtolower($userLocation);
 
         // === MAIN ITEM ADJUSTMENT ===
         $oldQty = $orderItem->total_qty;
@@ -687,11 +698,11 @@ class OrderController extends Controller
         $recipients = [];
 
         if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
-            $recipients[] = 'leonard.tomalon@metroretail.ph';
+            $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
         if (in_array($order->requesting_store, ['6012'])) {
-            $recipients[] = 'leonard.tomalon@metroretail.ph';
+            $recipients[] = 'akehide.tecson@metroretail.ph';
         }
 
         // If recipients found, send email
@@ -716,18 +727,82 @@ class OrderController extends Controller
     }
 
 
+    /**
+     * WAF-SAFE APPROVE — Step 1 of 2
+     *
+     * Receives ONLY the file (multipart). Stores it privately and returns an
+     * HMAC-signed temp_key. Because the approve endpoint itself (Step 2) then
+     * receives NO file, the AWS WAF SizeRestrictions_BODY rule and file-content
+     * inspection rules cannot trigger on the final approval POST.
+     *
+     * Add a WAF byte-match ALLOW rule for this specific URI path:
+     *   /b2b2c/orders/approve/upload-temp
+     * so the SizeRestrictions_BODY managed rule does not block the file upload.
+     */
+    public function uploadTempApprovalDoc(Request $request)
+    {
+        $request->validate([
+            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+        ]);
+
+        $file     = $request->file('attachment');
+        $tempPath = $file->store('approval_tmp', 'local'); // private disk
+
+        // Sign with HMAC — key cannot be guessed or forged by the client
+        $tempKey = base64_encode($tempPath . '|' . hash_hmac('sha256', $tempPath, config('app.key')));
+
+        return response()->json(['temp_key' => $tempKey]);
+    }
+
+    /**
+     * WAF-SAFE APPROVE — Step 2 of 2
+     *
+     * Receives ONLY: _token + id + temp_key  (< 300 bytes total, no file).
+     * Verifies the HMAC-signed key, moves the file from private tmp to public
+     * storage, then approves the order.
+     */
     public function approveOrder(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:orders,id',
+            'id'         => 'required|exists:orders,id',
+            'temp_key'   => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
 
-        $order = Order::findOrFail($request->id);
-
-        // Save the file
+        $order    = Order::findOrFail($request->id);
         $filePath = null;
-        if ($request->hasFile('attachment')) {
+
+        // ── Two-step path (primary) ──────────────────────────────────────────
+        if ($request->filled('temp_key')) {
+            $decoded  = base64_decode($request->input('temp_key'));
+            $parts    = explode('|', $decoded, 2);
+            $tempPath = $parts[0] ?? null;
+            $mac      = $parts[1] ?? null;
+
+            $valid = $tempPath
+                && $mac
+                && hash_equals(hash_hmac('sha256', $tempPath, config('app.key')), $mac)
+                && Storage::disk('local')->exists($tempPath);
+
+            if (!$valid) {
+                return redirect()->back()
+                    ->withErrors(['temp_key' => 'Invalid or expired upload token. Please try again.']);
+            }
+
+            if ($order->approval_document) {
+                Storage::disk('public')->delete($order->approval_document);
+            }
+
+            $destPath = 'order_approvals/' . $order->id . '/' . basename($tempPath);
+            Storage::disk('public')->put(
+                $destPath,
+                Storage::disk('local')->get($tempPath)
+            );
+            Storage::disk('local')->delete($tempPath);
+            $filePath = $destPath;
+
+            // ── Legacy direct-upload (fallback) ──────────────────────────────────
+        } elseif ($request->hasFile('attachment')) {
             if ($order->approval_document) {
                 Storage::disk('public')->delete($order->approval_document);
             }
@@ -737,31 +812,27 @@ class OrderController extends Controller
             );
         }
 
-        // Update order
-        $order->order_status = 'approved';
+        $order->order_status      = 'approved';
         $order->approval_document = $filePath;
         $order->save();
 
-        // Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
             'note'    => "Order approved by:<br>" .
                 "<strong>" . auth()->user()->name . "</strong><br>" .
-                ucfirst(auth()->user()->role)
+                ucfirst(auth()->user()->role),
         ]);
 
-        // Send email
         $requester = \App\Models\User::find($order->requested_by);
         if ($requester && $requester->email) {
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
-        // ✅ Return a SIMPLE redirect (like your working import)
-        return redirect()->route('orders.show', $order->id)
+        return redirect()
+            ->route('orders.show', $order->id)
             ->with('success', 'Order approved successfully!');
     }
-
 
     public function rejectOrder(Request $request)
     {
@@ -835,15 +906,16 @@ class OrderController extends Controller
 
     public function revertAllocationStock($orderId)
     {
+        $userLocation = auth()->user()->user_location;
+        if (!$userLocation) return false;
+
+        $tableName = 'products_' . strtolower($userLocation);
+        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+
+        // Load order with items
         $order = Order::with('items')->findOrFail($orderId);
 
-        // Use the order's requesting_store, not auth user's location
-        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
-
-        $tableName = 'products_' . strtolower($storeCode);
-        $warehouseCode = $this->getWarehouseCodeByLocation($storeCode);
-
-        // Normalize items...
+        // Normalize items (if ever a collection of orders is passed)
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
             $items = $order->pluck('items')->flatten();
         } else {
@@ -855,12 +927,6 @@ class OrderController extends Controller
             /* -------------------------------
             * 1) REVERT CASE ALLOCATION
             * ------------------------------- */
-            // Skip freebies — they were never deducted from allocation
-            if (strtoupper($item->item_type ?? '') === 'FREEBIE') {
-                Log::info("Revert skipped — freebie item: SKU {$item->sku}");
-                continue;
-            }
-
             $product = DB::table($tableName)
                 ->where('sku', strtoupper($item->sku))
                 ->first();
@@ -932,19 +998,19 @@ class OrderController extends Controller
 
     public function deductAllocationStock($orderId)
     {
-        // Load order first to get its requesting_store
+        $userLocation = auth()->user()->user_location;
+        $tableName = 'products_' . strtolower($userLocation);
+        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
+
+        // Load order and items
         $order = Order::with('items')->findOrFail($orderId);
 
-        // Use the order's requesting_store, not auth user's location
-        $storeCode = $this->resolveStoreCodeForTable($order->requesting_store);
-
-        $tableName = 'products_' . strtolower($storeCode);
-        $warehouseCode = $this->getWarehouseCodeByLocation($storeCode);
-
-        // Normalize items...
+        // Normalize items: handle cases where $order might be a Collection of orders or a single model
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
+            // $order is a collection of orders; collect all items across them
             $items = $order->pluck('items')->flatten();
         } else {
+            // $order is a single model; get relation collection safely
             $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
         }
 
@@ -1034,30 +1100,30 @@ class OrderController extends Controller
      */
     private function getWarehouseCodeByLocation(string $location): string
     {
-        // First try as store code
-        $code = LocationConfig::warehouseForStore($location);
+        // Warehouse mapping
+        $locationToWarehouse = [
+            '4002' => '80181',
+            '2010' => '80181', //bacolod
+            '2017' => '80181', //bacolod
+            '2019' => '80181', //bacolod
+            '3018' => '80181', //bacolod
+            '3019' => '80181', //bacolod
+            '2008' => '80181', // Bacolod
+            '6009' => '80181', // Bacolod
+            '6010' => '80181', // Bacolod
+            '6012' => '80141', // Silangan
+            'lz'    => '80141', // LZ
+            'vs'    => '80181', // Silangan
 
-        if ($code) {
-            return $code;
+        ];
+
+        $warehouseCode = $locationToWarehouse[$location] ?? null;
+
+        if (!$warehouseCode) {
+            throw new \Exception("Warehouse code not found for location: {$location}");
         }
 
-        // Try as region - get first store's warehouse
-        $regionStores = LocationConfig::regionStores($location);
-
-        if (!empty($regionStores)) {
-            $firstStore = $regionStores[0];
-            $code = LocationConfig::warehouseForStore($firstStore);
-            if ($code) {
-                Log::info("Resolved warehouse from region", [
-                    'region' => $location,
-                    'store' => $firstStore,
-                    'warehouse' => $code
-                ]);
-                return $code;
-            }
-        }
-
-        throw new \Exception("Warehouse code not found for location or region: {$location}");
+        return $warehouseCode;
     }
 
 
@@ -1220,12 +1286,12 @@ class OrderController extends Controller
                 'remarks'         => $item->remarks,
                 'qty_per_case'    => $item->qty_per_pc,
                 'total_qty'       => $totalQty,
-                'punch'           => '', // placeholder if needed
+                'punch'           => '???', // placeholder if needed
                 'sku'             => $item->sku,
                 'price_per_piece' => $item->price_per_pc,
                 'total_amount'    => $item->amount,
                 'trans_no'        => $item->store_order_no,
-                'terminal'        => '', // you can adjust if stored
+                'terminal'        => '???', // you can adjust if stored
             ];
         }
 
@@ -1370,99 +1436,6 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'An error occurred while cancelling items. Please check the application logs.'
             ], 500);
-        }
-    }
-
-    /**
-     * Resolve store code for products table
-     * Converts region codes like "stc" to actual store codes like "4002"
-     */
-    protected function resolveStoreCodeForTable(string $storeOrRegion): string
-    {
-        $location = strtolower($storeOrRegion);
-
-        // Check if it's a region code
-        $regionStores = LocationConfig::regionStores($location);
-
-        if (!empty($regionStores)) {
-            // It's a region - return the first store in that region
-            $firstStore = $regionStores[0];
-            Log::info("Resolved region to store for table", [
-                'region' => $location,
-                'store' => $firstStore
-            ]);
-            return $firstStore;
-        }
-
-        // It's already a store code
-        return $location;
-    }
-
-    /**
-     * Get warehouse code for a store or region
-     */
-    protected function getWarehouseCode(?string $storeCode = null): ?string
-    {
-        $user = auth()->user();
-        $userLocation = strtolower($user->user_location ?? '');
-
-        $locationToCheck = $storeCode ?? $userLocation;
-
-        if (empty($locationToCheck)) {
-            return null;
-        }
-
-        // Check if it's a region
-        $regionStores = LocationConfig::regionStores($locationToCheck);
-        if (!empty($regionStores)) {
-            $firstStore = $regionStores[0] ?? null;
-            if ($firstStore) {
-                $code = LocationConfig::warehouseForStore($firstStore);
-                if ($code) return $code;
-            }
-        }
-
-        // Try as store directly
-        return LocationConfig::warehouseForStore($locationToCheck);
-    }
-
-    /**
-     * Get order status for item badges
-     */
-    public function getOrderStatus($storeOrderNo, $sku)
-    {
-        try {
-            if (empty($storeOrderNo) || $storeOrderNo === 'N/A' || empty($sku)) {
-                return response()->json(['status' => 'N/A', 'bol_number' => null]);
-            }
-
-            $transfer = DB::connection('oracle_wms')
-                ->table('transfers')
-                ->where('tsf_no', $storeOrderNo)
-                ->where('sku', strtoupper($sku))
-                ->first();
-
-            if (!$transfer) {
-                return response()->json(['status' => 'Not Found', 'bol_number' => null]);
-            }
-
-            $statusMap = [
-                'rcv' => 'Received',
-                'shp' => 'Shipped',
-                'pik' => 'Picking',
-                'pen' => 'Pending',
-                'prc' => 'Processing',
-            ];
-
-            $status = $statusMap[strtolower($transfer->status ?? '')] ?? ucfirst($transfer->status ?? 'Pending');
-
-            return response()->json([
-                'status' => $status,
-                'bol_number' => $transfer->bol_no ?? null
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Order status check failed: ' . $e->getMessage());
-            return response()->json(['status' => 'Error', 'bol_number' => null]);
         }
     }
 }

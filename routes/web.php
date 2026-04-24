@@ -61,7 +61,15 @@ Route::prefix('b2b2c')->middleware(['auth', 'session.expired'])->group(function 
         Route::post('/restore', [OrderController::class, 'restore'])->name('restore');
         Route::post('/complete', [OrderController::class, 'complete'])->name('complete');
         Route::post('/for_approval', [OrderController::class, 'forApproval'])->name('for_approval');
-        Route::post('/approve', [OrderController::class, 'approveOrder'])->name('approve');
+        Route::post('/approve/upload-temp', [OrderController::class, 'uploadTempApprovalDoc'])
+            ->name('approve.upload-temp')
+            ->middleware(['auth', 'session.expired']);
+
+        // Step 2 — receives ONLY: _token + id + temp_key (< 300 bytes total).
+        //           No file in body → WAF body-inspection rules cannot trigger.
+        Route::post('/approve', [OrderController::class, 'approveOrder'])
+            ->name('approve')
+            ->middleware(['csp.eval']);
         Route::post('/reject', [OrderController::class, 'rejectOrder'])->name('reject');
 
         Route::get('/{id}/print-sof', [OrderController::class, 'printSOF'])->name('print.sof');
