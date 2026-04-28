@@ -62,9 +62,7 @@
         method="POST"
         action="{{ route('orders.update', $order->id) }}">
         @csrf
-        {{-- @method('PUT') removed — the JS submit handler sends a real HTTP PUT
-             via fetch, so the _method body override (an AWS WAF CRS trigger) is
-             never present in the request body.  --}}
+        @method('PUT')
         <div class="">
             <div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                 <!-- Header Section -->
@@ -184,25 +182,24 @@
                                     <!-- Payment Center -->
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
-                                        <select
-                                            name="payment_center"
-                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="background-image: none;">
-                                            <option
-                                                value=""
-                                                disabled
-                                                {{ $order->payment_center ? '' : 'selected' }}>
-                                                Select Payment Center
-                                            </option>
-
-                                            @foreach ($locationMap as $code => $label)
-                                                <option
-                                                    value="{{ $label }}"
-                                                    {{ $order->payment_center === $label ? 'selected' : '' }}>
-                                                    {{ $label }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        @if ($isSuperAdmin || $hasRegion)
+                                            <select
+                                                name="payment_center"
+                                                class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
+                                                style="background-image: none;">
+                                                <option value="" disabled {{ $order->payment_center ? '' : 'selected' }}>Select Payment Center</option>
+                                                @foreach ($dropdownStores as $code => $label)
+                                                    <option value="{{ $code }}" {{ $order->payment_center === $code ? 'selected' : '' }}>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        @else
+                                            <input type="hidden" name="payment_center" value="{{ $userLocation }}" />
+                                            <p class="text-xs font-medium text-gray-900">
+                                                {{ $locationMap[$userLocation] ?? $userLocation }}
+                                            </p>
+                                        @endif
                                     </div>
 
 
@@ -2969,18 +2966,26 @@
                 // ========================================
                 // FORM SUBMISSION
                 // ========================================
-                $('form#update-order-form').on('submit', function(e) {
-                    e.preventDefault();
-
-                    if (IS_LOCKED) return;
+                $('form').on('submit', function(e) {
+                    if (IS_LOCKED) return true;
 
                     if (!hasChanges) {
+                        e.preventDefault();
                         alert('No changes detected to save.');
-                        return;
+                        return false;
                     }
 
-                    // Sync all contenteditable cells to their hidden inputs
+                    // CRITICAL: Sync all contenteditable values to hidden inputs
                     syncAllHiddenInputs();
+
+                    // Log all form data for debugging
+                    console.log('📝 Form data being submitted:');
+                    const formData = new FormData(this);
+                    for (let pair of formData.entries()) {
+                        if (pair[0].includes('items[')) {
+                            console.log(pair[0] + ': ' + pair[1]);
+                        }
+                    }
 
                     window.onbeforeunload = null;
                     hasChanges = false;
@@ -2991,40 +2996,7 @@
                         '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>'
                     );
 
-                    /**
-                     * WAF-SAFE SUBMISSION
-                     * Instead of relying on @method('PUT') which puts _method=PUT in the
-                     * POST body (AWS WAF CRS protocol-enforcement flag), we send a real
-                     * HTTP PUT request via fetch. The _method hidden input is removed from
-                     * the FormData so the body never contains the override field.
-                     */
-                    const fd = new FormData(this);
-                    fd.delete('_method'); // remove Laravel method-override field
-
-                    fetch(this.action, {
-                            method: 'PUT', // real HTTP verb — no body override needed
-                            headers: {
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest',
-                            },
-                            body: fd,
-                        })
-                        .then(function(response) {
-                            // Laravel redirects back on success (30x) — follow it
-                            if (response.redirected) {
-                                window.location.href = response.url;
-                                return;
-                            }
-                            // If the server returned 200 HTML (e.g. with validation errors)
-                            // reload so the user sees the flash / error messages
-                            window.location.reload();
-                        })
-                        .catch(function(err) {
-                            console.error('Update failed:', err);
-                            submitButton.prop('disabled', false);
-                            submitButtonText.text('Update');
-                            alert('An error occurred while saving. Please try again.');
-                        });
+                    return true;
                 });
                 // Add this temporarily right before your form submit handler
                 // $('form').on('submit', function(e) {

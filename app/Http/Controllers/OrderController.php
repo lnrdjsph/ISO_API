@@ -116,41 +116,10 @@ class OrderController extends Controller
         $channels = Order::select('channel_order')->distinct()->pluck('channel_order');
         $statuses = $allowedStatuses ?? Order::select('order_status')->distinct()->pluck('order_status');
 
-        // 🏪 All store names
-        $allStoreLocations = [
-            '4002' => 'F2 - Metro Wholesalemart Colon',
-            '2010' => 'S10 - Metro Maasin',
-            '2017' => 'S17 - Metro Tacloban',
-            '2019' => 'S19 - Metro Bay-Bay',
-            '3018' => 'F18 - Metro Alang-Alang',
-            '3019' => 'F19 - Metro Hilongos',
-            '2008' => 'S8 - Metro Toledo',
-            '6012' => 'H8 - Super Metro Antipolo',
-            '6009' => 'H9 - Super Metro Carcar',
-            '6010' => 'H10 - Super Metro Bogo',
-        ];
 
-        // 🎯 Dropdown restriction
-        if ($user->role === 'super admin') {
-            $storeLocations = $allStoreLocations; // show all stores
-        } elseif ($user->role === 'manager') {
-            if ($user->user_location) {
-                $stores = LocationConfig::regionStores($user->user_location);
-                if (!empty($stores)) {
-                    $storeLocations = Arr::only($allStoreLocations, $stores);
-                } else {
-                    $storeLocations = $allStoreLocations;
-                }
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        } else {
-            if ($user->user_location) {
-                $storeLocations = Arr::only($allStoreLocations, [$user->user_location]);
-            } else {
-                $storeLocations = $allStoreLocations;
-            }
-        }
+
+        $storeLocations = LocationConfig::accessibleStores($user->role ?? '', $user->user_location ?? '');
+
 
 
         if ($request->ajax()) {
@@ -166,8 +135,18 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with('items')->findOrFail($id);
-        return view('orders.show', compact('order'));
+        $order       = Order::with('items')->findOrFail($id);
+        $user        = auth()->user();
+        $userLocation = $user->user_location ?? null;
+        $isSuperAdmin = strtolower($user->role ?? '') === 'super admin';
+        $regionStores = \App\Support\LocationConfig::regionStores($userLocation ?? '');
+        $hasRegion    = !empty($regionStores);
+        $locationMap  = \App\Support\LocationConfig::stores();
+        $dropdownStores = $isSuperAdmin
+            ? $locationMap
+            : array_intersect_key($locationMap, array_flip($regionStores));
+
+        return view('orders.show', compact('order', 'locationMap', 'userLocation', 'isSuperAdmin', 'hasRegion', 'dropdownStores'));
     }
 
     // public function create()
@@ -430,8 +409,9 @@ class OrderController extends Controller
      */
     private function adjustInventoryOnUpdate($orderItem, $newData, $warehouseCode, &$changes)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
+        $requestingStore = $orderItem->order->requesting_store ?? auth()->user()->user_location;
+        $storeCode = $this->resolveStoreCodeForTable($requestingStore);
+        $tableName = 'products_' . $storeCode;
 
         // === MAIN ITEM ADJUSTMENT ===
         $oldQty = $orderItem->total_qty;
@@ -712,15 +692,8 @@ class OrderController extends Controller
         ]);
 
         // 🔔 Determine recipient based on requesting_store
-        $recipients = [];
+        $recipients = \App\Models\Settings\SettingsRegionEmail::emailsForStore($order->requesting_store);
 
-        if (in_array($order->requesting_store, ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
-        }
-
-        if (in_array($order->requesting_store, ['6012'])) {
-            $recipients[] = 'akehide.tecson@metroretail.ph';
-        }
 
         // If recipients found, send email
         $recipients = array_unique($recipients);
@@ -870,14 +843,12 @@ class OrderController extends Controller
 
     public function revertAllocationStock($orderId)
     {
-        $userLocation = auth()->user()->user_location;
-        if (!$userLocation) return false;
-
-        $tableName = 'products_' . strtolower($userLocation);
-        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-        // Load order with items
         $order = Order::with('items')->findOrFail($orderId);
+        $requestingStore = $order->requesting_store ?? auth()->user()->user_location;
+        if (!$requestingStore) return false;
+        $storeCode     = $this->resolveStoreCodeForTable($requestingStore);
+        $tableName     = 'products_' . $storeCode;
+        $warehouseCode = $order->warehouse ?? LocationConfig::warehouseForStore($requestingStore);
 
         // Normalize items (if ever a collection of orders is passed)
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
@@ -962,12 +933,11 @@ class OrderController extends Controller
 
     public function deductAllocationStock($orderId)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
-        $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-        // Load order and items
         $order = Order::with('items')->findOrFail($orderId);
+        $requestingStore = $order->requesting_store ?? auth()->user()->user_location;
+        $storeCode       = $this->resolveStoreCodeForTable($requestingStore);
+        $tableName       = 'products_' . $storeCode;
+        $warehouseCode   = $order->warehouse ?? LocationConfig::warehouseForStore($requestingStore);
 
         // Normalize items: handle cases where $order might be a Collection of orders or a single model
         if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
@@ -1062,32 +1032,17 @@ class OrderController extends Controller
      * @param string $location
      * @return string
      */
-    private function getWarehouseCodeByLocation(string $location): string
+    // REMOVE the entire getWarehouseCodeByLocation() method and REPLACE WITH:
+    private function resolveStoreCodeForTable(string $storeOrRegion): string
     {
-        // Warehouse mapping
-        $locationToWarehouse = [
-            '4002' => '80181',
-            '2010' => '80181', //bacolod
-            '2017' => '80181', //bacolod
-            '2019' => '80181', //bacolod
-            '3018' => '80181', //bacolod
-            '3019' => '80181', //bacolod
-            '2008' => '80181', // Bacolod
-            '6009' => '80181', // Bacolod
-            '6010' => '80181', // Bacolod
-            '6012' => '80141', // Silangan
-            'lz'    => '80141', // LZ
-            'vs'    => '80181', // Silangan
+        $location     = strtolower($storeOrRegion);
+        $regionStores = LocationConfig::regionStores($location);
 
-        ];
-
-        $warehouseCode = $locationToWarehouse[$location] ?? null;
-
-        if (!$warehouseCode) {
-            throw new \Exception("Warehouse code not found for location: {$location}");
+        if (!empty($regionStores)) {
+            return strtolower($regionStores[0]);
         }
 
-        return $warehouseCode;
+        return $location;
     }
 
 

@@ -728,9 +728,22 @@
                                     }
                                     // PERSONNEL (Store/Personnel): Warehouse for their assigned store
                                     elseif ($isPersonnel && $userLocation) {
-                                        $storeWarehouse = \App\Support\LocationConfig::warehouseForStore($userLocation);
-                                        if ($storeWarehouse && isset($allWarehouses[$storeWarehouse])) {
-                                            $accessibleWarehouses = [$storeWarehouse => $allWarehouses[$storeWarehouse]];
+                                        $regionStores = \App\Support\LocationConfig::regionStores($userLocation);
+
+                                        if (!empty($regionStores)) {
+                                            // Personnel assigned to a region — get all unique warehouses for that region
+                                            foreach ($regionStores as $storeCode) {
+                                                $wh = \App\Support\LocationConfig::warehouseForStore($storeCode);
+                                                if ($wh && isset($allWarehouses[$wh])) {
+                                                    $accessibleWarehouses[$wh] = $allWarehouses[$wh];
+                                                }
+                                            }
+                                        } else {
+                                            // Personnel assigned to a single store
+                                            $storeWarehouse = \App\Support\LocationConfig::warehouseForStore($userLocation);
+                                            if ($storeWarehouse && isset($allWarehouses[$storeWarehouse])) {
+                                                $accessibleWarehouses = [$storeWarehouse => $allWarehouses[$storeWarehouse]];
+                                            }
                                         }
                                     }
                                     // DEFAULT: Any other role with a location
