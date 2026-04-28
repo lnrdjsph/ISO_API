@@ -744,143 +744,59 @@ class OrderController extends Controller
     }
 
 
-    /**
-     * WAF-SAFE APPROVE — Step 1 of 2
-     *
-     * Receives ONLY the file (multipart). Stores it privately and returns an
-     * HMAC-signed temp_key. Because the approve endpoint itself (Step 2) then
-     * receives NO file, the AWS WAF SizeRestrictions_BODY rule and file-content
-     * inspection rules cannot trigger on the final approval POST.
-     *
-     * Add a WAF byte-match ALLOW rule for this specific URI path:
-     *   /b2b2c/orders/approve/upload-temp
-     * so the SizeRestrictions_BODY managed rule does not block the file upload.
-     */
-    public function uploadTempApprovalDoc(Request $request)
-    {
-        $request->validate([
-            'attachment' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-        ]);
-
-        $file     = $request->file('attachment');
-        $tempPath = $file->store('approval_tmp', 'local'); // private disk
-
-        // Sign with HMAC — key cannot be guessed or forged by the client
-        $tempKey = base64_encode($tempPath . '|' . hash_hmac('sha256', $tempPath, config('app.key')));
-
-        return response()->json(['temp_key' => $tempKey]);
-    }
-
-    /**
-     * WAF-SAFE APPROVE — Step 2 of 2
-     *
-     * Receives ONLY: _token + id + temp_key  (< 300 bytes total, no file).
-     * Verifies the HMAC-signed key, moves the file from private tmp to public
-     * storage, then approves the order.
-     */
     public function approveOrder(Request $request)
     {
         $request->validate([
-            'id'         => 'required|exists:orders,id',
-            'temp_key'   => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-        ]);
-
-        $order    = Order::findOrFail($request->id);
-        $filePath = null;
-
-        // ── Two-step path (primary) ──────────────────────────────────────────
-        if ($request->filled('temp_key')) {
-            $decoded  = base64_decode($request->input('temp_key'));
-            $parts    = explode('|', $decoded, 2);
-            $tempPath = $parts[0] ?? null;
-            $mac      = $parts[1] ?? null;
-
-            $valid = $tempPath
-                && $mac
-                && hash_equals(hash_hmac('sha256', $tempPath, config('app.key')), $mac)
-                && Storage::disk('local')->exists($tempPath);
-
-            if (!$valid) {
-                return redirect()->back()
-                    ->withErrors(['temp_key' => 'Invalid or expired upload token. Please try again.']);
-            }
-
-            if ($order->approval_document) {
-                Storage::disk('public')->delete($order->approval_document);
-            }
-
-            $destPath = 'order_approvals/' . $order->id . '/' . basename($tempPath);
-            Storage::disk('public')->put(
-                $destPath,
-                Storage::disk('local')->get($tempPath)
-            );
-            Storage::disk('local')->delete($tempPath);
-            $filePath = $destPath;
-
-            // ── Legacy direct-upload (fallback) ──────────────────────────────────
-        } elseif ($request->hasFile('attachment')) {
-            if ($order->approval_document) {
-                Storage::disk('public')->delete($order->approval_document);
-            }
-            $filePath = $request->file('attachment')->store(
-                'order_approvals/' . $order->id,
-                'public'
-            );
-        }
-
-        $order->order_status      = 'approved';
-        $order->approval_document = $filePath;
-        $order->save();
-
-        $order->notes()->create([
-            'user_id' => auth()->id(),
-            'status'  => 'approved',
-            'note'    => "Order approved by:<br>" .
-                "<strong>" . auth()->user()->name . "</strong><br>" .
-                ucfirst(auth()->user()->role),
-        ]);
-
-        $requester = \App\Models\User::find($order->requested_by);
-        if ($requester && $requester->email) {
-            Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
-        }
-
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', 'Order approved successfully!');
-    }
-
-    // TEMPORARY — no attachment required. Comment out uploadTempApprovalDoc()
-    // and approveOrder() above, then use this until WAF exception is live.
-    public function approveOrderTemp(Request $request)
-    {
-        $request->validate([
             'id' => 'required|exists:orders,id',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
         ]);
 
         $order = Order::findOrFail($request->id);
-        $order->order_status      = 'approved';
-        $order->approval_document = null;
+
+        // ✅ Save the file
+        $filePath = null;
+        if ($request->hasFile('attachment')) {
+            // Optional: Delete old file if you want to replace it
+            if ($order->approval_document) {
+                Storage::disk('public')->delete($order->approval_document);
+            }
+
+            $filePath = $request->file('attachment')->store(
+                'order_approvals/' . $order->id, // folder per order
+                'public' // use the `public` disk
+            );
+        }
+
+        // ✅ Update order
+        $order->order_status = 'approved';
+        $order->approval_document = $filePath;
         $order->save();
 
+        // ✅ Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
             'note'    => "Order approved by:<br>" .
                 "<strong>" . auth()->user()->name . "</strong><br>" .
-                ucfirst(auth()->user()->role),
+                ucfirst(auth()->user()->role)
         ]);
 
+        // ✅ Send email to requester
         $requester = \App\Models\User::find($order->requested_by);
+
         if ($requester && $requester->email) {
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
+        $successMessage = $filePath
+            ? 'Order approved successfully with document attached, and requester notified.'
+            : 'Order approved successfully without an attachment. Requester notified.';
+
         return redirect()
             ->route('orders.show', $order->id)
-            ->with('success', 'Order approved successfully!');
+            ->with('success', $successMessage);
     }
+
 
     public function rejectOrder(Request $request)
     {

@@ -1328,11 +1328,11 @@
                                             @endif
 
                                             @if (in_array(Auth::user()->role, ['manager', 'super admin']))
-                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                @if (in_array($order->order_status, ['for approval', 'rejected']))
                                                     <option value="approve">Approve Order</option>
                                                 @endif
 
-                                                @if (in_array($order->order_status, ['for approval', 'approved', 'rejected']))
+                                                @if (in_array($order->order_status, ['for approval', 'approved']))
                                                     <option value="rejected">Reject Order</option>
                                                 @endif
                                             @endif
@@ -1582,12 +1582,108 @@
                                                 confirmColor = '#2563EB';
                                                 break;
                                             case 'approve':
-                                                // Show the pre-built approve modal (no innerHTML injection,
-                                                // no DataTransfer — WAF / CSP safe).
-                                                if (typeof window.__openApproveModal === 'function') {
-                                                    window.__openApproveModal();
-                                                }
+                                                Swal.fire({
+                                                    title: 'Approve Order',
+                                                    html: `
+            <div style="text-align:center; font-size:14px; color:#444;">
+                <!-- Upload Section -->
+                <div id="uploadSection">
+                    <p style="margin-bottom:12px; font-weight:500;">Upload approval document (required):</p>
+                    <p style="margin-bottom:12px; font-size:12px; color:#666;">
+                        PDF, Word, or Image files only
+                    </p>
+
+                    <div id="uploadBox"
+                        style="border:2px dashed #2563EB; border-radius:8px;
+                            padding:20px; background:#f9fafb; cursor:pointer;
+                            transition:0.2s ease-in-out;">
+                        <input type="file" id="approvalFile"
+                            accept=".pdf,.doc,.docx,image/*"
+                            style="display:none;" required />
+
+                        <label for="approvalFile"
+                            style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
+                            Click to select a file
+                        </label>
+
+                        <p id="fileName"
+                            style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
+                            No file chosen
+                        </p>
+                    </div>
+                    
+                    <!-- Required note -->
+                    <p style="margin-top:8px; font-size:11px; color:#DC2626;">
+                        * Approval document is required
+                    </p>
+                </div>
+            </div>
+        `,
+                                                    icon: 'info',
+                                                    showCancelButton: true,
+                                                    confirmButtonColor: '#16A34A',
+                                                    cancelButtonColor: '#aaa',
+                                                    confirmButtonText: 'Approve',
+
+                                                    didOpen: () => {
+                                                        const uploadBox = document.getElementById('uploadBox');
+                                                        const fileInput = document.getElementById('approvalFile');
+                                                        const fileName = document.getElementById('fileName');
+
+                                                        // Clicking the box opens file picker
+                                                        uploadBox.addEventListener('click', () => fileInput.click());
+
+                                                        // Show selected file name
+                                                        fileInput.addEventListener('change', () => {
+                                                            fileName.textContent = fileInput.files.length ?
+                                                                fileInput.files[0].name :
+                                                                'No file chosen';
+                                                        });
+
+                                                        // Drag & drop
+                                                        uploadBox.addEventListener('dragover', (e) => {
+                                                            e.preventDefault();
+                                                            uploadBox.style.background = "#eef2ff";
+                                                        });
+
+                                                        uploadBox.addEventListener('dragleave', () => {
+                                                            uploadBox.style.background = "#f9fafb";
+                                                        });
+
+                                                        uploadBox.addEventListener('drop', (e) => {
+                                                            e.preventDefault();
+                                                            uploadBox.style.background = "#f9fafb";
+                                                            if (e.dataTransfer.files.length) {
+                                                                fileInput.files = e.dataTransfer.files;
+                                                                fileName.textContent = e.dataTransfer.files[0].name;
+                                                            }
+                                                        });
+                                                    },
+
+                                                    preConfirm: () => {
+                                                        const file = document.getElementById('approvalFile').files[0];
+
+                                                        // Always require a file
+                                                        if (!file) {
+                                                            Swal.showValidationMessage('Please upload an approval document.');
+                                                            return false;
+                                                        }
+
+                                                        return {
+                                                            file: file
+                                                        };
+                                                    }
+                                                }).then((result) => {
+                                                    if (result.isConfirmed) {
+                                                        const file = result.value.file;
+                                                        submitForm('approve', null, file);
+                                                    } else {
+                                                        actionSelect.value = '';
+                                                    }
+                                                });
+
                                                 return;
+
 
 
 
@@ -1667,38 +1763,88 @@
                                      * We only set the note/status value then call .submit() on an element
                                      * that already exists — no dynamic DOM insertion whatsoever.
                                      */
-                                    function submitForm(action, note = null) {
-                                        let form;
+                                    function submitForm(action, note = null, file = null) {
+                                        const form = document.createElement('form');
+                                        form.method = 'POST';
+                                        form.enctype = 'multipart/form-data'; // ✅ needed for file upload
+                                        form.style.display = 'none';
 
                                         switch (action) {
                                             case 'cancel':
-                                                form = document.getElementById('hf-cancel');
-                                                if (note) document.getElementById('hf-cancel-note').value = note;
+                                                form.action = "{{ route('orders.cancel') }}";
+                                                if (note) {
+                                                    const noteInput = document.createElement('input');
+                                                    noteInput.type = 'hidden';
+                                                    noteInput.name = 'note';
+                                                    noteInput.value = note;
+                                                    form.appendChild(noteInput);
+                                                }
                                                 break;
                                             case 'complete':
-                                                form = document.getElementById('hf-complete');
+                                                form.action = "{{ route('orders.complete') }}";
                                                 break;
+
                                             case 'restore':
-                                                form = document.getElementById('hf-restore');
+                                                form.action = "{{ route('orders.restore') }}";
                                                 break;
+
                                             case 'for approval':
-                                                form = document.getElementById('hf-for-approval');
+                                                form.action = "{{ route('orders.for_approval') }}";
                                                 break;
+
                                             case 'approve':
-                                                // Handled exclusively by #approveModal two-step flow.
-                                                return;
-                                            case 'rejected':
-                                                form = document.getElementById('hf-rejected');
-                                                if (note) document.getElementById('hf-rejected-note').value = note;
+                                                form.action = "{{ route('orders.approve') }}";
+                                                if (file) {
+                                                    const fileInput = document.createElement('input');
+                                                    fileInput.type = 'file';
+                                                    fileInput.name = 'attachment';
+
+                                                    // ✅ Attach file object
+                                                    const dataTransfer = new DataTransfer();
+                                                    dataTransfer.items.add(file);
+                                                    fileInput.files = dataTransfer.files;
+
+                                                    form.appendChild(fileInput);
+                                                }
                                                 break;
-                                            default:
-                                                form = document.getElementById('hf-archive');
-                                                const si = document.getElementById('hf-archive-status');
-                                                if (si) si.value = action;
+
+                                            case 'rejected':
+                                                form.action = "{{ route('orders.reject') }}";
+                                                if (note) {
+                                                    const noteInput = document.createElement('input');
+                                                    noteInput.type = 'hidden';
+                                                    noteInput.name = 'note';
+                                                    noteInput.value = note;
+                                                    form.appendChild(noteInput);
+                                                }
+                                                break;
+
+                                            default: // processing, completed
+                                                form.action = "{{ route('orders.archive') }}";
+                                                const statusInput = document.createElement('input');
+                                                statusInput.type = 'hidden';
+                                                statusInput.name = 'status';
+                                                statusInput.value = action;
+                                                form.appendChild(statusInput);
                                                 break;
                                         }
 
-                                        if (form) form.submit();
+                                        // CSRF token
+                                        const inputCsrf = document.createElement('input');
+                                        inputCsrf.type = 'hidden';
+                                        inputCsrf.name = '_token';
+                                        inputCsrf.value = csrfToken;
+                                        form.appendChild(inputCsrf);
+
+                                        // Order ID
+                                        const orderIdInput = document.createElement('input');
+                                        orderIdInput.type = 'hidden';
+                                        orderIdInput.name = 'id';
+                                        orderIdInput.value = orderId;
+                                        form.appendChild(orderIdInput);
+
+                                        document.body.appendChild(form);
+                                        form.submit();
                                     }
 
                                 });
@@ -3409,287 +3555,4 @@
         </style>
     @endif
 
-    {{--
-        ╔══════════════════════════════════════════════════════════════════╗
-        ║  APPROVE ORDER MODAL — CSP / WAF SAFE                          ║
-        ║  • Rendered in PHP, never injected by JS (no innerHTML)        ║
-        ║  • Standard multipart form — no DataTransfer API               ║
-        ║  • File input lives inside the form from the start             ║
-        ║  • All listeners attached in nonce'd script block below        ║
-        ╚══════════════════════════════════════════════════════════════════╝
-    --}}
-    <div id="approveModal"
-        class="fixed inset-0 z-[99998] hidden items-center justify-center"
-        role="dialog" aria-modal="true" aria-labelledby="approveModalTitle">
-
-        {{-- Backdrop --}}
-        <div id="approveModalOverlay" class="fixed inset-0 bg-black/50"></div>
-
-        {{-- Panel --}}
-        <div class="relative z-10 mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl">
-
-            {{-- Header --}}
-            <div class="flex items-center gap-3 border-b px-6 py-4">
-                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
-                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h2 id="approveModalTitle" class="text-lg font-semibold text-gray-900">Approve Order</h2>
-                    <p class="text-xs text-gray-500">Upload an approval document to proceed.</p>
-                </div>
-            </div>
-
-            {{-- Body: two-step upload flow
-                 Step 1 – JS uploads the file to /orders/approve-upload-temp via fetch (multipart).
-                          Server stores it in tmp/ and returns a temp_key.
-                 Step 2 – JS submits this form with just id + temp_key (no file in body).
-                          WAF only sees a small JSON-free POST with two text fields.
-            --}}
-            <form id="approveForm"
-                method="POST"
-                action="{{ route('orders.approve') }}"
-                class="px-6 py-5">
-                @csrf
-                <input type="hidden" name="id" value="{{ $order->id }}">
-                <input type="hidden" name="temp_key" id="approveTempKey" value="">
-
-                <p class="mb-1 text-sm font-medium text-gray-700">Approval document <span class="text-red-600">*</span></p>
-                <p class="mb-3 text-xs text-gray-500">PDF, Word, or image files only (max 5 MB)</p>
-
-                {{-- Upload box: file never leaves the browser until Step 1 --}}
-                <div id="approveUploadBox"
-                    class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-blue-400 bg-gray-50 px-4 py-6 text-center transition hover:border-blue-600 hover:bg-blue-50">
-
-                    <svg class="mb-2 h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-
-                    <label for="approveFileInput" class="cursor-pointer text-sm font-medium text-blue-600">
-                        Click to select a file
-                    </label>
-                    {{-- File input is NOT named 'attachment' here — it is only read by JS, never submitted --}}
-                    <input type="file"
-                        id="approveFileInput"
-                        accept=".pdf,.doc,.docx,image/*"
-                        class="sr-only">
-
-                    <p id="approveFileName" class="mt-2 text-xs italic text-gray-500">No file chosen</p>
-                </div>
-
-                <p class="mt-2 text-xs text-red-600">* Approval document is required</p>
-                <p id="approveFileError" class="mt-1 hidden text-xs font-medium text-red-700"></p>
-
-                {{-- Progress bar (hidden until upload starts) --}}
-                <div id="approveUploadProgress" class="mt-3 hidden">
-                    <div class="mb-1 flex justify-between text-xs text-gray-600">
-                        <span>Uploading…</span>
-                        <span id="approveUploadPct">0%</span>
-                    </div>
-                    <div class="h-2 w-full rounded-full bg-gray-200">
-                        <div id="approveUploadBar" class="h-2 w-0 rounded-full bg-blue-500 transition-all"></div>
-                    </div>
-                </div>
-            </form>
-
-            {{-- Footer --}}
-            <div class="flex justify-end gap-3 border-t px-6 py-4">
-                <button type="button" id="approveModalCancel"
-                    class="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    Cancel
-                </button>
-                <button type="button" id="approveModalConfirm"
-                    class="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-                    Approve
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script nonce="{{ $cspNonce ?? '' }}">
-        (function() {
-            const modal = document.getElementById('approveModal');
-            const overlay = document.getElementById('approveModalOverlay');
-            const cancelBtn = document.getElementById('approveModalCancel');
-            const confirmBtn = document.getElementById('approveModalConfirm');
-            const form = document.getElementById('approveForm');
-            const fileInput = document.getElementById('approveFileInput');
-            const uploadBox = document.getElementById('approveUploadBox');
-            const fileLabel = document.getElementById('approveFileName');
-            const fileError = document.getElementById('approveFileError');
-            const tempKeyEl = document.getElementById('approveTempKey');
-            const progressWrap = document.getElementById('approveUploadProgress');
-            const progressBar = document.getElementById('approveUploadBar');
-            const progressPct = document.getElementById('approveUploadPct');
-            const actionSel = document.getElementById('orderAction');
-            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-
-            function openModal() {
-                fileInput.value = '';
-                fileLabel.textContent = 'No file chosen';
-                fileError.classList.add('hidden');
-                progressWrap.classList.add('hidden');
-                progressBar.style.width = '0%';
-                tempKeyEl.value = '';
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Approve';
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-
-            function closeModal() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                if (actionSel) actionSel.value = '';
-            }
-
-            uploadBox.addEventListener('click', function(e) {
-                if (e.target === fileInput) return;
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', function() {
-                fileLabel.textContent = fileInput.files.length ?
-                    fileInput.files[0].name :
-                    'No file chosen';
-                fileError.classList.add('hidden');
-            });
-
-            uploadBox.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                uploadBox.classList.add('border-blue-600', 'bg-blue-50');
-            });
-            uploadBox.addEventListener('dragleave', function() {
-                uploadBox.classList.remove('border-blue-600', 'bg-blue-50');
-            });
-            uploadBox.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadBox.classList.remove('border-blue-600', 'bg-blue-50');
-                // e.dataTransfer is the browser-native DragEvent object —
-                // reading its .files is safe and does NOT require new DataTransfer().
-                if (e.dataTransfer && e.dataTransfer.files.length) {
-                    try {
-                        fileInput.files = e.dataTransfer.files;
-                    } catch (_) {}
-                    fileLabel.textContent = e.dataTransfer.files[0].name;
-                }
-            });
-
-            /**
-             * TWO-STEP APPROVE — WAF safe
-             *
-             * Step 1: Upload the file to a dedicated temp-upload endpoint via XHR
-             *         (multipart, but only contains the file + CSRF — no order data).
-             *         The endpoint stores the file in storage/app/private/tmp and
-             *         returns a short-lived temp_key.
-             *
-             * Step 2: Submit #approveForm which contains ONLY:
-             *           _token, id, temp_key
-             *         No file in the body → no multipart → WAF never sees file bytes
-             *         on the approve endpoint.
-             */
-            confirmBtn.addEventListener('click', function() {
-                if (!fileInput.files.length) {
-                    fileError.textContent = 'Please select an approval document.';
-                    fileError.classList.remove('hidden');
-                    return;
-                }
-
-                const file = fileInput.files[0];
-                const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
-
-                confirmBtn.disabled = true;
-                confirmBtn.textContent = 'Uploading…';
-                progressWrap.classList.remove('hidden');
-
-                // ── Step 1: upload file ──────────────────────────────────────
-                const fd = new FormData();
-                fd.append('attachment', file);
-                fd.append('_token', csrf);
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '{{ route('orders.approve.upload-temp') }}', true);
-                xhr.setRequestHeader('X-CSRF-TOKEN', csrf);
-                xhr.setRequestHeader('Accept', 'application/json');
-
-                xhr.upload.addEventListener('progress', function(ev) {
-                    if (ev.lengthComputable) {
-                        const pct = Math.round((ev.loaded / ev.total) * 100);
-                        progressBar.style.width = pct + '%';
-                        progressPct.textContent = pct + '%';
-                    }
-                });
-
-                xhr.addEventListener('load', function() {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        let resp = {};
-                        try {
-                            resp = JSON.parse(xhr.responseText);
-                        } catch (_) {}
-
-                        if (resp.temp_key) {
-                            // ── Step 2: approve with just the key ───────────
-                            tempKeyEl.value = resp.temp_key;
-                            confirmBtn.textContent = 'Approving…';
-                            progressBar.style.width = '100%';
-                            progressPct.textContent = '100%';
-                            form.submit(); // tiny POST: _token + id + temp_key
-                        } else {
-                            showUploadError(resp.message || 'Upload failed. Please try again.');
-                        }
-                    } else {
-                        let msg = 'Upload failed (HTTP ' + xhr.status + ').';
-                        try {
-                            const e = JSON.parse(xhr.responseText);
-                            if (e.message) msg = e.message;
-                        } catch (_) {}
-                        showUploadError(msg);
-                    }
-                });
-
-                xhr.addEventListener('error', function() {
-                    showUploadError('Network error during upload. Please try again.');
-                });
-
-                xhr.send(fd);
-            });
-
-            // TEMPORARY — no file upload. Comment out the XHR block above and use this.
-            // confirmBtn.addEventListener('click', function() {
-            //     closeModal();
-            //     Swal.fire({
-            //         title: 'Approve Order?',
-            //         text: 'No attachment will be uploaded. You can re-approve with a document later.',
-            //         icon: 'warning',
-            //         showCancelButton: true,
-            //         confirmButtonColor: '#16a34a',
-            //         cancelButtonColor: '#6b7280',
-            //         confirmButtonText: 'Yes, Approve',
-            //     }).then(function(result) {
-            //         if (result.isConfirmed) {
-            //             document.getElementById('approveForm').submit();
-            //         } else {
-            //             if (actionSel) actionSel.value = '';
-            //         }
-            //     });
-            // });
-
-            function showUploadError(msg) {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Approve';
-                progressWrap.classList.add('hidden');
-                progressBar.style.width = '0%';
-                fileError.textContent = msg;
-                fileError.classList.remove('hidden');
-            }
-
-            cancelBtn.addEventListener('click', closeModal);
-            overlay.addEventListener('click', closeModal);
-
-            window.__openApproveModal = openModal;
-        })();
-    </script>
 @endsection
