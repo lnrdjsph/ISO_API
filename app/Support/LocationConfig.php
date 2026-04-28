@@ -214,7 +214,38 @@ class LocationConfig
 
     public static function warehouseForStore(string $storeCode, ?string $default = null): ?string
     {
-        return self::payload()['storeToWh'][$storeCode] ?? $default;
+        $payload = self::payload();
+
+        // Direct store code match
+        if (isset($payload['storeToWh'][$storeCode])) {
+            return $payload['storeToWh'][$storeCode];
+        }
+
+        // Try as a region key — resolve first store in region, return its warehouse
+        $regionStores = $payload['regionsMap'][$storeCode] ?? [];
+        foreach ($regionStores as $code) {
+            if (isset($payload['storeToWh'][$code])) {
+                return $payload['storeToWh'][$code];
+            }
+        }
+
+        return $default;
+    }
+
+    public static function warehousesForRegion(string $regionKey): array
+    {
+        $payload      = self::payload();
+        $regionStores = $payload['regionsMap'][$regionKey] ?? [];
+        $result       = [];
+
+        foreach ($regionStores as $storeCode) {
+            $whCode = $payload['storeToWh'][$storeCode] ?? null;
+            if ($whCode && isset($payload['whMap'][$whCode]) && !isset($result[$whCode])) {
+                $result[$whCode] = $payload['whMap'][$whCode];
+            }
+        }
+
+        return $result;
     }
 
     public static function storesForWarehouse(string $warehouseCode): array

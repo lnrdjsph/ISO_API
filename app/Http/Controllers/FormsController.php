@@ -18,25 +18,34 @@ class FormsController extends Controller
 
     public function sof()
     {
-        $orders = Order::with('items')->get();
+        $userLocation  = auth()->user()->user_location ?? null;
 
-        $currentMonth = now()->format('Ym'); // YYYYMM
+        // Resolve user warehouse — supports both store code AND region key
+        $userWarehouse = $userLocation
+            ? LocationConfig::warehouseForStore($userLocation)
+            : null;
 
-        // Find latest sof_id for this month
+        $locationMap  = LocationConfig::stores();    // ['4002' => 'Metro Wholesalemart Colon', ...]
+        $warehouseMap = LocationConfig::warehouses(); // ['80141' => 'Silangan Warehouse', ...]
+
+        $currentMonth = now()->format('Ym');
         $latest = Order::where('sof_id', 'like', "SOF{$currentMonth}-%")
             ->orderBy('sof_id', 'desc')
             ->first();
 
-        if ($latest) {
-            $lastNumber = (int) substr($latest->sof_id, -3);
-            $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-        } else {
-            $nextNumber = '001';
-        }
+        $nextNumber = $latest
+            ? str_pad((int) substr($latest->sof_id, -3) + 1, 3, '0', STR_PAD_LEFT)
+            : '001';
 
         $nextSofId = "SOF{$currentMonth}-{$nextNumber}";
 
-        return view('forms.sof', compact('orders', 'nextSofId'));
+        return view('forms.sof', compact(
+            'nextSofId',
+            'locationMap',
+            'warehouseMap',
+            'userWarehouse',
+            'userLocation',
+        ));
     }
 
 
@@ -133,7 +142,8 @@ class FormsController extends Controller
         try {
             DB::beginTransaction();
             // Save main order info
-            $this->checkAllocationStock($validated['orders'], $validated['warehouse']);
+            $this->checkAllocationStock($validated['orders'], $validated['warehouse'], $validated['requesting_store']);
+
 
             // === Generate SOF ID monthly ===
             $currentMonth = now()->format('Ym'); // YYYYMM
@@ -276,7 +286,8 @@ class FormsController extends Controller
                 }
             }
 
-            $this->deductAllocationStock($order->id, $validated['warehouse']); // Pass warehouse
+            $this->deductAllocationStock($order->id, $validated['warehouse'], $validated['requesting_store']);
+
 
             DB::commit();
 
@@ -365,160 +376,13 @@ class FormsController extends Controller
     }
 
 
-    // public function checkAllocationStock(array $orders)
-    // {
-    //     $userLocation = auth()->user()->user_location;
-    //     $tableName = 'products_' . strtolower($userLocation);
-    //     $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-    //     // Group orders by SKU
-    //     $skuTotals = [];
-    //     foreach ($orders as $item) {
-    //         $sku = strtoupper($item['sku']);
-    //         $skuTotals[$sku] = ($skuTotals[$sku] ?? 0) + $item['total_qty'];
-    //     }
-
-    //     // Validate stock
-    //     foreach ($skuTotals as $sku => $requiredQty) {
-    //         $product = DB::connection('mysql')
-    //             ->table($tableName)
-    //             ->where('sku', $sku)
-    //             ->first();
-
-    //         if (!$product) {
-    //             throw new \Exception("Product with SKU {$sku} not found in {$tableName}.");
-    //         }
-
-    //         // Check allocation_per_case
-    //         if (($product->allocation_per_case ?? 0) < $requiredQty) {
-    //             throw new \Exception("Insufficient stock for SKU {$sku} in allocation_per_case. Required: {$requiredQty}, Available: {$product->allocation_per_case}");
-    //         }
-
-    //         // Check wms_virtual_allocation from product_wms_allocations table
-    //         $requiredWmsQty = $requiredQty * ($product->qty_per_pc ?? 1);
-
-    //         $wmsAllocation = DB::connection('mysql')
-    //             ->table('product_wms_allocations')
-    //             ->where('sku', $sku)
-    //             ->where('warehouse_code', $warehouseCode)
-    //             ->first();
-
-    //         $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
-
-    //         if ($availableWmsQty < $requiredWmsQty) {
-    //             throw new \Exception("Insufficient stock for SKU {$sku} in warehouse {$warehouseCode}. Required: {$requiredWmsQty}, Available: {$availableWmsQty}");
-    //         }
-    //     }
-
-    //     return true; // all good
-    // }
-
-    // public function deductAllocationStock($orderId)
-    // {
-    //     $userLocation = auth()->user()->user_location;
-    //     $tableName = 'products_' . strtolower($userLocation);
-    //     $warehouseCode = $this->getWarehouseCodeByLocation($userLocation);
-
-    //     // Load order and items
-    //     $order = Order::with('items')->findOrFail($orderId);
-
-    //     // Normalize items: handle cases where $order might be a Collection of orders or a single model
-    //     if ($order instanceof \Illuminate\Database\Eloquent\Collection || $order instanceof \Illuminate\Support\Collection) {
-    //         // $order is a collection of orders; collect all items across them
-    //         $items = $order->pluck('items')->flatten();
-    //     } else {
-    //         // $order is a single model; get relation collection safely
-    //         $items = $order->relationLoaded('items') ? $order->items : $order->items()->get();
-    //     }
-
-    //     foreach ($items as $item) {
-    //         // Skip freebie items - they don't deduct from stock
-    //         if (($item->item_type ?? '') === 'FREEBIE') {
-    //             Log::info("Skipping freebie item - SKU: {$item->sku}, Item Type: {$item->item_type}");
-    //             continue;
-    //         }
-
-    //         // Find product in location table
-    //         $product = DB::connection('mysql')
-    //             ->table($tableName)
-    //             ->where('sku', strtoupper($item->sku))
-    //             ->first();
-
-    //         if ($product) {
-    //             /** --------------------------------------------
-    //              * 1) Deduct allocation_per_case by total_qty (number of cases)
-    //              * -------------------------------------------- */
-    //             $casesDeduction = $item->total_qty; // Number of cases to deduct
-    //             $currentCaseAllocation = $product->allocation_per_case ?? 0;
-    //             $newCaseAllocation = max(0, $currentCaseAllocation - $casesDeduction);
-
-    //             // Update allocation_per_case
-    //             DB::connection('mysql')
-    //                 ->table($tableName)
-    //                 ->where('id', $product->id)
-    //                 ->update([
-    //                     'allocation_per_case' => $newCaseAllocation,
-    //                     'updated_at' => now(),
-    //                 ]);
-
-    //             Log::info("Case Deduction - SKU: {$item->sku}, Cases Deducted: {$casesDeduction}, Previous: {$currentCaseAllocation}, New Balance: {$newCaseAllocation}");
-
-    //             /** ----------------------------------------------------------
-    //              * 2) Deduct wms_virtual_allocation by (total_qty × qty_per_pc)
-    //              *    This converts cases to pieces for WMS tracking
-    //              * ---------------------------------------------------------- */
-
-    //             // Get qty_per_pc from item, fallback to product
-    //             $qtyPerPc = $item->qty_per_pc ?? $product->qty_per_pc ?? 0;
-
-    //             // If qty_per_pc is still 0, log warning and skip WMS deduction
-    //             if ($qtyPerPc == 0) {
-    //                 Log::warning("qty_per_pc is 0 for SKU: {$item->sku}, Item ID: {$item->id}. Skipping WMS deduction.");
-    //                 continue;
-    //             }
-
-    //             // Calculate pieces deduction: cases × pieces per case
-    //             $piecesDeduction = $item->total_qty * $qtyPerPc;
-
-    //             // Get current wms allocation
-    //             $wmsAllocation = DB::connection('mysql')
-    //                 ->table('product_wms_allocations')
-    //                 ->where('sku', strtoupper($item->sku))
-    //                 ->where('warehouse_code', $warehouseCode)
-    //                 ->first();
-
-    //             if (!$wmsAllocation) {
-    //                 Log::warning("WMS allocation record not found for SKU: {$item->sku}, Warehouse: {$warehouseCode}");
-    //                 continue;
-    //             }
-
-    //             $currentWmsPieces = $wmsAllocation->wms_virtual_allocation ?? 0;
-    //             $newWmsPieces = max(0, $currentWmsPieces - $piecesDeduction);
-
-    //             // Update wms_virtual_allocation
-    //             $updated = DB::connection('mysql')
-    //                 ->table('product_wms_allocations')
-    //                 ->where('sku', strtoupper($item->sku))
-    //                 ->where('warehouse_code', $warehouseCode)
-    //                 ->update([
-    //                     'wms_virtual_allocation' => $newWmsPieces,
-    //                     'updated_at' => now(),
-    //                 ]);
-
-    //             Log::info("WMS Pieces Deduction - SKU: {$item->sku}, Warehouse: {$warehouseCode}, Cases: {$item->total_qty}, Pieces/Case: {$qtyPerPc}, Total Pieces Deducted: {$piecesDeduction}, Previous: {$currentWmsPieces}, New Balance: {$newWmsPieces}, Rows Updated: {$updated}");
-    //         } else {
-    //             Log::warning("Product not found in {$tableName} for SKU: {$item->sku}");
-    //         }
-    //     }
-
-    //     return true;
-    // }
 
     // Freebies included
-    public function checkAllocationStock(array $orders, $warehouseName)
+    public function checkAllocationStock(array $orders, $warehouseName, ?string $requestingStore = null)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
+        $location  = $requestingStore ?? auth()->user()->user_location;
+        $storeCode = $this->resolveStoreCodeForTable($location);
+        $tableName = 'products_' . $storeCode;
         $warehouseCode = $warehouseName;
 
         // Group orders by SKU and track qty_per_pc for each
@@ -607,7 +471,8 @@ class FormsController extends Controller
             }
 
             $availableWmsQty = $wmsAllocation->wms_virtual_allocation ?? 0;
-            $warehouseName = strtoupper(LocationConfig::warehouseName($warehouseCode, 'UNKNOWN WAREHOUSE'));
+            $warehouseLabel = strtoupper(LocationConfig::warehouseName($warehouseCode, 'UNKNOWN WAREHOUSE'));
+
 
             if ($availableWmsQty < $requiredWmsQty) {
                 throw new \Exception(
@@ -621,10 +486,11 @@ class FormsController extends Controller
         return true; // all good
     }
 
-    public function deductAllocationStock($orderId, $warehouseName)
+    public function deductAllocationStock($orderId, $warehouseName, ?string $requestingStore = null)
     {
-        $userLocation = auth()->user()->user_location;
-        $tableName = 'products_' . strtolower($userLocation);
+        $location  = $requestingStore ?? auth()->user()->user_location;
+        $storeCode = $this->resolveStoreCodeForTable($location);
+        $tableName = 'products_' . $storeCode;
         $warehouseCode = $warehouseName;
 
         // Load order and items

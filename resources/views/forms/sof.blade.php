@@ -182,20 +182,19 @@
                             </div>
 
                             @php
-                                $warehouseMap = LocationConfig::warehouses();
+                                // For regional users, only show warehouses their region's stores actually use
+$warehouseMap = $hasRegion
+    ? LocationConfig::warehousesForRegion($userLocation)
+    : ($isSuperAdmin
+        ? LocationConfig::warehouses()
+        : array_filter(LocationConfig::warehouses(), fn($code) => $code === LocationConfig::warehouseForStore($userLocation), ARRAY_FILTER_USE_KEY));
 
-                                // Resolve warehouse from region's first store, or directly from store code
-if (!($selectedWarehouseCode = old('warehouse'))) {
-                                    $firstStore = $hasRegion ? $regionStores[0] ?? null : $userLocation;
-                                    $selectedWarehouseCode = $firstStore ? LocationConfig::warehouseForStore($firstStore) : null;
-                                }
+$selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($userLocation));
                             @endphp
 
                             <div class="relative mb-6 w-full">
-                                @if ($isSuperAdmin)
-                                    <select
-                                        id="warehouse"
-                                        name="warehouse"
+                                @if ($isSuperAdmin || ($hasRegion && count($warehouseMap) > 1))
+                                    <select id="warehouse" name="warehouse"
                                         class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
                                         <option value="" disabled {{ $selectedWarehouseCode == '' ? 'selected' : '' }}>Select Warehouse</option>
                                         @foreach ($warehouseMap as $code => $name)

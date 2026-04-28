@@ -836,34 +836,34 @@ class OrderController extends Controller
 
     // TEMPORARY — no attachment required. Comment out uploadTempApprovalDoc()
     // and approveOrder() above, then use this until WAF exception is live.
-    // public function approveOrderTemp(Request $request)
-    // {
-    //     $request->validate([
-    //         'id' => 'required|exists:orders,id',
-    //     ]);
+    public function approveOrderTemp(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,id',
+        ]);
 
-    //     $order = Order::findOrFail($request->id);
-    //     $order->order_status      = 'approved';
-    //     $order->approval_document = null;
-    //     $order->save();
+        $order = Order::findOrFail($request->id);
+        $order->order_status      = 'approved';
+        $order->approval_document = null;
+        $order->save();
 
-    //     $order->notes()->create([
-    //         'user_id' => auth()->id(),
-    //         'status'  => 'approved',
-    //         'note'    => "Order approved by:<br>" .
-    //             "<strong>" . auth()->user()->name . "</strong><br>" .
-    //             ucfirst(auth()->user()->role),
-    //     ]);
+        $order->notes()->create([
+            'user_id' => auth()->id(),
+            'status'  => 'approved',
+            'note'    => "Order approved by:<br>" .
+                "<strong>" . auth()->user()->name . "</strong><br>" .
+                ucfirst(auth()->user()->role),
+        ]);
 
-    //     $requester = \App\Models\User::find($order->requested_by);
-    //     if ($requester && $requester->email) {
-    //         Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
-    //     }
+        $requester = \App\Models\User::find($order->requested_by);
+        if ($requester && $requester->email) {
+            Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
+        }
 
-    //     return redirect()
-    //         ->route('orders.show', $order->id)
-    //         ->with('success', 'Order approved successfully!');
-    // }
+        return redirect()
+            ->route('orders.show', $order->id)
+            ->with('success', 'Order approved successfully!');
+    }
 
     public function rejectOrder(Request $request)
     {
