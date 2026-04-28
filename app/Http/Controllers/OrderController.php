@@ -43,12 +43,7 @@ class OrderController extends Controller
                 if (!empty($stores)) {
                     $query->whereIn('requesting_store', $stores);
                 } else {
-                    $stores = LocationConfig::regionStores($user->user_location);
-                    if (!empty($stores)) {
-                        $query->whereIn('requesting_store', $stores);
-                    } else {
-                        $query->where('requesting_store', $user->user_location);
-                    }
+                    $query->where('requesting_store', $user->user_location);
                 }
             }
         } elseif ($user->role === 'super admin') {
@@ -712,8 +707,7 @@ class OrderController extends Controller
 
         return redirect()
             ->route('orders.show', $order->id)
-            ->with('success', $successMsg)
-            ->with('success', 'Order requested for approval successfully and email sent.');
+            ->with('success', $successMsg);
     }
 
 
