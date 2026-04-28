@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\OrderApprovalRequestMail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+// use App\Models\LocationConfig;
+use App\Support\LocationConfig;
 
 class OrderController extends Controller
 {
@@ -26,11 +27,7 @@ class OrderController extends Controller
         $user = auth()->user();
         $query = Order::query()->with('items');
 
-        // 🗺️ Region -> store mapping
-        $storeMapping = [
-            'lz' => ['6012'], // Luzon = only Antipolo
-            'vs' => ['4002', '2010', '2017', '2019', '3018', '3019', '2008', '6009', '6010'], // Visayas
-        ];
+
 
         // Default
         $allowedStatuses = null;
@@ -41,8 +38,18 @@ class OrderController extends Controller
             $query->whereIn('order_status', $allowedStatuses);
 
             // Restrict managers by region
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $query->whereIn('requesting_store', $storeMapping[$user->user_location]);
+            if ($user->user_location) {
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $query->whereIn('requesting_store', $stores);
+                } else {
+                    $stores = LocationConfig::regionStores($user->user_location);
+                    if (!empty($stores)) {
+                        $query->whereIn('requesting_store', $stores);
+                    } else {
+                        $query->where('requesting_store', $user->user_location);
+                    }
+                }
             }
         } elseif ($user->role === 'super admin') {
             // 🔓 Super admin sees all — no restrictions
@@ -50,7 +57,12 @@ class OrderController extends Controller
         } else {
             // Regular user → single store restriction
             if ($user->user_location) {
-                $query->where('requesting_store', $user->user_location);
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $query->whereIn('requesting_store', $stores);
+                } else {
+                    $query->where('requesting_store', $user->user_location);
+                }
             }
         }
 
@@ -122,8 +134,13 @@ class OrderController extends Controller
         if ($user->role === 'super admin') {
             $storeLocations = $allStoreLocations; // show all stores
         } elseif ($user->role === 'manager') {
-            if ($user->user_location && isset($storeMapping[$user->user_location])) {
-                $storeLocations = Arr::only($allStoreLocations, $storeMapping[$user->user_location]);
+            if ($user->user_location) {
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $storeLocations = Arr::only($allStoreLocations, $stores);
+                } else {
+                    $storeLocations = $allStoreLocations;
+                }
             } else {
                 $storeLocations = $allStoreLocations;
             }
