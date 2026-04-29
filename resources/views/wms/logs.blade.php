@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'WMS Allocation Logs')
+@section('title', 'Inventory Allocation Logs')
 
 @section('content')
     <style nonce="{{ $cspNonce ?? '' }}">
         /* ════════════════════════════════════════════════
-                           LAYOUT
-                        ════════════════════════════════════════════════ */
+                                   LAYOUT
+                                ════════════════════════════════════════════════ */
         .wms-layout {
             display: grid;
             grid-template-columns: 260px 1fr;
@@ -25,8 +25,8 @@
         }
 
         /* ════════════════════════════════════════════════
-                           SIDEBAR — FILE TREE
-                        ════════════════════════════════════════════════ */
+                                   SIDEBAR — FILE TREE
+                                ════════════════════════════════════════════════ */
         .wms-sidebar {
             position: sticky;
             top: 1.5rem;
@@ -238,8 +238,8 @@
         }
 
         /* ════════════════════════════════════════════════
-                           MAIN PANEL
-                        ════════════════════════════════════════════════ */
+                                   MAIN PANEL
+                                ════════════════════════════════════════════════ */
         .wms-main {
             min-width: 0;
         }
@@ -364,8 +364,8 @@
         }
 
         /* ════════════════════════════════════════════════
-                           TERMINAL LOG PANE  ——  HIGH CONTRAST
-                        ════════════════════════════════════════════════ */
+                                   TERMINAL LOG PANE  ——  HIGH CONTRAST
+                                ════════════════════════════════════════════════ */
         .log-pane {
             background: #0d1117;
             border-radius: 0.875rem;
@@ -633,7 +633,7 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">WMS Allocation Logs</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">Inventory Allocation Logs</h1>
                     <p class="mt-0.5 text-sm text-gray-500">
                         <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-indigo-600">storage/logs/wms_logs/</code>
                         — allocation sync output

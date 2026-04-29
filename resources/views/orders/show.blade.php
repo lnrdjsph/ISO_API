@@ -56,9 +56,64 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             white-space: nowrap;
         }
+
+        /* ── Approve-Order Modal (CSP-safe: no inline styles) ── */
+        .swal-approve-wrap {
+            text-align: center;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .swal-upload-title {
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .swal-upload-hint {
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .swal-upload-box {
+            border: 2px dashed #2563EB;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: background 0.2s ease-in-out;
+        }
+
+        .swal-upload-box--hover {
+            background: #eef2ff;
+        }
+
+        .swal-upload-file {
+            display: none;
+        }
+
+        .swal-upload-label {
+            cursor: pointer;
+            display: block;
+            color: #2563EB;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .swal-upload-filename {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .swal-upload-required {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #DC2626;
+        }
     </style>
     <form
-        id="update-order-form"
         method="POST"
         action="{{ route('orders.update', $order->id) }}">
         @csrf
@@ -182,24 +237,25 @@
                                     <!-- Payment Center -->
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
-                                        @if ($isSuperAdmin || $hasRegion)
-                                            <select
-                                                name="payment_center"
-                                                class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                                style="background-image: none;">
-                                                <option value="" disabled {{ $order->payment_center ? '' : 'selected' }}>Select Payment Center</option>
-                                                @foreach ($dropdownStores as $code => $label)
-                                                    <option value="{{ $code }}" {{ $order->payment_center === $code ? 'selected' : '' }}>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        @else
-                                            <input type="hidden" name="payment_center" value="{{ $userLocation }}" />
-                                            <p class="text-xs font-medium text-gray-900">
-                                                {{ $locationMap[$userLocation] ?? $userLocation }}
-                                            </p>
-                                        @endif
+                                        <select
+                                            name="payment_center"
+                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
+                                            style="background-image: none;">
+                                            <option
+                                                value=""
+                                                disabled
+                                                {{ $order->payment_center ? '' : 'selected' }}>
+                                                Select Payment Center
+                                            </option>
+
+                                            @foreach ($locationMap as $code => $label)
+                                                <option
+                                                    value="{{ $label }}"
+                                                    {{ $order->payment_center === $label ? 'selected' : '' }}>
+                                                    {{ $label }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
 
@@ -266,7 +322,7 @@
                                         </select>
                                     </div>
 
-                                    <style nonce="{{ $cspNonce ?? '' }}">
+                                    <style>
                                         /* Hide native dropdown arrow */
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
@@ -397,7 +453,7 @@
                             <div class="mb-4 flex items-center justify-between">
                                 <h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
 
-                                {{-- <script nonce="{{ $cspNonce ?? '' }}">
+                                {{-- <script>
 																		document.getElementById('generateSOButton').addEventListener('click', function() {
 																				const sofId = "{{ $order->sof_id }}";
 
@@ -748,7 +804,7 @@
                                         </tr>
                                     @endforelse
 
-                                    <script nonce="{{ $cspNonce ?? '' }}">
+                                    <script>
                                         (function() {
                                             // Select/Deselect All functionality
                                             const selectAllCheckbox = document.getElementById('select-all');
@@ -863,7 +919,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script nonce="{{ $cspNonce ?? '' }}">
+                                    <script>
                                         (function() {
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
@@ -968,7 +1024,7 @@
                                             });
                                         })();
                                     </script>
-                                    <script nonce="{{ $cspNonce ?? '' }}">
+                                    <script>
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             // Find all BOL containers
@@ -1040,7 +1096,7 @@
                                 @endif --}}
 
                                 <!-- Add SweetAlert2 CDN in your layout/head section -->
-                                {{-- <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+                                {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
                                 <!-- Add this button above or below your table -->
                                 <div class="mb-4 flex items-center justify-between">
@@ -1059,7 +1115,7 @@
                                     </div>
                                 </div>
 
-                                <script nonce="{{ $cspNonce ?? '' }}">
+                                <script>
                                     // hide all checkbox if order status is approved or completed
 
                                     (function() {
@@ -1237,7 +1293,7 @@
                                     })();
                                 </script>
 
-                                <style nonce="{{ $cspNonce ?? '' }}">
+                                <style>
                                     /* Optional: Customize SweetAlert2 styles */
                                     .swal2-popup {
                                         font-family: inherit;
@@ -1336,104 +1392,43 @@
                                         </select>
                                     @endif
                                     @if ($order->approval_document)
-                                        @php
-                                            $docUrl = asset('storage/' . $order->approval_document);
-                                            $docExt = strtolower(pathinfo($order->approval_document, PATHINFO_EXTENSION));
-                                        @endphp
                                         <div class="mt-4 rounded-md border border-dashed border-gray-400 bg-gray-50 p-4">
                                             <h3 class="mb-2 text-sm font-semibold text-gray-700">Approval Document</h3>
-                                            {{-- No inline onclick – data attributes only, listener attached in nonce'd script below --}}
-                                            <button
-                                                type="button"
-                                                id="previewApprovalBtn"
-                                                data-doc-url="{{ $docUrl }}"
-                                                data-doc-ext="{{ $docExt }}"
+                                            <a
+                                                href="{{ asset('storage/' . $order->approval_document) }}"
+                                                onclick="event.preventDefault(); previewApprovalDocument(this.href);"
                                                 class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">
                                                 📂 View / Download
-                                            </button>
+                                            </a>
 
-                                            {{-- Pre-built preview modal – no JS-injected HTML --}}
-                                            <div id="docPreviewModal"
-                                                class="fixed inset-0 z-[99999] hidden items-center justify-center"
-                                                role="dialog" aria-modal="true" aria-label="Document preview">
-                                                <div class="fixed inset-0 bg-black/50" id="docPreviewOverlay"></div>
-                                                <div class="relative z-10 mx-4 w-full max-w-4xl rounded-xl bg-white shadow-2xl">
-                                                    <div class="flex items-center justify-between border-b px-6 py-4">
-                                                        <h2 class="text-lg font-semibold text-gray-800">Approval Document Preview</h2>
-                                                        <button type="button" id="docPreviewClose"
-                                                            class="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-800">
-                                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                    <div class="p-6" style="max-height:75vh; overflow:auto;">
-                                                        {{-- Image variant --}}
-                                                        @if (in_array($docExt, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
-                                                            <img id="docPreviewImage"
-                                                                src="{{ $docUrl }}"
-                                                                alt="Approval document"
-                                                                class="mx-auto max-h-[60vh] w-auto cursor-zoom-in rounded object-contain"
-                                                                title="Click to zoom">
-                                                        @else
-                                                            {{-- PDF / Office via iframe --}}
-                                                            <iframe
-                                                                id="docPreviewFrame"
-                                                                src="{{ $docUrl }}"
-                                                                title="Approval document"
-                                                                class="h-[60vh] w-full rounded border">
-                                                            </iframe>
-                                                        @endif
-                                                    </div>
-                                                    <div class="flex justify-end gap-3 border-t px-6 py-4">
-                                                        <button type="button" id="docPreviewClose2"
-                                                            class="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                                            Close
-                                                        </button>
-                                                        <a href="{{ $docUrl }}"
-                                                            download
-                                                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                                                            Download
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <script>
+                                                function previewApprovalDocument(url) {
+                                                    const fileExtension = url.split('.').pop().toLowerCase();
+                                                    let content = '';
 
-                                            <script nonce="{{ $cspNonce ?? '' }}">
-                                                (function() {
-                                                    const btn = document.getElementById('previewApprovalBtn');
-                                                    const modal = document.getElementById('docPreviewModal');
-                                                    const overlay = document.getElementById('docPreviewOverlay');
-                                                    const close1 = document.getElementById('docPreviewClose');
-                                                    const close2 = document.getElementById('docPreviewClose2');
-                                                    const img = document.getElementById('docPreviewImage');
-
-                                                    function openModal() {
-                                                        modal.classList.remove('hidden');
-                                                        modal.classList.add('flex');
+                                                    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
+                                                        content =
+                                                            `<img src="${url}" style="width:100%; max-height:600px; object-fit:contain; cursor: zoom-in;" onclick="this.style.transform=this.style.transform==='scale(2)' ? 'scale(1)' : 'scale(3)'; this.style.transition='transform 0.3s';">`;
+                                                    } else {
+                                                        content = `<iframe src="${url}" width="100%" height="600px" frameborder="0"></iframe>`;
                                                     }
 
-                                                    function closeModal() {
-                                                        modal.classList.add('hidden');
-                                                        modal.classList.remove('flex');
-                                                    }
-
-                                                    if (btn) btn.addEventListener('click', openModal);
-                                                    if (overlay) overlay.addEventListener('click', closeModal);
-                                                    if (close1) close1.addEventListener('click', closeModal);
-                                                    if (close2) close2.addEventListener('click', closeModal);
-
-                                                    // Zoom-in toggle on image (no inline onclick)
-                                                    if (img) {
-                                                        img.addEventListener('click', function() {
-                                                            const zoomed = img.dataset.zoomed === 'true';
-                                                            img.style.transform = zoomed ? 'scale(1)' : 'scale(2)';
-                                                            img.style.transition = 'transform 0.3s';
-                                                            img.dataset.zoomed = (!zoomed).toString();
-                                                        });
-                                                    }
-                                                })();
+                                                    Swal.fire({
+                                                        title: 'Approval Document Preview',
+                                                        html: content,
+                                                        width: '80%',
+                                                        showCloseButton: true,
+                                                        showConfirmButton: true,
+                                                        confirmButtonText: 'Download',
+                                                        scrollbarPadding: false,
+                                                    }).then((result) => {
+                                                        if (result.isConfirmed) {
+                                                            window.open(url, '_blank');
+                                                        }
+                                                    });
+                                                }
                                             </script>
+
                                         </div>
                                     @endif
 
@@ -1581,41 +1576,25 @@
                                             case 'approve':
                                                 Swal.fire({
                                                     title: 'Approve Order',
+                                                    // ── CSP-safe: no inline style="" anywhere ──
                                                     html: `
-            <div style="text-align:center; font-size:14px; color:#444;">
-                <!-- Upload Section -->
-                <div id="uploadSection">
-                    <p style="margin-bottom:12px; font-weight:500;">Upload approval document (required):</p>
-                    <p style="margin-bottom:12px; font-size:12px; color:#666;">
-                        PDF, Word, or Image files only
-                    </p>
-
-                    <div id="uploadBox"
-                        style="border:2px dashed #2563EB; border-radius:8px;
-                            padding:20px; background:#f9fafb; cursor:pointer;
-                            transition:0.2s ease-in-out;">
-                        <input type="file" id="approvalFile"
-                            accept=".pdf,.doc,.docx,image/*"
-                            style="display:none;" required />
-
-                        <label for="approvalFile"
-                            style="cursor:pointer; display:block; color:#2563EB; font-weight:500; font-size:13px;">
-                            Click to select a file
-                        </label>
-
-                        <p id="fileName"
-                            style="margin-top:8px; font-size:12px; color:#666; font-style:italic;">
-                            No file chosen
-                        </p>
-                    </div>
-                    
-                    <!-- Required note -->
-                    <p style="margin-top:8px; font-size:11px; color:#DC2626;">
-                        * Approval document is required
-                    </p>
-                </div>
-            </div>
-        `,
+                                                        <div class="swal-approve-wrap">
+                                                            <div id="uploadSection">
+                                                                <p class="swal-upload-title">Upload approval document (required):</p>
+                                                                <p class="swal-upload-hint">PDF, Word, or Image files only</p>
+                                                                <div id="uploadBox" class="swal-upload-box">
+                                                                    <input type="file" id="approvalFile"
+                                                                        accept=".pdf,.doc,.docx,image/*"
+                                                                        class="swal-upload-file" />
+                                                                    <label for="approvalFile" class="swal-upload-label">
+                                                                        Click to select a file
+                                                                    </label>
+                                                                    <p id="fileName" class="swal-upload-filename">No file chosen</p>
+                                                                </div>
+                                                                <p class="swal-upload-required">* Approval document is required</p>
+                                                            </div>
+                                                        </div>
+                                                    `,
                                                     icon: 'info',
                                                     showCancelButton: true,
                                                     confirmButtonColor: '#16A34A',
@@ -1627,29 +1606,27 @@
                                                         const fileInput = document.getElementById('approvalFile');
                                                         const fileName = document.getElementById('fileName');
 
-                                                        // Clicking the box opens file picker
                                                         uploadBox.addEventListener('click', () => fileInput.click());
 
-                                                        // Show selected file name
                                                         fileInput.addEventListener('change', () => {
                                                             fileName.textContent = fileInput.files.length ?
                                                                 fileInput.files[0].name :
                                                                 'No file chosen';
                                                         });
 
-                                                        // Drag & drop
+                                                        // ── classList instead of .style.* (CSP-safe) ──
                                                         uploadBox.addEventListener('dragover', (e) => {
                                                             e.preventDefault();
-                                                            uploadBox.style.background = "#eef2ff";
+                                                            uploadBox.classList.add('swal-upload-box--hover');
                                                         });
 
                                                         uploadBox.addEventListener('dragleave', () => {
-                                                            uploadBox.style.background = "#f9fafb";
+                                                            uploadBox.classList.remove('swal-upload-box--hover');
                                                         });
 
                                                         uploadBox.addEventListener('drop', (e) => {
                                                             e.preventDefault();
-                                                            uploadBox.style.background = "#f9fafb";
+                                                            uploadBox.classList.remove('swal-upload-box--hover');
                                                             if (e.dataTransfer.files.length) {
                                                                 fileInput.files = e.dataTransfer.files;
                                                                 fileName.textContent = e.dataTransfer.files[0].name;
@@ -1659,28 +1636,74 @@
 
                                                     preConfirm: () => {
                                                         const file = document.getElementById('approvalFile').files[0];
-
-                                                        // Always require a file
                                                         if (!file) {
                                                             Swal.showValidationMessage('Please upload an approval document.');
                                                             return false;
                                                         }
-
                                                         return {
-                                                            file: file
+                                                            file
                                                         };
                                                     }
+
                                                 }).then((result) => {
-                                                    if (result.isConfirmed) {
-                                                        const file = result.value.file;
-                                                        submitForm('approve', null, file);
-                                                    } else {
+                                                    if (!result.isConfirmed) {
                                                         actionSelect.value = '';
+                                                        return;
                                                     }
+
+                                                    const file = result.value.file;
+                                                    const formData = new FormData();
+                                                    formData.append('_token', csrfToken);
+                                                    formData.append('id', orderId);
+                                                    formData.append('attachment', file);
+
+                                                    // ── Progress dialog ──
+                                                    Swal.fire({
+                                                        title: 'Uploading…',
+                                                        text: 'Please wait while the document is being uploaded.',
+                                                        allowOutsideClick: false,
+                                                        allowEscapeKey: false,
+                                                        didOpen: () => Swal.showLoading(),
+                                                    });
+
+                                                    // ── fetch() instead of form.submit() ──
+                                                    // Bypasses the DataTransfer/FileInput workaround and
+                                                    // lets the browser stream the full multipart body.
+                                                    // X-Requested-With signals Laravel to return JSON,
+                                                    // avoiding the WAF redirect-chain on 302 responses.
+                                                    fetch("{{ route('orders.approve') }}", {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'X-CSRF-TOKEN': csrfToken,
+                                                                'X-Requested-With': 'XMLHttpRequest',
+                                                                'Accept': 'application/json',
+                                                            },
+                                                            body: formData,
+                                                            // Do NOT set Content-Type — the browser sets it
+                                                            // automatically with the correct multipart boundary.
+                                                        })
+                                                        .then(async (response) => {
+                                                            const data = await response.json().catch(() => ({}));
+                                                            if (!response.ok) {
+                                                                throw new Error(data.message ?? 'Server returned ' + response.status);
+                                                            }
+                                                            Swal.fire({
+                                                                icon: 'success',
+                                                                title: 'Approved!',
+                                                                text: data.message ?? 'Order approved successfully.',
+                                                                timer: 2000,
+                                                                showConfirmButton: false,
+                                                            }).then(() => {
+                                                                window.location.href = data.redirect ?? window.location.href;
+                                                            });
+                                                        })
+                                                        .catch((err) => {
+                                                            Swal.fire('Upload Failed', err.message, 'error');
+                                                            actionSelect.value = '';
+                                                        });
                                                 });
 
                                                 return;
-
 
 
 
@@ -1751,15 +1774,6 @@
                                         }
                                     });
 
-                                    /**
-                                     * submitForm — WAF-safe version.
-                                     *
-                                     * Instead of document.createElement('form') + body.appendChild + .submit()
-                                     * (which AWS WAF CRS flags as a CSRF-bypass pattern), we reference
-                                     * pre-built hidden <form> elements that PHP rendered into the page DOM.
-                                     * We only set the note/status value then call .submit() on an element
-                                     * that already exists — no dynamic DOM insertion whatsoever.
-                                     */
                                     function submitForm(action, note = null, file = null) {
                                         const form = document.createElement('form');
                                         form.method = 'POST';
@@ -1787,22 +1801,6 @@
 
                                             case 'for approval':
                                                 form.action = "{{ route('orders.for_approval') }}";
-                                                break;
-
-                                            case 'approve':
-                                                form.action = "{{ route('orders.approve') }}";
-                                                if (file) {
-                                                    const fileInput = document.createElement('input');
-                                                    fileInput.type = 'file';
-                                                    fileInput.name = 'attachment';
-
-                                                    // ✅ Attach file object
-                                                    const dataTransfer = new DataTransfer();
-                                                    dataTransfer.items.add(file);
-                                                    fileInput.files = dataTransfer.files;
-
-                                                    form.appendChild(fileInput);
-                                                }
                                                 break;
 
                                             case 'rejected':
@@ -1907,55 +1905,16 @@
             </div>
         </div>
     </form>
-
-    {{--
-        ╔══════════════════════════════════════════════════════════════╗
-        ║  PRE-BUILT HIDDEN FORMS — WAF SAFE                         ║
-        ║  Rendered by PHP at page load. JS only sets note/status    ║
-        ║  then calls .submit(). No createElement / body.appendChild ║
-        ╚══════════════════════════════════════════════════════════════╝
-    --}}
-    <form id="hf-cancel" method="POST" action="{{ route('orders.cancel') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-        <input type="hidden" name="note" id="hf-cancel-note" value="">
-    </form>
-
-    <form id="hf-complete" method="POST" action="{{ route('orders.complete') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-    </form>
-
-    <form id="hf-restore" method="POST" action="{{ route('orders.restore') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-    </form>
-
-    <form id="hf-for-approval" method="POST" action="{{ route('orders.for_approval') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-    </form>
-
-    <form id="hf-rejected" method="POST" action="{{ route('orders.reject') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-        <input type="hidden" name="note" id="hf-rejected-note" value="">
-    </form>
-
-    <form id="hf-archive" method="POST" action="{{ route('orders.archive') }}" class="hidden">
-        @csrf
-        <input type="hidden" name="id" value="{{ $order->id }}">
-        <input type="hidden" name="status" id="hf-archive-status" value="">
-    </form>
     @if (request()->routeIs('orders.show'))
-        <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        {{-- script jquery --}}
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         {{-- script for input change detection --}}
         <!-- Complete Order Editing System -->
 
 
         <!-- Enhanced JavaScript System -->
-        <script nonce="{{ $cspNonce ?? '' }}">
+        <script>
             $(document).ready(function() {
                 // ========================================
                 // CONSTANTS & CONFIGURATION
@@ -3364,7 +3323,7 @@
                 });
             });
         </script>
-        <script nonce="{{ $cspNonce ?? '' }}">
+        <script>
             document.addEventListener('beforeinput', function(e) {
                 const el = e.target;
 
@@ -3394,7 +3353,7 @@
 
 
         <!-- Enhanced CSS for better visual feedback -->
-        <style nonce="{{ $cspNonce ?? '' }}">
+        <style>
             /* Minimal custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;
@@ -3526,5 +3485,4 @@
             }
         </style>
     @endif
-
 @endsection
