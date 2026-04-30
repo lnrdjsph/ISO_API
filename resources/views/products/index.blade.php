@@ -619,7 +619,7 @@
                                         type="button"
                                         id="clear-search-btn"
                                         title="Clear search"
-                                        onclick="document.getElementById('product-search').value=''; this.closest('form').submit();"
+                                        id="clear-search-btn"
                                         class="{{ request('query') ? '' : 'hidden' }} absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-white/80 p-1 text-gray-500 hover:bg-gray-100 focus:outline-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -673,7 +673,7 @@
                                     <select
                                         name="store"
                                         class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        onchange="updateUrlParam('store', this.value)">
+                                        id="store-select"">
                                         @foreach ($accessibleStores as $code => $name)
                                             <option value="{{ $code }}" {{ $currentStore == $code ? 'selected' : '' }}>
                                                 {{ $code }} - {{ $name }}
@@ -783,7 +783,7 @@
                                     <select
                                         name="warehouse"
                                         class="w-full rounded-xl border border-gray-200/60 bg-white/60 px-4 py-2 text-xs text-gray-700 placeholder-gray-400 backdrop-blur-sm transition-all duration-200 hover:bg-white/80 hover:shadow-lg focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        onchange="updateUrlParam('warehouse', this.value)">
+                                        id="warehouse-select"">
                                         @foreach ($accessibleWarehouses as $code => $name)
                                             <option value="{{ $code }}" {{ $currentWarehouse == $code ? 'selected' : '' }}>
                                                 {{ $code }} - {{ $name }}
@@ -1473,7 +1473,7 @@
                                     name="per_page"
                                     id="perPage"
                                     class="border-0 px-10 py-1 text-sm ring-0"
-                                    onchange="this.form.submit()">
+                                    id="perPage">
                                     @foreach ([10, 25, 50, 100] as $size)
                                         <option
                                             value="{{ $size }}"
@@ -2101,6 +2101,22 @@
                     localStorage.setItem('scrollPosition', window.scrollY);
                 });
             });
+        });
+
+
+        document.getElementById('store-select')?.addEventListener('change', function() {
+            updateUrlParam('store', this.value);
+        });
+
+        document.getElementById('warehouse-select')?.addEventListener('change', function() {
+            updateUrlParam('warehouse', this.value);
+        });
+        document.getElementById('clear-search-btn')?.addEventListener('click', function() {
+            document.getElementById('product-search').value = '';
+            this.closest('form').submit();
+        });
+        document.getElementById('perPage')?.addEventListener('change', function() {
+            this.form.submit();
         });
     </script>
 
