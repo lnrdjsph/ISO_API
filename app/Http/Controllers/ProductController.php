@@ -998,17 +998,21 @@ class ProductController extends Controller
 
     protected function startLinuxQueueWorker(): void
     {
-        $projectPath = config('system.project_path'); // from env
+        $projectPath = config('system.project_path');
         $phpBinary   = trim(shell_exec("which php")) ?: PHP_BINARY;
-        $logPath     = "{$projectPath}/storage/logs/queue-worker.log";
 
-        if (!file_exists($logPath)) {
-            touch($logPath);
+        $logPath = storage_path('logs/queue-worker.log');
+
+        // Ensure log directory exists (safe, no permission changes)
+        if (!is_dir(dirname($logPath))) {
+            mkdir(dirname($logPath), 0775, true);
         }
 
-        chmod($logPath, 0777);
+        // DO NOT touch or chmod (avoid permission error)
 
-        $command = "cd {$projectPath} && nohup {$phpBinary} artisan queue:work --queue=default --tries=3 --timeout=300 --sleep=1 >> {$logPath} 2>&1 & echo $!";
+        $command = "cd {$projectPath} && nohup {$phpBinary} artisan queue:work "
+            . "--queue=default --tries=3 --timeout=300 --sleep=1 "
+            . ">> {$logPath} 2>&1 & echo $!";
 
         $pid = exec($command);
 
