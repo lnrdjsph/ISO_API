@@ -888,7 +888,6 @@
                             <div class="tooltip">User Guide</div>
                         </a>
 
-                        <!-- Flyout menu for sub-sections (optional) -->
                         <ul class="flyout-menu" data-flyout>
                             <li>
                                 <a href="{{ route('user-guide.document') }}"
@@ -904,7 +903,7 @@
                             <li class="{{ request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*') ? 'active' : '' }} group relative">
                                 @if (request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*'))
                                     <div
-                                        class="nav-item {{ request()->routeIs('users*') || request()->routeIs('settings*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
+                                        class="nav-item {{ request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
                                         <span class="icon-wrapper">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -978,25 +977,29 @@
                                         <span class="nav-text ml-3">Admin</span>
                                         <div class="tooltip">Admin</div>
                                     </a>
-
-                                    <ul class="flyout-menu" data-flyout>
-                                        <li>
-                                            <a href="{{ route('users.index') }}" class="sub-item">
-                                                User Management
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('settings.index') }}" class="sub-item">
-                                                System Settings
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('logs') }}" class="sub-item">
-                                                Logs
-                                            </a>
-                                        </li>
-                                    </ul>
                                 @endif
+
+                                {{-- Flyout always rendered so hover works in collapsed state too --}}
+                                <ul class="flyout-menu" data-flyout>
+                                    <li>
+                                        <a href="{{ route('users.index') }}"
+                                            class="sub-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
+                                            User Management
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('settings.index') }}"
+                                            class="sub-item {{ request()->routeIs('settings*') ? 'active' : '' }}">
+                                            System Settings
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('logs') }}"
+                                            class="sub-item {{ request()->routeIs('logs*') ? 'active' : '' }}">
+                                            Logs
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                             <!-- Others Group -->
@@ -1162,7 +1165,6 @@
                 sidebar.classList.remove('sidebar-expanded');
                 sidebar.classList.add('sidebar-collapsed');
 
-                // ← add this
                 const tooltip = document.getElementById('sidebarToggleTooltip');
                 if (tooltip) tooltip.textContent = 'Expand Menu';
             }
@@ -1236,8 +1238,6 @@
                     var sidebarRect = sidebar.getBoundingClientRect();
                     var groupRect = group.getBoundingClientRect();
 
-                    // sidebarRect is in viewport coords (zoomed). Flyout is inside sidebar (inherits zoom),
-                    // so CSS values need to be divided by zoom to land at the right viewport position.
                     flyout.style.left = ((sidebarRect.right - 16) / sidebarZoom) + 'px';
                     flyout.style.top = (groupRect.top / sidebarZoom) + 'px';
                     flyout.classList.add('flyout-visible');
@@ -1293,13 +1293,11 @@
             // Responsive behavior
             function handleResize() {
                 if (window.innerWidth >= 768) {
-                    // Desktop: ensure sidebar is visible and drawer state is cleared
                     sidebar.classList.remove('mobile-open');
                     sidebar.classList.remove('hidden');
                     overlay.classList.remove('active');
                     document.body.style.overflow = '';
                 }
-                // On mobile: sidebar is off-screen via translateX(-100%), no need for 'hidden'
             }
 
             window.addEventListener('resize', handleResize);

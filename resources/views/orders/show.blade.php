@@ -322,7 +322,7 @@
                                         </select>
                                     </div>
 
-                                    <style>
+                                    <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Hide native dropdown arrow */
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
@@ -804,7 +804,7 @@
                                         </tr>
                                     @endforelse
 
-                                    <script>
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         (function() {
                                             // Select/Deselect All functionality
                                             const selectAllCheckbox = document.getElementById('select-all');
@@ -918,8 +918,9 @@
                                                     });
                                             });
                                         })();
-                                    </script>
-                                    <script>
+
+
+
                                         (function() {
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
@@ -1023,8 +1024,9 @@
                                                     });
                                             });
                                         })();
-                                    </script>
-                                    <script>
+
+
+
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             // Find all BOL containers
@@ -1115,7 +1117,7 @@
                                     </div>
                                 </div>
 
-                                <script>
+                                <script nonce="{{ $cspNonce ?? '' }}">
                                     // hide all checkbox if order status is approved or completed
 
                                     (function() {
@@ -1293,7 +1295,7 @@
                                     })();
                                 </script>
 
-                                <style>
+                                <style nonce="{{ $cspNonce ?? '' }}">
                                     /* Optional: Customize SweetAlert2 styles */
                                     .swal2-popup {
                                         font-family: inherit;
@@ -1401,7 +1403,7 @@
                                                 📂 View / Download
                                             </a>
 
-                                            <script>
+                                            <script nonce="{{ $cspNonce ?? '' }}">
                                                 function previewApprovalDocument(url) {
                                                     const fileExtension = url.split('.').pop().toLowerCase();
                                                     let content = '';
@@ -1914,7 +1916,7 @@
 
 
         <!-- Enhanced JavaScript System -->
-        <script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             $(document).ready(function() {
                 // ========================================
                 // CONSTANTS & CONFIGURATION
@@ -3322,8 +3324,7 @@
                     await executeTransfer();
                 });
             });
-        </script>
-        <script>
+
             document.addEventListener('beforeinput', function(e) {
                 const el = e.target;
 
@@ -3353,7 +3354,7 @@
 
 
         <!-- Enhanced CSS for better visual feedback -->
-        <style>
+        <style nonce="{{ $cspNonce ?? '' }}">
             /* Minimal custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 6px;
