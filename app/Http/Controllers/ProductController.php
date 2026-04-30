@@ -966,18 +966,20 @@ class ProductController extends Controller
 
     protected function isQueueWorkerRunning(): bool
     {
-        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'
-            ? $this->isWindowsQueueWorkerRunning()
-            : $this->isLinuxQueueWorkerRunning();
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            return $this->isWindowsQueueWorkerRunning();
+        }
+
+        // Linux: check supervisor instead of ps/grep
+        $output = shell_exec('sudo supervisorctl status laravel-worker: 2>&1');
+
+        return $output && str_contains($output, 'RUNNING');
     }
 
     protected function isWindowsQueueWorkerRunning(): bool
     {
-        $output = shell_exec('wmic process where "name=\'php.exe\'" get CommandLine 2>nul');
-
-        return $output &&
-            (stripos($output, 'queue:work') !== false ||
-                stripos($output, 'queue:listen') !== false);
+        $output = shell_exec('tasklist | findstr php.exe');
+        return $output && str_contains($output, 'artisan queue:work');
     }
 
     protected function isLinuxQueueWorkerRunning(): bool
@@ -1046,6 +1048,19 @@ class ProductController extends Controller
         logger()->info('Supervisor restart executed', [
             'output' => $output
         ]);
+    }
+
+    protected function restartQueueWorker(): void
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            return; // ignore (Windows has no supervisor)
+        }
+
+        $output = shell_exec('sudo supervisorctl restart laravel-worker: 2>&1');
+
+        if (!str_contains($output, 'OK')) {
+            throw new \Exception("Supervisor restart failed: " . $output);
+        }
     }
 
     protected function validateDatabaseConnections(): void
