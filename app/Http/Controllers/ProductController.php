@@ -955,8 +955,13 @@ class ProductController extends Controller
 
     protected function ensureQueueWorkerRunning(): void
     {
-        if ($this->isQueueWorkerRunning()) return;
-        $this->startQueueWorker();
+        if ($this->isQueueWorkerRunning()) {
+            return;
+        }
+
+        logger()->warning('Queue worker is not running under Supervisor. Attempting restart.');
+
+        $this->restartSupervisorWorker();
     }
 
     protected function isQueueWorkerRunning(): bool
