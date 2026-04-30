@@ -959,9 +959,9 @@ class ProductController extends Controller
             return;
         }
 
-        logger()->warning('Queue worker is not running under Supervisor. Attempting restart.');
+        logger()->warning('Queue worker not detected. Attempting recovery.');
 
-        $this->restartSupervisorWorker();
+        $this->startQueueWorker();
     }
 
     protected function isQueueWorkerRunning(): bool
@@ -974,30 +974,43 @@ class ProductController extends Controller
     protected function isWindowsQueueWorkerRunning(): bool
     {
         $output = shell_exec('wmic process where "name=\'php.exe\'" get CommandLine 2>nul');
-        return $output && (stripos($output, 'queue:work') !== false || stripos($output, 'queue:listen') !== false);
+
+        return $output &&
+            (stripos($output, 'queue:work') !== false ||
+                stripos($output, 'queue:listen') !== false);
     }
 
     protected function isLinuxQueueWorkerRunning(): bool
     {
-        return !empty(shell_exec('ps aux | grep "queue:work\|queue:listen" | grep -v grep'));
+        $output = shell_exec('supervisorctl status laravel-worker 2>/dev/null');
+
+        return $output && str_contains($output, 'RUNNING');
     }
 
     protected function startQueueWorker(): void
     {
-        strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'
-            ? $this->startWindowsQueueWorker()
-            : $this->startLinuxQueueWorker();
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $this->startWindowsQueueWorker();
+        } else {
+            // Linux = Supervisor-controlled recovery ONLY
+            $this->restartSupervisorWorker();
+        }
 
         sleep(2);
+
         if (!$this->isQueueWorkerRunning()) {
-            throw new \Exception('Queue worker could not be started. Please start it manually: php artisan queue:work');
+            throw new \Exception('Queue worker recovery failed.');
         }
     }
 
     protected function startWindowsQueueWorker(): void
     {
         $artisanPath = str_replace('/', '\\', base_path() . '\\artisan');
-        $command = "powershell -Command \"Start-Process '" . PHP_BINARY . "' -ArgumentList '{$artisanPath} queue:work --queue=default --tries=3 --timeout=300' -WindowStyle Hidden\"";
+
+        $command = "powershell -Command \"Start-Process '"
+            . PHP_BINARY
+            . "' -ArgumentList '{$artisanPath} queue:work --queue=default --tries=3 --timeout=300' -WindowStyle Hidden\"";
+
         pclose(popen($command, 'r'));
     }
 
@@ -1024,6 +1037,15 @@ class ProductController extends Controller
         if (!$pid) {
             throw new \Exception("Queue worker failed to start.");
         }
+    }
+
+    protected function restartSupervisorWorker(): void
+    {
+        $output = shell_exec('supervisorctl restart laravel-worker:* 2>&1');
+
+        logger()->info('Supervisor restart executed', [
+            'output' => $output
+        ]);
     }
 
     protected function validateDatabaseConnections(): void
