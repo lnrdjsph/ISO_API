@@ -153,26 +153,15 @@
                         </li>
 
 
-                        <li>
-                            <a
-                                href="#"
-                                class="text-xl decoration-2 hover:text-blue-600 hover:underline">
-                                View Request Order List
-                            </a>
-                        </li>
-                        <li>
-                            <a
-                                href="#"
-                                class="text-xl decoration-2 hover:text-blue-600 hover:underline">
-                                Generate Freebies Form
-                            </a>
-                        </li>
+                        {{-- View Request Order List & Generate Freebies Form removed:
+                             not present in sidebar navigation --}}
                     </ul>
 
                 </div>
 
 
-                @if (auth()->user()->role !== 'manager')
+                {{-- ══ Forms: same gate as sidebar (!manager) ══ --}}
+                @if (!in_array(auth()->user()->role, ['manager']))
                     <!-- Forms Card -->
                     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
                         <div class="mb-3 flex items-center justify-between">
@@ -195,14 +184,15 @@
                             <li><a
                                     href="{{ route('forms.sof') }}"
                                     class="text-xl decoration-2 hover:text-indigo-600 hover:underline">Sales Order Form</a></li>
-                            <li><a
-                                    href="{{ route('forms.rof') }}"
-                                    class="text-xl decoration-2 hover:text-indigo-600 hover:underline">Request Order Form</a></li>
+                            {{-- Request Order Form commented out — matches sidebar --}}
+                            {{-- <li><a href="{{ route('forms.rof') }}" class="text-xl decoration-2 hover:text-indigo-600 hover:underline">Request Order Form</a></li> --}}
                             {{-- <li><a href="{{ route('forms.feedback') }}" class="hover:text-indigo-600 hover:underline decoration-2 text-xl">Feedback Form</a></li> --}}
                         </ul>
                     </div>
+                @endif
 
-
+                {{-- ══ Products: same gate as sidebar (super admin, warehouse personnel, warehouse admin, store personnel) ══ --}}
+                @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel']))
                     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
                         <div class="mb-3 flex items-center justify-between">
                             <h2 class="text-2xl font-semibold text-gray-800">Products</h2>
@@ -224,8 +214,8 @@
                             <li><a
                                     href="{{ route('products.index') }}"
                                     class="text-xl decoration-2 hover:text-green-600 hover:underline">All Products</a></li>
-
-                            @if (auth()->user()->role !== 'personnel')
+                            {{-- Add New & Import: same gate as sidebar (!store personnel) --}}
+                            @if (!in_array(auth()->user()->role, ['store personnel']))
                                 <li><a
                                         href="{{ route('products.create') }}"
                                         class="text-xl decoration-2 hover:text-green-600 hover:underline">Add New Product</a></li>
@@ -237,7 +227,7 @@
                     </div>
                 @endif
 
-                <!-- Reports Card -->
+                <!-- Reports Card — visible to all roles (same as sidebar) -->
                 <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
                     <div class="mb-3 flex items-center justify-between">
                         <h2 class="text-2xl font-semibold text-gray-800">Reports</h2>
@@ -274,6 +264,70 @@
                                 class="text-xl decoration-2 hover:text-green-600 hover:underline">Payments Overview</a></li>
                     </ul>
                 </div>
+
+                {{-- ══ Admin: same gate as sidebar (super admin only) ══ --}}
+                @if (auth()->user()->role === 'super admin')
+                    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
+                        <div class="mb-3 flex items-center justify-between">
+                            <h2 class="text-2xl font-semibold text-gray-800">Admin</h2>
+                            <div class="rounded-full bg-purple-100 p-2 text-purple-600">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="h-5 w-5 flex-shrink-0">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li><a
+                                    href="{{ route('users.index') }}"
+                                    class="text-xl decoration-2 hover:text-purple-600 hover:underline">User Management</a></li>
+                            <li><a
+                                    href="{{ route('settings.index') }}"
+                                    class="text-xl decoration-2 hover:text-purple-600 hover:underline">System Settings</a></li>
+                            <li><a
+                                    href="{{ route('logs') }}"
+                                    class="text-xl decoration-2 hover:text-purple-600 hover:underline">Logs</a></li>
+                        </ul>
+                    </div>
+
+                    {{-- ══ Others: same gate as sidebar (super admin only) ══ --}}
+                    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-md">
+                        <div class="mb-3 flex items-center justify-between">
+                            <h2 class="text-2xl font-semibold text-gray-800">Others</h2>
+                            <div class="rounded-full bg-yellow-100 p-2 text-yellow-600">
+                                <svg
+                                    class="h-5 w-5 flex-shrink-0"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li><a
+                                    href="{{ route('others.inventory.form') }}"
+                                    class="text-xl decoration-2 hover:text-yellow-600 hover:underline">Inventory Form</a></li>
+                            <li><a
+                                    href="{{ route('others.filemanager.index') }}"
+                                    class="text-xl decoration-2 hover:text-yellow-600 hover:underline">File Manager</a></li>
+                        </ul>
+                    </div>
+                @endif
 
             </div>
         </div>
