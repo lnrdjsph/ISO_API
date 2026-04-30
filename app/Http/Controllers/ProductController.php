@@ -998,16 +998,23 @@ class ProductController extends Controller
 
     protected function startLinuxQueueWorker(): void
     {
-        $projectPath = "/var/www/html/ISO_API";
+        $projectPath = config('system.project_path'); // from env
         $phpBinary   = trim(shell_exec("which php")) ?: PHP_BINARY;
         $logPath     = "{$projectPath}/storage/logs/queue-worker.log";
+
         if (!file_exists($logPath)) {
             touch($logPath);
         }
+
         chmod($logPath, 0777);
+
         $command = "cd {$projectPath} && nohup {$phpBinary} artisan queue:work --queue=default --tries=3 --timeout=300 --sleep=1 >> {$logPath} 2>&1 & echo $!";
+
         $pid = exec($command);
-        if (!$pid) throw new \Exception("Queue worker failed to start.");
+
+        if (!$pid) {
+            throw new \Exception("Queue worker failed to start.");
+        }
     }
 
     protected function validateDatabaseConnections(): void
