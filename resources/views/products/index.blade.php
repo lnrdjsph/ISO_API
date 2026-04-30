@@ -109,7 +109,8 @@
                                 const progressText = document.getElementById('progressText');
                                 const progressBar = document.getElementById('progressBar');
 
-                                const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]').value;
+                                const getSelectedWarehouse = () => document.querySelector('select[name="warehouse"]')?.value ?? '';
+                                const getSelectedStore = () => document.querySelector('select[name="store"]')?.value ?? '{{ $currentStore }}';
 
                                 sessionStorage.removeItem("allocUpdateDone");
 
@@ -142,7 +143,7 @@
                                     try {
                                         const warehouse = getSelectedWarehouse();
                                         const res = await fetchWithTimeout(
-                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&store=${getSelectedStore()}&t=${Date.now()}`, {
                                                 method: 'GET',
                                                 headers: {
                                                     'Accept': 'application/json',
@@ -197,7 +198,7 @@
                                     // Get current status
                                     let statusData = null;
                                     try {
-                                        const statusRes = await fetchWithTimeout(`{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                        const statusRes = await fetchWithTimeout(`{{ route('update.allocations.status') }}?warehouse=${warehouse}&store=${getSelectedStore()}&t=${Date.now()}`, {
                                             method: 'GET',
                                             headers: {
                                                 'Accept': 'application/json',
@@ -276,7 +277,8 @@
                                                 'X-Requested-With': 'XMLHttpRequest'
                                             },
                                             body: JSON.stringify({
-                                                warehouse
+                                                warehouse,
+                                                store: getSelectedStore()
                                             })
                                         })
 
@@ -344,7 +346,7 @@
                                     const warehouse = getSelectedWarehouse();
 
                                     fetchWithTimeout(
-                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&t=${Date.now()}`, {
+                                            `{{ route('update.allocations.status') }}?warehouse=${warehouse}&store=${getSelectedStore()}&t=${Date.now()}`, {
                                                 method: 'GET',
                                                 headers: {
                                                     'Accept': 'application/json',
@@ -587,7 +589,7 @@
                             <form
                                 method="GET"
                                 action="{{ route('products.index') }}"
-                                class="max-w-sm flex-1">
+                                class="w-96 flex-shrink-0">
                                 <div class="relative">
                                     <div class="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-4">
                                         <svg
@@ -1950,7 +1952,9 @@
                     $.ajax({
                         url: '{{ route('products.search') }}',
                         data: {
-                            query: query
+                            query: query,
+                            store: document.querySelector('select[name="store"]')?.value ?? '{{ $currentStore }}',
+                            warehouse: document.querySelector('select[name="warehouse"]')?.value ?? '{{ $currentWarehouse }}',
                         },
                         success: function(data) {
                             searchInput.removeClass('animate-pulse');

@@ -43,13 +43,13 @@ class UpdateWmsAllocationsJob implements ShouldQueue
             }
 
             // --- Check Oracle WMS connection ---
-            try {
-                DB::connection('oracle_wms')->getPdo();
-                Log::info("Oracle WMS connection successful.");
-            } catch (\Exception $e) {
-                Log::error("Oracle WMS connection failed: " . $e->getMessage());
-                throw new \Exception("Oracle WMS connection failed: " . $e->getMessage());
-            }
+            // try {
+            //     DB::connection('oracle_wms')->getPdo();
+            //     Log::info("Oracle WMS connection successful.");
+            // } catch (\Exception $e) {
+            //     Log::error("Oracle WMS connection failed: " . $e->getMessage());
+            //     throw new \Exception("Oracle WMS connection failed: " . $e->getMessage());
+            // }
 
             // Run the artisan command if connections are OK
             $exitCode = Artisan::call('products:update-allocations', [
@@ -61,7 +61,6 @@ class UpdateWmsAllocationsJob implements ShouldQueue
             } else {
                 Log::error("WMS allocation update failed with exit code {$exitCode} for location: {$this->location}");
             }
-
         } catch (\Exception $e) {
             Log::error("WMS allocation update error for location {$this->location}: " . $e->getMessage());
             throw $e;

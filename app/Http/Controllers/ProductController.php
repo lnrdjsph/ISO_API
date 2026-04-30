@@ -1017,11 +1017,11 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             throw new \Exception('MySQL connection failed: ' . $e->getMessage());
         }
-        try {
-            DB::connection('oracle_wms')->getPdo();
-        } catch (\Exception $e) {
-            throw new \Exception('Oracle WMS connection failed: ' . $e->getMessage());
-        }
+        // try {
+        //     DB::connection('oracle_wms')->getPdo();
+        // } catch (\Exception $e) {
+        //     throw new \Exception('Oracle WMS connection failed: ' . $e->getMessage());
+        // }
     }
 
     protected function dispatchAllocationJobs(string $tableName, string $facilityId, string $warehouseCode): int
