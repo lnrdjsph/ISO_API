@@ -224,26 +224,46 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
 
 
 
-Route::middleware(['auth'])->group(function () {
+// Forgot password — guest only, rate limited
+Route::middleware(['guest', 'throttle:5,1'])->group(function () {
+    Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])
+        ->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+        ->name('password.email');
+
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])
+        ->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+        ->name('password.update');
+});
+
+// Account — was missing session.expired
+Route::middleware(['auth', 'session.expired'])->group(function () {
+    Route::get('/account', [AccountController::class, 'show'])->name('account.show');
+    Route::put('/account', [AccountController::class, 'update'])->name('account.update');
+    Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
+});
+
+// Settings — was missing session.expired
+Route::middleware(['auth', 'session.expired'])->prefix('settings')->name('settings.')->group(function () {
+    Route::get('/', [SettingsController::class, 'index'])->name('index');
+
+    Route::post('stores/enroll',  [SettingsController::class, 'enrollStore'])->name('stores.enroll');
+    Route::put('stores/{code}',   [SettingsController::class, 'updateStore'])->name('stores.update');
+    Route::delete('stores/{code}',[SettingsController::class, 'deactivateStore'])->name('stores.deactivate');
+
+    Route::post('warehouses',     [SettingsController::class, 'storeWarehouse'])->name('warehouses.store');
+    Route::put('warehouses/{code}',[SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
+
+    Route::post('regions',        [SettingsController::class, 'storeRegion'])->name('regions.store');
+    Route::put('regions/{key}',   [SettingsController::class, 'updateRegion'])->name('regions.update');
+
+    Route::post('regions/{key}/emails', [SettingsController::class, 'storeRegionEmail'])->name('settings.regions.emails.store');
+    Route::delete('region-emails/{id}', [SettingsController::class, 'destroyRegionEmail'])->name('settings.regions.emails.destroy');
+});
+
+// Logs — was missing session.expired
+Route::middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/logs',       [WmsLogController::class, 'index'])->name('logs');
     Route::get('/logs/fetch', [WmsLogController::class, 'fetch'])->name('logs.fetch');
 });
-
-
-// Forgot password
-Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])
-    ->name('password.request');
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
-    ->name('password.email');
-
-// Reset password
-Route::get('/reset-password/{token}', [PasswordResetController::class, 'showResetForm'])
-    ->name('password.reset');
-Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
-    ->name('password.update');
-
-
-
-Route::get('/account', [AccountController::class, 'show'])->name('account.show');
-Route::put('/account', [AccountController::class, 'update'])->name('account.update');
-Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');

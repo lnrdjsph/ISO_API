@@ -3,39 +3,30 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRules;
 
 class PasswordResetController extends Controller
 {
-    // Show "Forgot Password" form
     public function showForgotForm()
     {
         return view('auth.forgot-password');
     }
 
-    // Send reset link to email
     public function sendResetLink(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ], [
-            'email.exists' => 'No account found with that email address.',
-        ]);
+        $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Always fire — don't reveal if email exists
+        Password::sendResetLink($request->only('email'));
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with('status', 'Password reset link has been sent to your email.')
-            : back()->withErrors(['email' => __($status)]);
+        return back()->with('status', 'If that email is registered, a reset link has been sent.');
     }
 
-    // Show reset form (from email link)
     public function showResetForm(Request $request, string $token)
     {
         return view('auth.reset-password', [
@@ -44,13 +35,12 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    // Handle new password submission
     public function resetPassword(Request $request)
     {
         $request->validate([
             'token'    => 'required',
-            'email'    => 'required|email',
-            'password' => 'required|min:6|confirmed',
+            'email'    => 'required|email|exists:users,email',
+            'password' => ['required', 'confirmed', PasswordRules::defaults()],
         ]);
 
         $status = Password::reset(
