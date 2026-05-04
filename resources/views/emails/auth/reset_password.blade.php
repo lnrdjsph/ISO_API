@@ -28,9 +28,9 @@
                     </tr>
 
                     <!-- Header -->
-                    {{-- rounded to 8px --}}
+                    {{-- rounded top 8px --}}
                     <tr>
-                        <td style="background:#FFA900; padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center;" border-radius="8px 8px 0 0;">
+                        <td style="background:#FFA900; padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center; border-radius:8px 8px 0 0;">
                             Reset Password
                         </td>
                     </tr>
