@@ -61,7 +61,7 @@
                     <!-- Expiry notice -->
                     <tr>
                         <td style="padding:0 28px 24px; font-size:13px; color:#555555; line-height:1.7;">
-                            This link will expire in <strong>60 minutes</strong>.
+                            This link will expire in <strong>15 minutes</strong>.
                             <br><br>
                             If you did not request a password reset, no further action is required.
                         </td>
