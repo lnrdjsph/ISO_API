@@ -28,8 +28,9 @@
                     </tr>
 
                     <!-- Header -->
+                    {{-- rounded to 8px --}}
                     <tr>
-                        <td style="background:#004362; padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center;">
+                        <td style="background:#004362; padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center;" border-radius="8px 8px 0 0;">
                             Reset Password
                         </td>
                     </tr>
@@ -48,15 +49,9 @@
                         <td align="center" style="padding:24px 20px;">
                             <table cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td
-                                        align="center"
-                                        bgcolor="#004362"
-                                        style="border-radius:6px; padding:12px 32px;">
-
-                                        href="{{ $resetUrl }}"
-                                        style="color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:bold; text-decoration:none; white-space:nowrap;">
-                                        Reset Password
-                                        </a>
+                                    <td align="center" bgcolor="#004362" style="border-radius:6px; padding:12px 32px;">
+                                        <a href="{{ $resetUrl }}" style="color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:bold; text-decoration:none;">Reset
+                                            Password</a>
                                     </td>
                                 </tr>
                             </table>

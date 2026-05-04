@@ -30,7 +30,7 @@
 
                     <!-- Header -->
                     <tr>
-                        <td style="background:#004362;padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center;">
+                        <td style="background:#004362;padding:16px 20px; color:#ffffff; font-size:20px; font-weight:bold; text-align:center; border-radius:8px 8px 0 0;">
                             Request Approval
                         </td>
                     </tr>
@@ -87,11 +87,14 @@
                     <!-- Button -->
                     <tr>
                         <td align="center" style="padding:20px;">
-
-                            href="{{ route('orders.show', $order->id) }}"
-                            style="background:#004362; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:bold; display:inline-block;">
-                            View Order Details
-                            </a>
+                            <table cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" bgcolor="#004362" style="border-radius:6px; padding:12px 32px;">
+                                        <a href="{{ route('orders.show', $order->id) }}"
+                                            style="color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:bold; text-decoration:none;">View Order Details</a>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
