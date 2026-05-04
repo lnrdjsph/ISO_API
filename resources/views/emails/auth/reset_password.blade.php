@@ -43,33 +43,20 @@
                             request for your account. Click the button below to proceed.
                         </td>
                     </tr>
-
                     <!-- Button -->
                     <tr>
                         <td align="center" style="padding:24px 20px;">
                             <table cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" bgcolor="#004362" style="border-radius:6px;">
-                                        <!--[if mso]>
-                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml"
-                                            href="{{ $resetUrl }}"
-                                            style="height:44px;v-text-anchor:middle;width:200px;"
-                                            arcsize="14%"
-                                            fillcolor="#004362"
-                                            strokecolor="#004362">
-                                        <w:anchorlock/>
-                                        <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">
-                                            Reset Password
-                                        </center>
-                                        </v:roundrect>
-                                        <![endif]-->
-                                        <!--[if !mso]><!-->
+                                    <td
+                                        align="center"
+                                        bgcolor="#004362"
+                                        style="border-radius:6px; padding:12px 32px;">
 
                                         href="{{ $resetUrl }}"
-                                        style="display:inline-block; padding:12px 32px; color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:bold; text-decoration:none; border-radius:6px; mso-hide:all;">
+                                        style="color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:bold; text-decoration:none; white-space:nowrap;">
                                         Reset Password
                                         </a>
-                                        <!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>
