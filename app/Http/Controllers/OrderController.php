@@ -720,7 +720,7 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->id);
 
-        // ✅ Save the file
+        // ✅ Save the file with yearly and monthly structure based on time_order
         $filePath = null;
         if ($request->hasFile('attachment')) {
             // Optional: Delete old file if you want to replace it
@@ -728,8 +728,15 @@ class OrderController extends Controller
                 Storage::disk('public')->delete($order->approval_document);
             }
 
+            // Extract year and month from time_order
+            $year = date('Y', strtotime($order->time_order));
+            $month = date('m', strtotime($order->time_order));
+
+            // Build the folder path using sof_id and time_order date
+            $folderPath = "order_approvals/{$year}/{$month}/{$order->sof_id}";
+
             $filePath = $request->file('attachment')->store(
-                'order_approvals/' . $order->id, // folder per order
+                $folderPath, // folder per year/month/sof_id
                 'public' // use the `public` disk
             );
         }

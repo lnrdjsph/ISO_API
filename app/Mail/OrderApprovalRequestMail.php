@@ -4,9 +4,12 @@ namespace App\Mail;
 
 use App\Models\ISO_B2B\Order;
 use App\Models\User;
+use App\Support\LocationConfig;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
 
 class OrderApprovalRequestMail extends Mailable
 {
@@ -21,30 +24,25 @@ class OrderApprovalRequestMail extends Mailable
 
     public function build()
     {
-        $stores = [
-            '4002'  =>  'F2 - Metro Wholesalemart Colon',
-            '2010'  =>  'S10 - Metro Maasin',
-            '2017'  =>  'S17 - Metro Tacloban',
-            '2019'   =>  'S19 - Metro Bay-Bay',
-            '3018'   =>  'F18 - Metro Alang-Alang',
-            '3019'   =>  'F19 - Metro Hilongos',
-            '2008'    =>  'S8 - Metro Toledo',
-            '6012'    =>  'H8 - Super Metro Antipolo',
-            '6009'    =>  'H9 - Super Metro Carcar',
-            '6010'   =>  'H10 - Super Metro Bogo',
-        ];
-
-        $storeName = $stores[$this->order->requesting_store] ?? $this->order->requesting_store;
-        
-        // Simple fix - get the requester name
+        $storeName     = LocationConfig::storeName($this->order->requesting_store);
         $requesterName = User::find($this->order->requested_by)?->name ?? 'Unknown User';
+        $logoCid       = 'metro-logo@metro';
+        $logoPath      = public_path('images/MarengEms_Logo.png');
 
         return $this->subject('Order Approval Request')
             ->view('emails.orders.approval')
+            ->withSymfonyMessage(function (Email $message) use ($logoPath, $logoCid) {
+                $message->addPart(
+                    (new DataPart(fopen($logoPath, 'r'), 'logo.png', 'image/png'))
+                        ->asInline()
+                        ->setContentId($logoCid)
+                );
+            })
             ->with([
-                'order' => $this->order,
-                'storeName' => $storeName,
-                'requesterName' => $requesterName, // Add this line
+                'order'         => $this->order,
+                'storeName'     => $storeName,
+                'requesterName' => $requesterName,
+                'logoCid'       => 'cid:' . $logoCid,
             ]);
     }
 }
