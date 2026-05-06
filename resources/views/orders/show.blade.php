@@ -2,19 +2,7 @@
 
 @section('content')
     @php
-        $locationMap = [
-            '4002' => 'F2 - Metro Wholesalemart Colon',
-            '2010' => 'S10 - Metro Maasin',
-            '2017' => 'S17 - Metro Tacloban',
-            '2019' => 'S19 - Metro Bay-Bay',
-            '3018' => 'F18 - Metro Alang-Alang',
-            '3019' => 'F19 - Metro Hilongos',
-            '2008' => 'S8 - Metro Toledo',
-            '6012' => 'H8 - Super Metro Antipolo',
-            '6009' => 'H9 - Super Metro Carcar',
-            '6010' => 'H10 - Super Metro Bogo',
-        ];
-        $order->requesting_store = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+        $order->requesting_store = \App\Support\LocationConfig::storeName($order->requesting_store, $order->requesting_store);
     @endphp
     <style nonce="{{ $cspNonce ?? '' }}">
         .search-results {
@@ -248,10 +236,10 @@
                                                 Select Payment Center
                                             </option>
 
-                                            @foreach ($locationMap as $code => $label)
+                                            @foreach (\App\Support\LocationConfig::stores() as $code => $label)
                                                 <option
-                                                    value="{{ $label }}"
-                                                    {{ $order->payment_center === $label ? 'selected' : '' }}>
+                                                    value="{{ $code }}"
+                                                    {{ $order->payment_center === $code ? 'selected' : '' }}>
                                                     {{ $label }}
                                                 </option>
                                             @endforeach
@@ -367,6 +355,7 @@
                                     </div>
                                 </div>
 
+
                                 <div class="space-y-2 border-l pe-6 ps-4">
                                     <h3 class="mb-0.5 text-xs font-semibold text-gray-700">Order Info</h3>
                                     <div>
@@ -417,25 +406,11 @@
                                     </div>
 
 
-                                    @php
-                                        $warehouseMap = [
-                                            '80141' => 'Silangan Warehouse',
-                                            '80001' => 'Central Warehouse',
-                                            '80041' => 'Procter Warehouse',
-                                            '80051' => 'Opao-ISO Warehouse',
-                                            '80071' => 'Big Blue Warehouse',
-                                            '80131' => 'Lower Tingub Warehouse',
-                                            '80211' => 'Sta. Rosa Warehouse',
-                                            '80181' => 'Bacolod Depot',
-                                            '80191' => 'Tacloban Depot',
-                                            // '80???' => 'Arellano Warehouse',
-                                        ];
-                                        $order->warehouse = $warehouseMap[$order->warehouse] ?? $order->warehouse;
-
-                                    @endphp
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Warehouse</p>
-                                        <p class="text-xs font-medium text-gray-900">{{ ucwords($order->warehouse) }}</p>
+                                        <p class="text-xs font-medium text-gray-900">
+                                            {{ ucwords(\App\Support\LocationConfig::warehouseName($order->warehouse, $order->warehouse)) }}
+                                        </p>
                                     </div>
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Date & Time of Order</p>
@@ -445,7 +420,20 @@
 
 
                                 </div>
+
                             </div>
+
+                        </div>
+                        <div class="rounded-xl border bg-white p-4 shadow-sm">
+                            <label class="mb-1 block text-xs font-semibold text-gray-700">Order Comment</label>
+                            <textarea
+                                name="comment"
+                                rows="2"
+                                maxlength="1800"
+                                data-original="{{ $order->comment ?? '' }}"
+                                placeholder="Enter comment or notes for this order (optional)"
+                                class="w-full resize-none rounded-lg border border-gray-200 p-2 text-xs text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">{{ $order->comment ?? '' }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Max 1,800 characters.</p>
                         </div>
 
                         <div class="relative overflow-x-auto overflow-y-visible rounded-xl border bg-white p-4 pb-24 shadow-sm">
@@ -894,27 +882,27 @@
                                                         }
 
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                            ${status}
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                                ${status}
+                            </div>
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                ${description}
+                            </div>
                         </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            ${description}
-                        </div>
-                    </div>
-                `;
+                        `;
                                                     })
                                                     .catch(error => {
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                            Error
-                        </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            Failed to load order status. Please try again later.
-                        </div>
-                    </div>
-                `;
+                            <div class="relative inline-block">
+                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                                    Error
+                                </div>
+                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                    Failed to load order status. Please try again later.
+                                </div>
+                            </div>
+                        `;
                                                     });
                                             });
                                         })();
@@ -1000,27 +988,27 @@
                                                         }
 
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                            ${status}
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                                ${status}
+                            </div>
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                ${description}
+                            </div>
                         </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            ${description}
-                        </div>
-                    </div>
-                `;
+                        `;
                                                     })
                                                     .catch(error => {
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                            Error
-                        </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            Failed to load order status. Please try again later.
-                        </div>
-                    </div>
-                `;
+                            <div class="relative inline-block">
+                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                                    Error
+                                </div>
+                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                    Failed to load order status. Please try again later.
+                                </div>
+                            </div>
+                        `;
                                                     });
                                             });
                                         })();
@@ -1317,7 +1305,7 @@
                                     });
                                 @endphp
 
-                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo)
+                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo && (Auth::user()->role === 'personnel' || Auth::user()->role === 'super admin'))
                                     <button
                                         type="button"
                                         id="generateSOButton"
@@ -2561,6 +2549,14 @@
                                 'cursor': 'default'
                             });
                     });
+                    $('textarea').each(function() {
+                        $(this).prop('readonly', true)
+                            .css({
+                                'pointer-events': 'none',
+                                'cursor': 'default',
+                                'resize': 'none'
+                            });
+                    });
 
                     // Lock all selects except #orderAction - keep normal appearance
                     $('select').not('#orderAction').each(function() {
@@ -2605,13 +2601,13 @@
                 // CHANGE DETECTION FUNCTIONS
                 // ========================================
                 const trackableElements = $(
-                    'input[type="text"], input[type="date"], input[type="email"], select:not(#orderAction), td[contenteditable="true"]'
+                    'input[type="text"], input[type="date"], input[type="email"], textarea[name="comment"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
                 function initializeOriginalValues() {
                     if (IS_LOCKED) return;
 
-                    trackableElements.filter('input, select').each(function() {
+                    trackableElements.filter('input, select, textarea').each(function() {
                         const $element = $(this);
                         const originalValue = $element.val() || '';
                         $element.data('original', originalValue);
@@ -2770,10 +2766,9 @@
                 // EVENT LISTENERS (Only if NOT locked)
                 // ========================================
                 if (!IS_LOCKED) {
-                    trackableElements.filter('input, select').on('change input keyup', function() {
+                    trackableElements.filter('input, select, textarea').on('change input keyup', function() {
                         checkElementChange(this);
                     });
-
                     trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
                         checkElementChange(this);
 

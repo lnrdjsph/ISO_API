@@ -10,7 +10,7 @@ class CreateOrdersTable extends Migration
     {
         Schema::connection('mysql')->create('orders', function (Blueprint $table) {
             $table->increments('id');
-             $table->string('sof_id')->nullable();
+            $table->string('sof_id')->nullable();
             $table->string('requesting_store');
             $table->string('requested_by');
             $table->string('mbc_card_no')->nullable(); // ✅ Added
@@ -29,6 +29,7 @@ class CreateOrdersTable extends Migration
             $table->text('address')->nullable();
             $table->string('landmark')->nullable();
             $table->string('order_status')->default('new order'); // ✅ Added with default value
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }

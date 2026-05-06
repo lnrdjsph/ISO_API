@@ -72,6 +72,7 @@ class FormsController extends Controller
             'customer_name' => 'required|string',
             'contact_number' => 'required|string|regex:/^[0-9]{11,12}$/',
             'email' => 'required|email',
+            'comment' => 'nullable|string|max:1800',
 
 
             // Order items
@@ -181,6 +182,7 @@ class FormsController extends Controller
                 'contact_number' => $validated['contact_number'],
                 'email' => $validated['email'],
                 'order_status' => 'new order',
+                'comment' => $validated['comment'] ?? null,
             ]);
 
             // Save each item

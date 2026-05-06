@@ -256,6 +256,7 @@ class OrderController extends Controller
             'delivery_date' => 'nullable|date',
             'address' => 'nullable|string|max:500',
             'landmark' => 'nullable|string|max:255',
+            'comment' => 'nullable|string|max:1800',
 
             // Items validation
             'items' => 'required|array',
@@ -306,6 +307,7 @@ class OrderController extends Controller
                 'delivery_date',
                 'address',
                 'landmark',
+                'comment',
             ];
 
             foreach ($orderFields as $field) {

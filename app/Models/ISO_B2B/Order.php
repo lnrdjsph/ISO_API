@@ -26,6 +26,7 @@ class Order extends Model
         'delivery_date',
         'address',
         'landmark',
+        'comment',
         'requesting_store',
         'requested_by',
         'mbc_card_no',
@@ -43,34 +44,34 @@ class Order extends Model
     public function notes()
     {
         return $this->hasMany(OrderNote::class, 'order_id')
-                    ->orderBy('created_at', 'desc');
+            ->orderBy('created_at', 'desc');
     }
 
-public function approver()
-{
-    $map = [
-        '4002'  => 1,
-        '2010' => 1,
-        '2017' => 1,
-        '2019' => 1,
-        '3018' => 1,
-        '3019' => 1,
-        '2008'  => 1,
-        '6009'  => 1,
-        '6010' => 1,
-        '6012'  => 2,
-    ];
+    public function approver()
+    {
+        $map = [
+            '4002'  => 1,
+            '2010' => 1,
+            '2017' => 1,
+            '2019' => 1,
+            '3018' => 1,
+            '3019' => 1,
+            '2008'  => 1,
+            '6009'  => 1,
+            '6010' => 1,
+            '6012'  => 2,
+        ];
 
-    $storeCode = strtolower($this->requesting_store);
-    $userId = $map[$storeCode] ?? null;
+        $storeCode = strtolower($this->requesting_store);
+        $userId = $map[$storeCode] ?? null;
 
-    return $userId ? User::find($userId) : null;
-}
+        return $userId ? User::find($userId) : null;
+    }
 
-public function getApproverNameAttribute()
-{
-    return $this->approver()?->name;
-}
+    public function getApproverNameAttribute()
+    {
+        return $this->approver()?->name;
+    }
 
 
     // protected static function booted()

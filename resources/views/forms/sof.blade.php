@@ -158,25 +158,50 @@
                         </div>
 
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div class="relative w-full">
-                                @php
-                                    $channels = ['E-Commerce', 'Store', 'ISO Retail', 'Wholesale'];
-                                    $selectedChannel = old('channel_order', 'Wholesale');
-                                @endphp
+                            {{-- <div class="relative w-full">
+                                    @php
+                                        $channels = ['E-Commerce', 'Store', 'ISO Retail', 'Wholesale'];
+                                        $selectedChannel = old('channel_order', 'Wholesale');
+                                    @endphp
 
-                                <select
-                                    name="channel_order"
-                                    class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                    <select
+                                        name="channel_order"
+                                        class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
 
-                                    @foreach ($channels as $option)
-                                        <option value="{{ $option }}" {{ $selectedChannel === $option ? 'selected' : '' }}>
-                                            {{ $option }}
-                                        </option>
-                                    @endforeach
+                                        @foreach ($channels as $option)
+                                            <option value="{{ $option }}" {{ $selectedChannel === $option ? 'selected' : '' }}>
+                                                {{ $option }}
+                                            </option>
+                                        @endforeach
 
-                                </select>
+                                    </select>
+                                    <label
+                                        class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                        Channel of Order
+                                    </label>
+                                </div> --}}
+
+                            <div class="relative mb-6 w-full">
+                                <!-- Hidden field for the actual value (submittable) -->
+                                <input
+                                    id="channel_order"
+                                    value="{{ old('channel_order', 'Wholesale') }}"
+                                    type="hidden"
+                                    name="channel_order" />
+
+                                <!-- Visible field for display (looks disabled but readable) -->
+                                <input
+                                    id="channel_order_view"
+                                    value="{{ old('channel_order_view', 'Wholesale') }}"
+                                    type="text"
+                                    name="channel_order_view"
+                                    readonly
+                                    class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    placeholder="Channel of Order" />
+
                                 <label
-                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
+                                    for="channel_order"
+                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
                                     Channel of Order
                                 </label>
                             </div>
@@ -1243,13 +1268,28 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 												</div>
 										</div> --}}
 
-                    <!-- Submit Button -->
-                    <button
-                        id="submitBtn"
-                        type="submit"
-                        class="flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 font-medium text-white transition transition duration-1000 hover:scale-[1.02] hover:scale-[1.02] hover:shadow-lg">
-                        Submit Order
-                    </button>
+                    <!-- Submit Row: Comment + Button -->
+                    <div class="flex items-end gap-4">
+                        <div class="flex-1">
+                            <label for="comment" class="mb-1 block text-sm font-medium text-gray-700">
+                                Transfer Comment <span class="text-xs font-normal text-gray-400">(optional)</span>
+                            </label>
+                            <textarea
+                                id="comment"
+                                name="comment"
+                                rows="2"
+                                maxlength="1800"
+                                placeholder="e.g. Rush delivery, coordinate with warehouse..."
+                                class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300">{{ old('comment') }}</textarea>
+                        </div>
+
+                        <button
+                            id="submitBtn"
+                            type="submit"
+                            class="m-2 flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-4 font-medium text-white transition duration-1000 hover:scale-[1.02] hover:shadow-lg">
+                            Submit Order
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

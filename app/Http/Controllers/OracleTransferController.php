@@ -151,7 +151,15 @@ class OracleTransferController extends Controller
                     'tsf_type' => 'AIP',
                     'status' => 'A',
                     'user_id' => 'External',
-                    'comment_desc' => "THIS IS FOR MARENGEMS TESTING ONLY !!!! Generated from SOF# {$order->sof_id} (Dept: {$dept}) [Ref:" . strtoupper(substr(md5(uniqid()), 0, 10)) . "]",
+                    'comment_desc' => (function () use ($order, $dept): string {
+                        $base = "SOF#{$order->sof_id} Dept:{$dept}";
+                        $comment = trim((string) ($order->comment ?? ''));
+
+                        $full = $comment ? "{$base} | {$comment}" : $base;
+
+                        // Oracle TSFHEAD.COMMENT_DESC VARCHAR2(2000)
+                        return mb_substr($full, 0, 2000);
+                    })(),
                     'tsf_no' => $nextTsf,
                     'details' => $consolidatedItems,
                 ];
