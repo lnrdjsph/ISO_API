@@ -225,25 +225,30 @@
                                     <!-- Payment Center -->
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
-                                        <select
-                                            name="payment_center"
-                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="background-image: none;">
-                                            <option
-                                                value=""
-                                                disabled
-                                                {{ $order->payment_center ? '' : 'selected' }}>
-                                                Select Payment Center
-                                            </option>
 
-                                            @foreach (\App\Support\LocationConfig::stores() as $code => $label)
-                                                <option
-                                                    value="{{ $code }}"
-                                                    {{ $order->payment_center === $code ? 'selected' : '' }}>
-                                                    {{ $label }}
+                                        @if ($isSuperAdmin || $hasRegion)
+                                            {{-- Regional/Super Admin: editable dropdown --}}
+                                            <select
+                                                name="payment_center"
+                                                class="payment-center-select w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0">
+                                                <option value="" disabled {{ $order->payment_center ? '' : 'selected' }}>
+                                                    Select Payment Center
                                                 </option>
-                                            @endforeach
-                                        </select>
+                                                @foreach (\App\Support\LocationConfig::stores() as $code => $label)
+                                                    <option
+                                                        value="{{ $code }}"
+                                                        {{ (string) $order->payment_center === (string) $code ? 'selected' : '' }}>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        @else
+                                            {{-- Store personnel: read-only, show label --}}
+                                            <input type="hidden" name="payment_center" value="{{ $order->payment_center }}">
+                                            <p class="text-xs font-medium text-gray-900">
+                                                {{ \App\Support\LocationConfig::storeName($order->payment_center, $order->payment_center) }}
+                                            </p>
+                                        @endif
                                     </div>
 
 
@@ -312,6 +317,10 @@
 
                                     <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Hide native dropdown arrow */
+                                        .payment-center-select {
+                                            background-image: none;
+                                        }
+
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
                                         }

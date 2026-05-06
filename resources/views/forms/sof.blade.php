@@ -1801,8 +1801,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
             // === UI Display Updates ===
             if (totalQtyDisplay) totalQtyDisplay.textContent = totalCases;
-            if (priceDisplay) priceDisplay.textContent = `₱${safeFixed(pricePerCase)}`;
-            if (amountDisplay) amountDisplay.textContent = `₱${safeFixed(totalAmount)}`;
+            if (priceDisplay) priceDisplay.textContent = safeFixed(pricePerCase); // Removed ₱
+            if (amountDisplay) amountDisplay.textContent = safeFixed(totalAmount); // Removed ₱
 
             // === Breakdown Updates ===
             if (breakdownPrice) {
@@ -1846,7 +1846,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             // === Freebie Amount Display ===
             if (freebieAmountDisplay) {
                 if (saleType === 'Freebie' && freebieAmount > 0) {
-                    freebieAmountDisplay.textContent = `₱${safeFixed(freebieAmount)}`;
+                    freebieAmountDisplay.textContent = safeFixed(freebieAmount); // Removed ₱
                     freebieAmountDisplay.style.display = '';
                 } else {
                     freebieAmountDisplay.textContent = '';
@@ -2752,14 +2752,15 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             updateRowNumbers();
 
             function formatAmount(value) {
-                // strip everything except digits and dot
-                const num = parseFloat(String(value).replace(/[^0-9.]/g, ''));
+                // Remove any existing ₱ symbol, commas, and trim whitespace
+                let cleanValue = String(value).replace(/[₱,]/g, '').trim();
+
+                const num = parseFloat(cleanValue.replace(/[^0-9.-]/g, ''));
                 if (isNaN(num)) return '0';
 
-                // Check if original value had decimals
-                const hasDecimals = String(value).includes('.');
+                // Check if value has decimal places
+                const hasDecimals = cleanValue.includes('.');
 
-                // If original had decimals, keep two digits; else show integer
                 if (hasDecimals) {
                     return num.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
