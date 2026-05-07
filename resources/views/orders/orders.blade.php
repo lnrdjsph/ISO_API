@@ -5,12 +5,12 @@
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <!-- Header Section -->
-            <div class="mb-8">
-                <div class="flex items-center space-x-4">
-                    <div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
+            <div class="mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-2 shadow-lg sm:p-3">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            class="h-8 w-8 text-white"
+                            class="h-5 w-5 text-white sm:h-8 sm:w-8"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor">
@@ -22,104 +22,162 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-900">Sales Order List</h1>
-                        <p class="mt-1 text-gray-600">List of all B2B sales orders submitted for processing and fulfillment.</p>
+                        <h1 class="text-xl font-bold text-gray-900 sm:text-3xl">Sales Order List</h1>
+                        <p class="mt-0.5 hidden text-gray-600 sm:block">List of all B2B sales orders submitted for processing and fulfillment.</p>
                     </div>
                 </div>
-            </div><!-- Modern Filter Bar -->
-            <form method="GET" action="{{ route('orders.index') }}" class="ajax-form mb-4 flex flex-wrap items-center gap-2 text-xs">
+            </div>
+            <!-- Filter Bar -->
+            <form method="GET" action="{{ route('orders.index') }}" class="ajax-form mb-4">
 
-                <!-- Search -->
-                <div class="relative">
-                    <input
-                        type="text"
-                        name="search"
-                        value="{{ request('search') }}"
-                        placeholder="Search..."
-                        class="w-72 rounded-md border border-gray-300 py-1.5 pl-8 pr-3 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="absolute left-2 top-2 h-3.5 w-3.5 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
-                    </svg>
+                <!-- Always-visible row: Search + Filter toggle + Apply + Reset -->
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                    {{-- Search Input - Responsive width --}}
+                    <div class="relative min-w-[200px] max-w-sm flex-1">
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search orders..."
+                            class="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-2 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="absolute left-2 top-2 h-3.5 w-3.5 text-gray-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
+                        </svg>
+                    </div>
+
+                    {{-- Filter toggle button --}}
+                    <button
+                        type="button"
+                        id="filter-toggle"
+                        class="relative flex flex-shrink-0 items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                        </svg>
+                        <span class="hidden sm:inline">Filters</span>
+                        {{-- Active filter badge --}}
+                        @php
+                            $activeFilters = collect(['store_code', 'channel', 'status', 'start_date', 'end_date'])
+                                ->filter(fn($k) => request($k))
+                                ->count();
+                        @endphp
+                        @if ($activeFilters > 0)
+                            <span class="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-[9px] font-bold text-white">
+                                {{ $activeFilters }}
+                            </span>
+                        @endif
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="flex-shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700">
+                        Apply
+                    </button>
+                    <a
+                        href="{{ route('orders.index') }}"
+                        class="flex-shrink-0 rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-gray-200">
+                        Reset
+                    </a>
                 </div>
 
-                <!-- Store -->
-                <select
-                    name="store_code"
-                    class="w-40 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    <option value="">All Stores</option>
-                    @foreach ($storeLocations as $code => $label)
-                        <option
-                            value="{{ $code }}"
-                            {{ request('store_code') == $code ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
+                <!-- Collapsible filter panel -->
+                <div
+                    id="filter-panel"
+                    class="{{ $activeFilters > 0 ? '' : 'hidden' }} mt-2 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-3">
 
-                <!-- Channel -->
-                <select
-                    name="channel"
-                    class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    <option value="">All Channels</option>
-                    @foreach ($channels as $channel)
-                        <option
-                            value="{{ $channel }}"
-                            {{ request('channel') == $channel ? 'selected' : '' }}>
-                            {{ $channel }}
-                        </option>
-                    @endforeach
-                </select>
+                    <div class="flex flex-wrap items-end gap-3">
+                        {{-- Store --}}
+                        <div class="min-w-[140px] flex-1">
+                            <label class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Store</label>
+                            <select
+                                name="store_code"
+                                class="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All Stores</option>
+                                @foreach ($storeLocations as $code => $label)
+                                    <option
+                                        value="{{ $code }}"
+                                        {{ request('store_code') == $code ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Status -->
-                <select
-                    name="status"
-                    class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                    <option value="">All Statuses</option>
-                    @foreach ($statuses as $status)
-                        <option
-                            value="{{ $status }}"
-                            {{ request('status') == $status ? 'selected' : '' }}>
-                            {{ ucfirst(strtolower($status)) }}
-                        </option>
-                    @endforeach
-                </select>
+                        {{-- Channel --}}
+                        <div class="min-w-[120px] flex-1">
+                            <label class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Channel</label>
+                            <select
+                                name="channel"
+                                class="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                @foreach ($channels as $channel)
+                                    <option
+                                        value="{{ $channel }}"
+                                        {{ request('channel') == $channel ? 'selected' : '' }}>
+                                        {{ $channel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Date Range -->
-                <input
-                    type="date"
-                    name="start_date"
-                    value="{{ request('start_date') }}"
-                    class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                <span class="text-gray-500">to</span>
-                <input
-                    type="date"
-                    name="end_date"
-                    value="{{ request('end_date') }}"
-                    class="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        {{-- Status --}}
+                        <div class="min-w-[120px] flex-1">
+                            <label class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Status</label>
+                            <select
+                                name="status"
+                                class="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <option value="">All</option>
+                                @foreach ($statuses as $status)
+                                    <option
+                                        value="{{ $status }}"
+                                        {{ request('status') == $status ? 'selected' : '' }}>
+                                        {{ ucfirst(strtolower($status)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Apply -->
-                <button
-                    type="submit"
-                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-indigo-700">
-                    Apply
-                </button>
-
-                <!-- Reset -->
-                <a
-                    href="{{ route('orders.index') }}"
-                    class="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:bg-gray-200">
-                    Reset
-                </a>
+                        {{-- Date range --}}
+                        <div class="min-w-[240px] flex-[2]">
+                            <label class="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    name="start_date"
+                                    value="{{ request('start_date') }}"
+                                    class="flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <span class="text-xs text-gray-400">to</span>
+                                <input
+                                    type="date"
+                                    name="end_date"
+                                    value="{{ request('end_date') }}"
+                                    class="flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </form>
+
+            <script nonce="{{ $cspNonce ?? '' }}">
+                (function() {
+                    const btn = document.getElementById('filter-toggle');
+                    const panel = document.getElementById('filter-panel');
+                    if (!btn || !panel) return;
+
+                    btn.addEventListener('click', function() {
+                        panel.classList.toggle('hidden');
+                    });
+                })();
+            </script>
 
 
             <div class="space-y-6 rounded-xl bg-white shadow-lg">
