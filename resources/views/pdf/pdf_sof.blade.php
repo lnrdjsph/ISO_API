@@ -151,19 +151,8 @@
     </style>
 </head>
 @php
-    $locationMap = [
-        '4002' => 'F2 - Metro Wholesalemart Colon',
-        '2010' => 'S10 - Metro Maasin',
-        '2017' => 'S17 - Metro Tacloban',
-        '2019' => 'S19 - Metro Bay-Bay',
-        '3018' => 'F18 - Metro Alang-Alang',
-        '3019' => 'F19 - Metro Hilongos',
-        '2008' => 'S8 - Metro Toledo',
-        '6012' => 'H8 - Super Metro Antipolo',
-        '6009' => 'H9 - Super Metro Carcar',
-        '6010' => 'H10 - Super Metro Bogo',
-    ];
-    $order->requesting_store_name = $locationMap[strtolower($order->requesting_store)] ?? $order->requesting_store;
+    $locationMap = \App\Support\LocationConfig::stores();
+    $requestingStoreName = $locationMap[$order->requesting_store] ?? $order->requesting_store;
 @endphp
 
 <body>
@@ -269,7 +258,7 @@
                         </tr>
                         <tr>
                             <td><strong>Store:</strong></td>
-                            <td>{{ $order->requesting_store_name }}</td>
+                            <td>{{ $requestingStoreName }}</td>
                         </tr>
                         <tr>
                             <td><strong>Personnel:</strong></td>
@@ -359,32 +348,40 @@
     </div>
     <!-- Signature Container (Table) -->
     <!-- Signature Container (Table) -->
-    @php
-        $storeCode = strtolower($order->requesting_store);
-        $storeName = $locationMap[$storeCode] ?? $storeCode;
-        $approver = $order->approver_name; // pulled from model
-    @endphp
-    <table style="width:100%; margin-top:60px; text-align:center; border:0;">
+    <table style="width:100%; margin-top:40px; text-align:center; border:0;">
         <tr>
-            <td style="width:50%; text-align:center; vertical-align:bottom;">
-                <span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
-                    {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}
-                </span>
-                <div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
-                    Prepared by
+            <!-- Prepared by -->
+            <td style="width:50%; text-align:center;">
+                <div style="width:200px; margin:0 auto;">
+                    <div style="height:55px;"></div>
+                    <span style="font-size:10px; text-transform:uppercase; display:block; margin-bottom:2px;">
+                        {{ \App\Models\User::find($order->requested_by)?->name ?? $order->requested_by }}
+                    </span>
+                    <div style="border-top:1px solid #000; padding-top:3px; font-size:9px;">
+                        Prepared by
+                    </div>
                 </div>
             </td>
-            <td style="width:50%; text-align:center; vertical-align:bottom;">
-                <span style="font-size: 10px; text-transform: uppercase; padding-bottom:3px;">
-                    {{ strtoupper($order->approver_name ?? 'N/A') }}
 
-                </span>
-                <div style="border-top:1px solid #000; width:200px; margin:0 auto; font-size:9px; padding-top:3px;">
-                    Approved by
+            <!-- Approved by -->
+            <td style="width:50%; text-align:center;">
+                <div style="width:200px; margin:0 auto;">
+                    <div style="height:55px; display:flex; align-items:flex-end; justify-content:center;">
+                        @if (!empty($approval_signature))
+                            <img
+                                src="data:image/png;base64,{{ $approval_signature }}"
+                                style="max-height:55px; max-width:200px; object-fit:contain; display:block;">
+                        @endif
+                    </div>
+                    <span style="font-size:10px; text-transform:uppercase; display:block; margin-bottom:2px;">
+                        {{ strtoupper($approver_name ?? ($order->approver_name ?? 'N/A')) }}
+                    </span>
+                    <div style="border-top:1px solid #000; padding-top:3px; font-size:9px;">
+                        Approved by
+                    </div>
                 </div>
             </td>
         </tr>
-
     </table>
 
 

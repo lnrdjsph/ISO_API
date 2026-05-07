@@ -716,61 +716,64 @@ class OrderController extends Controller
     public function approveOrder(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:orders,id',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB limit
+            'id'                 => 'required|exists:orders,id',
+            'approval_mode'      => 'required|in:scan,digital',
+            'scanned_sof'        => 'required_if:approval_mode,scan|file|mimes:pdf|max:5120',
+            'approval_signature' => 'required_if:approval_mode,digital|nullable|string',
         ]);
 
         $order = Order::findOrFail($request->id);
 
-        // ✅ Save the file with yearly and monthly structure based on time_order
-        $filePath = null;
-        if ($request->hasFile('attachment')) {
-            // Optional: Delete old file if you want to replace it
-            if ($order->approval_document) {
-                Storage::disk('public')->delete($order->approval_document);
-            }
+        $year       = date('Y', strtotime($order->time_order));
+        $month      = date('m', strtotime($order->time_order));
+        $folderPath = "order_approvals/{$year}/{$month}/{$order->sof_id}";
 
-            // Extract year and month from time_order
-            $year = date('Y', strtotime($order->time_order));
-            $month = date('m', strtotime($order->time_order));
-
-            // Build the folder path using sof_id and time_order date
-            $folderPath = "order_approvals/{$year}/{$month}/{$order->sof_id}";
-
-            $filePath = $request->file('attachment')->store(
-                $folderPath, // folder per year/month/sof_id
-                'public' // use the `public` disk
-            );
+        if ($order->approval_document) {
+            Storage::disk('public')->delete($order->approval_document);
         }
 
-        // ✅ Update order
-        $order->order_status = 'approved';
+        $filePath = null;
+
+        if ($request->approval_mode === 'scan') {
+
+            $filePath = $request->file('scanned_sof')->store($folderPath, 'public');
+        } else {
+
+            $signatureBase64 = preg_replace('/^data:image\/\w+;base64,/', '', $request->approval_signature);
+
+            $pdf = Pdf::loadView('pdf.pdf_sof', [
+                'order'              => $order,
+                'approver_name'      => auth()->user()->name,
+                'approval_signature' => $signatureBase64,
+            ])->setPaper('A4', 'landscape');
+
+            $filePath = "{$folderPath}/{$order->sof_id}_signed.pdf";
+            Storage::disk('public')->put($filePath, $pdf->output());
+        }
+
+        $order->order_status      = 'approved';
         $order->approval_document = $filePath;
         $order->save();
 
-        // ✅ Add note
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
             'note'    => "Order approved by:<br>" .
                 "<strong>" . auth()->user()->name . "</strong><br>" .
-                ucfirst(auth()->user()->role)
+                ucfirst(auth()->user()->role),
         ]);
 
-        // ✅ Send email to requester
         $requester = \App\Models\User::find($order->requested_by);
-
         if ($requester && $requester->email) {
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
         }
 
-        $successMessage = $filePath
-            ? 'Order approved successfully with document attached, and requester notified.'
-            : 'Order approved successfully without an attachment. Requester notified.';
-
-        return redirect()
-            ->route('orders.show', $order->id)
-            ->with('success', $successMessage);
+        return response()->json([
+            'message'  => $request->approval_mode === 'scan'
+                ? 'Order approved with signed SOF uploaded. Requester notified.'
+                : 'Order approved. Signature embedded into SOF PDF. Requester notified.',
+            'redirect' => route('orders.show', $order->id),
+        ]);
     }
 
 

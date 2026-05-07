@@ -8,20 +8,17 @@
         .search-results {
             position: absolute;
             top: 100%;
-            /* place directly below the td */
             left: 0;
             z-index: 9999;
             max-height: 15rem;
-            /* max height */
-            z-index: 9999;
             overflow-y: auto;
             background: white;
             border: 1px solid #ddd;
-            border-radius: 0.25rem;
+            border-radius: 0.375rem;
             min-width: 250px;
             max-width: 400px;
             white-space: nowrap;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         table,
@@ -29,20 +26,6 @@
         tr,
         td {
             overflow: visible !important;
-        }
-
-        .search-results {
-            position: absolute;
-            z-index: 9999;
-            top: 100%;
-            left: 0;
-            max-height: 15rem;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0.375rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            white-space: nowrap;
         }
 
         /* ── Approve-Order Modal (CSP-safe: no inline styles) ── */
@@ -100,6 +83,82 @@
             font-size: 11px;
             color: #DC2626;
         }
+
+        /* ── Approve modal: mode grid responsive ── */
+        .sw-mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 400px) {
+            .sw-mode-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .order-items-table {
+            min-width: 950px;
+            width: 100%;
+        }
+
+        /* ── Scroll hint badge shown on small screens ── */
+        .table-scroll-hint {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .table-scroll-hint {
+                display: flex;
+            }
+        }
+
+        /* ── Action panel: auto height when stacked on mobile ── */
+        .actions-panel {
+            height: auto;
+        }
+
+        @media (min-width: 1024px) {
+            .actions-panel {
+                height: 100%;
+            }
+        }
+
+        /* ── Customer/Payment columns: spacing when stacked ── */
+        .info-col-left {
+            padding-bottom: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .info-col-left {
+                padding-bottom: 0;
+            }
+        }
+
+        /* ── Swal: clamp to viewport on small screens ── */
+        @media (max-width: 640px) {
+            .swal2-popup {
+                width: 95vw !important;
+                max-width: 95vw !important;
+                padding: 1rem !important;
+            }
+
+            .swal2-title {
+                font-size: 1.1rem !important;
+            }
+
+            .swal2-html-container {
+                font-size: 0.85rem !important;
+                max-height: 55vh;
+                overflow-y: auto;
+            }
+
+            .swal2-actions {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+        }
     </style>
     <form
         method="POST"
@@ -109,7 +168,7 @@
         <div class="">
             <div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                 <!-- Header Section -->
-                <div class="mb-8 flex items-center justify-between">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-y-3 sm:mb-8">
                     <div class="flex items-center space-x-4">
                         <div class="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
                             <svg
@@ -158,13 +217,13 @@
                     type="hidden"
                     name="id"
                     value="{{ $order->id }}">
-                <div class="grid grid-cols-6 gap-2">
-                    <div class="col-span-5 grid gap-2">
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-6">
+                    <div class="col-span-1 grid gap-3 lg:col-span-5">
                         <!-- Customer and Payment Info -->
                         <div class="grid grid-cols-1 rounded rounded-xl border bg-white p-4 shadow-sm md:grid-cols-2">
 
-                            <div class="grid grid-cols-1 md:grid-cols-2">
-                                <div class="space-y-2 pe-6">
+                            <div class="grid grid-cols-1 border-b pb-4 md:grid-cols-2 md:border-b-0 md:pb-0">
+                                <div class="info-col-left space-y-2 pe-6">
                                     <h3 class="mb-0.5 text-xs font-semibold text-gray-700">Customer Info</h3>
 
                                     <div>
@@ -225,30 +284,25 @@
                                     <!-- Payment Center -->
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
+                                        <select
+                                            name="payment_center"
+                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
+                                            style="background-image: none;">
+                                            <option
+                                                value=""
+                                                disabled
+                                                {{ $order->payment_center ? '' : 'selected' }}>
+                                                Select Payment Center
+                                            </option>
 
-                                        @if ($isSuperAdmin || $hasRegion)
-                                            {{-- Regional/Super Admin: editable dropdown --}}
-                                            <select
-                                                name="payment_center"
-                                                class="payment-center-select w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0">
-                                                <option value="" disabled {{ $order->payment_center ? '' : 'selected' }}>
-                                                    Select Payment Center
+                                            @foreach ($locationMap as $code => $label)
+                                                <option
+                                                    value="{{ $label }}"
+                                                    {{ $order->payment_center === $label ? 'selected' : '' }}>
+                                                    {{ $label }}
                                                 </option>
-                                                @foreach (\App\Support\LocationConfig::stores() as $code => $label)
-                                                    <option
-                                                        value="{{ $code }}"
-                                                        {{ (string) $order->payment_center === (string) $code ? 'selected' : '' }}>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        @else
-                                            {{-- Store personnel: read-only, show label --}}
-                                            <input type="hidden" name="payment_center" value="{{ $order->payment_center }}">
-                                            <p class="text-xs font-medium text-gray-900">
-                                                {{ \App\Support\LocationConfig::storeName($order->payment_center, $order->payment_center) }}
-                                            </p>
-                                        @endif
+                                            @endforeach
+                                        </select>
                                     </div>
 
 
@@ -288,8 +342,8 @@
 
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2">
-                                <div class="space-y-2 pe-6">
+                            <div class="grid grid-cols-1 border-t pt-4 md:grid-cols-2 md:border-t-0 md:pt-0">
+                                <div class="info-col-left space-y-2 pe-6">
                                     <h3 class="mb-0.5 text-xs font-semibold text-gray-700">Delivery Info</h3>
 
                                     <!-- Mode of Dispatching -->
@@ -317,10 +371,6 @@
 
                                     <style nonce="{{ $cspNonce ?? '' }}">
                                         /* Hide native dropdown arrow */
-                                        .payment-center-select {
-                                            background-image: none;
-                                        }
-
                                         select[name="mode_dispatching"]::-ms-expand {
                                             display: none;
                                         }
@@ -363,7 +413,6 @@
                                             class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0">
                                     </div>
                                 </div>
-
 
                                 <div class="space-y-2 border-l pe-6 ps-4">
                                     <h3 class="mb-0.5 text-xs font-semibold text-gray-700">Order Info</h3>
@@ -415,11 +464,25 @@
                                     </div>
 
 
+                                    @php
+                                        $warehouseMap = [
+                                            '80141' => 'Silangan Warehouse',
+                                            '80001' => 'Central Warehouse',
+                                            '80041' => 'Procter Warehouse',
+                                            '80051' => 'Opao-ISO Warehouse',
+                                            '80071' => 'Big Blue Warehouse',
+                                            '80131' => 'Lower Tingub Warehouse',
+                                            '80211' => 'Sta. Rosa Warehouse',
+                                            '80181' => 'Bacolod Depot',
+                                            '80191' => 'Tacloban Depot',
+                                            // '80???' => 'Arellano Warehouse',
+                                        ];
+                                        $order->warehouse = $warehouseMap[$order->warehouse] ?? $order->warehouse;
+
+                                    @endphp
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Warehouse</p>
-                                        <p class="text-xs font-medium text-gray-900">
-                                            {{ ucwords(\App\Support\LocationConfig::warehouseName($order->warehouse, $order->warehouse)) }}
-                                        </p>
+                                        <p class="text-xs font-medium text-gray-900">{{ ucwords($order->warehouse) }}</p>
                                     </div>
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Date & Time of Order</p>
@@ -429,25 +492,12 @@
 
 
                                 </div>
-
                             </div>
-
-                        </div>
-                        <div class="rounded-xl border bg-white p-4 shadow-sm">
-                            <label class="mb-1 block text-xs font-semibold text-gray-700">Order Comment</label>
-                            <textarea
-                                name="comment"
-                                rows="2"
-                                maxlength="1800"
-                                data-original="{{ $order->comment ?? '' }}"
-                                placeholder="Enter comment or notes for this order (optional)"
-                                class="w-full resize-none rounded-lg border border-gray-200 p-2 text-xs text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">{{ $order->comment ?? '' }}</textarea>
-                            <p class="mt-1 text-xs text-gray-400">Max 1,800 characters.</p>
                         </div>
 
                         <div class="relative overflow-x-auto overflow-y-visible rounded-xl border bg-white p-4 pb-24 shadow-sm">
 
-                            <div class="mb-4 flex items-center justify-between">
+                            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                                 <h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
 
                                 {{-- <script>
@@ -480,7 +530,12 @@
 
                             </div>
 
-                            <table class="min-w-full border border-gray-200 text-xs text-gray-700">
+                            {{-- scroll hint for tablets/phones --}}
+                            <div class="table-scroll-hint mb-2 w-fit items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-600">
+                                ← Scroll table to see all columns →
+                            </div>
+
+                            <table class="order-items-table border border-gray-200 text-xs text-gray-700">
                                 <thead class="bg-gray-100 text-xs uppercase">
                                     <tr>
                                         <th rowspan="2" class="border px-2 py-1 text-center">
@@ -534,6 +589,7 @@
                                     @forelse ($order->items as $item)
                                         <tr
                                             data-index="{{ $loop->index }}"
+                                            data-item-type="{{ $item->item_type }}"
                                             class="@if ($item->remarks === 'Item Cancelled') bg-red-50 @elseif ($item->item_type === 'FREEBIE') bg-green-50 @else bg-white @endif transition hover:bg-indigo-50">
 
 
@@ -548,7 +604,7 @@
                                                 name="items[{{ $loop->index }}][id]"
                                                 value="{{ $item->id }}">
                                             {{-- Checkbox column --}}
-                                            <td class="border p-2 text-center">
+                                            <td class="td-checkbox border p-2 text-center">
                                                 <input type="checkbox" name="items[{{ $loop->index }}][cancel]" value="1"
                                                     class="item-checkbox h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500">
                                             </td>
@@ -556,6 +612,7 @@
                                                 class="relative border p-2"
                                                 contenteditable="false"
                                                 data-field="sku"
+                                                data-label="SKU"
                                                 contenteditable-search="true"
                                                 style="position: relative;">
                                                 {{ $item->sku }}
@@ -575,6 +632,7 @@
                                                 class="relative border p-2"
                                                 contenteditable="false"
                                                 data-field="item_description"
+                                                data-label="Description"
                                                 contenteditable-search="true"
                                                 style="position: relative;">
                                                 {{ $item->item_description }}
@@ -593,7 +651,8 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 @if (in_array($item->scheme, ['Freebie', 'Discount'])) contenteditable="false" @else contenteditable="true" @endif
-                                                data-field="scheme">
+                                                data-field="scheme"
+                                                data-label="Scheme">
                                                 {{ $item->scheme }}
                                                 <input
                                                     type="hidden"
@@ -605,7 +664,8 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="true"
-                                                data-field="price_per_pc">{{ number_format($item->price_per_pc, 2) }}
+                                                data-field="price_per_pc"
+                                                data-label="Price/PC">{{ number_format($item->price_per_pc, 2) }}
                                                 <input
                                                     type="hidden"
                                                     name="items[{{ $loop->index }}][price_per_pc]"
@@ -615,7 +675,8 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
-                                                data-field="price">{{ number_format($item->price, 2) }}
+                                                data-field="price"
+                                                data-label="Price">{{ number_format($item->price, 2) }}
                                                 <input
                                                     type="hidden"
                                                     name="items[{{ $loop->index }}][price]"
@@ -624,7 +685,8 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
-                                                data-field="discount">
+                                                data-field="discount"
+                                                data-label="Discount">
 
                                                 {{-- Always show numeric value only --}}
                                                 {{ $item->item_type === 'DISCOUNT' ? $item->discount ?? 0 : 0 }}
@@ -640,7 +702,8 @@
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
                                                 contenteditable="true"
-                                                data-field="qty_per_pc">{{ $item->qty_per_pc }}
+                                                data-field="qty_per_pc"
+                                                data-label="QTY/PC">{{ $item->qty_per_pc }}
                                                 <input
                                                     type="hidden"
                                                     name="items[{{ $loop->index }}][qty_per_pc]"
@@ -652,7 +715,8 @@
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
                                                 @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
-                                                data-field="qty_per_cs">
+                                                data-field="qty_per_cs"
+                                                data-label="QTY/CS">
                                                 {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '0' : $item->qty_per_cs) : '0' }}
 
                                                 <input
@@ -667,7 +731,8 @@
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
                                                 @if ($item->item_type === 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
-                                                data-field="freebies_per_cs">
+                                                data-field="freebies_per_cs"
+                                                data-label="Freebies">
                                                 @if ($item->item_type === 'DISCOUNT')
                                                     N/A
                                                 @else
@@ -684,7 +749,8 @@
                                                 class="numeric-only border p-2 text-center"
                                                 contenteditable="false"
                                                 data-max="9"
-                                                data-field="total_qty">{{ $item->total_qty }}</td>
+                                                data-field="total_qty"
+                                                data-label="Total QTY">{{ $item->total_qty }}</td>
                                             <input
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][total_qty]"
@@ -694,13 +760,14 @@
                                             <td
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
-                                                data-field="amount">{{ number_format($item->amount, 2) }}</td>
+                                                data-field="amount"
+                                                data-label="Amount">{{ number_format($item->amount, 2) }}</td>
                                             <input
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][amount]"
                                                 value="{{ $item->amount }}">
 
-                                            <td class="remark-cell border p-2 text-center">
+                                            <td class="remark-cell border p-2 text-center" data-label="Remarks">
                                                 <div class="relative">
                                                     <select
                                                         name="items[{{ $loop->index }}][remarks]"
@@ -729,7 +796,8 @@
                                             {{-- Store Order No Column with BOL underneath --}}
                                             <td class="border p-2 text-center align-top"
                                                 contenteditable="false"
-                                                data-field="store_order_no">
+                                                data-field="store_order_no"
+                                                data-label="Transfer No.">
 
                                                 <div class="flex flex-col items-center space-y-1 py-1">
                                                     {{-- Store Order Number --}}
@@ -767,6 +835,7 @@
                                             {{-- Store Order No Column with API call --}}
                                             <td class="relative border p-2 text-center"
                                                 contenteditable="false"
+                                                data-label="Status"
                                                 data-item-index="{{ $loop->index }}"
                                                 @if (!empty($item->store_order_no)) data-store-order-no="{{ $item->store_order_no }}" 
                                                 data-load-status="true" @endif>
@@ -891,33 +960,32 @@
                                                         }
 
                                                         td.innerHTML = `
-                        <div class="relative inline-block">
-                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                                ${status}
-                            </div>
-                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                ${description}
-                            </div>
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                            ${status}
                         </div>
-                        `;
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            ${description}
+                        </div>
+                    </div>
+                `;
                                                     })
                                                     .catch(error => {
                                                         td.innerHTML = `
-                            <div class="relative inline-block">
-                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                                    Error
-                                </div>
-                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                    Failed to load order status. Please try again later.
-                                </div>
-                            </div>
-                        `;
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                            Error
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            Failed to load order status. Please try again later.
+                        </div>
+                    </div>
+                `;
                                                     });
                                             });
                                         })();
-
-
-
+                                    </script>
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         (function() {
                                             // Get all TDs with store order numbers
                                             const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
@@ -997,33 +1065,32 @@
                                                         }
 
                                                         td.innerHTML = `
-                        <div class="relative inline-block">
-                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                                ${status}
-                            </div>
-                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                ${description}
-                            </div>
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                            ${status}
                         </div>
-                        `;
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            ${description}
+                        </div>
+                    </div>
+                `;
                                                     })
                                                     .catch(error => {
                                                         td.innerHTML = `
-                            <div class="relative inline-block">
-                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                                    Error
-                                </div>
-                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                    Failed to load order status. Please try again later.
-                                </div>
-                            </div>
-                        `;
+                    <div class="relative inline-block">
+                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                            Error
+                        </div>
+                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                            Failed to load order status. Please try again later.
+                        </div>
+                    </div>
+                `;
                                                     });
                                             });
                                         })();
-
-
-
+                                    </script>
+                                    <script nonce="{{ $cspNonce ?? '' }}">
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             // Find all BOL containers
@@ -1314,7 +1381,7 @@
                                     });
                                 @endphp
 
-                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo && (Auth::user()->role === 'personnel' || Auth::user()->role === 'super admin'))
+                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo)
                                     <button
                                         type="button"
                                         id="generateSOButton"
@@ -1331,12 +1398,12 @@
 
 
                     </div>
-                    <div class="relative col-span-1 grid">
-                        <div class="relative grid grid-cols-1 gap-2">
+                    <div class="relative col-span-1 grid lg:col-span-1">
+                        <div class="relative grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
 
 
 
-                            <div class="relative flex h-full flex-col justify-between gap-2 space-y-2 rounded-lg border bg-white p-3 shadow-sm">
+                            <div class="actions-panel relative flex flex-col gap-2 space-y-2 rounded-lg border bg-white p-3 shadow-sm sm:col-span-2 lg:col-span-1 lg:justify-between">
 
                                 <!-- Top: Order Actions -->
                                 <div>
@@ -1408,7 +1475,6 @@
                                                 let content = '';
 
                                                 if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                                                    // Image with skeleton loader
                                                     content = `
                     <div id="image-container" style="position: relative; min-height: 200px;">
                         <div id="skeleton" style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; min-height: 200px; display: flex; align-items: center; justify-content: center;">
@@ -1416,10 +1482,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                         </div>
-                        <img src="${url}" 
+                        <img src="${url}"
                              style="max-height: 400px; width: auto; cursor: zoom-in; display: none; margin: 0 auto;"
                              onload="this.style.display='block'; document.getElementById('skeleton').style.display='none';"
-                             onerror="document.getElementById('skeleton').innerHTML='<div style=\'text-align:center;padding:20px\'><svg style=\'width:48px;height:48px;color:#ef4444;margin:0 auto;\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\'></path></svg><p class=\'text-red-500 mt-2\'>Failed to load image</p></div>'; document.getElementById('skeleton').style.display='flex';"
+                             onerror="document.getElementById('skeleton').innerHTML='<div style=\'text-align:center;padding:20px\'><p class=\'text-red-500 mt-2\'>Failed to load image</p></div>'; document.getElementById('skeleton').style.display='flex';"
                              onclick="this.style.transform=this.style.transform==='scale(1.5)'?'scale(1)':'scale(1.5)'; this.style.transition='transform 0.2s';">
                     </div>
                     <style>
@@ -1430,7 +1496,8 @@
                     </style>
                 `;
                                                 } else if (ext === 'pdf') {
-                                                    content = `<iframe src="${url}" height="400px" width="100%"></iframe>`;
+                                                    const h = Math.min(window.innerHeight * 0.55, 500);
+                                                    content = `<iframe src="${url}" height="${h}px" width="100%"></iframe>`;
                                                 } else if (['doc', 'docx'].includes(ext)) {
                                                     content = `
                     <div class="text-center p-4">
@@ -1456,7 +1523,7 @@
                                                 Swal.fire({
                                                     title: ext === 'pdf' ? 'PDF Document' : (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'Image' : 'Document'),
                                                     html: content,
-                                                    width: '700px',
+                                                    width: Math.min(window.innerWidth * 0.95, 700) + 'px',
                                                     showConfirmButton: true,
                                                     confirmButtonText: '📥 Download',
                                                     confirmButtonColor: '#4f46e5',
@@ -1610,102 +1677,274 @@
                                                 break;
                                             case 'approve':
                                                 Swal.fire({
-                                                    title: 'Approve Order',
-                                                    // ── CSP-safe: no inline style="" anywhere ──
+                                                    title: 'Approve SOF order',
                                                     html: `
-                                                        <div class="swal-approve-wrap">
-                                                            <div id="uploadSection">
-                                                                <p class="swal-upload-title">Upload approval document (required):</p>
-                                                                <p class="swal-upload-hint">PDF, Word, or Image files only</p>
-                                                                <div id="uploadBox" class="swal-upload-box">
-                                                                    <input type="file" id="approvalFile"
-                                                                        accept=".pdf,.doc,.docx,image/*"
-                                                                        class="swal-upload-file" />
-                                                                    <label for="approvalFile" class="swal-upload-label">
-                                                                        Click to select a file
-                                                                    </label>
-                                                                    <p id="fileName" class="swal-upload-filename">No file chosen</p>
-                                                                </div>
-                                                                <p class="swal-upload-required">* Approval document is required</p>
-                                                            </div>
-                                                        </div>
-                                                    `,
+        <style>
+            .sw-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+            .sw-mode-card{border:1.5px solid #e5e7eb;border-radius:8px;padding:14px 10px;cursor:pointer;text-align:center;background:#f9fafb;transition:all .15s}
+            .sw-mode-card:hover{background:#fff}
+            .sw-mode-card.active{border-color:#16A34A;background:#f0fdf4}
+            .sw-panel{display:none}.sw-panel.active{display:block}
+            .sw-info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 12px;font-size:12px;color:#1e40af;margin-bottom:12px;text-align:left}
+            .sw-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-align:left}
+            .sw-req{color:#dc2626}
+            .sw-drop{border:1.5px dashed #d1d5db;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#f9fafb;transition:all .15s}
+            .sw-drop:hover,.sw-drop.over{border-color:#16A34A;background:#f0fdf4}
+            .sw-badge{display:none;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:#f3f4f6;font-size:12px;margin-top:6px;text-align:left}
+            .sw-badge-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111}
+            .sw-badge-rm{cursor:pointer;color:#9ca3af;font-size:16px;line-height:1}
+            .sw-sig-tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:8px}
+            .sw-sig-tab{padding:8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;border:none;background:#f9fafb;color:#6b7280}
+            .sw-sig-tab:not(:last-child){border-right:1px solid #e5e7eb}
+            .sw-sig-tab.active{background:#fff;color:#111}
+            .sw-canvas-wrap{position:relative;border:1.5px solid #2563EB;border-radius:8px;background:#f9fafb}
+            #swSigCanvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none;border-radius:6px}
+            .sw-clear{position:absolute;top:5px;right:7px;font-size:11px;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:2px 8px;cursor:pointer}
+            .sw-sig-hint{font-size:11px;color:#9ca3af;text-align:center;margin-top:3px}
+            .sw-prev-wrap{position:relative;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;background:#f9fafb;margin-top:6px}
+            .sw-prev-wrap img{display:block;width:100%;max-height:100px;object-fit:contain}
+            .sw-rm-sig{position:absolute;top:4px;right:4px;background:#fff;border:1px solid #e5e7eb;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:20px;text-align:center;color:#6b7280}
+        </style>
+        <div style="text-align:left;font-size:13px">
+            <p style="font-size:12px;color:#6b7280;margin-bottom:14px;text-align:center">
+                The SOF PDF will serve as the approval document
+            </p>
+
+            <div class="sw-mode-grid">
+                <div class="sw-mode-card" id="swModeA" onclick="swMode('scan')">
+                    <div style="font-size:22px;margin-bottom:6px">📄</div>
+                    <p style="font-size:13px;font-weight:600;color:#111">Upload signed SOF</p>
+                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">Printed, signed & scanned</p>
+                </div>
+                <div class="sw-mode-card" id="swModeB" onclick="swMode('digital')">
+                    <div style="font-size:22px;margin-bottom:6px">✍️</div>
+                    <p style="font-size:13px;font-weight:600;color:#111">Sign digitally</p>
+                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">Embedded into the SOF PDF</p>
+                </div>
+            </div>
+
+            <!-- Mode A -->
+            <div class="sw-panel" id="swPanelA">
+                <div class="sw-info">📋 Upload the signed and scanned copy of this order's SOF PDF.</div>
+                <p class="sw-label">Signed SOF PDF <span class="sw-req">*</span></p>
+                <div class="sw-drop" id="swScanDrop" onclick="document.getElementById('swScanFile').click()">
+                    <div style="font-size:22px;margin-bottom:4px">📄</div>
+                    <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drag signed SOF here</p>
+                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">PDF only — max 10 MB</p>
+                    <input type="file" id="swScanFile" accept=".pdf" style="display:none">
+                </div>
+                <div class="sw-badge" id="swScanBadge">
+                    📎 <span class="sw-badge-name" id="swScanName"></span>
+                    <span class="sw-badge-rm" onclick="swClearScan()">×</span>
+                </div>
+            </div>
+
+            <!-- Mode B -->
+            <div class="sw-panel" id="swPanelB">
+                <div class="sw-info">✍️ Your signature will be embedded above the <strong>Approved by</strong> line in the SOF PDF.</div>
+                <p class="sw-label">Signature <span class="sw-req">*</span></p>
+                <div class="sw-sig-tabs">
+                    <button class="sw-sig-tab active" id="swTabDBtn" type="button"
+                        onclick="swSigTab('draw')">✏️ Draw</button>
+                    <button class="sw-sig-tab" id="swTabUBtn" type="button"
+                        onclick="swSigTab('upload')">🖼️ Upload image</button>
+                </div>
+
+                <div class="sw-panel active" id="swSigDrawPanel">
+                    <div class="sw-canvas-wrap">
+                        <canvas id="swSigCanvas"></canvas>
+                        <button class="sw-clear" type="button" id="swClearCanvas">Clear</button>
+                    </div>
+                    <p class="sw-sig-hint">Draw with mouse or finger</p>
+                </div>
+
+                <div class="sw-panel" id="swSigUploadPanel">
+                    <div class="sw-drop" id="swSigDrop" onclick="document.getElementById('swSigFile').click()">
+                        <div style="font-size:22px;margin-bottom:4px">🖼️</div>
+                        <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drop signature image</p>
+                        <p style="font-size:11px;color:#9ca3af;margin-top:2px">PNG or JPG — transparent background recommended</p>
+                        <input type="file" id="swSigFile" accept="image/*" style="display:none">
+                    </div>
+                    <div class="sw-prev-wrap" id="swSigPreview" style="display:none">
+                        <img id="swSigImg" alt="Signature preview">
+                        <span class="sw-rm-sig" onclick="swClearSig()">×</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `,
                                                     icon: 'info',
                                                     showCancelButton: true,
                                                     confirmButtonColor: '#16A34A',
                                                     cancelButtonColor: '#aaa',
                                                     confirmButtonText: 'Approve',
+                                                    width: Math.min(window.innerWidth * 0.95, 500) + 'px',
 
                                                     didOpen: () => {
-                                                        const uploadBox = document.getElementById('uploadBox');
-                                                        const fileInput = document.getElementById('approvalFile');
-                                                        const fileName = document.getElementById('fileName');
+                                                        window._swMode = null;
+                                                        window._swSigPad = null;
+                                                        window._swSigTab = 'draw';
 
-                                                        uploadBox.addEventListener('click', () => fileInput.click());
-
-                                                        fileInput.addEventListener('change', () => {
-                                                            fileName.textContent = fileInput.files.length ?
-                                                                fileInput.files[0].name :
-                                                                'No file chosen';
-                                                        });
-
-                                                        // ── classList instead of .style.* (CSP-safe) ──
-                                                        uploadBox.addEventListener('dragover', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.classList.add('swal-upload-box--hover');
-                                                        });
-
-                                                        uploadBox.addEventListener('dragleave', () => {
-                                                            uploadBox.classList.remove('swal-upload-box--hover');
-                                                        });
-
-                                                        uploadBox.addEventListener('drop', (e) => {
-                                                            e.preventDefault();
-                                                            uploadBox.classList.remove('swal-upload-box--hover');
-                                                            if (e.dataTransfer.files.length) {
-                                                                fileInput.files = e.dataTransfer.files;
-                                                                fileName.textContent = e.dataTransfer.files[0].name;
+                                                        window.swMode = function(mode) {
+                                                            window._swMode = mode;
+                                                            ['A', 'B'].forEach(x => {
+                                                                document.getElementById('swMode' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode ===
+                                                                    'digital' && x === 'B'));
+                                                                document.getElementById('swPanel' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode ===
+                                                                    'digital' && x === 'B'));
+                                                            });
+                                                            if (mode === 'digital' && !window._swSigPad) {
+                                                                const canvas = document.getElementById('swSigCanvas');
+                                                                const dpr = window.devicePixelRatio || 1;
+                                                                canvas.width = canvas.offsetWidth * dpr;
+                                                                canvas.height = 120 * dpr;
+                                                                canvas.style.height = '120px';
+                                                                canvas.getContext('2d').scale(dpr, dpr);
+                                                                window._swSigPad = new SignaturePad(canvas, {
+                                                                    penColor: '#1e3a8a',
+                                                                    backgroundColor: 'rgba(0,0,0,0)',
+                                                                });
+                                                                document.getElementById('swClearCanvas').onclick = () => window._swSigPad.clear();
                                                             }
+                                                        };
+
+                                                        window.swSigTab = function(tab) {
+                                                            window._swSigTab = tab;
+                                                            document.getElementById('swTabDBtn').classList.toggle('active', tab === 'draw');
+                                                            document.getElementById('swTabUBtn').classList.toggle('active', tab === 'upload');
+                                                            document.getElementById('swSigDrawPanel').classList.toggle('active', tab === 'draw');
+                                                            document.getElementById('swSigUploadPanel').classList.toggle('active', tab === 'upload');
+                                                        };
+
+                                                        window.swClearScan = () => {
+                                                            document.getElementById('swScanFile').value = '';
+                                                            document.getElementById('swScanBadge').style.display = 'none';
+                                                        };
+                                                        window.swClearSig = () => {
+                                                            document.getElementById('swSigFile').value = '';
+                                                            document.getElementById('swSigPreview').style.display = 'none';
+                                                            document.getElementById('swSigDrop').style.display = 'block';
+                                                            document.getElementById('swSigImg').src = '';
+                                                        };
+
+                                                        document.getElementById('swScanFile').onchange = function() {
+                                                            if (this.files[0]) {
+                                                                document.getElementById('swScanBadge').style.display = 'flex';
+                                                                document.getElementById('swScanName').textContent = this.files[0].name;
+                                                            }
+                                                        };
+                                                        document.getElementById('swSigFile').onchange = function() {
+                                                            if (!this.files[0]) return;
+                                                            document.getElementById('swSigImg').src = URL.createObjectURL(this.files[0]);
+                                                            document.getElementById('swSigPreview').style.display = 'block';
+                                                            document.getElementById('swSigDrop').style.display = 'none';
+                                                        };
+
+                                                        ['swScanDrop', 'swSigDrop'].forEach(id => {
+                                                            const el = document.getElementById(id);
+                                                            if (!el) return;
+                                                            el.addEventListener('dragover', e => {
+                                                                e.preventDefault();
+                                                                el.classList.add('over');
+                                                            });
+                                                            el.addEventListener('dragleave', () => el.classList.remove('over'));
+                                                            el.addEventListener('drop', e => {
+                                                                e.preventDefault();
+                                                                el.classList.remove('over');
+                                                                const f = e.dataTransfer.files[0];
+                                                                if (!f) return;
+                                                                if (id === 'swScanDrop') {
+                                                                    document.getElementById('swScanBadge').style.display = 'flex';
+                                                                    document.getElementById('swScanName').textContent = f.name;
+                                                                }
+                                                                if (id === 'swSigDrop') {
+                                                                    document.getElementById('swSigImg').src = URL.createObjectURL(f);
+                                                                    document.getElementById('swSigPreview').style.display = 'block';
+                                                                    el.style.display = 'none';
+                                                                }
+                                                            });
                                                         });
                                                     },
 
                                                     preConfirm: () => {
-                                                        const file = document.getElementById('approvalFile').files[0];
-                                                        if (!file) {
-                                                            Swal.showValidationMessage('Please upload an approval document.');
+                                                        const mode = window._swMode;
+
+                                                        if (!mode) {
+                                                            Swal.showValidationMessage('Please choose an approval method.');
                                                             return false;
                                                         }
-                                                        return {
-                                                            file
-                                                        };
+
+                                                        // Mode A — scanned signed SOF PDF
+                                                        if (mode === 'scan') {
+                                                            const f = document.getElementById('swScanFile').files[0];
+                                                            if (!f) {
+                                                                Swal.showValidationMessage('Please upload the signed SOF PDF.');
+                                                                return false;
+                                                            }
+                                                            return {
+                                                                mode: 'scan',
+                                                                file: f,
+                                                                signature: null
+                                                            };
+                                                        }
+
+                                                        // Mode B — digital signature
+                                                        if (window._swSigTab === 'draw') {
+                                                            if (!window._swSigPad || window._swSigPad.isEmpty()) {
+                                                                Swal.showValidationMessage('Please draw your signature.');
+                                                                return false;
+                                                            }
+                                                            return {
+                                                                mode: 'digital',
+                                                                file: null,
+                                                                signature: window._swSigPad.toDataURL('image/png')
+                                                            };
+                                                        }
+
+                                                        // Upload tab — convert blob to base64
+                                                        const img = document.getElementById('swSigImg');
+                                                        if (!img.src || img.src === window.location.href) {
+                                                            Swal.showValidationMessage('Please upload a signature image.');
+                                                            return false;
+                                                        }
+                                                        return fetch(img.src)
+                                                            .then(r => r.blob())
+                                                            .then(blob => new Promise(resolve => {
+                                                                const reader = new FileReader();
+                                                                reader.onloadend = () => resolve({
+                                                                    mode: 'digital',
+                                                                    file: null,
+                                                                    signature: reader.result
+                                                                });
+                                                                reader.readAsDataURL(blob);
+                                                            }));
                                                     }
 
-                                                }).then((result) => {
+                                                }).then(result => {
                                                     if (!result.isConfirmed) {
                                                         actionSelect.value = '';
                                                         return;
                                                     }
 
-                                                    const file = result.value.file;
+                                                    const {
+                                                        mode,
+                                                        file,
+                                                        signature
+                                                    } = result.value;
                                                     const formData = new FormData();
                                                     formData.append('_token', csrfToken);
                                                     formData.append('id', orderId);
-                                                    formData.append('attachment', file);
+                                                    formData.append('approval_mode', mode);
+                                                    if (file) formData.append('scanned_sof', file);
+                                                    if (signature) formData.append('approval_signature', signature);
 
-                                                    // ── Progress dialog ──
                                                     Swal.fire({
-                                                        title: 'Uploading…',
-                                                        text: 'Please wait while the document is being uploaded.',
+                                                        title: 'Processing…',
+                                                        text: mode === 'digital' ? 'Embedding signature into SOF PDF…' : 'Uploading signed SOF…',
                                                         allowOutsideClick: false,
-                                                        allowEscapeKey: false,
                                                         didOpen: () => Swal.showLoading(),
                                                     });
 
-                                                    // ── fetch() instead of form.submit() ──
-                                                    // Bypasses the DataTransfer/FileInput workaround and
-                                                    // lets the browser stream the full multipart body.
-                                                    // X-Requested-With signals Laravel to return JSON,
-                                                    // avoiding the WAF redirect-chain on 302 responses.
                                                     fetch("{{ route('orders.approve') }}", {
                                                             method: 'POST',
                                                             headers: {
@@ -1714,30 +1953,25 @@
                                                                 'Accept': 'application/json',
                                                             },
                                                             body: formData,
-                                                            // Do NOT set Content-Type — the browser sets it
-                                                            // automatically with the correct multipart boundary.
                                                         })
-                                                        .then(async (response) => {
+                                                        .then(async response => {
                                                             const data = await response.json().catch(() => ({}));
-                                                            if (!response.ok) {
-                                                                throw new Error(data.message ?? 'Server returned ' + response.status);
-                                                            }
+                                                            if (!response.ok) throw new Error(data.message ?? 'Server error ' + response.status);
                                                             Swal.fire({
                                                                 icon: 'success',
                                                                 title: 'Approved!',
-                                                                text: data.message ?? 'Order approved successfully.',
+                                                                text: data.message ?? 'Order approved.',
                                                                 timer: 2000,
                                                                 showConfirmButton: false,
                                                             }).then(() => {
                                                                 window.location.href = data.redirect ?? window.location.href;
                                                             });
                                                         })
-                                                        .catch((err) => {
-                                                            Swal.fire('Upload Failed', err.message, 'error');
+                                                        .catch(err => {
+                                                            Swal.fire('Failed', err.message, 'error');
                                                             actionSelect.value = '';
                                                         });
                                                 });
-
                                                 return;
 
 
@@ -1838,6 +2072,22 @@
                                                 form.action = "{{ route('orders.for_approval') }}";
                                                 break;
 
+                                            case 'approve':
+                                                form.action = "{{ route('orders.approve') }}";
+                                                if (file) {
+                                                    const fileInput = document.createElement('input');
+                                                    fileInput.type = 'file';
+                                                    fileInput.name = 'attachment';
+
+                                                    // ✅ Attach file object
+                                                    const dataTransfer = new DataTransfer();
+                                                    dataTransfer.items.add(file);
+                                                    fileInput.files = dataTransfer.files;
+
+                                                    form.appendChild(fileInput);
+                                                }
+                                                break;
+
                                             case 'rejected':
                                                 form.action = "{{ route('orders.reject') }}";
                                                 if (note) {
@@ -1882,7 +2132,7 @@
 
 
 
-                            <div class="relative rounded-xl border bg-white p-4 pb-24 shadow-sm">
+                            <div class="relative rounded-xl border bg-white p-4 shadow-sm sm:col-span-2 lg:col-span-1 lg:pb-8">
                                 <div class="mb-4 items-center justify-between">
                                     <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-700">INVOICE</h2>
                                 </div>
@@ -2558,14 +2808,6 @@
                                 'cursor': 'default'
                             });
                     });
-                    $('textarea').each(function() {
-                        $(this).prop('readonly', true)
-                            .css({
-                                'pointer-events': 'none',
-                                'cursor': 'default',
-                                'resize': 'none'
-                            });
-                    });
 
                     // Lock all selects except #orderAction - keep normal appearance
                     $('select').not('#orderAction').each(function() {
@@ -2610,13 +2852,13 @@
                 // CHANGE DETECTION FUNCTIONS
                 // ========================================
                 const trackableElements = $(
-                    'input[type="text"], input[type="date"], input[type="email"], textarea[name="comment"], select:not(#orderAction), td[contenteditable="true"]'
+                    'input[type="text"], input[type="date"], input[type="email"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
                 function initializeOriginalValues() {
                     if (IS_LOCKED) return;
 
-                    trackableElements.filter('input, select, textarea').each(function() {
+                    trackableElements.filter('input, select').each(function() {
                         const $element = $(this);
                         const originalValue = $element.val() || '';
                         $element.data('original', originalValue);
@@ -2775,9 +3017,10 @@
                 // EVENT LISTENERS (Only if NOT locked)
                 // ========================================
                 if (!IS_LOCKED) {
-                    trackableElements.filter('input, select, textarea').on('change input keyup', function() {
+                    trackableElements.filter('input, select').on('change input keyup', function() {
                         checkElementChange(this);
                     });
+
                     trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
                         checkElementChange(this);
 
@@ -3268,7 +3511,7 @@
                                         title: '✅ Transfer Complete',
                                         html: htmlContent,
                                         confirmButtonText: 'OK',
-                                        width: '800px',
+                                        width: Math.min(window.innerWidth * 0.95, 800) + 'px',
                                         customClass: {
                                             popup: 'swal-wide'
                                         }
@@ -3283,7 +3526,7 @@
                                         confirmButtonText: 'Retry Failed Items',
                                         cancelButtonText: 'Close',
                                         reverseButtons: true,
-                                        width: '800px',
+                                        width: Math.min(window.innerWidth * 0.95, 800) + 'px',
                                         customClass: {
                                             popup: 'swal-wide'
                                         }
@@ -3352,7 +3595,7 @@
                                 confirmButtonText: 'Retry',
                                 cancelButtonText: 'Cancel',
                                 reverseButtons: true,
-                                width: '600px'
+                                width: Math.min(window.innerWidth * 0.95, 600) + 'px'
                             });
 
                             if (result.isConfirmed) {
@@ -3364,7 +3607,8 @@
                     await executeTransfer();
                 });
             });
-
+        </script>
+        <script nonce="{{ $cspNonce ?? '' }}">
             document.addEventListener('beforeinput', function(e) {
                 const el = e.target;
 
@@ -3393,6 +3637,8 @@
 
 
 
+        <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
         <!-- Enhanced CSS for better visual feedback -->
         <style nonce="{{ $cspNonce ?? '' }}">
             /* Minimal custom scrollbar */
@@ -3406,7 +3652,6 @@
 
             .custom-scrollbar::-webkit-scrollbar-thumb {
                 background-color: rgba(100, 116, 139, 0.4);
-                /* slate-500 w/ opacity */
                 border-radius: 9999px;
             }
 
@@ -3476,7 +3721,6 @@
                 box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
             }
 
-
             /* Search results enhanced styling */
             .search-results {
                 backdrop-filter: blur(10px);
@@ -3492,7 +3736,7 @@
                 background-color: #eff6ff;
             }
 
-            /* Loading animation for submit button */
+            /* Loading animation */
             .animate-spin {
                 animation: spin 1s linear infinite;
             }
@@ -3507,23 +3751,285 @@
                 }
             }
 
-            /* Responsive adjustments */
-            @media (max-width: 768px) {
-                .flex.items-center.justify-between {
-                    flex-direction: column;
-                    gap: 1rem;
+            /* ══════════════════════════════════════════════
+                   MOBILE CARD LAYOUT — items table (2-column grid)
+                   Below 1024 px: table rows become cards with a 2-column
+                   form-like grid. Labels sit above their values, aligned
+                   left. All JS (data-field, contenteditable, hidden inputs)
+                   is untouched — only CSS display changes.
+                   ══════════════════════════════════════════════ */
+            @media (max-width: 1023px) {
+
+                /* ── 1. Kill horizontal scroll; table fills width ── */
+                .order-items-table {
+                    min-width: 0 !important;
+                    width: 100%;
+                    border: none;
+                    border-collapse: separate;
+                    border-spacing: 0;
                 }
 
+                /* ── 2. Hide desktop header ── */
+                .order-items-table thead {
+                    display: none !important;
+                }
 
-                #submitButton {
-                    order: 2;
+                /* ── 3. Each row → 2-column card ── */
+                .order-items-table tbody tr[data-index] {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    column-gap: 0.75rem;
+                    row-gap: 0;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 0.875rem;
+                    margin-bottom: 1rem;
+                    padding: 0.625rem 0.75rem 0.75rem;
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+                    background: white;
+                    overflow: visible;
+                }
+
+                /* Row colour variants */
+                .order-items-table tbody tr[data-index].bg-red-50 {
+                    background: #fef2f2 !important;
+                    border-color: #fca5a5;
+                }
+
+                .order-items-table tbody tr[data-index].bg-green-50 {
+                    background: #f0fdf4 !important;
+                    border-color: #86efac;
+                }
+
+                /* ── 4. Every cell: flex column — label on top, value below ── */
+                .order-items-table td {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    border: none;
+                    padding: 0.45rem 0 0.1rem;
+                    font-size: 0.78rem;
+                    color: #111827;
+                    position: relative;
+                    overflow: visible;
+                    min-width: 0;
+                }
+
+                /* ── 5. Label above value (via ::before + data-label) ── */
+                .order-items-table td[data-label]::before {
+                    display: block;
+                    content: attr(data-label);
+                    font-size: 0.6rem;
+                    font-weight: 700;
+                    color: #9ca3af;
+                    text-transform: uppercase;
+                    letter-spacing: 0.07em;
+                    text-align: left;
+                    margin-bottom: 0.2rem;
+                    line-height: 1;
+                    white-space: nowrap;
+                }
+
+                /* ── 6. Cells that always span both columns ── */
+                .order-items-table td.td-checkbox,
+                .order-items-table td[data-field="sku"],
+                .order-items-table td[data-field="item_description"],
+                .order-items-table td[data-field="amount"],
+                .order-items-table td.remark-cell {
+                    grid-column: span 2;
+                }
+
+                /* ── 7. Checkbox header row ── */
+                .order-items-table td.td-checkbox {
+                    flex-direction: row;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0 0 0.5rem;
+                    margin-bottom: 0.1rem;
+                    border-bottom: 1px solid #f3f4f6;
+                }
+
+                .order-items-table td.td-checkbox::before {
+                    display: none;
+                }
+
+                /* Item-type badge (from data-item-type on tr) */
+                tr[data-index][data-item-type="FREEBIE"] td.td-checkbox::after {
+                    content: "FREEBIE";
+                    font-size: 0.6rem;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    padding: 0.15rem 0.5rem;
+                    border-radius: 9999px;
+                    background: #dcfce7;
+                    color: #166534;
+                }
+
+                tr[data-index][data-item-type="DISCOUNT"] td.td-checkbox::after {
+                    content: "DISCOUNT";
+                    font-size: 0.6rem;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    padding: 0.15rem 0.5rem;
+                    border-radius: 9999px;
+                    background: #dbeafe;
+                    color: #1e40af;
+                }
+
+                tr[data-index][data-item-type="MAIN"] td.td-checkbox::after {
+                    content: "MAIN ITEM";
+                    font-size: 0.6rem;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    padding: 0.15rem 0.5rem;
+                    border-radius: 9999px;
+                    background: #f3f4f6;
+                    color: #374151;
+                }
+
+                /* ── 8. Section separators ── */
+                /* Before pricing */
+                .order-items-table td[data-field="scheme"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                /* Price/PC sits next to Scheme — share the same separator row */
+                .order-items-table td[data-field="price_per_pc"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                /* Before quantities */
+                .order-items-table td[data-field="qty_per_pc"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                .order-items-table td[data-field="qty_per_cs"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                /* Before footer */
+                .order-items-table td.remark-cell {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                .order-items-table td[data-field="store_order_no"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                .order-items-table td[data-label="Status"] {
+                    border-top: 1px solid #f0f0f0;
+                    padding-top: 0.55rem;
+                    margin-top: 0.25rem;
+                }
+
+                /* ── 9. Amount row — highlighted total ── */
+                .order-items-table td[data-field="amount"] {
+                    background: #eff6ff;
+                    border: 1.5px solid #bfdbfe;
+                    border-radius: 0.5rem;
+                    padding: 0.45rem 0.65rem 0.5rem;
+                    margin-top: 0.35rem;
+                    font-size: 1rem;
+                    font-weight: 700;
+                    color: #1d4ed8;
+                }
+
+                .order-items-table td[data-field="amount"]::before {
+                    color: #3b82f6;
+                    font-size: 0.6rem;
+                }
+
+                /* ── 10. Editable cells look like inputs ── */
+                .order-items-table td[contenteditable="true"] {
+                    border: 1.5px solid #e5e7eb !important;
+                    border-radius: 0.4rem;
+                    background: #f9fafb;
+                    padding: 0.35rem 0.5rem !important;
+                    cursor: text;
+                    width: 100%;
+                    box-sizing: border-box;
+                    min-height: 2.25rem;
+                    transition: border-color 0.15s, box-shadow 0.15s;
+                    /* label sits INSIDE the bordered box */
+                }
+
+                .order-items-table td[contenteditable="true"]:focus {
+                    border-color: #3b82f6 !important;
+                    background: #fff;
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+                }
+
+                /* Non-editable value cells: slightly dimmer */
+                .order-items-table td[contenteditable="false"][data-label]:not(.td-checkbox) {
+                    color: #374151;
+                }
+
+                /* ── 11. Remarks select — full width, native mobile arrow ── */
+                .order-items-table td.remark-cell .relative {
                     width: 100%;
                 }
 
-                .inline-block {
-                    order: 3;
+                .order-items-table td.remark-cell select {
+                    width: 100%;
+                    border: 1.5px solid #e5e7eb;
+                    border-radius: 0.4rem;
+                    padding: 0.35rem 0.5rem;
+                    background: #f9fafb;
+                    font-size: 0.78rem;
+                    color: #111827;
+                    -webkit-appearance: auto;
+                    appearance: auto;
+                    background-image: none !important;
+                    cursor: pointer;
+                    min-height: 2.25rem;
                 }
+
+                .order-items-table td.remark-cell select:focus {
+                    border-color: #3b82f6;
+                    outline: none;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+                }
+
+                /* ── 12. Search results: anchor below the cell ── */
+                .order-items-table td[data-field="sku"] .search-results,
+                .order-items-table td[data-field="item_description"] .search-results {
+                    top: 100%;
+                    left: 0;
+                    min-width: 100%;
+                    max-width: 100%;
+                    white-space: normal;
+                }
+
+                /* ── 13. Status tooltip: flip above the badge ── */
+                .order-items-table td[data-label="Status"] .peer~div {
+                    right: auto !important;
+                    left: 0 !important;
+                    top: auto !important;
+                    bottom: 115% !important;
+                    transform: none !important;
+                    margin-right: 0 !important;
+                }
+
+                /* ── 14. Hide scroll hint — table is cards on mobile ── */
+                .table-scroll-hint {
+                    display: none !important;
+                }
+
             }
+
+            /* end @media */
         </style>
     @endif
 @endsection
