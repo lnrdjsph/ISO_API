@@ -69,7 +69,7 @@
 
         /* Topbar also scaled down */
         .topbar {
-            /* zoom: 0.75; */
+            z-index: 10005;
         }
 
         /* Main content offsets for zoomed sidebar width (13rem * 0.75 = 9.75rem, 4.5rem * 0.75 = 3.375rem) */
