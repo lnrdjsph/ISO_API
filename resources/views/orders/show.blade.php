@@ -1675,305 +1675,288 @@
                                                 actionText = 'Send this order for manager approval?';
                                                 confirmColor = '#2563EB';
                                                 break;
-                                            case 'approve':
-                                                Swal.fire({
-                                                    title: 'Approve SOF order',
-                                                    html: `
-        <style>
-            .sw-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-            .sw-mode-card{border:1.5px solid #e5e7eb;border-radius:8px;padding:14px 10px;cursor:pointer;text-align:center;background:#f9fafb;transition:all .15s}
-            .sw-mode-card:hover{background:#fff}
-            .sw-mode-card.active{border-color:#16A34A;background:#f0fdf4}
-            .sw-panel{display:none}.sw-panel.active{display:block}
-            .sw-info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 12px;font-size:12px;color:#1e40af;margin-bottom:12px;text-align:left}
-            .sw-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-align:left}
-            .sw-req{color:#dc2626}
-            .sw-drop{border:1.5px dashed #d1d5db;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#f9fafb;transition:all .15s}
-            .sw-drop:hover,.sw-drop.over{border-color:#16A34A;background:#f0fdf4}
-            .sw-badge{display:none;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:#f3f4f6;font-size:12px;margin-top:6px;text-align:left}
-            .sw-badge-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111}
-            .sw-badge-rm{cursor:pointer;color:#9ca3af;font-size:16px;line-height:1}
-            .sw-sig-tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:8px}
-            .sw-sig-tab{padding:8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;border:none;background:#f9fafb;color:#6b7280}
-            .sw-sig-tab:not(:last-child){border-right:1px solid #e5e7eb}
-            .sw-sig-tab.active{background:#fff;color:#111}
-            .sw-canvas-wrap{position:relative;border:1.5px solid #2563EB;border-radius:8px;background:#f9fafb}
-            #swSigCanvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none;border-radius:6px}
-            .sw-clear{position:absolute;top:5px;right:7px;font-size:11px;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:2px 8px;cursor:pointer}
-            .sw-sig-hint{font-size:11px;color:#9ca3af;text-align:center;margin-top:3px}
-            .sw-prev-wrap{position:relative;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;background:#f9fafb;margin-top:6px}
-            .sw-prev-wrap img{display:block;width:100%;max-height:100px;object-fit:contain}
-            .sw-rm-sig{position:absolute;top:4px;right:4px;background:#fff;border:1px solid #e5e7eb;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:20px;text-align:center;color:#6b7280}
-        </style>
-        <div style="text-align:left;font-size:13px">
-            <p style="font-size:12px;color:#6b7280;margin-bottom:14px;text-align:center">
-                The SOF PDF will serve as the approval document
-            </p>
+ case 'approve':
+    Swal.fire({
+        title: 'Approve SOF order',
+        html: `
+<style>
+    .sw-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .sw-mode-card{border:1.5px solid #e5e7eb;border-radius:8px;padding:14px 10px;cursor:pointer;text-align:center;background:#f9fafb;transition:all .15s}
+    .sw-mode-card:hover{background:#fff}
+    .sw-mode-card.active{border-color:#16A34A;background:#f0fdf4}
+    .sw-panel{display:none}.sw-panel.active{display:block}
+    .sw-info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 12px;font-size:12px;color:#1e40af;margin-bottom:12px;text-align:left}
+    .sw-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-align:left}
+    .sw-req{color:#dc2626}
+    .sw-drop{border:1.5px dashed #d1d5db;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#f9fafb;transition:all .15s}
+    .sw-drop:hover,.sw-drop.over{border-color:#16A34A;background:#f0fdf4}
+    .sw-badge{display:none;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:#f3f4f6;font-size:12px;margin-top:6px;text-align:left}
+    .sw-badge-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111}
+    .sw-badge-rm{cursor:pointer;color:#9ca3af;font-size:16px;line-height:1}
+    .sw-sig-tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:8px}
+    .sw-sig-tab{padding:8px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;border:none;background:#f9fafb;color:#6b7280}
+    .sw-sig-tab:not(:last-child){border-right:1px solid #e5e7eb}
+    .sw-sig-tab.active{background:#fff;color:#111}
+    .sw-canvas-wrap{position:relative;border:1.5px solid #2563EB;border-radius:8px;background:#f9fafb}
+    #swSigCanvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none;border-radius:6px}
+    .sw-clear{position:absolute;top:5px;right:7px;font-size:11px;color:#6b7280;background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:2px 8px;cursor:pointer}
+    .sw-sig-hint{font-size:11px;color:#9ca3af;text-align:center;margin-top:3px}
+    .sw-prev-wrap{position:relative;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;background:#f9fafb;margin-top:6px}
+    .sw-prev-wrap img{display:block;width:100%;max-height:100px;object-fit:contain}
+    .sw-rm-sig{position:absolute;top:4px;right:4px;background:#fff;border:1px solid #e5e7eb;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:20px;text-align:center;color:#6b7280}
+</style>
+<div style="text-align:left;font-size:13px">
+    <p style="font-size:12px;color:#6b7280;margin-bottom:14px;text-align:center">
+        The SOF PDF will serve as the approval document
+    </p>
 
-            <div class="sw-mode-grid">
-                <div class="sw-mode-card" id="swModeA" onclick="swMode('scan')">
-                    <div style="font-size:22px;margin-bottom:6px">📄</div>
-                    <p style="font-size:13px;font-weight:600;color:#111">Upload signed SOF</p>
-                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">Printed, signed & scanned</p>
-                </div>
-                <div class="sw-mode-card" id="swModeB" onclick="swMode('digital')">
-                    <div style="font-size:22px;margin-bottom:6px">✍️</div>
-                    <p style="font-size:13px;font-weight:600;color:#111">Sign digitally</p>
-                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">Embedded into the SOF PDF</p>
-                </div>
+    <div class="sw-mode-grid">
+        <div class="sw-mode-card" id="swModeA">
+            <div style="font-size:22px;margin-bottom:6px">📄</div>
+            <p style="font-size:13px;font-weight:600;color:#111">Upload signed SOF</p>
+            <p style="font-size:11px;color:#9ca3af;margin-top:2px">Printed, signed & scanned</p>
+        </div>
+        <div class="sw-mode-card" id="swModeB">
+            <div style="font-size:22px;margin-bottom:6px">✍️</div>
+            <p style="font-size:13px;font-weight:600;color:#111">Sign digitally</p>
+            <p style="font-size:11px;color:#9ca3af;margin-top:2px">Embedded into the SOF PDF</p>
+        </div>
+    </div>
+
+    <!-- Mode A -->
+    <div class="sw-panel" id="swPanelA">
+        <div class="sw-info">📋 Upload the signed and scanned copy of this order's SOF PDF.</div>
+        <p class="sw-label">Signed SOF PDF <span class="sw-req">*</span></p>
+        <div class="sw-drop" id="swScanDrop">
+            <div style="font-size:22px;margin-bottom:4px">📄</div>
+            <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drag signed SOF here</p>
+            <p style="font-size:11px;color:#9ca3af;margin-top:2px">PDF only — max 10 MB</p>
+            <input type="file" id="swScanFile" accept=".pdf" style="display:none">
+        </div>
+        <div class="sw-badge" id="swScanBadge">
+            📎 <span class="sw-badge-name" id="swScanName"></span>
+            <span class="sw-badge-rm" id="swScanClear">×</span>
+        </div>
+    </div>
+
+    <!-- Mode B -->
+    <div class="sw-panel" id="swPanelB">
+        <div class="sw-info">✍️ Your signature will be embedded above the <strong>Approved by</strong> line in the SOF PDF.</div>
+        <p class="sw-label">Signature <span class="sw-req">*</span></p>
+        <div class="sw-sig-tabs">
+            <button class="sw-sig-tab active" id="swTabDBtn" type="button">✏️ Draw</button>
+            <button class="sw-sig-tab" id="swTabUBtn" type="button">🖼️ Upload image</button>
+        </div>
+
+        <div class="sw-panel active" id="swSigDrawPanel">
+            <div class="sw-canvas-wrap">
+                <canvas id="swSigCanvas"></canvas>
+                <button class="sw-clear" type="button" id="swClearCanvas">Clear</button>
             </div>
+            <p class="sw-sig-hint">Draw with mouse or finger</p>
+        </div>
 
-            <!-- Mode A -->
-            <div class="sw-panel" id="swPanelA">
-                <div class="sw-info">📋 Upload the signed and scanned copy of this order's SOF PDF.</div>
-                <p class="sw-label">Signed SOF PDF <span class="sw-req">*</span></p>
-                <div class="sw-drop" id="swScanDrop" onclick="document.getElementById('swScanFile').click()">
-                    <div style="font-size:22px;margin-bottom:4px">📄</div>
-                    <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drag signed SOF here</p>
-                    <p style="font-size:11px;color:#9ca3af;margin-top:2px">PDF only — max 10 MB</p>
-                    <input type="file" id="swScanFile" accept=".pdf" style="display:none">
-                </div>
-                <div class="sw-badge" id="swScanBadge">
-                    📎 <span class="sw-badge-name" id="swScanName"></span>
-                    <span class="sw-badge-rm" onclick="swClearScan()">×</span>
-                </div>
+        <div class="sw-panel" id="swSigUploadPanel">
+            <div class="sw-drop" id="swSigDrop">
+                <div style="font-size:22px;margin-bottom:4px">🖼️</div>
+                <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drop signature image</p>
+                <p style="font-size:11px;color:#9ca3af;margin-top:2px">PNG or JPG — transparent background recommended</p>
+                <input type="file" id="swSigFile" accept="image/*" style="display:none">
             </div>
-
-            <!-- Mode B -->
-            <div class="sw-panel" id="swPanelB">
-                <div class="sw-info">✍️ Your signature will be embedded above the <strong>Approved by</strong> line in the SOF PDF.</div>
-                <p class="sw-label">Signature <span class="sw-req">*</span></p>
-                <div class="sw-sig-tabs">
-                    <button class="sw-sig-tab active" id="swTabDBtn" type="button"
-                        onclick="swSigTab('draw')">✏️ Draw</button>
-                    <button class="sw-sig-tab" id="swTabUBtn" type="button"
-                        onclick="swSigTab('upload')">🖼️ Upload image</button>
-                </div>
-
-                <div class="sw-panel active" id="swSigDrawPanel">
-                    <div class="sw-canvas-wrap">
-                        <canvas id="swSigCanvas"></canvas>
-                        <button class="sw-clear" type="button" id="swClearCanvas">Clear</button>
-                    </div>
-                    <p class="sw-sig-hint">Draw with mouse or finger</p>
-                </div>
-
-                <div class="sw-panel" id="swSigUploadPanel">
-                    <div class="sw-drop" id="swSigDrop" onclick="document.getElementById('swSigFile').click()">
-                        <div style="font-size:22px;margin-bottom:4px">🖼️</div>
-                        <p style="font-size:13px;font-weight:500;color:#2563EB">Click or drop signature image</p>
-                        <p style="font-size:11px;color:#9ca3af;margin-top:2px">PNG or JPG — transparent background recommended</p>
-                        <input type="file" id="swSigFile" accept="image/*" style="display:none">
-                    </div>
-                    <div class="sw-prev-wrap" id="swSigPreview" style="display:none">
-                        <img id="swSigImg" alt="Signature preview">
-                        <span class="sw-rm-sig" onclick="swClearSig()">×</span>
-                    </div>
-                </div>
+            <div class="sw-prev-wrap" id="swSigPreview" style="display:none">
+                <img id="swSigImg" alt="Signature preview">
+                <span class="sw-rm-sig" id="swSigClear">×</span>
             </div>
         </div>
-        `,
-                                                    icon: 'info',
-                                                    showCancelButton: true,
-                                                    confirmButtonColor: '#16A34A',
-                                                    cancelButtonColor: '#aaa',
-                                                    confirmButtonText: 'Approve',
-                                                    width: Math.min(window.innerWidth * 0.95, 500) + 'px',
+    </div>
+</div>
+`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#16A34A',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: 'Approve',
+        width: Math.min(window.innerWidth * 0.95, 500) + 'px',
 
-                                                    didOpen: () => {
-                                                        window._swMode = null;
-                                                        window._swSigPad = null;
-                                                        window._swSigTab = 'draw';
+        didOpen: () => {
+            window._swMode = null;
+            window._swSigPad = null;
+            window._swSigTab = 'draw';
 
-                                                        window.swMode = function(mode) {
-                                                            window._swMode = mode;
-                                                            ['A', 'B'].forEach(x => {
-                                                                document.getElementById('swMode' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode ===
-                                                                    'digital' && x === 'B'));
-                                                                document.getElementById('swPanel' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode ===
-                                                                    'digital' && x === 'B'));
-                                                            });
-                                                            if (mode === 'digital' && !window._swSigPad) {
-                                                                const canvas = document.getElementById('swSigCanvas');
-                                                                const dpr = window.devicePixelRatio || 1;
-                                                                canvas.width = canvas.offsetWidth * dpr;
-                                                                canvas.height = 120 * dpr;
-                                                                canvas.style.height = '120px';
-                                                                canvas.getContext('2d').scale(dpr, dpr);
-                                                                window._swSigPad = new SignaturePad(canvas, {
-                                                                    penColor: '#1e3a8a',
-                                                                    backgroundColor: 'rgba(0,0,0,0)',
-                                                                });
-                                                                document.getElementById('swClearCanvas').onclick = () => window._swSigPad.clear();
-                                                            }
-                                                        };
+            window.swMode = function(mode) {
+                window._swMode = mode;
+                ['A', 'B'].forEach(x => {
+                    document.getElementById('swMode' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode === 'digital' && x === 'B'));
+                    document.getElementById('swPanel' + x).classList.toggle('active', (mode === 'scan' && x === 'A') || (mode === 'digital' && x === 'B'));
+                });
+                if (mode === 'digital' && !window._swSigPad) {
+                    const canvas = document.getElementById('swSigCanvas');
+                    const dpr = window.devicePixelRatio || 1;
+                    canvas.width = canvas.offsetWidth * dpr;
+                    canvas.height = 120 * dpr;
+                    canvas.style.height = '120px';
+                    canvas.getContext('2d').scale(dpr, dpr);
+                    window._swSigPad = new SignaturePad(canvas, {
+                        penColor: '#1e3a8a',
+                        backgroundColor: 'rgba(0,0,0,0)',
+                    });
+                    document.getElementById('swClearCanvas').addEventListener('click', () => window._swSigPad.clear());
+                }
+            };
 
-                                                        window.swSigTab = function(tab) {
-                                                            window._swSigTab = tab;
-                                                            document.getElementById('swTabDBtn').classList.toggle('active', tab === 'draw');
-                                                            document.getElementById('swTabUBtn').classList.toggle('active', tab === 'upload');
-                                                            document.getElementById('swSigDrawPanel').classList.toggle('active', tab === 'draw');
-                                                            document.getElementById('swSigUploadPanel').classList.toggle('active', tab === 'upload');
-                                                        };
+            window.swSigTab = function(tab) {
+                window._swSigTab = tab;
+                document.getElementById('swTabDBtn').classList.toggle('active', tab === 'draw');
+                document.getElementById('swTabUBtn').classList.toggle('active', tab === 'upload');
+                document.getElementById('swSigDrawPanel').classList.toggle('active', tab === 'draw');
+                document.getElementById('swSigUploadPanel').classList.toggle('active', tab === 'upload');
+            };
 
-                                                        window.swClearScan = () => {
-                                                            document.getElementById('swScanFile').value = '';
-                                                            document.getElementById('swScanBadge').style.display = 'none';
-                                                        };
-                                                        window.swClearSig = () => {
-                                                            document.getElementById('swSigFile').value = '';
-                                                            document.getElementById('swSigPreview').style.display = 'none';
-                                                            document.getElementById('swSigDrop').style.display = 'block';
-                                                            document.getElementById('swSigImg').src = '';
-                                                        };
+            window.swClearScan = () => {
+                document.getElementById('swScanFile').value = '';
+                document.getElementById('swScanBadge').style.display = 'none';
+            };
+            window.swClearSig = () => {
+                document.getElementById('swSigFile').value = '';
+                document.getElementById('swSigPreview').style.display = 'none';
+                document.getElementById('swSigDrop').style.display = 'block';
+                document.getElementById('swSigImg').src = '';
+            };
 
-                                                        document.getElementById('swScanFile').onchange = function() {
-                                                            if (this.files[0]) {
-                                                                document.getElementById('swScanBadge').style.display = 'flex';
-                                                                document.getElementById('swScanName').textContent = this.files[0].name;
-                                                            }
-                                                        };
-                                                        document.getElementById('swSigFile').onchange = function() {
-                                                            if (!this.files[0]) return;
-                                                            document.getElementById('swSigImg').src = URL.createObjectURL(this.files[0]);
-                                                            document.getElementById('swSigPreview').style.display = 'block';
-                                                            document.getElementById('swSigDrop').style.display = 'none';
-                                                        };
+            // ── All event listeners wired here — no inline onclick needed ──
+            document.getElementById('swModeA').addEventListener('click', () => swMode('scan'));
+            document.getElementById('swModeB').addEventListener('click', () => swMode('digital'));
+            document.getElementById('swScanDrop').addEventListener('click', () => document.getElementById('swScanFile').click());
+            document.getElementById('swScanClear').addEventListener('click', () => swClearScan());
+            document.getElementById('swTabDBtn').addEventListener('click', () => swSigTab('draw'));
+            document.getElementById('swTabUBtn').addEventListener('click', () => swSigTab('upload'));
+            document.getElementById('swSigDrop').addEventListener('click', () => document.getElementById('swSigFile').click());
+            document.getElementById('swSigClear').addEventListener('click', () => swClearSig());
 
-                                                        ['swScanDrop', 'swSigDrop'].forEach(id => {
-                                                            const el = document.getElementById(id);
-                                                            if (!el) return;
-                                                            el.addEventListener('dragover', e => {
-                                                                e.preventDefault();
-                                                                el.classList.add('over');
-                                                            });
-                                                            el.addEventListener('dragleave', () => el.classList.remove('over'));
-                                                            el.addEventListener('drop', e => {
-                                                                e.preventDefault();
-                                                                el.classList.remove('over');
-                                                                const f = e.dataTransfer.files[0];
-                                                                if (!f) return;
-                                                                if (id === 'swScanDrop') {
-                                                                    document.getElementById('swScanBadge').style.display = 'flex';
-                                                                    document.getElementById('swScanName').textContent = f.name;
-                                                                }
-                                                                if (id === 'swSigDrop') {
-                                                                    document.getElementById('swSigImg').src = URL.createObjectURL(f);
-                                                                    document.getElementById('swSigPreview').style.display = 'block';
-                                                                    el.style.display = 'none';
-                                                                }
-                                                            });
-                                                        });
-                                                    },
+            document.getElementById('swScanFile').onchange = function() {
+                if (this.files[0]) {
+                    document.getElementById('swScanBadge').style.display = 'flex';
+                    document.getElementById('swScanName').textContent = this.files[0].name;
+                }
+            };
+            document.getElementById('swSigFile').onchange = function() {
+                if (!this.files[0]) return;
+                document.getElementById('swSigImg').src = URL.createObjectURL(this.files[0]);
+                document.getElementById('swSigPreview').style.display = 'block';
+                document.getElementById('swSigDrop').style.display = 'none';
+            };
 
-                                                    preConfirm: () => {
-                                                        const mode = window._swMode;
+            ['swScanDrop', 'swSigDrop'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('over'); });
+                el.addEventListener('dragleave', () => el.classList.remove('over'));
+                el.addEventListener('drop', e => {
+                    e.preventDefault();
+                    el.classList.remove('over');
+                    const f = e.dataTransfer.files[0];
+                    if (!f) return;
+                    if (id === 'swScanDrop') {
+                        document.getElementById('swScanBadge').style.display = 'flex';
+                        document.getElementById('swScanName').textContent = f.name;
+                    }
+                    if (id === 'swSigDrop') {
+                        document.getElementById('swSigImg').src = URL.createObjectURL(f);
+                        document.getElementById('swSigPreview').style.display = 'block';
+                        el.style.display = 'none';
+                    }
+                });
+            });
+        },
 
-                                                        if (!mode) {
-                                                            Swal.showValidationMessage('Please choose an approval method.');
-                                                            return false;
-                                                        }
+        preConfirm: () => {
+            const mode = window._swMode;
 
-                                                        // Mode A — scanned signed SOF PDF
-                                                        if (mode === 'scan') {
-                                                            const f = document.getElementById('swScanFile').files[0];
-                                                            if (!f) {
-                                                                Swal.showValidationMessage('Please upload the signed SOF PDF.');
-                                                                return false;
-                                                            }
-                                                            return {
-                                                                mode: 'scan',
-                                                                file: f,
-                                                                signature: null
-                                                            };
-                                                        }
+            if (!mode) {
+                Swal.showValidationMessage('Please choose an approval method.');
+                return false;
+            }
 
-                                                        // Mode B — digital signature
-                                                        if (window._swSigTab === 'draw') {
-                                                            if (!window._swSigPad || window._swSigPad.isEmpty()) {
-                                                                Swal.showValidationMessage('Please draw your signature.');
-                                                                return false;
-                                                            }
-                                                            return {
-                                                                mode: 'digital',
-                                                                file: null,
-                                                                signature: window._swSigPad.toDataURL('image/png')
-                                                            };
-                                                        }
+            if (mode === 'scan') {
+                const f = document.getElementById('swScanFile').files[0];
+                if (!f) {
+                    Swal.showValidationMessage('Please upload the signed SOF PDF.');
+                    return false;
+                }
+                return { mode: 'scan', file: f, signature: null };
+            }
 
-                                                        // Upload tab — convert blob to base64
-                                                        const img = document.getElementById('swSigImg');
-                                                        if (!img.src || img.src === window.location.href) {
-                                                            Swal.showValidationMessage('Please upload a signature image.');
-                                                            return false;
-                                                        }
-                                                        return fetch(img.src)
-                                                            .then(r => r.blob())
-                                                            .then(blob => new Promise(resolve => {
-                                                                const reader = new FileReader();
-                                                                reader.onloadend = () => resolve({
-                                                                    mode: 'digital',
-                                                                    file: null,
-                                                                    signature: reader.result
-                                                                });
-                                                                reader.readAsDataURL(blob);
-                                                            }));
-                                                    }
+            if (window._swSigTab === 'draw') {
+                if (!window._swSigPad || window._swSigPad.isEmpty()) {
+                    Swal.showValidationMessage('Please draw your signature.');
+                    return false;
+                }
+                return { mode: 'digital', file: null, signature: window._swSigPad.toDataURL('image/png') };
+            }
 
-                                                }).then(result => {
-                                                    if (!result.isConfirmed) {
-                                                        actionSelect.value = '';
-                                                        return;
-                                                    }
+            const img = document.getElementById('swSigImg');
+            if (!img.src || img.src === window.location.href) {
+                Swal.showValidationMessage('Please upload a signature image.');
+                return false;
+            }
+            return fetch(img.src)
+                .then(r => r.blob())
+                .then(blob => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve({ mode: 'digital', file: null, signature: reader.result });
+                    reader.readAsDataURL(blob);
+                }));
+        }
 
-                                                    const {
-                                                        mode,
-                                                        file,
-                                                        signature
-                                                    } = result.value;
-                                                    const formData = new FormData();
-                                                    formData.append('_token', csrfToken);
-                                                    formData.append('id', orderId);
-                                                    formData.append('approval_mode', mode);
-                                                    if (file) formData.append('scanned_sof', file);
-                                                    if (signature) formData.append('approval_signature', signature);
+    }).then(result => {
+        if (!result.isConfirmed) {
+            actionSelect.value = '';
+            return;
+        }
 
-                                                    Swal.fire({
-                                                        title: 'Processing…',
-                                                        text: mode === 'digital' ? 'Embedding signature into SOF PDF…' : 'Uploading signed SOF…',
-                                                        allowOutsideClick: false,
-                                                        didOpen: () => Swal.showLoading(),
-                                                    });
+        const { mode, file, signature } = result.value;
+        const formData = new FormData();
+        formData.append('_token', csrfToken);
+        formData.append('id', orderId);
+        formData.append('approval_mode', mode);
+        if (file) formData.append('scanned_sof', file);
+        if (signature) formData.append('approval_signature', signature);
 
-                                                    fetch("{{ route('orders.approve') }}", {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'X-CSRF-TOKEN': csrfToken,
-                                                                'X-Requested-With': 'XMLHttpRequest',
-                                                                'Accept': 'application/json',
-                                                            },
-                                                            body: formData,
-                                                        })
-                                                        .then(async response => {
-                                                            const data = await response.json().catch(() => ({}));
-                                                            if (!response.ok) throw new Error(data.message ?? 'Server error ' + response.status);
-                                                            Swal.fire({
-                                                                icon: 'success',
-                                                                title: 'Approved!',
-                                                                text: data.message ?? 'Order approved.',
-                                                                timer: 2000,
-                                                                showConfirmButton: false,
-                                                            }).then(() => {
-                                                                window.location.href = data.redirect ?? window.location.href;
-                                                            });
-                                                        })
-                                                        .catch(err => {
-                                                            Swal.fire('Failed', err.message, 'error');
-                                                            actionSelect.value = '';
-                                                        });
-                                                });
-                                                return;
+        Swal.fire({
+            title: 'Processing…',
+            text: mode === 'digital' ? 'Embedding signature into SOF PDF…' : 'Uploading signed SOF…',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
 
+        fetch("{{ route('orders.approve') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.message ?? 'Server error ' + response.status);
+            Swal.fire({
+                icon: 'success',
+                title: 'Approved!',
+                text: data.message ?? 'Order approved.',
+                timer: 2000,
+                showConfirmButton: false,
+            }).then(() => {
+                window.location.href = data.redirect ?? window.location.href;
+            });
+        })
+        .catch(err => {
+            Swal.fire('Failed', err.message, 'error');
+            actionSelect.value = '';
+        });
+    });
+    return;
 
 
 

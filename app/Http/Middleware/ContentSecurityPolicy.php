@@ -10,17 +10,6 @@ use Symfony\Component\HttpFoundation\Response;
 class ContentSecurityPolicy
 {
     /**
-     * Hashes for inline event handlers (e.g. onclick="...").
-     * 'unsafe-hashes' must be present for these to apply to event attributes.
-     * To find new hashes: check the browser console — it will suggest the sha256 to add.
-     */
-    private array $inlineHandlerHashes = [
-        'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k=',
-        // Add more hashes here as the browser console reports them:
-        // 'sha256-abc123...',
-    ];
-
-    /**
      * Standard CSP — applied globally to all routes via the web middleware group.
      * Does NOT include unsafe-eval. Report pages override this with ContentSecurityPolicyWithEval.
      */
@@ -35,21 +24,20 @@ class ContentSecurityPolicy
         }
 
         $nonce = base64_encode(random_bytes(16));
-        $request->attributes->set('csp_nonce', $nonce);
+
+        $request->attributes->set('csp_nonce', $nonce); // ← ADD THIS
         View::share('cspNonce', $nonce);
 
         $response = $next($request);
 
         if (!$response->headers->has('Content-Security-Policy')) {
-            $hashes = implode(' ', array_map(fn($h) => "'{$h}'", $this->inlineHandlerHashes));
-
             $response->headers->set('Content-Security-Policy', implode('; ', [
                 "default-src 'self'",
-                "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' {$hashes} https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
+                "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k=' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
                 "img-src 'self' data: blob:",
-                "connect-src 'self' https://cdn.jsdelivr.net",
+                "connect-src 'self'",
                 "frame-ancestors 'none'",
                 "form-action 'self'",
                 "object-src 'none'",
