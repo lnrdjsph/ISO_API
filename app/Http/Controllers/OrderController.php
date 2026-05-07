@@ -315,7 +315,14 @@ class OrderController extends Controller
                 $new = $validated[$field] ?? null;
 
                 if ($old != $new) {
-                    $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
+                    // For payment_center, resolve the store code to a human-readable name
+                    if ($field === 'payment_center') {
+                        $oldDisplay = $old ? \App\Support\LocationConfig::storeName($old, $old) : '—';
+                        $newDisplay = $new ? \App\Support\LocationConfig::storeName($new, $new) : '—';
+                        $changes[] = "Payment center changed from '{$oldDisplay}' to '{$newDisplay}'";
+                    } else {
+                        $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' to '{$new}'";
+                    }
                 }
             }
 
