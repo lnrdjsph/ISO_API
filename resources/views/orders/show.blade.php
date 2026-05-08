@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                       INFO SECTIONS — uniform mobile layout
-                       Below 768 px: sections stack cleanly; each
-                       field becomes a horizontal label → value row
-                       with a subtle underline separator.
-                       ══════════════════════════════════════════════ */
+                           INFO SECTIONS — uniform mobile layout
+                           Below 768 px: sections stack cleanly; each
+                           field becomes a horizontal label → value row
+                           with a subtle underline separator.
+                           ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -361,6 +361,7 @@
         <div class="">
             <div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                 <!-- Header Section -->
+                <!-- Header Section -->
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-y-3 sm:mb-8">
                     <div class="flex items-center space-x-4">
                         <div class="rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 p-3 shadow-lg">
@@ -379,7 +380,7 @@
                         </div>
                         <div>
                             <h1 class="text-lg font-bold text-gray-900">Sales Order Details</h1>
-                            <p class="text-sm text-gray-600">Review detailed information about the selected order.</p>
+                            <p class="hidden text-sm text-gray-600 sm:block">Review detailed information about the selected order.</p>
                         </div>
                     </div>
 
@@ -399,7 +400,7 @@
                                 stroke-width="2"
                                 d="M15 19l-7-7 7-7" />
                         </svg>
-                        Back to Order List
+                        <span class="hidden sm:inline">Back to Order List</span>
                     </a>
                 </div>
 
@@ -3966,12 +3967,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                           MOBILE CARD LAYOUT — items table (2-column grid)
-                           Below 1024 px: table rows become cards with a 2-column
-                           form-like grid. Labels sit above their values, aligned
-                           left. All JS (data-field, contenteditable, hidden inputs)
-                           is untouched — only CSS display changes.
-                           ══════════════════════════════════════════════ */
+                               MOBILE CARD LAYOUT — items table (2-column grid)
+                               Below 1024 px: table rows become cards with a 2-column
+                               form-like grid. Labels sit above their values, aligned
+                               left. All JS (data-field, contenteditable, hidden inputs)
+                               is untouched — only CSS display changes.
+                               ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */

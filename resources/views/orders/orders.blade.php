@@ -23,7 +23,7 @@
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-gray-900 sm:text-3xl">Sales Order List</h1>
-                        <p class="mt-0.5 hidden text-gray-600 sm:block">List of all B2B sales orders submitted for processing and fulfillment.</p>
+                        <p class="mt-0.5 hidden text-gray-600 sm:block">List of all B2BC sales orders submitted for processing and fulfillment.</p>
                     </div>
                 </div>
             </div>
@@ -33,7 +33,7 @@
                 <!-- Always-visible row: Search + Filter toggle + Apply + Reset -->
                 <div class="mb-2 flex flex-wrap items-center gap-2">
                     {{-- Search Input - Responsive width --}}
-                    <div class="relative min-w-[200px] max-w-sm flex-1">
+                    <div class="relative min-w-[50px] max-w-sm flex-1">
                         <input
                             type="text"
                             name="search"
