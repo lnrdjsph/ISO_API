@@ -631,7 +631,8 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 
                 </div>
 
-                <div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-6 shadow-lg">
+                <div class="order-item-form mt-6 space-y-6 rounded-xl bg-white p-4 shadow-lg sm:p-6">
+
                     {{-- <div class="order-item-form mt-6 hidden space-y-6 rounded-xl bg-white p-6 shadow-lg"> --}}
                     {{-- test --}}
                     <div class="bg-white pt-4">
@@ -672,7 +673,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                             <!-- Sample Row -->
                             @foreach ($orders as $i => $order)
                                 <div
-                                    class="order-row relative mb-6 max-h-[1000px] space-y-6 overflow-hidden rounded-xl rounded-xl border border border-gray-100 bg-white bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-6 opacity-100 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md">
+                                    class="order-row relative mb-6 max-h-[1000px] space-y-4 overflow-hidden rounded-xl rounded-xl border border border-gray-100 bg-white bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-4 opacity-100 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md sm:space-y-6 sm:p-6">
                                     <!-- Remove Button (Top-Right Trash Icon) -->
                                     <div class="mb-4 flex items-center space-x-3">
                                         <div
@@ -699,7 +700,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 
                                     <button
                                         type="button"
-                                        class="remove-row absolute right-6 top-0 transform text-red-500 transition hover:scale-110 hover:text-red-700">
+                                        class="remove-row absolute right-4 top-0 transform text-red-500 transition hover:scale-110 hover:text-red-700 sm:right-6">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             class="h-6 w-6"
@@ -816,9 +817,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                             </div>
 
 
-                                            <div
-                                                class="main-item grid grid-cols-1 gap-4 md:grid-cols-3"
-                                                data-index="{{ $i }}">
+                                            <div class="main-item grid grid-cols-2 gap-3 md:grid-cols-3" data-index="{{ $i }}">
 
                                                 <!-- Price/PCS -->
                                                 <div>
@@ -919,9 +918,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 
                                             </div>
                                             <!-- Freebie Section (Hidden by Default) -->
-                                            <div
-                                                class="freebie-grid grid hidden grid-cols-1 gap-4 md:grid-cols-3"
-                                                data-index="{{ $i }}">
+                                            <div class="freebie-grid grid hidden grid-cols-2 gap-3 md:grid-cols-3" data-index="{{ $i }}">
 
                                                 {{-- Scheme --}}
                                                 <div>
@@ -1064,8 +1061,8 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                             class="readonly-side">
                                             <label class="mb-1 text-sm font-medium">Item Breakdown</label>
                                             <div
-                                                class="mb-2 flex w-full flex-col justify-between space-y-2 rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1"
-                                                style="height: calc(100% - 5.5%);">
+                                                class="mb-2 flex h-auto w-full flex-col justify-between space-y-2 rounded border border-gray-200 bg-white p-4 pb-0 transition-all duration-300 md:col-span-1 md:h-[calc(100%-5.5%)]">
+
                                                 <div class="space-y-2">
                                                     <!-- Price -->
                                                     <div class="flex items-start justify-between">
@@ -1170,56 +1167,57 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                             </div>
                                         </div>
                                     </div>
-
-                                    <table
-                                        id="summary-table"
-                                        class="summary-table hidden w-full overflow-hidden rounded border border-gray-300 bg-white text-sm shadow-sm">
-                                        <thead class="bg-gray-100 text-xs uppercase text-gray-700">
-                                            <tr>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-left">SKU</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-left">Item Description</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-center">Scheme</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-center">Price/PC</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-center">Price</th>
-                                                <th
-                                                    colspan="4"
-                                                    class="border px-2 py-1 text-center">Order in Cases</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-center">discount</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-center">Amount</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-left">Remarks</th>
-                                                <th
-                                                    rowspan="2"
-                                                    class="border px-2 py-1 text-left">Store Order No.</th>
-                                            </tr>
-                                            <tr>
-                                                <th class="border px-2 py-1 text-center">QTY/PC</th>
-                                                <th class="border px-2 py-1 text-center">QTY/CS</th>
-                                                <th class="border px-2 py-1 text-center">Freebies</th>
-                                                <th class="border px-2 py-1 text-center">Total QTY</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody
-                                            id="summary-body"
-                                            class="summary-body divide-y divide-gray-200">
-                                            <!-- JS will inject rows here -->
-                                        </tbody>
-                                    </table>
+                                    <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                                        <table
+                                            id="summary-table"
+                                            class="summary-table hidden w-full overflow-hidden rounded border border-gray-300 bg-white text-sm shadow-sm">
+                                            <thead class="bg-gray-100 text-xs uppercase text-gray-700">
+                                                <tr>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-left">SKU</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-left">Item Description</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-center">Scheme</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-center">Price/PC</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-center">Price</th>
+                                                    <th
+                                                        colspan="4"
+                                                        class="border px-2 py-1 text-center">Order in Cases</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-center">discount</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-center">Amount</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-left">Remarks</th>
+                                                    <th
+                                                        rowspan="2"
+                                                        class="border px-2 py-1 text-left">Store Order No.</th>
+                                                </tr>
+                                                <tr>
+                                                    <th class="border px-2 py-1 text-center">QTY/PC</th>
+                                                    <th class="border px-2 py-1 text-center">QTY/CS</th>
+                                                    <th class="border px-2 py-1 text-center">Freebies</th>
+                                                    <th class="border px-2 py-1 text-center">Total QTY</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody
+                                                id="summary-body"
+                                                class="summary-body divide-y divide-gray-200">
+                                                <!-- JS will inject rows here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -1269,8 +1267,8 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 										</div> --}}
 
                     <!-- Submit Row: Comment + Button -->
-                    <div class="flex items-end gap-4">
-                        <div class="flex-1">
+                    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
+                        <div class="min-w-0 flex-1">
                             <label for="comment" class="mb-1 block text-sm font-medium text-gray-700">
                                 Transfer Comment <span class="text-xs font-normal text-gray-400">(optional)</span>
                             </label>
@@ -1283,10 +1281,8 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                 class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300">{{ old('comment') }}</textarea>
                         </div>
 
-                        <button
-                            id="submitBtn"
-                            type="submit"
-                            class="m-2 flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-4 font-medium text-white transition duration-1000 hover:scale-[1.02] hover:shadow-lg">
+                        <button id="submitBtn" type="submit"
+                            class="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 font-medium text-white transition duration-1000 hover:scale-[1.02] hover:shadow-lg sm:w-auto sm:shrink-0">
                             Submit Order
                         </button>
                     </div>
