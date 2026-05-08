@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                           INFO SECTIONS — uniform mobile layout
-                           Below 768 px: sections stack cleanly; each
-                           field becomes a horizontal label → value row
-                           with a subtle underline separator.
-                           ══════════════════════════════════════════════ */
+                                   INFO SECTIONS — uniform mobile layout
+                                   Below 768 px: sections stack cleanly; each
+                                   field becomes a horizontal label → value row
+                                   with a subtle underline separator.
+                                   ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -3967,12 +3967,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                               MOBILE CARD LAYOUT — items table (2-column grid)
-                               Below 1024 px: table rows become cards with a 2-column
-                               form-like grid. Labels sit above their values, aligned
-                               left. All JS (data-field, contenteditable, hidden inputs)
-                               is untouched — only CSS display changes.
-                               ══════════════════════════════════════════════ */
+                                       MOBILE CARD LAYOUT — items table (2-column grid)
+                                       Below 1024 px: table rows become cards with a 2-column
+                                       form-like grid. Labels sit above their values, aligned
+                                       left. All JS (data-field, contenteditable, hidden inputs)
+                                       is untouched — only CSS display changes.
+                                       ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */

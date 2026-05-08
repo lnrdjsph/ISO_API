@@ -14,6 +14,11 @@ class ContentSecurityPolicyWithEval
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip CSP entirely in development
+        if (!app()->environment('production')) {
+            return $next($request);
+        }
+
         // Allow CSP to be disabled for specific routes if needed
         if ($request->routeIs('orders.approve')) {
             // For approve route, we can use a more permissive policy
@@ -40,11 +45,6 @@ class ContentSecurityPolicyWithEval
 
             return $response;
         }
-
-        // For non-production, skip strict CSP
-        // if (!app()->environment('production')) {
-        //     return $next($request);
-        // }
 
         // Default CSP for other routes (still without unsafe-eval)
         $nonce = $request->attributes->get('csp_nonce', base64_encode(random_bytes(16)));
