@@ -1345,6 +1345,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         });
         if (!window.orderScriptInitialized) {
             window.orderScriptInitialized = true;
+
+            function triggerFreebieSearch($input) {
+                if ($input.val().trim().length >= 2) {
+                    $input.trigger('keyup');
+                }
+            }
+
             let rowIndex = 1;
 
             document.addEventListener('DOMContentLoaded', function() {
@@ -1438,6 +1445,14 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                         updateCounter();
                         updateRowNumbers();
                         attachCollapseListener(newRow);
+
+
+                        setTimeout(function() {
+                            const $newFreebie = $(newRow).find('.freebie-search');
+                            if ($newFreebie.length) {
+                                triggerFreebieSearch($newFreebie);
+                            }
+                        }, 200);
 
                         // IMPORTANT: Attach sale type listener to new row
                         attachSaleTypeListener(newRow);
@@ -1973,89 +1988,94 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         });
         let debounceTimeout;
 
-        // 🔍 Product search on keyup/focus (main + freebie)
-        // 🔍 Product search on keyup/focus (main + freebie)
-        $(document).on('keyup focus', '.product-search, .freebie-search', function() {
-            clearTimeout(debounceTimeout);
+        // 🔍 Reusable product search (callable directly, no debounce)
+        function performProductSearch($input) {
+            const query = $input.val().trim().toLowerCase();
+            const resultList = $input.siblings('.search-results');
 
-            const input = $(this);
-            const query = input.val().trim().toLowerCase();
-            const resultList = input.siblings('.search-results');
+            if (query.length < 2) {
+                resultList.empty().addClass('hidden');
+                return;
+            }
 
-            // ✅ Get the current requesting store from the form
             const requestingStore = $('select[name="requesting_store"]').val() ||
                 $('input[name="requesting_store"]').val();
 
-            if (query.length >= 2) {
-                debounceTimeout = setTimeout(() => {
-                    input.addClass('animate-pulse');
-                    resultList.removeClass('hidden').html(`
-                <li class="px-6 py-4 text-gray-600 flex items-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Searching...
-                </li>
-            `);
+            $input.addClass('animate-pulse');
+            resultList.removeClass('hidden').html(`
+        <li class="px-6 py-4 text-gray-600 flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Searching...
+        </li>
+    `);
 
-                    $.ajax({
-                        url: '{{ route('forms.sof_search') }}',
-                        data: {
-                            query: query,
-                            store_code: requestingStore // ✅ Pass the requesting store
-                        },
-                        success: function(data) {
-                            input.removeClass('animate-pulse');
-                            resultList.removeClass('glow-effect');
-                            void resultList[0].offsetWidth;
-                            resultList.addClass('glow-effect');
-                            resultList.empty();
+            $.ajax({
+                url: '{{ route('forms.sof_search') }}',
+                data: {
+                    query: query,
+                    store_code: requestingStore
+                },
+                success: function(data) {
+                    $input.removeClass('animate-pulse');
+                    resultList.removeClass('glow-effect');
+                    void resultList[0].offsetWidth;
+                    resultList.addClass('glow-effect');
+                    resultList.empty();
 
-                            const cleanedQuery = query.replace(/[^a-z0-9]/gi, ' ').toLowerCase().trim();
-                            const queryWords = cleanedQuery.split(/\s+/);
+                    const cleanedQuery = query.replace(/[^a-z0-9]/gi, ' ').toLowerCase().trim();
+                    const queryWords = cleanedQuery.split(/\s+/);
 
-                            const filtered = data.filter(item => {
-                                const combined = `
-                            ${item.sku}
-                            ${item.description}
-                            ${item.department ?? ''}
-                            ${item.department_code ?? ''}
-                        `.replace(/[^a-z0-9]/gi, ' ').toLowerCase();
-
-                                return queryWords.some(word => combined.includes(word));
-                            });
-
-                            if (filtered.length === 0) {
-                                resultList.append(`<li class="px-6 py-4 text-gray-500 text-center">No products found</li>`);
-                            } else {
-                                filtered.forEach(product => {
-                                    resultList.append(`
-                                <li class="product-item px-4 py-2 hover:bg-gray-100 cursor-pointer transition-all"
-                                    data-sku="${product.sku}"
-                                    data-description="${product.description}"
-                                    data-srp="${product.srp}"
-                                    data-case_pack="${product.case_pack}"
-                                    data-allocation_per_case="${product.allocation_per_case}"
-                                    data-cash_bank_card_scheme="${product.cash_bank_card_scheme}"
-                                    data-po15_scheme="${product.po15_scheme}"
-                                    data-freebie_sku="${product.freebie_sku}"
-                                    data-discount_scheme="${product.discount_scheme}">
-                                    <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
-                                    ${product.description}
-                                </li>
-                            `);
-                                });
-                            }
-                        },
-                        error: function() {
-                            input.removeClass('animate-pulse');
-                            resultList.html(`<li class="px-6 py-4 text-red-600 text-center">Search failed</li>`);
-                        }
+                    const filtered = data.filter(item => {
+                        const combined = `
+                    ${item.sku}
+                    ${item.description}
+                    ${item.department ?? ''}
+                    ${item.department_code ?? ''}
+                `.replace(/[^a-z0-9]/gi, ' ').toLowerCase();
+                        return queryWords.some(word => combined.includes(word));
                     });
-                }, 300);
+
+                    if (filtered.length === 0) {
+                        resultList.append(`<li class="px-6 py-4 text-gray-500 text-center">No products found</li>`);
+                    } else {
+                        filtered.forEach(product => {
+                            resultList.append(`
+                        <li class="product-item px-4 py-2 hover:bg-gray-100 cursor-pointer transition-all"
+                            data-sku="${product.sku}"
+                            data-description="${product.description}"
+                            data-srp="${product.srp}"
+                            data-case_pack="${product.case_pack}"
+                            data-allocation_per_case="${product.allocation_per_case}"
+                            data-cash_bank_card_scheme="${product.cash_bank_card_scheme}"
+                            data-po15_scheme="${product.po15_scheme}"
+                            data-freebie_sku="${product.freebie_sku}"
+                            data-discount_scheme="${product.discount_scheme}">
+                            <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded mr-2">${product.sku}</span>
+                            ${product.description}
+                        </li>
+                    `);
+                        });
+                    }
+                },
+                error: function() {
+                    $input.removeClass('animate-pulse');
+                    resultList.html(`<li class="px-6 py-4 text-red-600 text-center">Search failed</li>`);
+                }
+            });
+        }
+
+        // Debounced keyup/focus (for typing)
+        $(document).on('keyup focus', '.product-search, .freebie-search', function() {
+            clearTimeout(debounceTimeout);
+            const $input = $(this);
+
+            if ($input.val().trim().length >= 2) {
+                debounceTimeout = setTimeout(() => performProductSearch($input), 300);
             } else {
-                resultList.empty().addClass('hidden');
+                $input.siblings('.search-results').empty().addClass('hidden');
             }
         });
 
@@ -2146,11 +2166,8 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 // Auto-populate freebie SKU if available
                 if (freebieSku) {
                     const freebieInput = row.find('.freebie-search');
-                    const resultList = freebieInput.siblings('.search-results');
-
                     freebieInput.val(freebieSku);
-                    resultList.empty().removeClass('hidden');
-                    freebieInput.trigger('keyup');
+                    performProductSearch(freebieInput); // direct call — bypasses debounce/timer conflict
                 }
             }
 
@@ -2174,10 +2191,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                     const parts = val.split('|').map(p => p.trim()).filter(p => p !== "");
                     parts.forEach(p => {
                         resultList.append(`
-<li class="px-3 py-1 border rounded-lg cursor-pointer hover:bg-gray-100 transition whitespace-nowrap"
-    data-value="${p}">
-    ${p}
-</li>
+        <li class="px-3 py-1 border rounded-lg cursor-pointer hover:bg-gray-100 transition whitespace-nowrap"
+            data-value="${p}">
+            ${p}
+        </li>
                 `);
                     });
                     resultList.removeClass('hidden');
@@ -2345,7 +2362,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
         <td class="border px-2 py-1 text-center">0.00</td>
         <td class="border px-2 py-1">${remarks}</td>
         <td class="border px-2 py-1">${soNumber}</td>
-    `;
+        `;
                         summaryBody.appendChild(freebieRow);
                     }
 
@@ -2631,92 +2648,99 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             // Initialize input highlighting
             setupInputHighlighting();
 
-            addButton.addEventListener('click', function() {
-                const container = document.getElementById('order-items');
-                const newRow = container.children[0].cloneNode(true);
-                console.log('Adding new order row (with highlight reset)');
-                // Reset input values and update input names
-                newRow.querySelectorAll('input').forEach(input => {
-                    input.value = '';
-                    input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
-                    input.removeAttribute('data-selected');
+            // addButton.addEventListener('click', function() {
+            //     const container = document.getElementById('order-items');
+            //     const newRow = container.children[0].cloneNode(true);
+            //     console.log('Adding new order row (with highlight reset)');
+            //     // Reset input values and update input names
+            //     newRow.querySelectorAll('input').forEach(input => {
+            //         input.value = '';
+            //         input.name = input.name.replace(/\[\d+]/g, `[${rowIndex}]`);
+            //         input.removeAttribute('data-selected');
 
 
-                    // Reset background classes for new row
-                    input.classList.remove('bg-indigo-50', 'border-indigo-300');
-                    if (
-                        input.hasAttribute('x-model') &&
-                        (
-                            input.getAttribute('x-model').includes('qty') ||
-                            input.getAttribute('x-model').includes('discount')
-                        )
-                    ) {
-                        input.classList.add('bg-yellow-50');
-                    } else if (!input.hasAttribute('readonly') && input.type !== 'hidden') {
-                        input.classList.add('bg-white');
-                    }
-                });
+            //         // Reset background classes for new row
+            //         input.classList.remove('bg-indigo-50', 'border-indigo-300');
+            //         if (
+            //             input.hasAttribute('x-model') &&
+            //             (
+            //                 input.getAttribute('x-model').includes('qty') ||
+            //                 input.getAttribute('x-model').includes('discount')
+            //             )
+            //         ) {
+            //             input.classList.add('bg-yellow-50');
+            //         } else if (!input.hasAttribute('readonly') && input.type !== 'hidden') {
+            //             input.classList.add('bg-white');
+            //         }
+            //     });
 
-                // Reset select elements
-                newRow.querySelectorAll('select').forEach(select => {
-                    select.selectedIndex = 0;
-                    select.classList.remove('bg-indigo-50', 'border-indigo-300');
-                    select.classList.add('bg-white');
-                });
+            //     // Reset select elements
+            //     newRow.querySelectorAll('select').forEach(select => {
+            //         select.selectedIndex = 0;
+            //         select.classList.remove('bg-indigo-50', 'border-indigo-300');
+            //         select.classList.add('bg-white');
+            //     });
 
-                // Reset output display spans
-                newRow.querySelector('.price-display').textContent = '0.00';
-                newRow.querySelector('.amount-display').textContent = '0.00';
-                newRow.querySelector('.total-qty-display').textContent = '0';
+            //     // Reset output display spans
+            //     newRow.querySelector('.price-display').textContent = '0.00';
+            //     newRow.querySelector('.amount-display').textContent = '0.00';
+            //     newRow.querySelector('.total-qty-display').textContent = '0';
 
-                // Reset summary table
-                const summaryTableBody = newRow.querySelector('.summary-body');
-                if (summaryTableBody) {
-                    summaryTableBody.innerHTML = '';
-                }
-                newRow.querySelector('.breakdown-price').textContent = '';
-                newRow.querySelector('.breakdown-amount').textContent = '';
+            //     // Reset summary table
+            //     const summaryTableBody = newRow.querySelector('.summary-body');
+            //     if (summaryTableBody) {
+            //         summaryTableBody.innerHTML = '';
+            //     }
+            //     newRow.querySelector('.breakdown-price').textContent = '';
+            //     newRow.querySelector('.breakdown-amount').textContent = '';
 
-                // Hide any open dropdowns
-                newRow.querySelectorAll('.sku-results, .desc-results, .search-results').forEach(ul => {
-                    ul.innerHTML = '';
-                    ul.classList.add('hidden');
-                });
+            //     // Hide any open dropdowns
+            //     newRow.querySelectorAll('.sku-results, .desc-results, .search-results').forEach(ul => {
+            //         ul.innerHTML = '';
+            //         ul.classList.add('hidden');
+            //     });
 
-                // Apply initial hidden state for animation
-                newRow.classList.add('overflow-hidden', 'transition-all', 'duration-300', 'ease-in-out');
-                newRow.classList.remove('max-h-[1000px]', 'opacity-100', 'py-4', 'mb-6');
-                newRow.classList.add('max-h-0', 'opacity-0', 'py-0', 'mb-0');
+            //     // Apply initial hidden state for animation
+            //     newRow.classList.add('overflow-hidden', 'transition-all', 'duration-300', 'ease-in-out');
+            //     newRow.classList.remove('max-h-[1000px]', 'opacity-100', 'py-4', 'mb-6');
+            //     newRow.classList.add('max-h-0', 'opacity-0', 'py-0', 'mb-0');
 
-                container.appendChild(newRow);
+            //     container.appendChild(newRow);
 
-                // Force reflow to properly trigger animation
-                void newRow.offsetWidth;
+            //     // Force reflow to properly trigger animation
+            //     void newRow.offsetWidth;
 
-                // Trigger the visible state
-                newRow.classList.replace('max-h-0', 'max-h-[1000px]');
-                newRow.classList.replace('opacity-0', 'opacity-100');
-                newRow.classList.replace('py-0', 'py-4');
-                newRow.classList.replace('mb-0', 'mb-6');
+            //     // Trigger the visible state
+            //     newRow.classList.replace('max-h-0', 'max-h-[1000px]');
+            //     newRow.classList.replace('opacity-0', 'opacity-100');
+            //     newRow.classList.replace('py-0', 'py-4');
+            //     newRow.classList.replace('mb-0', 'mb-6');
 
-                rowIndex = document.querySelectorAll('.order-row').length;
+            //     rowIndex = document.querySelectorAll('.order-row').length;
 
-                updateRemoveButtonsState();
-                updateCounter();
-                updateRowNumbers();
-                attachCollapseListener(newRow);
+            //     updateRemoveButtonsState();
+            //     updateCounter();
+            //     updateRowNumbers();
+            //     attachCollapseListener(newRow);
 
-                // Setup highlighting for the new row
-                setTimeout(() => {
-                    setupContainerListeners(newRow);
-                    // Force a check after the row is fully set up
-                    setTimeout(() => {
-                        if (window.checkInputHighlights) {
-                            window.checkInputHighlights();
-                        }
-                    }, 200);
-                }, 100);
-            });
+            //     setTimeout(function() {
+            //         const $newFreebie = $(newRow).find('.freebie-search');
+            //         if ($newFreebie.length) {
+            //             triggerFreebieSearch($newFreebie);
+            //         }
+            //     }, 200);
+
+            //     // Setup highlighting for the new row
+            //     setTimeout(() => {
+            //         setupContainerListeners(newRow);
+            //         // Force a check after the row is fully set up
+            //         setTimeout(() => {
+            //             if (window.checkInputHighlights) {
+            //                 window.checkInputHighlights();
+            //             }
+            //         }, 200);
+            //     }, 100);
+            // });
 
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.remove-row')) {
@@ -2746,6 +2770,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             updateRemoveButtonsState();
             updateCounter();
             updateRowNumbers();
+
+            $('.freebie-search').each(function() {
+                triggerFreebieSearch($(this));
+            });
 
             function formatAmount(value) {
                 // Remove any existing ₱ symbol, commas, and trim whitespace
