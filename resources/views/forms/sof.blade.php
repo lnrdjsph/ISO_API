@@ -97,7 +97,8 @@
 
                                 $dropdownStores = $isSuperAdmin ? $locationMap : array_intersect_key($locationMap, array_flip($regionStores));
 
-                                $selectedRequestingStore = old('requesting_store', $isSuperAdmin ? $userLocation ?? '' : '');
+                                $defaultStore = $isSuperAdmin ? $userLocation ?? '' : '';
+                                $selectedRequestingStore = old('requesting_store', $defaultStore);
                             @endphp
 
                             <div class="relative mb-6 w-full">
@@ -108,7 +109,7 @@
                                         class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
                                         <option value="" disabled {{ $selectedRequestingStore === '' ? 'selected' : '' }}>Select Store</option>
                                         @foreach ($dropdownStores as $code => $name)
-                                            <option value="{{ $code }}" {{ $selectedRequestingStore === $code ?: '' }}>
+                                            <option value="{{ $code }}" {{ old('requesting_store', $selectedRequestingStore) == $code ? 'selected' : '' }}>
                                                 {{ $code }} - {{ $name }}
                                             </option>
                                         @endforeach
@@ -117,19 +118,19 @@
                                         Requesting Store
                                     </label>
                                 @else
-                                    <input type="hidden" name="requesting_store" value="{{ $userLocation }}" />
+                                    @php
+                                        $storeValue = old('requesting_store', $userLocation);
+                                    @endphp
+
+                                    <input type="hidden" name="requesting_store" value="{{ $storeValue }}" />
+
                                     <input
                                         id="requesting_store_view"
-                                        value="{{ $mappedLocation }}"
+                                        value="{{ $locationMap[$storeValue] ?? $storeValue }}"
                                         type="text"
                                         readonly
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
                                         placeholder="Requesting Store" />
-                                    <label
-                                        for="requesting_store"
-                                        class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                                        Requesting Store
-                                    </label>
                                 @endif
                             </div>
                             <div class="relative mb-6 w-full">
@@ -251,6 +252,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                     value="{{ old('time_order', date('Y-m-d\TH:i')) }}"
                                     type="datetime-local"
                                     name="time_order"
+                                    id="time_order"
                                     class="datepicker required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
                                     placeholder=" " />
                                 <label
@@ -258,6 +260,69 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                     Date & Time of Order
                                 </label>
                             </div>
+
+                            <script nonce="{{ $cspNonce ?? '' }}">
+                                (function() {
+                                    const datetimeInput = document.getElementById('time_order');
+                                    if (!datetimeInput) return;
+
+                                    // Get today's date in YYYY-MM-DD format (ignoring time)
+                                    const today = new Date();
+                                    const year = today.getFullYear();
+                                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                                    const day = String(today.getDate()).padStart(2, '0');
+                                    const todayFormatted = `${year}-${month}-${day}`;
+
+                                    // Set the min attribute to today's date (disables past dates in picker UI)
+                                    datetimeInput.setAttribute('min', `${todayFormatted}T00:00`);
+
+                                    // Store the last valid value
+                                    let lastValidValue = datetimeInput.value;
+
+                                    // Function to check if date portion is valid (today or future) - ignores time
+                                    function isValidDate(dateTimeValue) {
+                                        if (!dateTimeValue) return true;
+                                        const datePart = dateTimeValue.split('T')[0];
+                                        return datePart >= todayFormatted;
+                                    }
+
+                                    // Validate when leaving the input (blur event) with SweetAlert
+                                    datetimeInput.addEventListener('blur', function() {
+                                        if (datetimeInput.value && !isValidDate(datetimeInput.value)) {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Invalid Date',
+                                                text: 'Please select today or a future date. Past dates are not allowed.',
+                                                confirmButtonColor: '#3085d6',
+                                                confirmButtonText: 'OK'
+                                            });
+                                            datetimeInput.value = lastValidValue;
+                                        } else {
+                                            lastValidValue = datetimeInput.value;
+                                        }
+                                    });
+
+                                    // Update last valid value on change (when user picks from datetime picker)
+                                    datetimeInput.addEventListener('change', function() {
+                                        if (datetimeInput.value && isValidDate(datetimeInput.value)) {
+                                            lastValidValue = datetimeInput.value;
+                                        }
+                                    });
+
+                                    // Initial validation in case the pre-filled value is a past date
+                                    if (datetimeInput.value && !isValidDate(datetimeInput.value)) {
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Invalid Pre-filled Date',
+                                            text: 'The pre-filled order date is in the past. Please select a valid date.',
+                                            confirmButtonColor: '#3085d6',
+                                            confirmButtonText: 'OK'
+                                        });
+                                        datetimeInput.value = '';
+                                        lastValidValue = '';
+                                    }
+                                })();
+                            </script>
 
 
 
@@ -453,7 +518,8 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                 // Reuses $locationMap, $userLocation, $isSuperAdmin, $hasRegion,
                                 // $regionStores, $dropdownStores, $mappedLocation from Request Details above
 
-                                $selectedPaymentCenter = old('payment_center', $hasRegion || $isSuperAdmin ? '' : $userLocation);
+                                // Default value: empty for users who can select, otherwise user's location
+$defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                             @endphp
 
                             <div class="relative mb-6 w-full">
@@ -462,20 +528,25 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                         name="payment_center"
                                         id="payment_center"
                                         class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
-                                        <option value="" disabled {{ $selectedPaymentCenter === '' ? 'selected' : '' }}>Select Payment Center</option>
+                                        <option value="" disabled {{ old('payment_center', $defaultPaymentCenter) === '' ? 'selected' : '' }}>
+                                            Select Payment Center
+                                        </option>
                                         @foreach ($dropdownStores as $code => $name)
-                                            <option value="{{ $code }}" {{ $selectedPaymentCenter === $code ? 'selected' : '' }}>
+                                            <option value="{{ $code }}" {{ old('payment_center', $defaultPaymentCenter) == $code ? 'selected' : '' }}>
                                                 {{ $code }} - {{ $name }}
                                             </option>
                                         @endforeach
                                     </select>
                                 @else
-                                    <input type="hidden" name="payment_center" value="{{ $selectedPaymentCenter }}" />
+                                    @php
+                                        $submittedValue = old('payment_center', $userLocation);
+                                    @endphp
+                                    <input type="hidden" name="payment_center" value="{{ $submittedValue }}" />
                                     <input
                                         id="payment_center_display"
                                         type="text"
                                         readonly
-                                        value="{{ $locationMap[$selectedPaymentCenter] ?? $selectedPaymentCenter }}"
+                                        value="{{ $locationMap[$submittedValue] ?? $submittedValue }}"
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
                                         placeholder="Payment Center" />
                                 @endif
@@ -516,22 +587,81 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                     Mode of Payment
                                 </label>
                             </div>
-
                             <!-- Payment Date -->
                             <div class="relative">
                                 <input
                                     type="date"
                                     name="payment_date"
+                                    id="payment_date"
                                     value="{{ old('payment_date', $currentDate) }}"
-                                    x-data="{ value: '{{ old('payment_date') }}' }"
-                                    x-model="value"
                                     class="required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900">
                                 <label
-                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600"
-                                    :class="value ? 'top-1 text-xs text-blue-600' : ''">
+                                    for="payment_date"
+                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
                                     Payment Date
                                 </label>
                             </div>
+
+                            <script nonce="{{ $cspNonce ?? '' }}">
+                                (function() {
+                                    const paymentDateInput = document.getElementById('payment_date');
+                                    if (!paymentDateInput) return;
+
+                                    // Get today's date in YYYY-MM-DD format
+                                    const today = new Date();
+                                    const year = today.getFullYear();
+                                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                                    const day = String(today.getDate()).padStart(2, '0');
+                                    const todayFormatted = `${year}-${month}-${day}`;
+
+                                    // Set the min attribute to disable past dates in the date picker UI
+                                    paymentDateInput.setAttribute('min', todayFormatted);
+
+                                    // Store the last valid value
+                                    let lastValidValue = paymentDateInput.value;
+
+                                    // Function to check if date is valid (today or future)
+                                    function isValidDate(dateValue) {
+                                        return !dateValue || dateValue >= todayFormatted;
+                                    }
+
+                                    // Validate when leaving the input (blur event) with SweetAlert
+                                    paymentDateInput.addEventListener('blur', function() {
+                                        if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Invalid Date',
+                                                text: 'Please select today or a future date. Past dates are not allowed.',
+                                                confirmButtonColor: '#3085d6',
+                                                confirmButtonText: 'OK'
+                                            });
+                                            paymentDateInput.value = lastValidValue;
+                                        } else {
+                                            lastValidValue = paymentDateInput.value;
+                                        }
+                                    });
+
+                                    // Update last valid value on change (when user picks from date picker)
+                                    paymentDateInput.addEventListener('change', function() {
+                                        if (paymentDateInput.value && paymentDateInput.value >= todayFormatted) {
+                                            lastValidValue = paymentDateInput.value;
+                                        }
+                                    });
+
+                                    // Initial validation in case the pre-filled value is a past date
+                                    if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Invalid Pre-filled Date',
+                                            text: 'The pre-filled payment date is in the past. Please select a valid date.',
+                                            confirmButtonColor: '#3085d6',
+                                            confirmButtonText: 'OK'
+                                        });
+                                        paymentDateInput.value = '';
+                                        lastValidValue = '';
+                                    }
+                                })();
+                            </script>
 
                         </div>
                     </section>
@@ -557,6 +687,67 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                     Delivery/Pick-up Date
                                 </label>
                             </div>
+
+                            <script nonce="{{ $cspNonce ?? '' }}">
+                                (function() {
+                                    const dateInput = document.getElementById('delivery_date');
+                                    if (!dateInput) return;
+
+                                    // Get today's date in YYYY-MM-DD format
+                                    const today = new Date();
+                                    const year = today.getFullYear();
+                                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                                    const day = String(today.getDate()).padStart(2, '0');
+                                    const todayFormatted = `${year}-${month}-${day}`;
+
+                                    // Set the min attribute to disable past dates in the date picker UI
+                                    dateInput.setAttribute('min', todayFormatted);
+
+                                    // Store the last valid value
+                                    let lastValidValue = dateInput.value;
+
+                                    // Function to check if date is valid (today or future)
+                                    function isValidDate(dateValue) {
+                                        return !dateValue || dateValue >= todayFormatted;
+                                    }
+
+                                    // Validate when leaving the input (blur event) with SweetAlert
+                                    dateInput.addEventListener('blur', function() {
+                                        if (dateInput.value && dateInput.value < todayFormatted) {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Invalid Date',
+                                                text: 'Please select today or a future date. Past dates are not allowed for delivery/pick-up.',
+                                                confirmButtonColor: '#3085d6',
+                                                confirmButtonText: 'OK'
+                                            });
+                                            dateInput.value = lastValidValue;
+                                        } else {
+                                            lastValidValue = dateInput.value;
+                                        }
+                                    });
+
+                                    // Update last valid value on change (when user picks from date picker)
+                                    dateInput.addEventListener('change', function() {
+                                        if (dateInput.value && dateInput.value >= todayFormatted) {
+                                            lastValidValue = dateInput.value;
+                                        }
+                                    });
+
+                                    // Initial validation in case the pre-filled value is a past date
+                                    if (dateInput.value && dateInput.value < todayFormatted) {
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Invalid Pre-filled Date',
+                                            text: 'The pre-filled delivery date is in the past. Please select a valid date.',
+                                            confirmButtonColor: '#3085d6',
+                                            confirmButtonText: 'OK'
+                                        });
+                                        dateInput.value = '';
+                                        lastValidValue = '';
+                                    }
+                                })();
+                            </script>
                             <!-- Mode of Dispatching -->
                             <div class="relative">
                                 <select
@@ -1008,35 +1199,32 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
 
                                             <div class="grid grid-cols-1 gap-4 md:grid-cols-1">
 
-                                                <!-- Remarks Dropdown -->
+                                                <!-- Remarks Input with Suggestions -->
+
                                                 <div>
-                                                    <label class="mb-1 block text-sm font-medium">Remarks</label>
+                                                    <label class="mb-1 block text-sm font-medium">Item Comments</label>
+
                                                     @php
-                                                        // Default now set to "For SO (Special Order)"
-                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? 'For RMS Approval');
+                                                        // Default value
+                                                        $selectedRemarks = old("orders.$i.remarks", $order['remarks'] ?? '');
                                                     @endphp
 
-                                                    <select
+                                                    <input
+                                                        type="text"
                                                         name="orders[{{ $i }}][remarks]"
-                                                        class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900">
+                                                        value="{{ $selectedRemarks }}"
+                                                        list="remarks-suggestions"
+                                                        class="w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+                                                        placeholder="Enter Item Comments here..." />
 
-                                                        <option value="" disabled {{ $selectedRemarks === '' ? 'selected' : '' }}>
-                                                            Select remarks
-                                                        </option>
-                                                        <option value="For RMS Approval"
-                                                            {{ $selectedRemarks === 'For RMS Approval' ? 'selected' : '' }}>
-                                                            For RMS Approval
-                                                        </option>
-
-                                                        <option value="For SO (Special Order)"
-                                                            {{ $selectedRemarks === 'For SO (Special Order)' ? 'selected' : '' }}>
-                                                            For SO (Special Order)
-                                                        </option>
-
-
-                                                    </select>
-
-
+                                                    <datalist id="remarks-suggestions">
+                                                        <option value="For RMS Approval">
+                                                        <option value="For SO (Special Order)">
+                                                        <option value="Urgent">
+                                                        <option value="Priority">
+                                                        <option value="Fragile">
+                                                        <option value="Express Delivery">
+                                                    </datalist>
                                                 </div>
 
                                                 <!-- Store Order No. -->
@@ -1270,7 +1458,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                     <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
                         <div class="min-w-0 flex-1">
                             <label for="comment" class="mb-1 block text-sm font-medium text-gray-700">
-                                Transfer Comment <span class="text-xs font-normal text-gray-400">(optional)</span>
+                                Order Comment <span class="text-xs font-normal text-gray-400">(optional)</span>
                             </label>
                             <textarea
                                 id="comment"
