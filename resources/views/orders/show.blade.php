@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                               INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                               Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                               field becomes a horizontal label → value row
-                                                                                                                                                                                                               with a subtle underline separator.
-                                                                                                                                                                                                               ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                           INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                           Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                           field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                           with a subtle underline separator.
+                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -2644,7 +2644,28 @@
                 const LOCK_STATUSES = ["approved", "completed", "for approval", "cancelled"];
                 const ORDER_STATUS = "{{ $order->order_status }}".toLowerCase();
                 const USER_ROLE = "{{ Auth::user()->role }}".toLowerCase();
-                const IS_LOCKED = (LOCK_STATUSES.includes(ORDER_STATUS) && USER_ROLE !== 'super admin') || USER_ROLE.includes('warehouse');
+
+                // Does any non-cancelled item already have a transfer number?
+                @php
+                    $hasAnyTransferNo = $order->items->contains(function ($item) {
+                        return !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
+                    });
+                @endphp
+                const HAS_TRANSFER_NO = {{ $hasAnyTransferNo ? 'true' : 'false' }};
+                const IS_WAREHOUSE = USER_ROLE.includes('warehouse');
+
+                // Store personnel get a partial unlock on an approved order ONLY while no
+                // transfer number exists yet — limited to Customer / Payment / Delivery info.
+                const PARTIAL_UNLOCK =
+                    ORDER_STATUS === 'approved' &&
+                    !HAS_TRANSFER_NO &&
+                    !IS_WAREHOUSE &&
+                    USER_ROLE !== 'super admin';
+
+                const IS_LOCKED = (LOCK_STATUSES.includes(ORDER_STATUS) && USER_ROLE !== 'super admin') || IS_WAREHOUSE;
+
+                // Item table must lock once any transfer number exists, even on otherwise-editable orders.
+                const ITEMS_LOCKED = IS_LOCKED || HAS_TRANSFER_NO;
 
 
                 if (!IS_LOCKED) {
@@ -2670,7 +2691,7 @@
                 class OrderCalculationSystem {
 
                     constructor() {
-                        if (!IS_LOCKED) {
+                        if (!ITEMS_LOCKED) {
                             this.initializeEventListeners();
                         }
                         this.calculateAllRows();
@@ -3211,7 +3232,7 @@
                 $(document).ready(function() {
                     console.log('📅 Document ready - initializing freebie calculator');
 
-                    if (!IS_LOCKED) {
+                    if (!ITEMS_LOCKED) {
                         initializeFreebieCalculator();
 
                         // Initialize all freebies after a delay
@@ -3241,46 +3262,58 @@
                 // LOCK FUNCTION
                 // ========================================
                 function lockFieldsByStatus() {
-                    if (!IS_LOCKED) return;
-                    console.log('🔒 Locking fields inside component only...');
+                    if (!IS_LOCKED && !ITEMS_LOCKED) return;
+                    console.log('🔒 Locking fields...');
 
-                    // Lock inputs inside container
-                    $container.find('input:not([type="hidden"])').prop('readonly', true).css({
-                        'pointer-events': 'none',
-                        'cursor': 'default'
-                    });
+                    if (IS_LOCKED) {
+                        // Lock inputs (except info-panel inputs when partial-unlocked)
+                        $container.find('input:not([type="hidden"])' + (PARTIAL_UNLOCK ? ':not(.info-section input)' : ''))
+                            .prop('readonly', true).css({
+                                'pointer-events': 'none',
+                                'cursor': 'default'
+                            });
 
-                    // Lock textarea inside container
-                    $container.find('textarea[name="comment"]').prop('readonly', true).css({
-                        'pointer-events': 'none',
-                        'cursor': 'default',
-                        'resize': 'none',
-                        'opacity': '0.7'
-                    });
+                        // Lock comment textarea (skip when partial-unlocked)
+                        if (!PARTIAL_UNLOCK) {
+                            $container.find('textarea[name="comment"]').prop('readonly', true).css({
+                                'pointer-events': 'none',
+                                'cursor': 'default',
+                                'resize': 'none',
+                                'opacity': '0.7'
+                            });
+                        }
 
-                    // Lock selects inside container (except #orderAction which is inside)
-                    $container.find('select').not('#orderAction').prop('disabled', true).css({
-                        'pointer-events': 'none',
-                        'cursor': 'default',
-                        'opacity': '1',
-                        'background-color': 'transparent'
-                    });
+                        // Lock selects (keep info-panel selects when partial-unlocked)
+                        $container.find('select').not('#orderAction')
+                            .filter(function() {
+                                return !(PARTIAL_UNLOCK && $(this).closest('.info-section').length);
+                            })
+                            .prop('disabled', true).css({
+                                'pointer-events': 'none',
+                                'cursor': 'default',
+                                'opacity': '1',
+                                'background-color': 'transparent'
+                            });
+                    }
 
-                    // Lock contenteditable cells inside container
+                    // Item-table cells ALWAYS lock when this function runs (ITEMS_LOCKED or IS_LOCKED)
                     $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
                         'pointer-events': 'none',
                         'cursor': 'default'
                     }).off();
 
-                    // Disable search inside container
                     $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
                         'pointer-events': 'none',
                         'cursor': 'default'
                     }).off();
 
-                    // Hide submit button (inside container)
-                    submitButton.prop('disabled', true).addClass('hidden');
-                    changesCounter.addClass('hidden');
+                    // Submit button
+                    if (PARTIAL_UNLOCK || !IS_LOCKED) {
+                        submitButton.removeClass('hidden');
+                    } else {
+                        submitButton.prop('disabled', true).addClass('hidden');
+                        changesCounter.addClass('hidden');
+                    }
                 }
 
                 // ========================================
@@ -3291,7 +3324,7 @@
                 );
 
                 function initializeOriginalValues() {
-                    if (IS_LOCKED) return;
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) return;
 
                     trackableElements.filter('input, select, textarea').each(function() {
                         const $element = $(this);
@@ -3307,7 +3340,7 @@
                 }
 
                 function updateSubmitButtonState() {
-                    if (IS_LOCKED) return;
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) return;
 
                     if (hasChanges && changesCount > 0) {
                         submitButton.prop('disabled', false)
@@ -3326,7 +3359,7 @@
                 }
 
                 function checkElementChange(element) {
-                    if (IS_LOCKED) return;
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) return;
 
                     const $element = $(element);
 
@@ -3396,7 +3429,7 @@
                 }
 
                 function initializeChangeDetection() {
-                    if (IS_LOCKED) {
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) {
                         console.log('⏭️  Skipping change detection - order is locked');
                         return;
                     }
@@ -3457,6 +3490,7 @@
                     });
 
                     trackableElements.filter('[contenteditable]').on('input blur keyup', function() {
+                        if (ITEMS_LOCKED) return;
                         checkElementChange(this);
 
                         const $this = $(this);
@@ -3479,6 +3513,7 @@
 
                     // Product search functionality
                     $container.on('input blur keyup', 'td[data-field="price_per_pc"]', function(e) {
+                        if (ITEMS_LOCKED) return;
                         const inputCell = $(this);
                         clearTimeout(inputCell.data('debounceTimeout'));
 
@@ -3575,6 +3610,17 @@
                             return e.returnValue;
                         }
                     });
+
+
+                }
+                // Partial unlock: track only info-panel field edits (item table stays locked)
+                if (IS_LOCKED && PARTIAL_UNLOCK) {
+                    $container.find('.info-section')
+                        .find('input:not([type="hidden"]), select')
+                        .add($container.find('textarea[name="comment"]'))
+                        .on('change input keyup', function() {
+                            checkElementChange(this);
+                        });
                 }
 
 
@@ -3647,7 +3693,7 @@
                 // FORM SUBMISSION
                 // ========================================
                 $container.find('form').on('submit', function(e) {
-                    if (IS_LOCKED) return true;
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) return true;
 
                     if (!hasChanges) {
                         e.preventDefault();
@@ -3735,15 +3781,39 @@
                     orderCalculator.calculateAllRows();
                     updateOrderTotal();
 
-                    // Step 2: Either lock OR enable change detection
-                    if (IS_LOCKED) {
+                    // Step 2: lock and/or enable change detection
+                    if (IS_LOCKED || ITEMS_LOCKED) {
                         lockFieldsByStatus();
+                        // Enable change detection for the still-editable fields:
+                        //  - PARTIAL_UNLOCK: info panel on an approved order
+                        //  - !IS_LOCKED: status is editable, only the table is locked
+                        if (PARTIAL_UNLOCK || !IS_LOCKED) {
+                            initializeChangeDetection();
+                        }
                     } else {
                         initializeChangeDetection();
-
                         trackableElements.each(function() {
                             checkElementChange(this);
                         });
+                    }
+
+                    // Item-table cells always lock when ITEMS_LOCKED (transfer number OR locked status)
+                    $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
+                        'pointer-events': 'none',
+                        'cursor': 'default'
+                    }).off();
+
+                    $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
+                        'pointer-events': 'none',
+                        'cursor': 'default'
+                    }).off();
+
+                    // Submit button visibility unchanged
+                    if (PARTIAL_UNLOCK || !IS_LOCKED) {
+                        submitButton.removeClass('hidden');
+                    } else {
+                        submitButton.prop('disabled', true).addClass('hidden');
+                        changesCounter.addClass('hidden');
                     }
 
                     console.log('✅ Initialization complete');
@@ -4188,12 +4258,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                   form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                   is untouched — only CSS display changes.
-                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                               MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                               Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                               form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                               left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                               is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                               ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
