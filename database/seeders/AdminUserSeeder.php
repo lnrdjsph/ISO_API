@@ -21,7 +21,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Biboy',
                 'password' => Hash::make('BIBOY'),
                 'role' => 'super admin',
-                'user_location' => '4002', 
+                'user_location' => '4002',
             ]
         );
 
@@ -31,7 +31,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Gene',
                 'password' => Hash::make('GENE'),
                 'role' => 'super admin',
-                'user_location' => '6012', 
+                'user_location' => '6012',
             ]
         );
         User::updateOrCreate(
@@ -40,7 +40,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Akehide',
                 'password' => Hash::make('AKEHIDE'),
                 'role' => 'super admin',
-                'user_location' => '4002', 
+                'user_location' => '4002',
             ]
         );
         User::updateOrCreate(
@@ -49,16 +49,16 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Store Personnel',
                 'password' => Hash::make('test1'),
                 'role' => 'store personnel',
-                'user_location' => '4002', 
+                'user_location' => '4002',
             ]
         );
         User::updateOrCreate(
             ['email' =>  'test.warehouseadmin@metroretail.ph'],
             [
-                'name' => 'Warehouse Admin',
+                'name' => 'warehouse manager',
                 'password' => Hash::make('test2'),
-                'role' => 'warehouse admin',
-                'user_location' => '6012', 
+                'role' => 'warehouse manager',
+                'user_location' => '6012',
             ]
         );
         User::updateOrCreate(
@@ -67,7 +67,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Warehouse Personnel',
                 'password' => Hash::make('test2'),
                 'role' => 'warehouse personnel',
-                'user_location' => '6012', 
+                'user_location' => '6012',
             ]
         );
         User::updateOrCreate(
@@ -76,7 +76,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Manager - Luzon',
                 'password' => Hash::make('test123'),
                 'role' => 'manager',
-                'user_location' => '6012', 
+                'user_location' => '6012',
             ]
         );
         User::updateOrCreate(
@@ -85,7 +85,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Manager - Visayas',
                 'password' => Hash::make('test123'),
                 'role' => 'manager',
-                'user_location' => '6012', 
+                'user_location' => '6012',
             ]
         );
         User::updateOrCreate(
@@ -94,7 +94,7 @@ class AdminUserSeeder extends Seeder
                 'name' => 'Johnny - Store Personnel',
                 'password' => Hash::make('johnnytest'),
                 'role' => 'store personnel',
-                'user_location' => '4002', 
+                'user_location' => '4002',
             ]
         );
     }

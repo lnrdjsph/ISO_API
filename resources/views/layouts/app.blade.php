@@ -583,16 +583,16 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
                             </svg>
-                            <span class="nav-text">Orders & Forms</span>
+                            <span class="nav-text">Transactions</span>
                             <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                                 <polygon points="8,5 16,12 8,19" />
                             </svg>
-                            <div class="tooltip">Orders & Forms</div>
+                            <div class="tooltip">Transactions</div>
                         </button>
                         <ul class="submenu-accordion">
                             <li><a href="{{ route('orders.index') }}" class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">Sales Order List</a></li>
                             @auth
-                                @if (!in_array(auth()->user()->role, ['manager']))
+                                @if (!in_array(auth()->user()->role, ['manager', 'warehouse personnel']))
                                     <li><a href="{{ route('forms.sof') }}" class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">Sales Order Form</a></li>
                                 @endif
                             @endauth
@@ -626,7 +626,7 @@
 
                     <!-- Inventory (Products) conditional -->
                     @auth
-                        @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel']))
+                        @if (in_array(auth()->user()->role, ['super admin', 'store personnel']))
                             <li class="section-label"><span>Inventory</span></li>
                             <li class="accordion-item" data-accordion="products">
                                 <button class="nav-parent w-full text-left" aria-expanded="false">

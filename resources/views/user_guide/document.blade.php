@@ -1536,7 +1536,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['Super Admin', 'Full system access'], ['Manager', 'Approve/reject, regional reports'], ['Store Admin', 'Store-level management'], ['Store Personnel', 'Create orders, view products'], ['Warehouse Admin', 'Product management + depot filter'], ['Warehouse Personnel', 'View products + depot filter']] as $r)
+                                    @foreach ([['Super Admin', 'Full system access'], ['Manager', 'Approve/reject, regional reports'], ['Store Admin', 'Store-level management'], ['Store Personnel', 'Create orders, view products'], ['warehouse manager', 'Product management + depot filter'], ['Warehouse Personnel', 'View products + depot filter']] as $r)
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-4 py-2.5 font-medium text-gray-800">{{ $r[0] }}</td>
                                             <td class="px-4 py-2.5 text-gray-600">{{ $r[1] }}</td>

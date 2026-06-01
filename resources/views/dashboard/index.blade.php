@@ -343,29 +343,89 @@
                                         @php
                                             // short next-step guidance per status and role
                                             if ($statusKey === 'pending') {
-                                                $next = $isAdmin || $isMgr ? 'Review and approve pending orders.' : 'Provide any missing order details or follow up on payment.';
+                                                if ($isAdmin) {
+                                                    $next = 'Review and approve pending orders.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Review pending approvals and escalate if needed.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Provide any missing order details or follow up on payment.';
+                                                } else {
+                                                    $next = 'Open the order to view details or contact support.';
+                                                }
                                             } elseif ($statusKey === 'processing') {
-                                                $next = $isAdmin || $isMgr ? 'Assign resources and monitor fulfillment.' : 'Prepare items for shipment and update order progress.';
+                                                if ($isAdmin) {
+                                                    $next = 'Assign resources and monitor fulfillment.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Coordinate teams and track processing progress.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Prepare items for shipment and update order progress.';
+                                                } else {
+                                                    $next = 'Check order status or contact your manager for updates.';
+                                                }
                                             } elseif ($statusKey === 'awaiting_payment' || $statusKey === 'payment-pending') {
-                                                $next = $isAdmin || $isMgr ? 'Verify payment and confirm to proceed.' : 'Complete payment or contact support to resolve payment issues.';
+                                                if ($isAdmin) {
+                                                    $next = 'Verify payment and confirm to proceed.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Confirm payment status and follow up with finance if needed.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Complete payment or contact support to resolve payment issues.';
+                                                } else {
+                                                    $next = 'Complete payment or contact support for assistance.';
+                                                }
                                             } elseif ($statusKey === 'approved') {
-                                                $next = $isAdmin || $isMgr ? 'Schedule fulfillment and notify warehouse.' : 'Wait for confirmation of shipment.';
+                                                if ($isAdmin) {
+                                                    $next = 'Schedule fulfillment and notify warehouse.';
+                                                } elseif ($isMgr) {
+                                                    // managers have no direct action for approved orders
+                                                    $next = 'No action required.';
+                                                } elseif ($isStore) {
+                                                    // personnel/store: generate transfer and monitor if already generated
+                                                    $next = 'Generate transfer and monitor item transfers if it has already been generated.';
+                                                } else {
+                                                    $next = 'Await shipment confirmation or contact support.';
+                                                }
                                             } elseif ($statusKey === 'shipped') {
-                                                $next = $isAdmin || $isMgr ? 'Track shipment and ensure delivery.' : 'Track your shipment and confirm receipt when delivered.';
+                                                if ($isAdmin) {
+                                                    $next = 'Track shipment and ensure delivery.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Monitor delivery and follow up on exceptions.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Track your shipment and confirm receipt when delivered.';
+                                                } else {
+                                                    $next = 'Track shipment or contact support for delivery questions.';
+                                                }
                                             } elseif ($statusKey === 'completed') {
                                                 $next = 'Archive the order or request feedback from the customer.';
                                             } elseif ($statusKey === 'rejected') {
-                                                $next = $isAdmin || $isMgr ? 'Coordinate with store personnel to review the rejection.' : 'For store personnel to review.';
+                                                if ($isAdmin) {
+                                                    $next = 'Coordinate with store personnel to review the rejection.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Review rejection reasons and advise next steps.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Review rejection details and update or resubmit if applicable.';
+                                                } else {
+                                                    $next = 'Review rejection details or contact support.';
+                                                }
                                             } elseif ($statusKey === 'cancelled') {
-                                                $next =
-                                                    $isAdmin || $isMgr
-                                                        ? 'Review cancellation reason and process refunds if needed.'
-                                                        : 'Contact support for help or place a new order if needed.';
+                                                if ($isAdmin) {
+                                                    $next = 'Review cancellation reason and process refunds if needed.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Confirm cancellation details and coordinate refunds.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Contact support for help or place a new order if needed.';
+                                                } else {
+                                                    $next = 'Contact support for assistance or place a new order.';
+                                                }
                                             } else {
-                                                $next =
-                                                    $isAdmin || $isMgr
-                                                        ? 'Open the order to view details and take appropriate action.'
-                                                        : 'Open the order to view next steps or contact support.';
+                                                if ($isAdmin) {
+                                                    $next = 'Open the order to view details and take appropriate action.';
+                                                } elseif ($isMgr) {
+                                                    $next = 'Open the order to review and coordinate next steps.';
+                                                } elseif ($isStore) {
+                                                    $next = 'Open the order to view next steps or contact support.';
+                                                } else {
+                                                    $next = 'Open the order to view details or contact support.';
+                                                }
                                             }
                                         @endphp
                                         <p class="line-clamp-2 text-xs text-gray-500">{{ $next }}</p>
@@ -500,7 +560,7 @@
         @endif
 
         {{-- ══ ORDER PIPELINE (store personnel only) ═══════════════════════════ --}}
-        @if ($isStore)
+        {{-- @if ($isStore)
             @php
                 $pipeline = [
                     ['New Order', 'new order', $pipelineCounts['new_order_count'] ?? 0, 'bg-blue-500', 'text-blue-700', 'bg-blue-50'],
@@ -551,7 +611,7 @@
                     </div>
                 </div>
             </div>
-        @endif
+        @endif --}}
         {{-- ══ 5 · ORDER STATUS DISTRIBUTION (hidden for super admin) ══════════ --}}
         {{-- @if (!$isAdmin && ($isMgr || $isStore) && $statusBreakdown->isNotEmpty())
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
