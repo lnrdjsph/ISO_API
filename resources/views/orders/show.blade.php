@@ -3,6 +3,28 @@
 @section('content')
     @php
         $order->requesting_store = \App\Support\LocationConfig::storeName($order->requesting_store, $order->requesting_store);
+
+        // --- LOCKING LOGIC ---
+        $hasAnyTransferNo = $order->items->contains(function ($item) {
+            return !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
+        });
+
+        $partialUnlock =
+            in_array(strtolower($order->order_status), ['approved', 'for approval']) &&
+            !$hasAnyTransferNo &&
+            !str_contains(strtolower(Auth::user()->role), 'warehouse') &&
+            Auth::user()->role !== 'super admin';
+
+        $isFullyLocked =
+            (in_array(strtolower($order->order_status), ['approved', 'completed', 'for approval', 'cancelled']) && Auth::user()->role !== 'super admin') ||
+            str_contains(strtolower(Auth::user()->role), 'warehouse') ||
+            $hasAnyTransferNo;
+
+        // For the items table – this will now work because $hasAnyTransferNo is defined
+        $itemsLocked = $isFullyLocked;
+        if (Auth::user()->role === 'super admin') {
+            $itemsLocked = false;
+        }
     @endphp
     <style nonce="{{ $cspNonce ?? '' }}">
         .search-results {
@@ -137,11 +159,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                                   with a subtle underline separator.
-                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                       INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                                                       Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                                                       field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                                                       with a subtle underline separator.
+                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -938,7 +960,16 @@
                                         <th class="border p-1 text-center">Total QTY</th>
                                     </tr>
                                 </thead>
-
+                                @php
+                                    $itemsLocked =
+                                        in_array(strtolower($order->order_status), ['approved', 'for approval', 'completed', 'cancelled']) ||
+                                        $hasAnyTransferNo ||
+                                        str_contains(strtolower(Auth::user()->role), 'warehouse');
+                                    // But super admin can always edit (optional, remove if you want super admin to also lock)
+                                    if (Auth::user()->role === 'super admin') {
+                                        $itemsLocked = false;
+                                    }
+                                @endphp
                                 <tbody>
                                     @forelse ($order->items as $item)
                                         <tr
@@ -1004,7 +1035,7 @@
 
                                             <td
                                                 class="border p-2 text-center"
-                                                @if (in_array($item->scheme, ['Freebie', 'Discount'])) contenteditable="false" @else contenteditable="true" @endif
+                                                @if (in_array($item->scheme, ['Freebie', 'Discount'])) contenteditable="false" @else contenteditable="{{ $itemsLocked ? 'false' : 'true' }}" @endif
                                                 data-field="scheme"
                                                 data-label="Scheme">
                                                 {{ $item->scheme }}
@@ -1017,7 +1048,7 @@
 
                                             <td
                                                 class="border p-2 text-center"
-                                                contenteditable="true"
+                                                contenteditable="{{ $itemsLocked ? 'false' : 'true' }}"
                                                 data-field="price_per_pc"
                                                 data-label="Price/PC">{{ number_format($item->price_per_pc, 2) }}
                                                 <input
@@ -1038,7 +1069,7 @@
                                             </td>
                                             <td
                                                 class="border p-2 text-center"
-                                                @if ($item->item_type == 'DISCOUNT') contenteditable="true" @endif
+                                                @if ($item->item_type == 'DISCOUNT') contenteditable="{{ $itemsLocked ? 'false' : 'true' }}" @endif
                                                 data-field="discount"
                                                 data-label="Discount">
 
@@ -1055,7 +1086,7 @@
                                             <td
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
-                                                contenteditable="true"
+                                                contenteditable="{{ $itemsLocked ? 'false' : 'true' }}"
                                                 data-field="qty_per_pc"
                                                 data-label="QTY/PC">{{ $item->qty_per_pc }}
                                                 <input
@@ -1068,7 +1099,7 @@
                                             <td
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
-                                                @if ($item->item_type !== 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
+                                                @if ($item->item_type !== 'FREEBIE') contenteditable="{{ $itemsLocked ? 'false' : 'true' }}" @else contenteditable="false" @endif
                                                 data-field="qty_per_cs"
                                                 data-label="QTY/CS">
                                                 {{ $item->item_type !== 'FREEBIE' ? ($item->qty_per_cs == 0 ? '0' : $item->qty_per_cs) : '0' }}
@@ -1084,7 +1115,7 @@
                                             <td
                                                 class="numeric-only border p-2 text-center"
                                                 data-max="9"
-                                                @if ($item->item_type === 'FREEBIE') contenteditable="true" @else contenteditable="false" @endif
+                                                @if ($item->item_type === 'FREEBIE') contenteditable="{{ $itemsLocked ? 'false' : 'true' }}" @else contenteditable="false" @endif
                                                 data-field="freebies_per_cs"
                                                 data-label="Freebies">
                                                 @if ($item->item_type === 'DISCOUNT')
@@ -2045,7 +2076,7 @@
                                         </div>
                                     @endif
 
-                                    @if (Auth::user()->role !== 'store manager')
+                                    @if (Auth::user()->role !== 'store manager' || (isset($partialUnlock) && $partialUnlock))
                                         <div
                                             id="changesCounter"
                                             class="hidden text-center text-xs text-gray-600">
@@ -2646,19 +2677,28 @@
                 const USER_ROLE = "{{ Auth::user()->role }}".toLowerCase();
 
                 // Does any non-cancelled item already have a transfer number?
-                @php
-                    $hasAnyTransferNo = $order->items->contains(function ($item) {
-                        return !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
-                    });
+                // @php
+                    //     $order->requesting_store = \App\Support\LocationConfig::storeName($order->requesting_store, $order->requesting_store);
+
+                    //     // Add these lines:
+                    //     $hasAnyTransferNo = $order->items->contains(function ($item) {
+                    //         return !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
+                    //     });
+                    //     $partialUnlock = in_array(strtolower($order->order_status), ['approved', 'for approval'])
+                    //                      && !$hasAnyTransferNo
+                    //                      && !str_contains(strtolower(Auth::user()->role), 'warehouse')
+                    //                      && Auth::user()->role !== 'super admin';
+                    //
                 @endphp
+
+
                 const HAS_TRANSFER_NO = {{ $hasAnyTransferNo ? 'true' : 'false' }};
                 const IS_WAREHOUSE = USER_ROLE.includes('warehouse');
 
                 // Store personnel get a partial unlock on an approved order ONLY while no
                 // transfer number exists yet — limited to Customer / Payment / Delivery info.
-                const PARTIAL_UNLOCK =
-                    ORDER_STATUS === 'approved' &&
-                    !HAS_TRANSFER_NO && // ← false once a transfer number exists
+                const PARTIAL_UNLOCK = ['approved', 'for approval'].includes(ORDER_STATUS) &&
+                    !HAS_TRANSFER_NO &&
                     !IS_WAREHOUSE &&
                     USER_ROLE !== 'super admin';
 
@@ -4259,12 +4299,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                           MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                                                           Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                                                           form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                                                           left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                                                           is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
