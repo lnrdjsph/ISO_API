@@ -159,11 +159,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                       INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                                                                       Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                                                                       field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                                                                       with a subtle underline separator.
-                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                                                                                   with a subtle underline separator.
+                                                                                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -483,7 +483,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">MBC Card No</p>
                                         <input
-                                            type="text"
+                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="mbc_card_no"
                                             value="{{ $order->mbc_card_no ?? '' }}"
                                             data-original="{{ $order->mbc_card_no ?? '' }}"
@@ -495,7 +495,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Customer Name</p>
                                         <input
-                                            type="text"
+                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="customer_name"
                                             value="{{ $order->customer_name ?? '' }}"
                                             data-original="{{ $order->customer_name ?? '' }}"
@@ -507,7 +507,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Contact Number</p>
                                         <input
-                                            type="text"
+                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="contact_number"
                                             value="{{ $order->contact_number ?? '' }}"
                                             data-original="{{ $order->contact_number ?? '' }}"
@@ -520,7 +520,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Email</p>
                                         <input
-                                            type="email"
+                                            type="email" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="email"
                                             value="{{ $order->email ?? '' }}"
                                             data-original="{{ $order->email ?? '' }}"
@@ -540,6 +540,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
                                         <select
                                             name="payment_center"
+                                            {{ $isFullyLocked ? 'disabled' : '' }}
                                             class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
                                             style="background-image: none;">
                                             <option
@@ -586,6 +587,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Date</p>
                                         <input
                                             type="date"
+                                            {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="payment_date"
                                             id="payment_date_inline"
                                             value="{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('Y-m-d') : '' }}"
@@ -598,6 +600,11 @@
                                             const paymentDateInput = document.getElementById('payment_date_inline');
                                             if (!paymentDateInput) return;
 
+                                            // If the field is locked (readonly), do nothing – no validation, no Swal.
+                                            if (paymentDateInput.hasAttribute('readonly') || paymentDateInput.disabled) {
+                                                return;
+                                            }
+
                                             // Get today's date in YYYY-MM-DD format
                                             const today = new Date();
                                             const year = today.getFullYear();
@@ -605,49 +612,48 @@
                                             const day = String(today.getDate()).padStart(2, '0');
                                             const todayFormatted = `${year}-${month}-${day}`;
 
-                                            // Set the min attribute to disable past dates in the date picker UI
                                             paymentDateInput.setAttribute('min', todayFormatted);
 
-                                            // Store the last valid value
                                             let lastValidValue = paymentDateInput.value;
 
-                                            // Function to check if date is valid (today or future)
                                             function isValidDate(dateValue) {
                                                 return !dateValue || dateValue >= todayFormatted;
                                             }
 
-                                            // Validate when leaving the input (blur event) with SweetAlert
                                             paymentDateInput.addEventListener('blur', function() {
                                                 if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
-                                                    Swal.fire({
-                                                        icon: 'error',
-                                                        title: 'Invalid Date',
-                                                        text: 'Please select today or a future date. Past dates are not allowed for payment date.',
-                                                        confirmButtonColor: '#3085d6',
-                                                        confirmButtonText: 'OK'
-                                                    });
+                                                    if (typeof Swal !== 'undefined') {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Invalid Date',
+                                                            text: 'Please select today or a future date. Past dates are not allowed for payment date.',
+                                                            confirmButtonColor: '#3085d6',
+                                                            confirmButtonText: 'OK'
+                                                        });
+                                                    }
                                                     paymentDateInput.value = lastValidValue;
                                                 } else {
                                                     lastValidValue = paymentDateInput.value;
                                                 }
                                             });
 
-                                            // Update last valid value on change (when user picks from date picker)
                                             paymentDateInput.addEventListener('change', function() {
                                                 if (paymentDateInput.value && paymentDateInput.value >= todayFormatted) {
                                                     lastValidValue = paymentDateInput.value;
                                                 }
                                             });
 
-                                            // Initial validation in case the pre-filled value is a past date
+                                            // Initial validation for pre-filled past date
                                             if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
-                                                Swal.fire({
-                                                    icon: 'warning',
-                                                    title: 'Invalid Pre-filled Date',
-                                                    text: 'The pre-filled payment date is in the past. Please select a valid date.',
-                                                    confirmButtonColor: '#3085d6',
-                                                    confirmButtonText: 'OK'
-                                                });
+                                                if (typeof Swal !== 'undefined') {
+                                                    Swal.fire({
+                                                        icon: 'warning',
+                                                        title: 'Invalid Pre-filled Date',
+                                                        text: 'The pre-filled payment date is in the past. Please select a valid date.',
+                                                        confirmButtonColor: '#3085d6',
+                                                        confirmButtonText: 'OK'
+                                                    });
+                                                }
                                                 paymentDateInput.value = '';
                                                 lastValidValue = '';
                                             }
@@ -701,6 +707,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Delivery/Pickup Date</p>
                                         <input
                                             type="date"
+                                            {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="delivery_date"
                                             id="delivery_date_inline"
                                             value="{{ $order->delivery_date ? \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') : '' }}"
@@ -712,6 +719,11 @@
                                         (function() {
                                             const deliveryDateInput = document.getElementById('delivery_date_inline');
                                             if (!deliveryDateInput) return;
+
+                                            // If the field is locked (readonly or disabled), skip all validation
+                                            if (deliveryDateInput.hasAttribute('readonly') || deliveryDateInput.disabled) {
+                                                return;
+                                            }
 
                                             // Get today's date in YYYY-MM-DD format
                                             const today = new Date();
@@ -726,28 +738,25 @@
                                             // Store the last valid value
                                             let lastValidValue = deliveryDateInput.value;
 
-                                            // Function to check if date is valid (today or future)
-                                            function isValidDate(dateValue) {
-                                                return !dateValue || dateValue >= todayFormatted;
-                                            }
-
-                                            // Validate when leaving the input (blur event) with SweetAlert
+                                            // Validate when leaving the input (blur event)
                                             deliveryDateInput.addEventListener('blur', function() {
                                                 if (deliveryDateInput.value && deliveryDateInput.value < todayFormatted) {
-                                                    Swal.fire({
-                                                        icon: 'error',
-                                                        title: 'Invalid Date',
-                                                        text: 'Please select today or a future date. Past dates are not allowed for delivery/pickup.',
-                                                        confirmButtonColor: '#3085d6',
-                                                        confirmButtonText: 'OK'
-                                                    });
+                                                    if (typeof Swal !== 'undefined') {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Invalid Date',
+                                                            text: 'Please select today or a future date. Past dates are not allowed for delivery/pickup.',
+                                                            confirmButtonColor: '#3085d6',
+                                                            confirmButtonText: 'OK'
+                                                        });
+                                                    }
                                                     deliveryDateInput.value = lastValidValue;
                                                 } else {
                                                     lastValidValue = deliveryDateInput.value;
                                                 }
                                             });
 
-                                            // Update last valid value on change (when user picks from date picker)
+                                            // Update last valid value on change
                                             deliveryDateInput.addEventListener('change', function() {
                                                 if (deliveryDateInput.value && deliveryDateInput.value >= todayFormatted) {
                                                     lastValidValue = deliveryDateInput.value;
@@ -756,13 +765,15 @@
 
                                             // Initial validation in case the pre-filled value is a past date
                                             if (deliveryDateInput.value && deliveryDateInput.value < todayFormatted) {
-                                                Swal.fire({
-                                                    icon: 'warning',
-                                                    title: 'Invalid Pre-filled Date',
-                                                    text: 'The pre-filled delivery/pickup date is in the past. Please select a valid date.',
-                                                    confirmButtonColor: '#3085d6',
-                                                    confirmButtonText: 'OK'
-                                                });
+                                                if (typeof Swal !== 'undefined') {
+                                                    Swal.fire({
+                                                        icon: 'warning',
+                                                        title: 'Invalid Pre-filled Date',
+                                                        text: 'The pre-filled delivery/pickup date is in the past. Please select a valid date.',
+                                                        confirmButtonColor: '#3085d6',
+                                                        confirmButtonText: 'OK'
+                                                    });
+                                                }
                                                 deliveryDateInput.value = '';
                                                 lastValidValue = '';
                                             }
@@ -773,7 +784,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Address</p>
                                         <input
-                                            type="text"
+                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="address"
                                             value="{{ $order->address ?? '' }}"
                                             placeholder="-"
@@ -784,7 +795,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Landmark</p>
                                         <input
-                                            type="text"
+                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                             name="landmark"
                                             value="{{ $order->landmark ?? '' }}"
                                             placeholder="-"
@@ -863,6 +874,7 @@
                             <label class="mb-1 block text-xs font-semibold text-gray-700">Order Comments</label>
                             <textarea
                                 name="comment"
+                                {{ $isFullyLocked ? 'readonly' : '' }}
                                 rows="2"
                                 maxlength="1800"
                                 data-original="{{ $order->comment ?? '' }}"
@@ -1155,7 +1167,7 @@
                                             <td class="remark-cell border p-2 text-center" data-label="Remarks">
                                                 <div class="relative">
                                                     <input
-                                                        type="text"
+                                                        type="text" {{ $isFullyLocked ? 'readonly' : '' }}
                                                         name="items[{{ $loop->index }}][remarks]"
                                                         value="{{ old('items.' . $loop->index . '.remarks', $item->remarks ?? '') }}"
                                                         class="w-full border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0" />
@@ -1544,6 +1556,11 @@
                                     <script nonce="{{ $cspNonce ?? '' }}">
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
+                                            if (typeof jQuery === 'undefined') {
+                                                console.error('jQuery not loaded – CSP may be blocking it. Reloading...');
+
+                                                return;
+                                            }
                                             // Find all BOL containers
                                             document.querySelectorAll('.bol-container').forEach(container => {
                                                 const tsf = container.dataset.tsf;
@@ -1852,9 +1869,6 @@
                     <div class="relative col-span-1 grid lg:col-span-1">
                         <div class="relative grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
 
-                            {{-- script jquery --}}
-                            <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-                            <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
                             <div class="actions-panel relative flex flex-col gap-2 space-y-2 rounded-lg border bg-white p-3 shadow-sm sm:col-span-2 lg:col-span-1 lg:justify-between">
 
@@ -4299,12 +4313,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                           MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                                                                           Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                                                                           form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                                                                           left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                                                                           is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
