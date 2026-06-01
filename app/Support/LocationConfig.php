@@ -309,7 +309,7 @@ class LocationConfig
         $isRegion = !empty($regionStores);
 
         // MANAGER: Can see all stores in their assigned region or just their single store
-        if ($role === 'manager') {
+        if ($role === 'store manager') {
             if ($isRegion) {
                 // Manager assigned to region - show all stores in that region
                 $filtered = [];

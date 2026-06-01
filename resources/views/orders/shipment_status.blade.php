@@ -134,7 +134,7 @@
                                 <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
                                 <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
                                 {{-- 👔 Only managers see this column --}}
-                                @if (auth()->user()->role === 'manager')
+                                @if (auth()->user()->role === 'store manager')
                                     <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
                                 @endif
                                 <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
@@ -150,7 +150,7 @@
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->sof_id }}</td>
                                     <td class="whitespace-nowrap px-4 py-3">{{ $order->customer_name }}</td>
                                     {{-- 👔 Only managers see store --}}
-                                    @if (auth()->user()->role === 'manager')
+                                    @if (auth()->user()->role === 'store manager')
                                         @php
                                             // All store names (exclude lz/vs keys)
                                             $allStoreLocations = [

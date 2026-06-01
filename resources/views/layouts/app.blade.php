@@ -519,7 +519,7 @@
             @php
                 $allowedIds = [1, 2, 3];
                 $currentUserId = Auth::id();
-                $switchableRoles = ['super admin', 'store personnel', 'manager'];
+                $switchableRoles = ['super admin', 'store personnel', 'store manager', 'warehouse personnel', 'warehouse manager'];
                 $currentRole = session('switched_role') ?? Auth::user()->role;
                 $currentLocation = session('switched_location') ?? Auth::user()->user_location;
                 $storeLocations = LocationConfig::stores();
@@ -592,7 +592,7 @@
                         <ul class="submenu-accordion">
                             <li><a href="{{ route('orders.index') }}" class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">Sales Order List</a></li>
                             @auth
-                                @if (!in_array(auth()->user()->role, ['manager', 'warehouse personnel']))
+                                @if (!in_array(auth()->user()->role, ['store manager', 'warehouse personnel', 'warehouse manager']))
                                     <li><a href="{{ route('forms.sof') }}" class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">Sales Order Form</a></li>
                                 @endif
                             @endauth

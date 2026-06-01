@@ -690,7 +690,7 @@
                                 @php
                                     $isSuperAdmin = $userRole === 'super admin';
                                     $isPersonnel = str_contains($userRole, 'personnel');
-                                    $isManager = $userRole === 'manager';
+                                    $isManager = $userRole === 'store manager';
                                     $isWarehouseRole = str_contains($userRole, 'warehouse');
 
                                     // Get all warehouses from LocationConfig

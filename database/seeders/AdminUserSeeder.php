@@ -75,7 +75,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Manager - Luzon',
                 'password' => Hash::make('test123'),
-                'role' => 'manager',
+                'role' => 'store manager',
                 'user_location' => '6012',
             ]
         );
@@ -84,7 +84,7 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Manager - Visayas',
                 'password' => Hash::make('test123'),
-                'role' => 'manager',
+                'role' => 'store manager',
                 'user_location' => '6012',
             ]
         );

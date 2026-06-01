@@ -49,10 +49,10 @@ class Order extends Model
     }
 
     private const REGION_APPROVER = [
-        'lz'  => ['role' => 'manager', 'location' => 'lz'],
-        'stc' => ['role' => 'manager', 'location' => 'stc'],
-        'ntc' => ['role' => 'manager', 'location' => 'ntc'],
-        'vs'  => ['role' => 'manager', 'location' => 'vs'],
+        'lz'  => ['role' => 'store manager', 'location' => 'lz'],
+        'stc' => ['role' => 'store manager', 'location' => 'stc'],
+        'ntc' => ['role' => 'store manager', 'location' => 'ntc'],
+        'vs'  => ['role' => 'store manager', 'location' => 'vs'],
     ];
 
     public function approver(): ?User

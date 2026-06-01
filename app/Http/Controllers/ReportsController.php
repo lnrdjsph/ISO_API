@@ -617,7 +617,7 @@ class ReportsController extends Controller
         }
 
         // 👔 Manager: restrict to approvable statuses only
-        if ($user->role === 'manager') {
+        if ($user->role === 'store manager') {
             $allowedStatuses = ['for approval', 'approved', 'rejected'];
             $query->whereIn('order_status', $allowedStatuses);
         }
@@ -718,7 +718,7 @@ class ReportsController extends Controller
             }
         }
 
-        if ($user->role === 'manager') {
+        if ($user->role === 'store manager') {
             $allowedStatuses = ['for approval', 'approved', 'rejected'];
             $query->whereIn('order_status', $allowedStatuses);
         }

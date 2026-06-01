@@ -85,7 +85,7 @@ class User extends Authenticatable
         $rolePermissions = [
             'super admin' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
             'admin' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
-            'manager' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
+            'store manager' => ['bulk_edit_products', 'bulk_archive_products', 'view_products'],
             'user' => ['view_products'],
         ];
 

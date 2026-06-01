@@ -7,6 +7,7 @@
         $role = auth()->user()->role;
         $isAdmin = $role === 'super admin';
         $isMgr = $role === 'manager';
+        $isWarehouse = in_array($role, ['warehouse admin', 'warehouse personnel']);
         $isStore = in_array($role, ['store personnel', 'store admin']);
         $month = now()->format('F Y');
 
@@ -155,6 +156,12 @@
                     ['Completed', $completed_count, 'border-teal-400', $mIc['check'], false, $amounts['completed']],
                     ['Rejected', $rejected_count, 'border-orange-400', $mIc['x'], false, $amounts['rejected']],
                 ];
+            } elseif ($isWarehouse) {
+                $kpiCards = [
+                    ['Total Orders', $totalOrders, 'border-blue-500', $mIc['orders'], false, $amounts['total']],
+                    ['Approved', $approved_count, 'border-green-600', $mIc['check'], false, $amounts['approved']],
+                    ['Completed', $completed_count, 'border-teal-400', $mIc['check'], false, $amounts['completed']],
+                ];
             } else {
                 $kpiCards = [
                     ['Total Orders', $totalOrders, 'border-blue-500', $mIc['orders'], false, $amounts['total']],
@@ -246,6 +253,11 @@
                     ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
                     ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                 ];
+            } elseif ($isWarehouse) {
+                $quickActions = [
+                    ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
+                    // ['Products', route('products.index'), $ic['cube'], 'bg-green-50 text-green-600', null],
+                ];
             } else {
                 $quickActions = [
                     ['New Sales Order', route('forms.sof'), $ic['plus'], 'bg-indigo-50 text-indigo-600', null],
@@ -282,7 +294,7 @@
         </div>
 
         {{-- ══ 1 · NEEDS ATTENTION (role‑specific, hidden for super admin) ═════ --}}
-        @if (!$isAdmin)
+        @if (!$isAdmin && !$isWarehouse)
             @php
                 $alertIc = [
                     'inbox' =>
@@ -447,7 +459,7 @@
 
 
         {{-- ══ 2 · STUCK ORDERS (hidden for super admin) ══════════════════════ --}}
-        @if (!$isAdmin && $stuckOrders->isNotEmpty())
+        @if (!$isAdmin && !$isWarehouse && $stuckOrders->isNotEmpty())
             <div class="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
                 {{-- Header --}}
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 px-5 py-3">

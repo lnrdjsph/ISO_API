@@ -19,7 +19,7 @@ class SwitchUserContextController extends Controller
         }
 
         $request->validate([
-            'role' => 'required|in:super admin,store personnel,manager'
+            'role' => 'required|in:super admin,store personnel,manager,warehouse manager,warehouse personnel,store manager'
         ]);
 
         session(['switched_role' => $request->role]);

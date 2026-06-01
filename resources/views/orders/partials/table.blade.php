@@ -133,7 +133,7 @@
             <tr>
                 <th class="px-4 py-3 font-medium text-gray-700">Order #</th>
                 <th class="px-4 py-3 font-medium text-gray-700">Customer</th>
-                @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
+                @if (auth()->user()->role === 'store manager' || auth()->user()->role === 'super admin')
                     <th class="px-4 py-3 font-medium text-gray-700">Requesting Store</th>
                 @endif
                 <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
@@ -151,7 +151,7 @@
                     </td>
                     <td class="whitespace-nowrap px-4 py-3" data-label="Customer">{{ $order->customer_name }}</td>
 
-                    @if (auth()->user()->role === 'manager' || auth()->user()->role === 'super admin')
+                    @if (auth()->user()->role === 'store manager' || auth()->user()->role === 'super admin')
                         @php
                             // Use LocationConfig to get the store name – no more hardcoded array
                             $storeName = \App\Support\LocationConfig::storeName($order->requesting_store, 'Unknown Store');

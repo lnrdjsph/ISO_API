@@ -4,13 +4,13 @@
     @php
         $userRole = auth()->user()->role ?? 'store personnel';
         $availableRoles = match ($userRole) {
-            'super admin' => ['personnel', 'manager', 'admin'],
-            'manager' => ['manager'],
+            'super admin' => ['personnel', 'store manager', 'admin'],
+            'store manager' => ['store manager'],
             default => ['personnel'],
         };
         $defaultTab = match ($userRole) {
             'super admin' => 'admin',
-            'manager' => 'manager',
+            'store manager' => 'store manager',
             default => 'personnel',
         };
     @endphp
@@ -267,9 +267,9 @@
                                         Store Personnel
                                     </button>
                                 @endif
-                                @if (in_array('manager', $availableRoles))
+                                @if (in_array('store manager', $availableRoles))
                                     <button
-                                        class="sidebar-role-btn {{ $defaultTab === 'manager' ? 'active bg-blue-50 !text-blue-700 font-semibold' : '' }} flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-all hover:bg-gray-50"
+                                        class="sidebar-role-btn {{ $defaultTab === 'store manager' ? 'active bg-blue-50 !text-blue-700 font-semibold' : '' }} flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-all hover:bg-gray-50"
                                         data-role="manager">
                                         <svg class="h-4 w-4 opacity-70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path
@@ -342,7 +342,7 @@
                                         $dashboardImage = 'dashboard-full.png'; // default admin image
 
                                         // Check if user is manager or other role to show different dashboard
-                                        if ($user->role === 'manager') {
+                                        if ($user->role === 'store manager') {
                                             $dashboardImage = 'dashboard-manager.png';
                                         } elseif ($user->role === 'supervisor') {
                                             $dashboardImage = 'dashboard-supervisor.png';
@@ -364,7 +364,7 @@
                                         alt="{{ ucfirst($user->role ?? 'Admin') }} Dashboard">
                                 </div>
                                 <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">
-                                    @if (auth()->user()->role === 'manager')
+                                    @if (auth()->user()->role === 'store manager')
                                         Manager Dashboard — Store-level overview and reports
                                     @elseif(auth()->user()->role === 'supervisor')
                                         Supervisor Dashboard — Team performance and monitoring
@@ -620,7 +620,7 @@
                             <h3 class="text-sm font-semibold text-gray-900">Order Table</h3>
                             <div class="screenshot-frame mt-3 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
                                 <div class="flex h-64 items-center justify-center overflow-hidden">
-                                    @if (auth()->user()->role === 'manager' || auth()->user()->user_type === 'manager')
+                                    @if (auth()->user()->role === 'store manager' || auth()->user()->user_type === 'store manager')
                                         <img class="h-full w-full object-cover"
                                             src="{{ asset('images/guide/orders-table-manager.png') }}"
                                             alt="Orders table for managers">
@@ -1536,7 +1536,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    @foreach ([['Super Admin', 'Full system access'], ['Manager', 'Approve/reject, regional reports'], ['Store Admin', 'Store-level management'], ['Store Personnel', 'Create orders, view products'], ['warehouse manager', 'Product management + depot filter'], ['Warehouse Personnel', 'View products + depot filter']] as $r)
+                                    @foreach ([['Super Admin', 'Full system access'], ['store manager', 'Approve/reject, regional reports'], ['Store Admin', 'Store-level management'], ['Store Personnel', 'Create orders, view products'], ['warehouse manager', 'Product management + depot filter'], ['Warehouse Personnel', 'View products + depot filter']] as $r)
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-4 py-2.5 font-medium text-gray-800">{{ $r[0] }}</td>
                                             <td class="px-4 py-2.5 text-gray-600">{{ $r[1] }}</td>

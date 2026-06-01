@@ -31,17 +31,27 @@ class DashboardController extends Controller
         $query = Order::query();
 
         // ✅ Role-based filtering (mirrors OrderController exactly)
-        if ($user->role === 'manager') {
+        if ($user->role === 'store manager') {
             // Managers only see for approval/approved/rejected
             $query->whereIn('order_status', ['for approval', 'approved', 'rejected']);
 
-            // Region/Store restriction for managers
             if ($user->user_location) {
                 $stores = LocationConfig::regionStores($user->user_location);
                 if (!empty($stores)) {
                     $query->whereIn('requesting_store', $stores);
                 } else {
-                    // Single store fallback
+                    $query->where('requesting_store', $user->user_location);
+                }
+            }
+        } elseif (in_array($user->role, ['warehouse admin', 'warehouse personnel'])) {
+            // Warehouse roles → view-only, scoped to approved/completed
+            $query->whereIn('order_status', ['approved', 'completed']);
+
+            if ($user->user_location) {
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $query->whereIn('requesting_store', $stores);
+                } else {
                     $query->where('requesting_store', $user->user_location);
                 }
             }
@@ -197,7 +207,7 @@ class DashboardController extends Controller
         $warehouseName = $warehouseCode = $wmsLastUpdated = null;
 
         // Only show inventory to store personnel (non-manager, non-super admin)
-        if ($user->role !== 'manager' && $user->role !== 'super admin' && $user->user_location) {
+        if ($user->role !== 'store manager' && $user->role !== 'super admin' && $user->user_location) {
             $accessibleStores = LocationConfig::regionStores($user->user_location);
             $primaryStore = !empty($accessibleStores) ? $accessibleStores[0] : $user->user_location;
             $storeCode = strtolower($primaryStore);
@@ -245,7 +255,10 @@ class DashboardController extends Controller
 
         $stuckOrders = collect();
         foreach ($stuckThresholds as $status => $meta) {
-            if ($user->role === 'manager' && !in_array($status, ['for approval', 'approved', 'rejected'])) {
+            if ($user->role === 'store manager' && !in_array($status, ['for approval', 'approved', 'rejected'])) {
+                continue;
+            }
+            if (in_array($user->role, ['warehouse admin', 'warehouse personnel']) && !in_array($status, ['approved', 'completed'])) {
                 continue;
             }
             $rows = (clone $base)
@@ -271,7 +284,7 @@ class DashboardController extends Controller
             ->join('orders', 'order_notes.order_id', '=', 'orders.id')
             ->leftJoin('users', 'order_notes.user_id', '=', 'users.id');
 
-        if ($user->role === 'manager') {
+        if ($user->role === 'store manager') {
             $activityQuery->whereIn('orders.order_status', ['for approval', 'approved', 'rejected']);
             if ($user->user_location) {
                 $stores = LocationConfig::regionStores($user->user_location);

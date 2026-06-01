@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                           INFO SECTIONS — uniform mobile layout
-                                                                                                                                           Below 768 px: sections stack cleanly; each
-                                                                                                                                           field becomes a horizontal label → value row
-                                                                                                                                           with a subtle underline separator.
-                                                                                                                                           ══════════════════════════════════════════════ */
+                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                   Below 768 px: sections stack cleanly; each
+                                                                                                                                                                   field becomes a horizontal label → value row
+                                                                                                                                                                   with a subtle underline separator.
+                                                                                                                                                                   ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -1839,7 +1839,7 @@
                                             class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">-- Select Action --</option>
 
-                                            @if (!str_contains(strtolower(Auth::user()->role), 'manager') && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
+                                            @if (!str_contains(strtolower(Auth::user()->role), 'store manager') && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
                                                 @if ($order->order_status !== 'cancelled')
                                                     <option value="cancel">Cancel Order</option>
                                                 @endif
@@ -1866,7 +1866,7 @@
 																						@endif --}}
                                             @endif
 
-                                            @if (in_array(Auth::user()->role, ['manager', 'super admin']))
+                                            @if (in_array(Auth::user()->role, ['store manager', 'super admin']))
                                                 @if (in_array($order->order_status, ['for approval', 'rejected']))
                                                     <option value="approve">Approve Order</option>
                                                 @endif
@@ -1880,7 +1880,7 @@
                                     @if ($order->approval_document)
                                         <div class="mt-1 rounded border border-dashed border-gray-300 bg-gray-50 px-2 py-4">
                                             <div class="flex items-center justify-between text-xs">
-                                                <span class="text-gray-600">📎 Approval Doc</span>
+                                                <span class="pl-1 text-gray-600">Approved Document</span>
                                                 <a href="{{ asset('storage/' . $order->approval_document) }}"
                                                     onclick="event.preventDefault(); previewApprovalDocument(this.href);"
                                                     class="rounded bg-indigo-600 px-2 py-2 text-xs text-white hover:bg-indigo-700">
@@ -2040,7 +2040,7 @@
                                         </div>
                                     @endif
 
-                                    @if (Auth::user()->role !== 'manager')
+                                    @if (Auth::user()->role !== 'store manager')
                                         <div
                                             id="changesCounter"
                                             class="hidden text-center text-xs text-gray-600">
@@ -4186,12 +4186,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                               MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                               Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                               form-like grid. Labels sit above their values, aligned
-                                                                                                                                               left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                               is untouched — only CSS display changes.
-                                                                                                                                               ══════════════════════════════════════════════ */
+                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                       is untouched — only CSS display changes.
+                                                                                                                                                                       ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
