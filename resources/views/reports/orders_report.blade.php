@@ -168,7 +168,7 @@
 
                 <!-- Pagination -->
                 <div class="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 p-4">
-                    <form method="GET" action="{{ route('orders.index') }}" class="flex items-center gap-2">
+                    <form method="GET" action="{{ route('reports.orders') }}" class="flex items-center gap-2">
                         @foreach (request()->except('per_page', 'page') as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach

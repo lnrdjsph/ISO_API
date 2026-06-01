@@ -102,6 +102,9 @@ class OracleTransferController extends Controller
 
                 // 🔄 Group by SKU and sum quantities
                 $skuGroups = [];
+                $hasRemarks = false;
+                $remarksList = [];
+
                 foreach ($deptItems as $item) {
                     $item = (object) $item;
                     $sku = (string) ($item->sku ?? '');
@@ -117,17 +120,55 @@ class OracleTransferController extends Controller
                     $suppPackSize = $qtyPerPc;
 
                     if (!isset($skuGroups[$sku])) {
-                        // first occurrence: initialize
+                        // Check if this item has remarks
+                        $hasRemark = (!empty($item->remarks) && $item->remarks !== 'Item Cancelled');
+
                         $skuGroups[$sku] = [
                             'item' => $sku,
                             'tsf_qty' => $qtyPerPc * $totalQty,
                             'supp_pack_size' => $suppPackSize,
                         ];
+
+                        // Collect remarks with SKU
+                        if ($hasRemark) {
+                            $hasRemarks = true;
+                            $remarksList[] = "{$sku}: " . trim($item->remarks);
+                        }
                     } else {
                         // subsequent occurrences: accumulate quantities
                         $skuGroups[$sku]['tsf_qty'] += ($qtyPerPc * $totalQty);
-                        // supp_pack_size remains qty_per_pc, do not accumulate
+
+                        // Check if this occurrence has remarks (and we haven't captured it yet)
+                        if (!empty($item->remarks) && $item->remarks !== 'Item Cancelled') {
+                            $hasRemarks = true;
+                            // Check if we already have this SKU in remarks
+                            $skuExists = false;
+                            foreach ($remarksList as &$remark) {
+                                if (strpos($remark, "{$sku}:") === 0) {
+                                    $skuExists = true;
+                                    break;
+                                }
+                            }
+                            if (!$skuExists) {
+                                $remarksList[] = "{$sku}: " . trim($item->remarks);
+                            }
+                        }
                     }
+                }
+
+                // Build the comment
+                $baseComment = "SOF#{$order->sof_id} Dept:{$dept}";
+                $orderComment = trim((string) ($order->comment ?? ''));
+
+                // Start with normal comment
+                $fullComment = $baseComment;
+                if ($orderComment) {
+                    $fullComment .= " | {$orderComment}";
+                }
+
+                // Append remarks if any items have them
+                if ($hasRemarks && !empty($remarksList)) {
+                    $fullComment .= " | Remarks: " . implode('; ', $remarksList);
                 }
 
                 // Convert to array and format quantities as strings
@@ -151,15 +192,7 @@ class OracleTransferController extends Controller
                     'tsf_type' => 'AIP',
                     'status' => 'A',
                     'user_id' => 'External',
-                    'comment_desc' => (function () use ($order, $dept): string {
-                        $base = "SOF#{$order->sof_id} Dept:{$dept}";
-                        $comment = trim((string) ($order->comment ?? ''));
-
-                        $full = $comment ? "{$base} | {$comment}" : $base;
-
-                        // Oracle TSFHEAD.COMMENT_DESC VARCHAR2(2000)
-                        return mb_substr($full, 0, 2000);
-                    })(),
+                    'comment_desc' => mb_substr($fullComment, 0, 2000), // Oracle VARCHAR2(2000) limit
                     'tsf_no' => $nextTsf,
                     'details' => $consolidatedItems,
                 ];

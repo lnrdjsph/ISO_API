@@ -16,6 +16,8 @@ use App\Http\Controllers\WmsLogController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\AccountController;
+use App\Http\Controllers\LogoutController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -33,13 +35,7 @@ Route::middleware(['auth', 'session.expired'])->group(function () {
 
     Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard.view');
 
-    Route::post('/logout', function () {
-        Auth::logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-
-        return redirect(env('FORTIFY_LOGOUT_REDIRECT', '/login'));
-    })->name('logout');
+    Route::post('/logout', LogoutController::class)->name('logout');
 
     // Handle GET /logout gracefully (ZAP, browser back button, direct URL access)
     Route::get('/logout', function () {
@@ -250,10 +246,10 @@ Route::middleware(['auth', 'session.expired'])->prefix('settings')->name('settin
 
     Route::post('stores/enroll',  [SettingsController::class, 'enrollStore'])->name('stores.enroll');
     Route::put('stores/{code}',   [SettingsController::class, 'updateStore'])->name('stores.update');
-    Route::delete('stores/{code}',[SettingsController::class, 'deactivateStore'])->name('stores.deactivate');
+    Route::delete('stores/{code}', [SettingsController::class, 'deactivateStore'])->name('stores.deactivate');
 
     Route::post('warehouses',     [SettingsController::class, 'storeWarehouse'])->name('warehouses.store');
-    Route::put('warehouses/{code}',[SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
+    Route::put('warehouses/{code}', [SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
 
     Route::post('regions',        [SettingsController::class, 'storeRegion'])->name('regions.store');
     Route::put('regions/{key}',   [SettingsController::class, 'updateRegion'])->name('regions.update');
@@ -266,4 +262,32 @@ Route::middleware(['auth', 'session.expired'])->prefix('settings')->name('settin
 Route::middleware(['auth', 'session.expired'])->group(function () {
     Route::get('/logs',       [WmsLogController::class, 'index'])->name('logs');
     Route::get('/logs/fetch', [WmsLogController::class, 'fetch'])->name('logs.fetch');
+});
+
+
+use App\Http\Controllers\SalesOrderController;
+
+// Sales Order Form - separate routes
+Route::prefix('b2b2c/sales-order')->name('sales-order.')->middleware(['auth', 'session.expired'])->group(function () {
+    Route::get('/', [SalesOrderController::class, 'create'])->name('create');
+    Route::post('/', [SalesOrderController::class, 'store'])->name('store');
+    Route::get('/search', [SalesOrderController::class, 'search'])->name('search');
+    Route::post('/card-info', [SalesOrderController::class, 'getCardInfo'])->name('card-info');
+});
+
+
+use App\Http\Controllers\SwitchUserContextController;
+
+// Add these routes inside the 'auth' middleware group
+Route::post('/switch-role', [SwitchUserContextController::class, 'switchRole'])
+    ->name('switch.role')
+    ->middleware('auth');
+
+Route::post('/switch-location', [SwitchUserContextController::class, 'switchLocation'])
+    ->name('switch.location')
+    ->middleware('auth');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/activity-logs', [App\Http\Controllers\ActivityLogController::class, 'index'])
+        ->name('activity_logs.index');
 });

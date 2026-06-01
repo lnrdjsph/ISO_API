@@ -3,84 +3,120 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1" />
-    <meta
-        name="csrf-token"
-        content="{{ csrf_token() }}">
-    <meta
-        name="description"
-        content="ISO B2B Ordering System">
-    <meta
-        name="theme-color"
-        content="darkblue" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="ISO B2B Ordering System">
+    <meta name="theme-color" content="#0f172a" />
     <title>ISO B2B2C Ordering System</title>
-
-    <link
-        rel="icon"
-        type="image/png"
-        href="{{ asset('images/MarengEms_Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/MarengEms_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style nonce="{{ $cspNonce ?? '' }}">
-        /* Prevent horizontal scroll completely */
+        /* RESET & GLOBAL */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         html,
         body {
             overflow-x: hidden;
-            max-width: 100vw;
+            background: #f8fafc;
         }
 
-        /* Remove all list styling */
         ul,
         li {
             list-style: none;
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
         }
 
-        /* Sidebar width states with strict containment */
+        /* SIDEBAR WIDTH STATES */
         .sidebar-expanded {
-            width: 13rem;
-            max-width: 13rem;
-            min-width: 13rem;
+            width: 14rem;
+            min-width: 14rem;
         }
 
         .sidebar-collapsed {
-            width: 4.75rem;
-            max-width: 4.75rem;
-            min-width: 4.75rem;
+            width: 4.5rem;
+            min-width: 4.5rem;
         }
 
-        /* Sidebar container — truly fixed, out of document flow */
+        /* SIDEBAR CONTAINER – allow tooltips to escape */
         #sidebar {
-            transition: width 0.10s ease-in-out, min-width 0.10s ease-in-out, max-width 0.10s ease-in-out, transform 0.10s ease-in-out;
-            flex-shrink: 0;
             position: fixed;
             top: 0;
             left: 0;
             bottom: 0;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(203, 213, 225, 0.3);
+            transition: width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            /* zoom: 0.75; */
+            z-index: 9999;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.01);
         }
 
-        /* Topbar also scaled down */
-        .topbar {
-            z-index: 10005;
+        /* INNER LAYOUT – allow tooltips to extend horizontally */
+        .general-sidebar {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            padding: 2.75rem 0.75rem 0.75rem 0.75rem;
+            overflow-y: auto;
+            overflow-x: visible;
         }
 
-        /* Main content offsets for zoomed sidebar width (13rem * 0.75 = 9.75rem, 4.5rem * 0.75 = 3.375rem) */
+        /* SCROLLABLE AREA – auto‑hide scrollbar */
+        .nav-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: visible;
+            margin-top: 0.5rem;
+            padding-right: 0.25rem;
+            scrollbar-width: thin;
+        }
+
+        .nav-content::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+            transition: width 0.2s;
+        }
+
+        .nav-content:hover::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .nav-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        .nav-content:hover::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+        }
+
+        /* BOTTOM FIXED (My Account + Logout) */
+        .nav-bottom {
+            margin-top: auto;
+            padding-top: 0.75rem;
+            border-top: 1px solid #eef2ff;
+        }
+
+        /* MAIN CONTENT OFFSET */
         .main-container {
-            transition: margin-left 0.10s ease-in-out;
-            padding-top: 1.5rem;
+            transition: margin-left 0.2s ease;
+            padding-top: 2rem;
         }
 
         @media (min-width: 768px) {
             .sidebar-expanded~.main-container {
-                margin-left: 13rem;
+                margin-left: 14rem;
             }
 
             .sidebar-collapsed~.main-container {
@@ -88,329 +124,357 @@
             }
         }
 
-        /* Animate text fade + slide */
+        /* TYPOGRAPHY & ICONS */
         .nav-text,
         .logo-text {
-            transition: opacity 0.05 ease, width 0.05 ease, margin 0.05 ease;
-            opacity: 1;
-            display: inline;
-            overflow: hidden;
+            transition: opacity 0.2s ease;
             white-space: nowrap;
         }
 
-        .nav-item {
-            transition: opacity 0.05 ease, transform 0.05 ease;
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        /* Navigation container */
-        nav {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Hide text when collapsed — animatable, not display:none */
         .sidebar-collapsed .nav-text,
         .sidebar-collapsed .logo-text {
             opacity: 0;
             width: 0;
-            margin-left: 0;
-            padding: 0;
-            overflow: hidden;
             display: none;
         }
 
-        /* Ensure nav items don't overflow */
-        .nav-item,
-        .sub-item {
-            overflow: hidden;
-            white-space: nowrap;
+        /* Icons fixed size */
+        .nav-parent svg,
+        .logout-btn svg {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
         }
 
-        /* Show tooltips */
+        /* TRIANGLE ARROW – even smaller */
+        .arrow-icon {
+            width: 0.65rem;
+            height: 0.65rem;
+            fill: #94a3b8;
+            transition: transform 0.2s, fill 0.2s;
+            margin-left: auto;
+            pointer-events: auto;
+        }
+
+        .nav-parent:hover .arrow-icon {
+            fill: #475569;
+        }
+
+        .sidebar-collapsed .arrow-icon {
+            display: none;
+        }
+
+        /* SECTION LABELS – ultra subtle */
+        .section-label {
+            margin: 0rem 0 0.4rem 0.5rem;
+            padding-top: 1rem;
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #a1a9b5;
+        }
+
+        .sidebar-collapsed .section-label span {
+            display: none;
+        }
+
+        .sidebar-collapsed .section-label {
+            padding-top: 0rem;
+            text-align: left;
+            margin-left: 0;
+        }
+
+        /* Accordion item – base styles */
+        .accordion-item {
+            border-radius: 0.6rem;
+            transition: background 0.2s;
+        }
+
+        /* When any child is active, highlight the entire accordion box */
+        .accordion-item.has-active {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        /* MAIN NAV ITEM */
+        .nav-parent {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #4b5563;
+            transition: all 0.15s;
+            cursor: pointer;
+            width: 100%;
+            background: transparent;
+            border: none;
+            text-decoration: none;
+        }
+
+        .nav-parent:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* SOFT ACTIVE HIGHLIGHT – for direct route match */
+        .nav-parent.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            font-weight: 500;
+        }
+
+        /* When accordion has active child, parent button gets subtle touch */
+        .accordion-item.has-active .nav-parent {
+            color: #1e40af;
+        }
+
+        /* Active sub‑item – only lighter font color */
+        .sub-item.active {
+            color: #3b82f6;
+            font-weight: 500;
+            background: transparent;
+        }
+
+        /* Normal sub‑item – gray */
+        .sub-item {
+            color: #6b7280;
+            background: transparent;
+        }
+
+        /* ACCORDION SUBMENU (hidden in collapsed mode) */
+        .submenu-accordion {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+            margin-left: 1.75rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid #e9eef3;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .submenu-accordion.open {
+            max-height: 300px;
+            opacity: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .sidebar-collapsed .submenu-accordion {
+            display: none;
+        }
+
+        .sub-item {
+            padding: 0.35rem 0.35rem;
+            font-size: 0.8rem;
+            border-radius: 0.5rem;
+            transition: all 0.1s;
+            display: block;
+            text-decoration: none;
+        }
+
+        .sub-item:hover {
+            background: #f8fafc;
+            color: #1e40af;
+        }
+
+        /* TOOLTIP – absolute, but now container allows overflow-x:visible */
         .tooltip {
             position: absolute;
             left: 100%;
             top: 50%;
             transform: translateY(-50%);
-            margin-left: 0.5rem;
-            background-color: #1f2937;
+            margin-left: 0.75rem;
+            background: #1e293b;
             color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 0.4rem;
+            font-size: 0.7rem;
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 50;
+            transition: opacity 0.15s;
+            z-index: 100;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
-        /* Show tooltip on hover for all buttons */
-        .nav-item:hover .tooltip,
-        .logout-btn:hover .tooltip,
-        .toggle-btn:hover .tooltip {
-            opacity: 1;
+        /* Inline tooltips sit inside the scrollable nav (overflow-y:auto forces
+   overflow-x to clip), so they get cut off at the sidebar edge. Hide them
+   and render a viewport-fixed copy via JS instead (see .floating-tooltip). */
+        #sidebar .nav-parent .tooltip {
+            display: none;
         }
 
-        /* Center content when collapsed with proper containment */
-        .sidebar-collapsed .nav-item {
-            justify-content: center;
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-
-        .sidebar-collapsed .nav-item>div {
-            justify-content: center;
-        }
-
-        /* Hide submenus when collapsed — animated */
-        .submenu {
-            transition: opacity 0..05s ease, max-height 0.10s ease;
-            max-height: 20rem;
-            opacity: 1;
-            overflow: hidden;
-        }
-
-        .sidebar-collapsed .submenu {
-            opacity: 0;
-            max-height: 0;
-            pointer-events: none;
-        }
-
-        /* Logo container in collapsed state */
-        .sidebar-collapsed .flex.items-center.space-x-3 {
-            justify-content: center;
-            space-x: 0;
-        }
-
-        /* Active states */
-        .nav-item.active {
-            background: transparent;
-            color: inherit;
-            font-weight: 500;
-        }
-
-        .group.active {
-            background-color: #EFF6FF;
-            color: #1D4ED8;
-            border-radius: 0.8rem;
-            width: 11.5rem;
-            transition: width 0.10s ease-in-out;
-        }
-
-        .sidebar-collapsed .group.active {
-            width: auto;
-        }
-
-        /* Make SVG inherit the color */
-        .nav-item .icon-wrapper svg {
-            stroke: currentColor;
-        }
-
-        /* Child active = strong */
-        .sub-item.active {
-            color: rgb(29 78 216);
-            font-weight: 600;
-        }
-
-        /* Toggle button rotation */
-        .sidebar-collapsed .toggle-btn svg {
-            transform: rotate(180deg);
-        }
-
-        /* ══════════════════════════════════════════════════
-           FLYOUT MENUS — position:fixed to escape any container
-           ══════════════════════════════════════════════════ */
-        .flyout-menu {
+        /* Floating tooltip rendered on <body> — escapes all overflow clipping */
+        .floating-tooltip {
             position: fixed;
-            z-index: 99999;
-            width: 14rem;
+            background: #1e293b;
+            color: #fff;
+            padding: 0.5rem 0.7rem;
+            border-radius: 0.4rem;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.10s ease;
-            border-radius: 0.5rem;
-            border: 1px solid rgb(229, 231, 235);
-            background: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1);
-            padding: 0.25rem 0;
+            transition: opacity 0.12s ease;
+            z-index: 10060;
         }
 
-        .flyout-menu.flyout-visible {
+        .floating-tooltip.show {
             opacity: 1;
+        }
+
+        /* Hide tooltips when sidebar expanded (no need) */
+        .sidebar-expanded .tooltip {
+            display: none;
+        }
+
+        /* LOGOUT RED */
+        .logout-btn {
+            color: #e11d48 !important;
+        }
+
+        .logout-btn svg {
+            stroke: #e11d48 !important;
+        }
+
+        .logout-btn:hover {
+            background-color: #fff1f2 !important;
+            color: #be123c !important;
+        }
+
+        .logout-btn:hover svg {
+            stroke: #be123c !important;
+        }
+
+        /* COLLAPSED DROPDOWN (floating menu) */
+        .collapsed-dropdown {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border-radius: 0.8rem;
+            box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.2);
+            border: 1px solid #eef2ff;
+            padding: 0.4rem;
+            min-width: 170px;
+            z-index: 10050;
+            opacity: 0;
+            transform: scale(0.96);
+            pointer-events: none;
+            transition: opacity 0.12s, transform 0.12s;
+        }
+
+        .collapsed-dropdown.show {
+            opacity: 1;
+            transform: scale(1);
             pointer-events: auto;
         }
 
-        .flyout-menu a {
+        .collapsed-dropdown a {
             display: block;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            color: rgb(75 85 99);
-            border-radius: 0.43rem;
-            margin: 0 0.25rem;
+            padding: 0.45rem 1rem;
+            font-size: 0.8rem;
+            color: #334155;
+            border-radius: 0.5rem;
+            text-decoration: none;
         }
 
-        .flyout-menu a:hover {
-            background-color: rgb(239 246 255);
-            color: rgb(37 99 235);
+        .collapsed-dropdown a:hover {
+            background: #f1f5f9;
+            color: #1d4ed8;
         }
 
-        /* Active sub-item inside flyout */
-        .flyout-menu a.active {
-            color: rgb(29 78 216);
-            font-weight: 500;
+        .collapsed-dropdown a.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
         }
 
-        /* Flyout arrow pointing back to parent */
-        .flyout-menu::before {
-            content: "";
-            position: absolute;
-            top: 0.75rem;
-            left: -6px;
-            width: 0;
-            height: 0;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-            border-right: 6px solid white;
-            z-index: 100000;
+        /* TOPBAR */
+        .topbar {
+            z-index: 10005;
+            backdrop-filter: blur(8px);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
         }
 
-        /* Optional: border around arrow (to match border-gray-200) */
-        .flyout-menu::after {
-            content: "";
-            position: absolute;
-            top: 0.75rem;
-            left: -7px;
-            width: 0;
-            height: 0;
-            border-top: 7px solid transparent;
-            border-bottom: 7px solid transparent;
-            border-right: 7px solid rgb(229, 231, 235);
-            z-index: 99999;
+        /* LOGO */
+        .logo-wrapper {
+            margin-bottom: 0.25rem;
         }
 
-        /* Loading animation */
-        @keyframes loading-shimmer {
-            0% {
-                background-position: -200px 0;
-            }
-
-            100% {
-                background-position: 200px 0;
-            }
-        }
-
-        .loading-bg {
-            background: linear-gradient(90deg,
-                    rgba(229, 231, 235, 0) 25%,
-                    rgba(229, 231, 235, 0.6) 50%,
-                    rgba(229, 231, 235, 0) 75%);
-            background-size: 400px 100%;
-            animation: loading-shimmer 1.2s linear 4;
-        }
-
-        /* Flex layout for nav content */
-        .nav-content {
-            flex: 1;
-        }
-
-        .nav-bottom {
-            margin-top: auto;
-        }
-
-        /* ══════════════════════════════════════════════════
-           MOBILE — off-canvas drawer replacing broken dual-menu
-           ══════════════════════════════════════════════════ */
-        @media (max-width: 767.98px) {
-
-            /* Main content full width on mobile */
+        /* MOBILE */
+        @media (max-width: 767px) {
             .main-container {
                 margin-left: 0 !important;
             }
 
-            /* Sidebar becomes a slide-in drawer */
             #sidebar {
-                position: fixed !important;
-                top: 0;
-                left: 0;
-                bottom: 0;
                 width: 16rem !important;
-                min-width: 16rem !important;
-                max-width: 16rem !important;
-                z-index: 10001;
-                /* above topbar so drawer is fully on top */
-                background: white;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25);
                 transform: translateX(-100%);
-                /* transition inherited from base #sidebar rule */
+                transition: transform 0.2s ease;
+                z-index: 10001;
+                /* sit ABOVE the overlay (was 9999, under overlay 10000) */
+                background: #ffffff;
+                /* solid panel — no see-through */
+                backdrop-filter: none;
+                /* no frosted glass on mobile */
+                -webkit-backdrop-filter: none;
             }
 
             #sidebar.mobile-open {
                 transform: translateX(0);
             }
 
-            /* Inner nav: override fixed to relative so it flows inside the drawer */
-            #sidebar>nav {
-                position: relative !important;
-                height: 100%;
+            .general-sidebar {
+                padding-top: 3rem;
+                /* increased from 1rem to push logo down */
                 overflow-y: auto;
             }
 
-            /* Override the fixed bottom nav for mobile */
-            #sidebar .nav-bottom {
-                position: relative !important;
-                bottom: auto !important;
-            }
-
-            /* Force-show all text in mobile drawer regardless of collapse state */
-            #sidebar .nav-text,
-            #sidebar .logo-text {
+            .nav-text,
+            .logo-text,
+            .section-label span {
+                display: inline-block !important;
                 opacity: 1 !important;
-                width: auto !important;
-                margin-left: 0.75rem !important;
-                display: inline !important;
             }
 
-            #sidebar .submenu {
-                opacity: 1 !important;
-                max-height: 20rem !important;
-                pointer-events: auto !important;
-            }
-
-            #sidebar .nav-item {
-                justify-content: flex-start !important;
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
-            }
-
-            /* Hide flyouts on mobile — submenus are visible inline */
-            .flyout-menu {
+            .tooltip,
+            .collapsed-dropdown {
                 display: none !important;
             }
 
-            /* Hide tooltips on mobile — text is always visible */
-            .tooltip {
-                display: none !important;
+            .submenu-accordion {
+                display: flex !important;
             }
 
-            /* Hide desktop collapse toggle on mobile */
-            #sidebarToggle {
-                display: none !important;
+            .sidebar-collapsed .arrow-icon {
+                display: inline-block !important;
+            }
+
+            .accordion-item.has-active {
+                background: rgba(59, 130, 246, 0.08);
             }
         }
 
-        /* Mobile overlay */
         #mobile-overlay {
             position: fixed;
             inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            /* clean dark scrim */
             z-index: 10000;
-            /* between topbar and sidebar drawer */
-            background: rgba(0, 0, 0, .5);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.10s ease;
+            transition: opacity 0.2s;
         }
 
         #mobile-overlay.active {
@@ -420,41 +484,28 @@
     </style>
 </head>
 
-<body class="relative overflow-x-hidden bg-gray-100">
+<body class="bg-slate-50">
 
-    <!-- Mobile overlay -->
     <div id="mobile-overlay"></div>
 
-    <div class="topbar fixed left-0 right-0 top-0 z-[10000] flex h-8 items-center justify-between bg-gradient-to-r from-green-900 via-black to-blue-900 px-4 shadow-sm">
-
-        {{-- Left: toggle (desktop) + hamburger (mobile) --}}
-        <div class="flex items-center space-x-2">
-
-            {{-- Desktop sidebar toggle — hidden on mobile --}}
-            <button id="sidebarToggle"
-                class="toggle-btn relative hidden items-center rounded p-2 text-white hover:bg-white/10 md:flex"
-                aria-label="Toggle sidebar">
-                <svg class="h-5 w-5 flex-shrink-0 transition-transform duration-300"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-                <div class="tooltip" id="sidebarToggleTooltip">Collapse Menu</div>
-            </button>
-
-            {{-- Mobile hamburger — hidden on desktop --}}
-            <button id="mobileMenuBtn"
-                class="rounded p-1 text-white hover:bg-white/10 md:hidden"
-                aria-label="Open menu">
+    <!-- TOPBAR -->
+    <div class="topbar fixed left-0 right-0 top-0 z-[10005] flex h-10 items-center justify-between gap-2 bg-gradient-to-r from-slate-900 to-slate-800 px-3 shadow-md sm:px-4">
+        <div class="flex min-w-0 items-center gap-2">
+            <!-- Desktop collapse toggle – hidden on mobile (the drawer uses the menu button) -->
+            <button id="sidebarToggle" class="toggle-btn relative hidden rounded-lg p-1.5 text-white/80 transition hover:bg-white/10 md:inline-flex" aria-label="Toggle sidebar">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 6h16M4 12h16M4 18h16" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <div class="tooltip !left-auto !right-full !ml-0 !mr-2" id="sidebarToggleTooltip">Collapse Menu</div>
+            </button>
+            <!-- Mobile drawer toggle -->
+            <button id="mobileMenuBtn" class="rounded-lg p-1.5 text-white/80 hover:bg-white/10 md:hidden" aria-label="Open menu">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-
         </div>
 
-        {{-- Right: user info --}}
         @php
             use App\Support\LocationConfig;
             $user = Auth::user();
@@ -464,898 +515,448 @@
             $fullLocation = $storeLabel ?? ($regionLabel ?? $code);
         @endphp
 
-        <div class="flex items-center space-x-4">
-            <span class="text-sm text-white">
-                Howdy, {{ $user?->name }} ({{ $fullLocation }})
-            </span>
+        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            @php
+                $allowedIds = [1, 2, 3];
+                $currentUserId = Auth::id();
+                $switchableRoles = ['super admin', 'store personnel', 'manager'];
+                $currentRole = session('switched_role') ?? Auth::user()->role;
+                $currentLocation = session('switched_location') ?? Auth::user()->user_location;
+                $storeLocations = LocationConfig::stores();
+                $regionLabels = LocationConfig::regionLabels();
+                $locationOptions = [];
+                foreach ($regionLabels as $rc => $rl) {
+                    $locationOptions[$rc] = "🌍 {$rl} (Region)";
+                }
+                foreach ($storeLocations as $sc => $sn) {
+                    $locationOptions[$sc] = "🏪 {$sn}";
+                }
+            @endphp
+            @if (in_array($currentUserId, $allowedIds))
+                <select id="role-switcher" class="max-w-[30vw] cursor-pointer truncate rounded-md border-0 bg-white/10 px-2 py-1 text-xs text-white focus:ring-0 sm:max-w-none sm:text-sm">
+                    @foreach ($switchableRoles as $role)
+                        <option class="text-black" value="{{ $role }}" {{ $currentRole === $role ? 'selected' : '' }}>🎭 {{ ucfirst($role) }}</option>
+                    @endforeach
+                </select>
+                <select id="location-switcher"
+                    class="min-w-0 max-w-[40vw] cursor-pointer truncate rounded-md border-0 bg-white/10 px-2 py-1 text-xs text-white focus:ring-0 sm:min-w-[150px] sm:max-w-none sm:text-sm">
+                    @foreach ($locationOptions as $lc => $label)
+                        <option class="text-black" value="{{ $lc }}" {{ (string) $currentLocation === (string) $lc ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            @endif
+            <span class="hidden max-w-[10rem] truncate text-sm text-white/90 sm:inline lg:max-w-none">Howdy, {{ Auth::user()->name }}
+                ({{ $storeLocations[$currentLocation] ?? ($regionLabels[$currentLocation] ?? $currentLocation) }})</span>
         </div>
-
     </div>
 
-
-    <aside
-        id="sidebar"
-        class="sidebar-expanded fixed z-[9999] flex flex-col bg-white shadow-xl">
-
-        <nav class="general-sidebar fixed flex flex-col px-3 pb-4">
-            <a
-                href="{{ route('dashboard') }}"
-                class="block">
-                <div class="mt-8 w-auto flex-col items-center justify-center border-b border-gray-200 py-4">
-                    <div class="flex items-center space-x-6">
-                        <img
-                            src="{{ asset('images/MarengEms_Logo.png') }}"
-                            alt="Logo"
-                            class="h-10 w-10 flex-shrink-0 rounded-lg">
-                        <span class="logo-text text-lg font-bold text-gray-800">ISO B2B2C</span>
-                    </div>
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar-expanded">
+        <nav class="general-sidebar">
+            <!-- Logo -->
+            <a href="{{ route('dashboard') }}" class="logo-wrapper m-1 block border-b border-gray-100/60 pt-3">
+                <div class="flex items-center gap-3">
+                    <img src="{{ asset('images/MarengEms_Logo.png') }}" alt="Logo" class="h-9 w-9 rounded-xl shadow-sm">
+                    <span class="logo-text text-base font-semibold tracking-tight text-gray-800">ISO B2B2C</span>
                 </div>
             </a>
 
+            <!-- Scrollable menu -->
             <div class="nav-content">
-                <ul class="space-y-1">
-                    <!-- Dashboard Group -->
-                    <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }} group relative">
-                        <a
-                            href="{{ route('dashboard') }}"
-                            class="nav-item {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                class="h-5 w-5 flex-shrink-0">
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M3 3h7v7H3V3zM14 3h7v7h-7V3zM14 14h7v7h-7v-7zM3 14h7v7H3v-7z" />
+                <ul class="space-y-0.5">
+                    <!-- CORE -->
+                    <li class="section-label"><span>Core</span></li>
+                    <li>
+                        <a href="{{ route('dashboard') }}" class="nav-parent {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h7v7H3V3zM14 3h7v7h-7V3zM14 14h7v7h-7v-7zM3 14h7v7H3v-7z" />
                             </svg>
-                            <span class="nav-text ml-3">Dashboard</span>
+                            <span class="nav-text">Dashboard</span>
                             <div class="tooltip">Dashboard</div>
                         </a>
-
-                        <ul class="flyout-menu" data-flyout>
-                            <li>
-                                <a href="{{ route('dashboard') }}"
-                                    class="sub-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                    Dashboard
-                                </a>
-                            </li>
-                        </ul>
                     </li>
 
-
-
-                    <!-- Orders Group -->
-                    <li class="{{ request()->routeIs('orders*') ? 'active' : '' }} group relative">
-                        @if (request()->routeIs('orders*'))
-                            <div class="nav-item {{ request()->routeIs('orders*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                <span class="icon-wrapper">
-                                    <svg
-                                        class="h-5 w-5 flex-shrink-0"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                    </svg>
-                                </span>
-                                <span class="nav-text ml-3 font-medium">Orders</span>
-                                <div class="tooltip">Orders</div>
-                            </div>
-
-                            <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                <li>
-                                    <a
-                                        href="{{ route('orders.index') }}"
-                                        class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Sales Order List</span>
-                                    </a>
-                                </li>
-                                @if (preg_match('/orders\/\d+$/', request()->path()))
-                                    <li>
-                                        <a
-                                            href="{{ url()->current() }}"
-                                            class="sub-item active relative flex items-center rounded-lg px-3 py-2 text-sm">
-                                            <span class="nav-text">Sales Order Details</span>
-                                        </a>
-                                    </li>
+                    <!-- Orders & Forms (merged) -->
+                    <li class="accordion-item" data-accordion="orders">
+                        <button class="nav-parent w-full text-left" aria-expanded="false">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                            </svg>
+                            <span class="nav-text">Orders & Forms</span>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                <polygon points="8,5 16,12 8,19" />
+                            </svg>
+                            <div class="tooltip">Orders & Forms</div>
+                        </button>
+                        <ul class="submenu-accordion">
+                            <li><a href="{{ route('orders.index') }}" class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">Sales Order List</a></li>
+                            @auth
+                                @if (!in_array(auth()->user()->role, ['manager']))
+                                    <li><a href="{{ route('forms.sof') }}" class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">Sales Order Form</a></li>
                                 @endif
-                            </ul>
-                        @else
-                            <a
-                                href="{{ route('orders.index') }}"
-                                class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                <svg
-                                    class="h-5 w-5 flex-shrink-0"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                </svg>
-                                <span class="nav-text ml-3">Orders</span>
-                                <div class="tooltip">Orders</div>
-                            </a>
-                        @endif
-
-                        <ul class="flyout-menu" data-flyout>
-                            <li>
-                                <a href="{{ route('orders.index') }}"
-                                    class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">
-                                    Sales Order List
-                                </a>
-                            </li>
+                            @endauth
                             @if (preg_match('/orders\/\d+$/', request()->path()))
-                                <li>
-                                    <a href="{{ url()->current() }}"
-                                        class="sub-item active">
-                                        Sales Order Details
-                                    </a>
-                                </li>
+                                <li><a href="{{ url()->current() }}" class="sub-item active">Order Details</a></li>
                             @endif
                         </ul>
                     </li>
 
 
-                    <!-- Forms Group -->
-                    @auth
-                        @if (!in_array(auth()->user()->role, ['manager']))
-                            <li class="{{ request()->routeIs('forms*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('forms*'))
-                                    <div class="nav-item {{ request()->routeIs('forms*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                        <span class="icon-wrapper">
-                                            <svg
-                                                class="h-5 w-5 flex-shrink-0"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </span>
-
-                                        <span class="nav-text ml-3 font-medium">Forms</span>
-                                        <div class="tooltip">Forms</div>
-                                    </div>
-
-                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                        <li>
-                                            <a
-                                                href="{{ route('forms.sof') }}"
-                                                class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Sales Order Form</span>
-                                            </a>
-                                        </li>
-                                        {{-- <li>
-                                            <a
-                                                href="{{ route('forms.rof') }}"
-                                                class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Request Order Form</span>
-                                            </a>
-                                        </li> --}}
-                                    </ul>
-                                @else
-                                    <a
-                                        href="{{ route('forms.sof') }}"
-                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                        <svg
-                                            class="h-5 w-5 flex-shrink-0"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span class="nav-text ml-3">Forms</span>
-                                        <div class="tooltip">Forms</div>
-                                    </a>
-                                @endif
-
-                                <ul class="flyout-menu" data-flyout>
-                                    <li>
-                                        <a href="{{ route('forms.sof') }}"
-                                            class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">
-                                            Sales Order Form
-                                        </a>
-                                    </li>
-                                    {{-- <li>
-                                        <a href="{{ route('forms.rof') }}"
-                                            class="sub-item {{ request()->routeIs('forms.rof') ? 'active' : '' }}">
-                                            Request Order Form
-                                        </a>
-                                    </li> --}}
-                                </ul>
-                            </li>
-                        @endif
-                    @endauth
-
-
-                    <!-- Reports Group -->
-                    <li class="{{ request()->routeIs('reports*') ? 'active' : '' }} group relative">
-                        @if (request()->routeIs('reports*'))
-                            <div class="nav-item {{ request()->routeIs('reports*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                <span class="icon-wrapper">
-                                    <svg
-                                        class="h-5 w-5 flex-shrink-0"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M4 20h16M4 4v16" />
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M4 14l4-4 4 3 6-6 2 2" />
-                                    </svg>
-                                </span>
-
-                                <span class="nav-text ml-3 font-medium">Reports</span>
-                                <div class="tooltip">Reports</div>
-                            </div>
-
-                            <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                <li>
-                                    <a
-                                        href="{{ route('reports.sales') }}"
-                                        class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Sales Overview</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="{{ route('reports.orders') }}"
-                                        class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Orders Report</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="{{ route('reports.payments') }}"
-                                        class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                        <span class="nav-text">Mode of Payments</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        @else
-                            <a
-                                href="{{ route('reports.sales') }}"
-                                class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                <svg
-                                    class="h-5 w-5 flex-shrink-0"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 20h16M4 4v16" />
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 14l4-4 4 3 6-6 2 2" />
-                                </svg>
-                                <span class="nav-text ml-3">Reports</span>
-                                <div class="tooltip">Reports</div>
-                            </a>
-                        @endif
-
-                        <ul class="flyout-menu" data-flyout>
-                            <li>
-                                <a href="{{ route('reports.sales') }}"
-                                    class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }}">
-                                    Sales Overview
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('reports.orders') }}"
-                                    class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }}">
-                                    Orders Report
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('reports.payments') }}"
-                                    class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }}">
-                                    Mode of Payments
-                                </a>
-                            </li>
+                    <!-- Analytics (Reports) -->
+                    <li class="section-label"><span>Analytics</span></li>
+                    <li class="accordion-item" data-accordion="reports">
+                        <button class="nav-parent w-full text-left" aria-expanded="false">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h16M4 4v16" />
+                                <path d="M4 14l4-4 4 3 6-6 2 2" />
+                            </svg>
+                            <span class="nav-text">Reports</span>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                <polygon points="8,5 16,12 8,19" />
+                            </svg>
+                            <div class="tooltip">Reports</div>
+                        </button>
+                        <ul class="submenu-accordion">
+                            <li><a href="{{ route('reports.sales') }}" class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }}">Sales Overview</a></li>
+                            <li><a href="{{ route('reports.orders') }}" class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }}">Orders Report</a></li>
+                            <li><a href="{{ route('reports.payments') }}" class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }}">Mode of Payments</a></li>
                         </ul>
                     </li>
 
+                    <!-- Inventory (Products) conditional -->
                     @auth
                         @if (in_array(auth()->user()->role, ['super admin', 'warehouse personnel', 'warehouse admin', 'store personnel']))
-                            <!-- Products Group -->
-                            <li class="{{ request()->routeIs('products*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('products*'))
-                                    <div class="nav-item {{ request()->routeIs('products*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                        <span class="icon-wrapper">
-                                            <svg
-                                                class="h-5 w-5 flex-shrink-0"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                            </svg>
-                                        </span>
-                                        <span class="nav-text ml-3 font-medium">Products</span>
-                                        <div class="tooltip">Products</div>
-                                    </div>
-
-                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                        <li>
-                                            <a
-                                                href="{{ route('products.index') }}"
-                                                class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Product List</span>
-                                            </a>
-                                        </li>
-                                        @if (!in_array(auth()->user()->role, ['store personnel']))
-                                            <li>
-                                                <a
-                                                    href="{{ route('products.create') }}"
-                                                    class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                    <span class="nav-text">Add New Product</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a
-                                                    href="{{ route('products.import.show') }}"
-                                                    class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                    <span class="nav-text">Import CSV</span>
-                                                </a>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                @else
-                                    <a
-                                        href="{{ route('products.index') }}"
-                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                        <svg
-                                            class="h-5 w-5 flex-shrink-0"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                        <span class="nav-text ml-3">Products</span>
-                                        <div class="tooltip">Products</div>
-                                    </a>
-                                @endif
-
-                                <ul class="flyout-menu" data-flyout>
-                                    <li>
-                                        <a href="{{ route('products.index') }}"
-                                            class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }}">
-                                            Product List
-                                        </a>
-                                    </li>
+                            <li class="section-label"><span>Inventory</span></li>
+                            <li class="accordion-item" data-accordion="products">
+                                <button class="nav-parent w-full text-left" aria-expanded="false">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    <span class="nav-text">Products</span>
+                                    <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                        <polygon points="8,5 16,12 8,19" />
+                                    </svg>
+                                    <div class="tooltip">Products</div>
+                                </button>
+                                <ul class="submenu-accordion">
+                                    <li><a href="{{ route('products.index') }}" class="sub-item {{ request()->routeIs('products.index') ? 'active' : '' }}">Product List</a></li>
                                     @if (!in_array(auth()->user()->role, ['store personnel']))
-                                        <li>
-                                            <a href="{{ route('products.create') }}"
-                                                class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }}">
-                                                Add New Product
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('products.import.show') }}"
-                                                class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">
-                                                Import CSV
-                                            </a>
+                                        <li><a href="{{ route('products.create') }}" class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }}">Add Product</a></li>
+                                        <li><a href="{{ route('products.import.show') }}" class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">Import CSV</a>
                                         </li>
                                     @endif
                                 </ul>
                             </li>
-
-
                         @endif
                     @endauth
-                    <!-- User Guide - Add this as a new menu item -->
-                    <li class="{{ request()->routeIs('user-guide*') ? 'active' : '' }} group relative">
-                        <a href="{{ route('user-guide.document') }}"
-                            class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                            <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                    <!-- Admin & Utilities (super admin) -->
+                    @auth
+                        @if (auth()->user()->role === 'super admin')
+                            <li class="section-label"><span>Control</span></li>
+                            <li class="accordion-item" data-accordion="admin">
+                                <button class="nav-parent w-full text-left" aria-expanded="false">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                    <span class="nav-text">Admin</span>
+                                    <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                        <polygon points="8,5 16,12 8,19" />
+                                    </svg>
+                                    <div class="tooltip">Admin</div>
+                                </button>
+                                <ul class="submenu-accordion">
+                                    <li><a href="{{ route('users.index') }}" class="sub-item {{ request()->routeIs('users.index') ? 'active' : '' }}">User Management</a></li>
+                                    <li><a href="{{ route('settings.index') }}" class="sub-item {{ request()->routeIs('settings*') ? 'active' : '' }}">System Settings</a></li>
+                                    <li><a href="{{ route('logs') }}" class="sub-item {{ request()->routeIs('logs*') ? 'active' : '' }}">Inventory Logs</a></li>
+                                    <li><a href="{{ route('activity_logs.index') }}" class="sub-item {{ request()->routeIs('activity_logs*') ? 'active' : '' }}">Activity Logs</a></li>
+                                </ul>
+                            </li>
+                            <li class="accordion-item" data-accordion="utilities">
+                                <button class="nav-parent w-full text-left" aria-expanded="false">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    </svg>
+                                    <span class="nav-text">Utilities</span>
+                                    <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                        <polygon points="8,5 16,12 8,19" />
+                                    </svg>
+                                    <div class="tooltip">Utilities</div>
+                                </button>
+                                <ul class="submenu-accordion">
+                                    <li><a href="{{ route('others.inventory.form') }}" class="sub-item {{ request()->routeIs('others.inventory.form') ? 'active' : '' }}">Inventory Form</a>
+                                    </li>
+                                    <li><a href="{{ route('others.filemanager.index') }}" class="sub-item {{ request()->routeIs('others.filemanager.*') ? 'active' : '' }}">File Manager</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        @endif
+
+                    @endauth
+                    <!-- Support -->
+                    <li class="section-label"><span>Support</span></li>
+                    <li>
+                        <a href="{{ route('user-guide.document') }}" class="nav-parent {{ request()->routeIs('user-guide*') ? 'active' : '' }}">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
-                            <span class="nav-text ml-3">User Guide</span>
+                            <span class="nav-text">User Guide</span>
                             <div class="tooltip">User Guide</div>
                         </a>
-
-                        <ul class="flyout-menu" data-flyout>
-                            <li>
-                                <a href="{{ route('user-guide.document') }}"
-                                    class="sub-item {{ request()->routeIs('user-guide.document') ? 'active' : '' }}">
-                                    User Guide
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-                    @auth
-                        @if (auth()->user()->role === 'super admin')
-                            <!-- Admin Group -->
-                            <li class="{{ request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*'))
-                                    <div
-                                        class="nav-item {{ request()->routeIs('users*') || request()->routeIs('settings*') || request()->routeIs('logs*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                        <span class="icon-wrapper">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                class="h-5 w-5 flex-shrink-0">
-                                                <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
-                                                <circle cx="9" cy="7" r="4" />
-                                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                            </svg>
-                                        </span>
-                                        <span class="nav-text ml-3">Admin</span>
-                                        <div class="tooltip">Admin</div>
-                                    </div>
 
-                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                        <li>
-                                            <a
-                                                href="{{ route('users.index') }}"
-                                                class="sub-item {{ request()->routeIs('users.index') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">User Management</span>
-                                            </a>
-                                        </li>
-                                        @if (preg_match('/users\/\d+$/', request()->path()))
-                                            <li>
-                                                <a
-                                                    href="{{ url()->current() }}"
-                                                    class="sub-item active relative flex items-center rounded-lg px-3 py-2 text-sm">
-                                                    <span class="nav-text">User Details</span>
-                                                </a>
-                                            </li>
-                                        @endif
-                                        <li>
-                                            <a
-                                                href="{{ route('settings.index') }}"
-                                                class="sub-item {{ request()->routeIs('settings*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">System Settings</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                href="{{ route('logs') }}"
-                                                class="sub-item {{ request()->routeIs('logs*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Logs</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                @else
-                                    <a
-                                        href="{{ route('users.index') }}"
-                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            class="h-5 w-5 flex-shrink-0">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
-                                            <circle cx="9" cy="7" r="4" />
-                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                        </svg>
-                                        <span class="nav-text ml-3">Admin</span>
-                                        <div class="tooltip">Admin</div>
-                                    </a>
-                                @endif
-
-                                {{-- Flyout always rendered so hover works in collapsed state too --}}
-                                <ul class="flyout-menu" data-flyout>
-                                    <li>
-                                        <a href="{{ route('users.index') }}"
-                                            class="sub-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
-                                            User Management
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('settings.index') }}"
-                                            class="sub-item {{ request()->routeIs('settings*') ? 'active' : '' }}">
-                                            System Settings
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('logs') }}"
-                                            class="sub-item {{ request()->routeIs('logs*') ? 'active' : '' }}">
-                                            Logs
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-
-                            <!-- Others Group -->
-                            <li class="{{ request()->routeIs('others.*') ? 'active' : '' }} group relative">
-                                @if (request()->routeIs('others.*'))
-                                    <div class="nav-item {{ request()->routeIs('others.*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                                        <span class="icon-wrapper">
-                                            <svg
-                                                class="h-5 w-5 flex-shrink-0"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                            </svg>
-                                        </span>
-                                        <span class="nav-text ml-3 font-medium">Others</span>
-                                        <div class="tooltip">Others</div>
-                                    </div>
-
-                                    <ul class="submenu ml-5 mt-1 space-y-1 border-l border-gray-200 pl-2">
-                                        <li>
-                                            <a
-                                                href="{{ route('others.inventory.form') }}"
-                                                class="sub-item {{ request()->routeIs('others.inventory.form') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">Inventory Form</span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                href="{{ route('others.filemanager.index') }}"
-                                                class="sub-item {{ request()->routeIs('others.filemanager.*') ? 'active' : '' }} relative flex items-center rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600">
-                                                <span class="nav-text">File Manager</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                @else
-                                    <a
-                                        href="{{ route('others.inventory.form') }}"
-                                        class="nav-item relative flex items-center rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                                        <svg
-                                            class="h-5 w-5 flex-shrink-0"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                        </svg>
-                                        <span class="nav-text ml-3">Others</span>
-                                        <div class="tooltip">Others</div>
-                                    </a>
-                                @endif
-
-                                <ul class="flyout-menu" data-flyout>
-                                    <li>
-                                        <a href="{{ route('others.inventory.form') }}"
-                                            class="sub-item {{ request()->routeIs('others.inventory.form') ? 'active' : '' }}">
-                                            Inventory Form
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('others.filemanager.index') }}"
-                                            class="sub-item {{ request()->routeIs('others.filemanager.*') ? 'active' : '' }}">
-                                            File Manager
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        @endif
-                    @endauth
                 </ul>
             </div>
 
-            <div class="nav-bottom fixed bottom-2 w-auto">
-
-                {{-- My Account --}}
-                <li class="{{ request()->routeIs('account.*') ? 'active' : '' }} group relative">
-                    <a href="{{ route('account.show') }}"
-                        class="nav-item {{ request()->routeIs('account.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700' }} relative flex items-center rounded-lg px-3 py-2.5 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" stroke-width="2" class="h-5 w-5 flex-shrink-0">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.797 5.879 2.11M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <!-- Bottom fixed -->
+            <div class="nav-bottom">
+                <li><a href="{{ route('account.show') }}" class="nav-parent {{ request()->routeIs('account.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.236.797 5.879 2.11M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <span class="nav-text ml-3">My Account</span>
+                        <span class="nav-text">My Account</span>
                         <div class="tooltip">My Account</div>
-                    </a>
-                </li>
-
-                <!-- Logout -->
-                <div class="border-t border-gray-200 pt-4">
-                    <a
-                        href="#"
-                        id="logout-btn"
-                        class="logout-btn nav-item relative flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700">
-                        <svg
-                            class="h-5 w-5 flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
+                    </a></li>
+                <div class="pt-2">
+                    <a href="#" id="logout-btn" class="logout-btn nav-parent">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span class="nav-text ml-3">Logout</span>
+                        <span class="nav-text">Logout</span>
                         <div class="tooltip">Logout</div>
                     </a>
-
-                    <form
-                        id="logout-form"
-                        action="{{ route('logout') }}"
-                        method="POST"
-                        class="hidden">
-                        @csrf
-                    </form>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
                 </div>
             </div>
         </nav>
     </aside>
 
-    <!-- Main Content -->
     <div class="main-container min-h-screen">
-        <main class="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-6">
-            @yield('content')
-        </main>
+        <main class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-white to-indigo-100 py-6">@yield('content')</main>
     </div>
 
     <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
+            const toggleBtn = document.getElementById('sidebarToggle');
             const overlay = document.getElementById('mobile-overlay');
             const mobileBtn = document.getElementById('mobileMenuBtn');
 
-            // ── Helpers ──
-            function isMobile() {
-                return window.innerWidth < 768;
-            }
-
-            function openMobileDrawer() {
+            const isMobile = () => window.innerWidth < 768;
+            const openMobile = () => {
                 sidebar.classList.add('mobile-open');
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
-            }
-
-            function closeMobileDrawer() {
+            };
+            const closeMobile = () => {
                 sidebar.classList.remove('mobile-open');
                 overlay.classList.remove('active');
                 document.body.style.overflow = '';
-            }
+            };
 
-            // Initialize sidebar state from localStorage or default to expanded
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed && sidebar) {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
                 sidebar.classList.remove('sidebar-expanded');
                 sidebar.classList.add('sidebar-collapsed');
-
-                const tooltip = document.getElementById('sidebarToggleTooltip');
-                if (tooltip) tooltip.textContent = 'Expand Menu';
+                if (toggleBtn) toggleBtn.querySelector('.tooltip').innerText = 'Expand Menu';
             }
+            toggleBtn?.addEventListener('click', () => {
+                const collapsed = sidebar.classList.contains('sidebar-collapsed');
+                if (collapsed) {
+                    sidebar.classList.remove('sidebar-collapsed');
+                    sidebar.classList.add('sidebar-expanded');
+                    localStorage.setItem('sidebarCollapsed', 'false');
+                    toggleBtn.querySelector('.tooltip').innerText = 'Collapse Menu';
+                } else {
+                    sidebar.classList.remove('sidebar-expanded');
+                    sidebar.classList.add('sidebar-collapsed');
+                    localStorage.setItem('sidebarCollapsed', 'true');
+                    toggleBtn.querySelector('.tooltip').innerText = 'Expand Menu';
+                }
+                closeAllDropdowns();
+                hideFloatingTooltip();
+            });
 
-            // Update main container width when sidebar toggles
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    const isCurrentlyCollapsed = sidebar.classList.contains('sidebar-collapsed');
-                    const tooltip = document.getElementById('sidebarToggleTooltip');
+            mobileBtn?.addEventListener('click', () => sidebar.classList.contains('mobile-open') ? closeMobile() : openMobile());
+            overlay?.addEventListener('click', closeMobile);
+            sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+                if (isMobile()) closeMobile();
+            }));
 
-                    if (isCurrentlyCollapsed) {
-                        sidebar.classList.remove('sidebar-collapsed');
-                        sidebar.classList.add('sidebar-expanded');
-                        localStorage.setItem('sidebarCollapsed', 'false');
-                        if (tooltip) tooltip.textContent = 'Collapse Menu';
+            function updateParentHighlights() {
+                document.querySelectorAll('.accordion-item').forEach(item => {
+                    const hasActiveChild = item.querySelector('.submenu-accordion .sub-item.active') !== null;
+                    if (hasActiveChild) {
+                        item.classList.add('has-active');
                     } else {
-                        sidebar.classList.remove('sidebar-expanded');
-                        sidebar.classList.add('sidebar-collapsed');
-                        localStorage.setItem('sidebarCollapsed', 'true');
-                        if (tooltip) tooltip.textContent = 'Expand Menu';
+                        item.classList.remove('has-active');
                     }
                 });
             }
 
-            // Mobile: hamburger opens sidebar as drawer
-            if (mobileBtn) {
-                mobileBtn.addEventListener('click', function() {
-                    if (sidebar.classList.contains('mobile-open')) {
-                        closeMobileDrawer();
-                    } else {
-                        openMobileDrawer();
-                    }
-                });
-            }
-
-            // Mobile: tap overlay to close
-            if (overlay) {
-                overlay.addEventListener('click', closeMobileDrawer);
-            }
-
-            // Close drawer on nav link click (mobile only)
-            sidebar.querySelectorAll('a').forEach(function(link) {
-                link.addEventListener('click', function() {
-                    if (isMobile()) closeMobileDrawer();
-                });
-            });
-
-            // ══════════════════════════════════════════════
-            // FLYOUT POSITIONING — position:fixed, tooltip-style
-            // Escapes sidebar container, works with zoom:0.75
-            // ══════════════════════════════════════════════
-            document.querySelectorAll('.group').forEach(function(group) {
-                var flyout = group.querySelector('[data-flyout]');
-                if (!flyout) return;
-
-                var hideTimer = null;
-
-                function showFlyout() {
-                    if (isMobile()) return;
-                    // Don't show flyout on active parent when expanded — it already has inline submenu
-                    if (group.classList.contains('active') && sidebar.classList.contains('sidebar-expanded')) return;
-                    clearTimeout(hideTimer);
-
-                    // Hide all other flyouts first
-                    document.querySelectorAll('.flyout-menu.flyout-visible').forEach(function(f) {
-                        if (f !== flyout) f.classList.remove('flyout-visible');
-                    });
-
-                    // Calculate position accounting for sidebar zoom
-                    var sidebarZoom = parseFloat(getComputedStyle(sidebar).zoom) || 1;
-                    var sidebarRect = sidebar.getBoundingClientRect();
-                    var groupRect = group.getBoundingClientRect();
-
-                    flyout.style.left = ((sidebarRect.right - 16) / sidebarZoom) + 'px';
-                    flyout.style.top = (groupRect.top / sidebarZoom) + 'px';
-                    flyout.classList.add('flyout-visible');
-
-                    // Clamp to viewport bottom
-                    requestAnimationFrame(function() {
-                        var flyoutRect = flyout.getBoundingClientRect();
-                        var viewportH = window.innerHeight;
-                        if (flyoutRect.bottom > viewportH) {
-                            flyout.style.top = (((viewportH - flyoutRect.height - 8)) / sidebarZoom) + 'px';
-                        }
-                    });
+            document.querySelectorAll('.accordion-item').forEach(item => {
+                const btn = item.querySelector('.nav-parent');
+                const sub = item.querySelector('.submenu-accordion');
+                if (!sub) return;
+                const arrow = btn.querySelector('.arrow-icon');
+                const hasActiveChild = sub.querySelector('.sub-item.active') !== null;
+                if (hasActiveChild && !sidebar.classList.contains('sidebar-collapsed') && !isMobile()) {
+                    sub.classList.add('open');
+                    if (arrow) arrow.style.transform = 'rotate(90deg)';
+                    btn.setAttribute('aria-expanded', 'true');
+                    item.classList.add('has-active');
+                } else {
+                    sub.classList.remove('open');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                    btn.setAttribute('aria-expanded', 'false');
                 }
 
-                function scheduleHide() {
-                    hideTimer = setTimeout(function() {
-                        flyout.classList.remove('flyout-visible');
-                    }, 120);
-                }
-
-                function cancelHide() {
-                    clearTimeout(hideTimer);
-                }
-
-                group.addEventListener('mouseenter', showFlyout);
-                group.addEventListener('mouseleave', scheduleHide);
-                flyout.addEventListener('mouseenter', cancelHide);
-                flyout.addEventListener('mouseleave', scheduleHide);
-            });
-
-            // Loading animation for navigation links
-            document.querySelectorAll(".general-sidebar a").forEach(link => {
-                link.addEventListener("click", function() {
-                    this.classList.add("loading-bg");
-                    setTimeout(() => {
-                        this.classList.remove("loading-bg");
-                    }, 5000);
-                });
-            });
-
-            // Handle page expired
-            if (document.body.innerText.includes('Page Expired')) {
-                window.location.reload();
-            }
-
-            // Handle escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeMobileDrawer();
-                }
-            });
-
-            // Responsive behavior
-            function handleResize() {
-                if (window.innerWidth >= 768) {
-                    sidebar.classList.remove('mobile-open');
-                    sidebar.classList.remove('hidden');
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-            }
-
-            window.addEventListener('resize', handleResize);
-            handleResize(); // Initial call
-
-            // Keyboard shortcut - Alt + S to toggle sidebar
-            document.addEventListener('keydown', function(e) {
-                if (e.altKey && e.key === 's') {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (!isMobile() && sidebarToggle) {
-                        sidebarToggle.click();
+                    e.stopPropagation();
+
+                    if (sidebar.classList.contains('sidebar-collapsed') && !isMobile()) {
+                        showCollapsedDropdown(btn, sub);
+                    } else {
+                        const isOpen = sub.classList.contains('open');
+                        if (isOpen) {
+                            sub.classList.remove('open');
+                            if (arrow) arrow.style.transform = 'rotate(0deg)';
+                            btn.setAttribute('aria-expanded', 'false');
+                        } else {
+                            sub.classList.add('open');
+                            if (arrow) arrow.style.transform = 'rotate(90deg)';
+                            btn.setAttribute('aria-expanded', 'true');
+                        }
                     }
+                });
+            });
+
+            updateParentHighlights();
+
+            /* ── Floating tooltips for collapsed sidebar ──
+               The inline .tooltip elements get clipped by the nav's overflow,
+               so when collapsed we render a position:fixed copy on <body>. */
+            let activeTooltip = null;
+
+            function hideFloatingTooltip() {
+                if (activeTooltip) {
+                    activeTooltip.remove();
+                    activeTooltip = null;
                 }
+            }
+
+            function showFloatingTooltip(navParent) {
+                const src = navParent.querySelector('.tooltip');
+                if (!src) return;
+                hideFloatingTooltip();
+                const tip = document.createElement('div');
+                tip.className = 'floating-tooltip';
+                tip.textContent = src.textContent.trim();
+                document.body.appendChild(tip);
+                const r = navParent.getBoundingClientRect();
+                tip.style.left = (r.right + 12) + 'px';
+                tip.style.top = (r.top + r.height / 2 - tip.offsetHeight / 2) + 'px';
+                requestAnimationFrame(() => tip.classList.add('show'));
+                activeTooltip = tip;
+            }
+
+            sidebar.querySelectorAll('.nav-parent').forEach(np => {
+                np.addEventListener('mouseenter', () => {
+                    if (sidebar.classList.contains('sidebar-collapsed') && !isMobile()) {
+                        showFloatingTooltip(np);
+                    }
+                });
+                np.addEventListener('mouseleave', hideFloatingTooltip);
+                np.addEventListener('click', hideFloatingTooltip);
+            });
+
+            document.querySelector('.nav-content')?.addEventListener('scroll', hideFloatingTooltip);
+
+
+            let activeDropdown = null;
+
+            function closeAllDropdowns() {
+                if (activeDropdown) {
+                    activeDropdown.remove();
+                    activeDropdown = null;
+                }
+            }
+
+            function showCollapsedDropdown(trigger, submenu) {
+                if (activeDropdown) closeAllDropdowns();
+                const rect = trigger.getBoundingClientRect();
+                const items = submenu.querySelectorAll('.sub-item');
+                if (!items.length) return;
+                const drop = document.createElement('div');
+                drop.className = 'collapsed-dropdown';
+                items.forEach(it => {
+                    const a = document.createElement('a');
+                    a.href = it.href;
+                    a.innerText = it.innerText;
+                    if (it.classList.contains('active')) a.classList.add('active');
+                    a.addEventListener('click', () => closeAllDropdowns());
+                    drop.appendChild(a);
+                });
+                document.body.appendChild(drop);
+                drop.style.left = (rect.right + 8) + 'px';
+                drop.style.top = rect.top + 'px';
+                requestAnimationFrame(() => drop.classList.add('show'));
+                activeDropdown = drop;
+                const closeHandler = (e) => {
+                    if (!drop.contains(e.target) && e.target !== trigger) {
+                        closeAllDropdowns();
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 10);
+            }
+
+            const roleSw = document.getElementById('role-switcher');
+            if (roleSw) roleSw.addEventListener('change', function() {
+                fetch('{{ route('switch.role') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        role: this.value
+                    })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) window.location.reload();
+                    else alert('Switch failed');
+                });
+            });
+            const locSw = document.getElementById('location-switcher');
+            if (locSw) locSw.addEventListener('change', function() {
+                fetch('{{ route('switch.location') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        location: this.value
+                    })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) window.location.reload();
+                    else alert(d.message || 'Switch failed');
+                });
             });
         });
-
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (!this.dataset.clicked) {
-                    this.dataset.clicked = 'true';
-                    document.getElementById('logout-form').submit();
-                }
-            });
-        }
-
-        // Session expiry check
-        document.addEventListener('DOMContentLoaded', function() {
-            let swalOpen = false;
-
-            setInterval(() => {
-                fetch("{{ route('check.session') }}")
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.authenticated && !swalOpen) {
-                            swalOpen = true;
-                            Swal.fire({
-                                title: 'Session Expired',
-                                text: 'Your session has expired. Please re-login to continue.',
-                                icon: 'warning',
-                                confirmButtonText: 'Re-login',
-                                confirmButtonColor: '#dc2626',
-                                allowOutsideClick: false,
-                                allowEscapeKey: false,
-                                didClose: () => swalOpen = false
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    document.getElementById('logout-form').submit();
-                                }
-                            });
-                        } else if (data.authenticated && swalOpen) {
-                            Swal.close();
-                            swalOpen = false;
-                        }
-                    })
-                    .catch(console.error);
-            }, 30000);
+        document.getElementById('logout-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!document.getElementById('logout-btn').dataset.clicked) {
+                document.getElementById('logout-btn').dataset.clicked = 'true';
+                document.getElementById('logout-form').submit();
+            }
         });
     </script>
 </body>

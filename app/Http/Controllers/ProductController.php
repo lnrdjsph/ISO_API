@@ -233,7 +233,17 @@ class ProductController extends Controller
 
             DB::beginTransaction();
             $updatedCount = DB::table($tableName)->whereIn('id', $productIds)->update($updateData);
-            $this->logBulkActivity('bulk_update', $productIds, $updateData);
+            $this->logActivity(
+                'product.bulk_update',
+                "Updated {$updatedCount} products via bulk operation on {$tableName}",
+                [
+                    'table'          => $tableName,
+                    'product_ids'    => $productIds,
+                    'product_count'  => count($productIds),
+                    'updated_fields' => array_keys($updateData),
+                    'data'           => $updateData,
+                ]
+            );
             DB::commit();
 
             return response()->json([
@@ -295,7 +305,16 @@ class ProductController extends Controller
                     'updated_at' => now()
                 ]);
 
-            $this->logBulkActivity('bulk_archive', $productIds, ['reason' => $request->input('archive_reason')]);
+            $this->logActivity(
+                'product.bulk_archive',
+                "Archived {$archivedCount} products on {$tableName}",
+                [
+                    'table'         => $tableName,
+                    'product_ids'   => $productIds,
+                    'product_count' => count($productIds),
+                    'reason'        => $request->input('archive_reason'),
+                ]
+            );
             event(new ProductsBulkArchived($productIds, auth()->user(), $request->input('archive_reason')));
             DB::commit();
 
@@ -327,7 +346,16 @@ class ProductController extends Controller
                 ->whereIn('id', $productIds)->whereNotNull('archived_at')
                 ->update(['archived_at' => null, 'updated_at' => now()]);
 
-            $this->logBulkActivity('bulk_restore', $productIds);
+            $this->logActivity(
+                'product.bulk_restore',
+                "Restored {$count} products on {$tableName}",
+                [
+                    'table'         => $tableName,
+                    'product_ids'   => $productIds,
+                    'product_count' => count($productIds),
+                ]
+            );
+
             DB::connection('mysql')->commit();
 
             return response()->json(['success' => true, 'message' => "Restored {$count} products", 'restored_count' => $count]);
@@ -337,41 +365,6 @@ class ProductController extends Controller
         }
     }
 
-    private function logBulkActivity($action, $productIds, $data = null)
-    {
-        try {
-            $activityData = [
-                'user_id'     => auth()->id(),
-                'action'      => $action,
-                'description' => $this->generateActivityDescription($action, count($productIds)),
-                'properties'  => json_encode([
-                    'product_ids'    => $productIds,
-                    'product_count'  => count($productIds),
-                    'updated_fields' => $data ? array_keys($data) : null,
-                    'data'           => $data,
-                    'ip_address'     => request()->ip(),
-                    'user_agent'     => request()->userAgent(),
-                    'timestamp'      => now()->toISOString(),
-                ]),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-            DB::table('activity_logs')->insert($activityData);
-            Log::info("Bulk operation performed", $activityData);
-        } catch (Exception $e) {
-            Log::error('Failed to log bulk activity: ' . $e->getMessage());
-        }
-    }
-
-    private function generateActivityDescription($action, $count)
-    {
-        $descriptions = [
-            'bulk_update'  => "Updated {$count} products via bulk operation",
-            'bulk_archive' => "Archived {$count} products via bulk operation",
-            'bulk_restore' => "Restored {$count} products via bulk operation",
-        ];
-        return $descriptions[$action] ?? "Performed {$action} on {$count} products";
-    }
 
     public function create()
     {
@@ -439,6 +432,17 @@ class ProductController extends Controller
         }
 
         DB::connection('mysql')->table($tableName)->insert($insertData);
+
+        $this->logActivity(
+            'product.created',
+            "Created " . count($insertData) . " product(s) on {$tableName}",
+            [
+                'table'         => $tableName,
+                'product_count' => count($insertData),
+                'skus'          => array_column($insertData, 'sku'),
+            ]
+        );
+
         return redirect()->back()->with('success', 'Products added successfully.');
     }
 
@@ -621,10 +625,28 @@ class ProductController extends Controller
                 isset($existingProducts[$record['sku']]) ? $updateCount++ : $insertCount++;
             }
 
+            $this->logActivity(
+                'product.imported',
+                "CSV import: {$insertCount} inserted, {$updateCount} updated on {$tableName}",
+                [
+                    'table'         => $tableName,
+                    'filename'      => $file->getClientOriginalName(),
+                    'inserted'      => $insertCount,
+                    'updated'       => $updateCount,
+                    'error_count'   => count($errors),
+                    'total_rows'    => count($dataLines),
+                ]
+            );
+
             return redirect()->back()
                 ->with('import_success', "Import complete: {$insertCount} inserted, {$updateCount} updated.")
                 ->with('import_errors', $errors);
         } catch (\Exception $e) {
+            $this->logActivity(
+                'product.import_failed',
+                "CSV import failed: " . $e->getMessage(),
+                ['error' => $e->getMessage()]
+            );
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
@@ -851,6 +873,18 @@ class ProductController extends Controller
             ], now()->addHours(3));
 
             $dispatched = $this->dispatchAllocationJobs($tableName, $facilityId, $warehouseCode);
+
+            $this->logActivity(
+                'product.wms_update_started',
+                "Started WMS allocation update for " . $this->getWarehouseName($warehouseCode) . " ({$dispatched} SKUs)",
+                [
+                    'warehouse_code' => $warehouseCode,
+                    'warehouse_name' => $this->getWarehouseName($warehouseCode),
+                    'facility_id'    => $facilityId,
+                    'table'          => $tableName,
+                    'total_skus'     => $dispatched,
+                ]
+            );
 
             return response()->json([
                 'status'         => 'started',

@@ -108,7 +108,7 @@ class FormsController extends Controller
                     'total_qty' => 'required|integer',
                     'freebies_per_cs' => 'nullable|integer',
                     'amount' => 'required|numeric',
-                    'remarks' => 'required|string',
+                    'remarks' => 'nullable|string',
                     'store_order_no' => 'nullable|numeric',
 
                     'freebie_sku' => 'nullable|string',
@@ -292,6 +292,22 @@ class FormsController extends Controller
 
 
             DB::commit();
+
+            $this->logActivity(
+                'order.created',
+                "Created order SOF #{$order->sof_id} for {$order->customer_name} ({$order->requesting_store})",
+                [
+                    'order_id'         => $order->id,
+                    'sof_id'           => $order->sof_id,
+                    'previous_status'  => null,
+                    'new_status'       => 'new order',
+                    'requesting_store' => $order->requesting_store,
+                    'warehouse'        => $order->warehouse,
+                    'customer_name'    => $order->customer_name,
+                    'item_count'       => count($validated['orders']),
+                ]
+            );
+
 
             return redirect()->route('forms.sof_submit')->with('success', 'Order created successfully.');
         } catch (\Exception $e) {

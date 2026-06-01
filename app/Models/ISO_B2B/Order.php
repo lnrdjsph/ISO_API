@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 // use App\Http\Controllers\ProductController;
 use App\Models\User;
+use App\Support\LocationConfig;
 
 class Order extends Model
 {
@@ -47,25 +48,31 @@ class Order extends Model
             ->orderBy('created_at', 'desc');
     }
 
-    public function approver()
+    private const REGION_APPROVER = [
+        'lz'  => ['role' => 'manager', 'location' => 'lz'],
+        'stc' => ['role' => 'manager', 'location' => 'stc'],
+        'ntc' => ['role' => 'manager', 'location' => 'ntc'],
+        'vs'  => ['role' => 'manager', 'location' => 'vs'],
+    ];
+
+    public function approver(): ?User
     {
-        $map = [
-            '4002'  => 20,
-            '2010' => 1,
-            '2017' => 1,
-            '2019' => 1,
-            '3018' => 1,
-            '3019' => 1,
-            '2008'  => 1,
-            '6009'  => 1,
-            '6010' => 1,
-            '6012'  => 2,
-        ];
-
         $storeCode = strtolower($this->requesting_store);
-        $userId = $map[$storeCode] ?? null;
 
-        return $userId ? User::find($userId) : null;
+        foreach (LocationConfig::regions() as $regionKey => $storeCodes) {
+            if (!in_array($storeCode, array_map('strtolower', $storeCodes), true)) {
+                continue;
+            }
+
+            $criteria = self::REGION_APPROVER[$regionKey] ?? null;
+            if (!$criteria) return null;
+
+            return User::where('role', $criteria['role'])
+                ->where('user_location', $criteria['location'])
+                ->first();
+        }
+
+        return null;
     }
 
     public function getApproverNameAttribute()

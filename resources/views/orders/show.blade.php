@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                   INFO SECTIONS — uniform mobile layout
-                                   Below 768 px: sections stack cleanly; each
-                                   field becomes a horizontal label → value row
-                                   with a subtle underline separator.
-                                   ══════════════════════════════════════════════ */
+                                                                                                                               INFO SECTIONS — uniform mobile layout
+                                                                                                                               Below 768 px: sections stack cleanly; each
+                                                                                                                               field becomes a horizontal label → value row
+                                                                                                                               with a subtle underline separator.
+                                                                                                                               ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -352,6 +352,44 @@
                 gap: 0.5rem;
             }
         }
+
+        /* Underline effect when component is editable */
+        .order-details-component.editable input:not([type="hidden"]),
+        .order-details-component.editable select,
+        .order-details-component.editable textarea,
+        .order-details-component.editable td[contenteditable="true"] {
+            border-bottom: 1px solid #dbe2eb !important;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            background: transparent !important;
+            border-radius: 0 !important;
+            padding: 0.25rem 0.125rem !important;
+            transition: border-color 0.2s;
+        }
+
+        .order-details-component.editable input:focus,
+        .order-details-component.editable select:focus,
+        .order-details-component.editable textarea:focus,
+        .order-details-component.editable td[contenteditable="true"]:focus {
+            border-bottom-color: #3b82f6 !important;
+            outline: none;
+        }
+
+        .order-details-component.editable td[contenteditable="true"] {
+            min-width: 60px;
+            cursor: text;
+        }
+
+        /* Style select dropdown arrow for editable mode */
+        .order-details-component.editable select {
+            background-color: transparent;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.25rem center;
+            padding-right: 1.25rem;
+        }
     </style>
     <form
         method="POST"
@@ -359,7 +397,7 @@
         @csrf
         @method('PUT')
         <div class="">
-            <div class="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
+            <div class="order-details-component mx-auto max-w-full px-4 sm:px-6 lg:px-8">
                 <!-- Header Section -->
                 <!-- Header Section -->
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-y-3 sm:mb-8">
@@ -527,10 +565,72 @@
                                         <input
                                             type="date"
                                             name="payment_date"
+                                            id="payment_date_inline"
                                             value="{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('Y-m-d') : '' }}"
                                             class="payment-date relative w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
                                             style="padding-right: 50%;">
                                     </div>
+
+                                    <script nonce="{{ $cspNonce ?? '' }}">
+                                        (function() {
+                                            const paymentDateInput = document.getElementById('payment_date_inline');
+                                            if (!paymentDateInput) return;
+
+                                            // Get today's date in YYYY-MM-DD format
+                                            const today = new Date();
+                                            const year = today.getFullYear();
+                                            const month = String(today.getMonth() + 1).padStart(2, '0');
+                                            const day = String(today.getDate()).padStart(2, '0');
+                                            const todayFormatted = `${year}-${month}-${day}`;
+
+                                            // Set the min attribute to disable past dates in the date picker UI
+                                            paymentDateInput.setAttribute('min', todayFormatted);
+
+                                            // Store the last valid value
+                                            let lastValidValue = paymentDateInput.value;
+
+                                            // Function to check if date is valid (today or future)
+                                            function isValidDate(dateValue) {
+                                                return !dateValue || dateValue >= todayFormatted;
+                                            }
+
+                                            // Validate when leaving the input (blur event) with SweetAlert
+                                            paymentDateInput.addEventListener('blur', function() {
+                                                if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Invalid Date',
+                                                        text: 'Please select today or a future date. Past dates are not allowed for payment date.',
+                                                        confirmButtonColor: '#3085d6',
+                                                        confirmButtonText: 'OK'
+                                                    });
+                                                    paymentDateInput.value = lastValidValue;
+                                                } else {
+                                                    lastValidValue = paymentDateInput.value;
+                                                }
+                                            });
+
+                                            // Update last valid value on change (when user picks from date picker)
+                                            paymentDateInput.addEventListener('change', function() {
+                                                if (paymentDateInput.value && paymentDateInput.value >= todayFormatted) {
+                                                    lastValidValue = paymentDateInput.value;
+                                                }
+                                            });
+
+                                            // Initial validation in case the pre-filled value is a past date
+                                            if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
+                                                Swal.fire({
+                                                    icon: 'warning',
+                                                    title: 'Invalid Pre-filled Date',
+                                                    text: 'The pre-filled payment date is in the past. Please select a valid date.',
+                                                    confirmButtonColor: '#3085d6',
+                                                    confirmButtonText: 'OK'
+                                                });
+                                                paymentDateInput.value = '';
+                                                lastValidValue = '';
+                                            }
+                                        })();
+                                    </script>
 
                                 </div>
 
@@ -580,10 +680,72 @@
                                         <input
                                             type="date"
                                             name="delivery_date"
+                                            id="delivery_date_inline"
                                             value="{{ $order->delivery_date ? \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') : '' }}"
                                             class="delivery-date w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
                                             style="padding-right: 50%;">
                                     </div>
+
+                                    <script nonce="{{ $cspNonce ?? '' }}">
+                                        (function() {
+                                            const deliveryDateInput = document.getElementById('delivery_date_inline');
+                                            if (!deliveryDateInput) return;
+
+                                            // Get today's date in YYYY-MM-DD format
+                                            const today = new Date();
+                                            const year = today.getFullYear();
+                                            const month = String(today.getMonth() + 1).padStart(2, '0');
+                                            const day = String(today.getDate()).padStart(2, '0');
+                                            const todayFormatted = `${year}-${month}-${day}`;
+
+                                            // Set the min attribute to disable past dates in the date picker UI
+                                            deliveryDateInput.setAttribute('min', todayFormatted);
+
+                                            // Store the last valid value
+                                            let lastValidValue = deliveryDateInput.value;
+
+                                            // Function to check if date is valid (today or future)
+                                            function isValidDate(dateValue) {
+                                                return !dateValue || dateValue >= todayFormatted;
+                                            }
+
+                                            // Validate when leaving the input (blur event) with SweetAlert
+                                            deliveryDateInput.addEventListener('blur', function() {
+                                                if (deliveryDateInput.value && deliveryDateInput.value < todayFormatted) {
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Invalid Date',
+                                                        text: 'Please select today or a future date. Past dates are not allowed for delivery/pickup.',
+                                                        confirmButtonColor: '#3085d6',
+                                                        confirmButtonText: 'OK'
+                                                    });
+                                                    deliveryDateInput.value = lastValidValue;
+                                                } else {
+                                                    lastValidValue = deliveryDateInput.value;
+                                                }
+                                            });
+
+                                            // Update last valid value on change (when user picks from date picker)
+                                            deliveryDateInput.addEventListener('change', function() {
+                                                if (deliveryDateInput.value && deliveryDateInput.value >= todayFormatted) {
+                                                    lastValidValue = deliveryDateInput.value;
+                                                }
+                                            });
+
+                                            // Initial validation in case the pre-filled value is a past date
+                                            if (deliveryDateInput.value && deliveryDateInput.value < todayFormatted) {
+                                                Swal.fire({
+                                                    icon: 'warning',
+                                                    title: 'Invalid Pre-filled Date',
+                                                    text: 'The pre-filled delivery/pickup date is in the past. Please select a valid date.',
+                                                    confirmButtonColor: '#3085d6',
+                                                    confirmButtonText: 'OK'
+                                                });
+                                                deliveryDateInput.value = '';
+                                                lastValidValue = '';
+                                            }
+                                        })();
+                                    </script>
 
                                     <!-- Address -->
                                     <div>
@@ -761,7 +923,7 @@
                                             class="border px-2 py-1 text-center">Amount</th>
                                         <th
                                             rowspan="2"
-                                            class="border px-2 py-1">Remarks</th>
+                                            class="border px-2 py-1">Item Comments</th>
                                         <th
                                             rowspan="2"
                                             class="border px-2 py-1">Transfer Number</th>
@@ -961,26 +1123,11 @@
 
                                             <td class="remark-cell border p-2 text-center" data-label="Remarks">
                                                 <div class="relative">
-                                                    <select
+                                                    <input
+                                                        type="text"
                                                         name="items[{{ $loop->index }}][remarks]"
-                                                        class="w-full cursor-pointer appearance-none border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0"
-                                                        style="-webkit-appearance:none; -moz-appearance:none; appearance:none; background-image:none;">
-
-                                                        <option value="For SO (Special Order)"
-                                                            {{ $item->remarks === 'For SO (Special Order)' ? 'selected' : '' }}>
-                                                            For SO (Special Order)
-                                                        </option>
-
-                                                        <option value="For RMS Approval"
-                                                            {{ $item->remarks === 'For RMS Approval' ? 'selected' : '' }}>
-                                                            For RMS Approval
-                                                        </option>
-                                                        {{-- item cancelled --}}
-                                                        <option hidden value="Item Cancelled"
-                                                            {{ $item->remarks === 'Item Cancelled' ? 'selected' : '' }}>
-                                                            Item Cancelled
-                                                        </option>
-                                                    </select>
+                                                        value="{{ old('items.' . $loop->index . '.remarks', $item->remarks ?? '') }}"
+                                                        class="w-full border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0" />
                                                 </div>
                                             </td>
 
@@ -1152,27 +1299,27 @@
                                                         }
 
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                            ${status}
-                        </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            ${description}
-                        </div>
-                    </div>
-                `;
+                                                            <div class="relative inline-block">
+                                                                <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                                                                    ${status}
+                                                                </div>
+                                                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                                    ${description}
+                                                                </div>
+                                                            </div>
+                                                        `;
                                                     })
                                                     .catch(error => {
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                            Error
-                        </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            Failed to load order status. Please try again later.
-                        </div>
-                    </div>
-                `;
+                                                            <div class="relative inline-block">
+                                                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                                                                    Error
+                                                                </div>
+                                                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                                                    Failed to load order status. Please try again later.
+                                                                </div>
+                                                            </div>
+                                                        `;
                                                     });
                                             });
                                         })();
@@ -1180,48 +1327,38 @@
                                     <script nonce="{{ $cspNonce ?? '' }}">
                                         (function() {
                                             // Get all TDs with store order numbers
-                                            const tds = document.querySelectorAll('td[data-field="store_order_no"][data-load-status="true"]');
+                                            const tds = document.querySelectorAll('td[data-load-status="true"]');
+                                            let statusPromises = []; // Track all status fetch promises
 
                                             tds.forEach((td) => {
                                                 const storeOrderNo = td.dataset.storeOrderNo;
-                                                // Get the hidden SKU input in the same row
                                                 const skuInput = td.closest('tr')?.querySelector('.sku-hidden');
-                                                const sku = skuInput?.value;
+                                                const sku = skuInput ? skuInput.value : null;
 
-                                                if (!sku) {
-                                                    console.warn('Missing SKU for store order:', storeOrderNo);
-                                                    td.innerHTML = '<span class="text-red-600">N/A (no SKU)</span>';
+                                                if (!storeOrderNo || !sku) {
+                                                    // Resolve immediately for items without data
+                                                    statusPromises.push(Promise.resolve());
                                                     return;
                                                 }
-                                                // Use Laravel route helper
-                                                // Replace placeholders in route
-                                                const url = "{{ route('order.status', ['storeOrderNo' => '__STORE_ORDER_NO__', 'sku' => '__SKU__']) }}"
-                                                    .replace('__STORE_ORDER_NO__', storeOrderNo)
+
+                                                const url = "{{ route('order.status', ['storeOrderNo' => '__ORDER__', 'sku' => '__SKU__']) }}"
+                                                    .replace('__ORDER__', storeOrderNo)
                                                     .replace('__SKU__', sku);
 
-                                                fetch(url)
+                                                const promise = fetch(url)
                                                     .then(async response => {
                                                         const text = await response.text();
-
-                                                        // Check if response is empty
-                                                        if (!text) {
-                                                            throw new Error('Empty response from server');
-                                                        }
-
-                                                        // Try to parse JSON
+                                                        if (!text) throw new Error('Empty response from server');
                                                         let data;
                                                         try {
                                                             data = JSON.parse(text);
                                                         } catch (parseError) {
                                                             throw new Error('Invalid response format');
                                                         }
-
                                                         return data;
                                                     })
                                                     .then(data => {
                                                         const status = data?.status ?? 'Unknown';
-
-                                                        // Determine badge color and description
                                                         let badgeClass = 'bg-gray-100 text-gray-800';
                                                         let description = '';
 
@@ -1234,9 +1371,7 @@
                                                         } else if (status === 'Processing') {
                                                             badgeClass = 'bg-yellow-100 text-yellow-800';
                                                             description = 'Order is being processed for shipment';
-                                                        }
-                                                        //picking
-                                                        else if (status === 'Picking') {
+                                                        } else if (status === 'Picking') {
                                                             badgeClass = 'bg-orange-100 text-orange-800';
                                                             description = 'Order is being picked at the warehouse';
                                                         } else if (status === 'Pending') {
@@ -1257,29 +1392,122 @@
                                                         }
 
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                            ${status}
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
+                                ${status}
+                            </div>
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                ${description}
+                            </div>
                         </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            ${description}
-                        </div>
-                    </div>
-                `;
+                    `;
+
+                                                        // Store status in dataset for later checking
+                                                        td.dataset.itemStatus = status;
+                                                        return {
+                                                            status,
+                                                            storeOrderNo,
+                                                            sku
+                                                        };
                                                     })
                                                     .catch(error => {
+                                                        console.error('Status fetch error:', error);
                                                         td.innerHTML = `
-                    <div class="relative inline-block">
-                        <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                            Error
+                        <div class="relative inline-block">
+                            <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
+                                Error
+                            </div>
+                            <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                                Failed to load order status. Please try again later.
+                            </div>
                         </div>
-                        <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                            Failed to load order status. Please try again later.
-                        </div>
-                    </div>
-                `;
+                    `;
+                                                        td.dataset.itemStatus = 'Error';
+                                                        return {
+                                                            status: 'Error',
+                                                            storeOrderNo,
+                                                            sku
+                                                        };
                                                     });
+
+                                                statusPromises.push(promise);
                                             });
+
+                                            // Wait for ALL statuses to load, then check if order can be completed
+                                            Promise.all(statusPromises).then(() => {
+                                                console.log('All statuses loaded, checking completion eligibility...');
+                                                checkAndUpdateCompleteOrderOption();
+                                            });
+
+                                            // Function to check if all items are ready for completion
+                                            function checkAndUpdateCompleteOrderOption() {
+                                                const completeOption = document.getElementById('complete-order-option');
+                                                if (!completeOption) return;
+
+                                                // Get all rows with items
+                                                const rows = document.querySelectorAll('tbody tr[data-index]');
+                                                let allItemsReady = true;
+                                                const pendingItems = [];
+                                                let totalActiveItems = 0;
+
+                                                rows.forEach(row => {
+                                                    // Check if item is cancelled
+                                                    const remarksInput = row.querySelector('input[name*="[remarks]"]');
+                                                    const isCancelled = remarksInput && remarksInput.value === 'Item Cancelled';
+
+                                                    if (isCancelled) {
+                                                        return; // Skip cancelled items
+                                                    }
+
+                                                    totalActiveItems++;
+
+                                                    // Get the status cell
+                                                    const statusCell = row.querySelector('td[data-label="Status"]');
+                                                    const status = statusCell?.dataset?.itemStatus || statusCell?.textContent?.trim() || 'Unknown';
+
+                                                    // Get store order number
+                                                    const storeOrderNoInput = row.querySelector('input[name*="[store_order_no]"]');
+                                                    const storeOrderNo = storeOrderNoInput?.value;
+                                                    const sku = row.querySelector('.sku-hidden')?.value || 'Unknown SKU';
+
+                                                    // Check if item is ready
+                                                    if (!storeOrderNo || storeOrderNo === '') {
+                                                        allItemsReady = false;
+                                                        pendingItems.push(`${sku} - No transfer number generated`);
+                                                    } else if (!['Received', 'Shipped'].includes(status)) {
+                                                        allItemsReady = false;
+                                                        pendingItems.push(`${sku} - Status: ${status} (needs Received or Shipped)`);
+                                                    }
+                                                });
+
+                                                // Show/hide and enable/disable the complete option
+                                                if (totalActiveItems === 0) {
+                                                    // No active items to complete
+                                                    completeOption.style.display = 'none';
+                                                } else if (allItemsReady) {
+                                                    completeOption.style.display = 'block';
+                                                    completeOption.disabled = false;
+                                                    completeOption.textContent = 'Complete Order ✅';
+                                                    completeOption.title = 'All items are ready for completion';
+
+                                                    // Optional: Add visual indicator to the select
+                                                    const orderActionSelect = document.getElementById('orderAction');
+                                                    if (orderActionSelect) {
+                                                        orderActionSelect.style.borderColor = '#10b981';
+                                                        orderActionSelect.style.backgroundColor = '#f0fdf4';
+                                                    }
+
+                                                    console.log('✅ Order is ready for completion');
+                                                } else {
+                                                    completeOption.style.display = 'block';
+                                                    completeOption.disabled = true;
+                                                    completeOption.textContent = `Complete Order (${pendingItems.length} pending)`;
+                                                    completeOption.title = `Cannot complete order:\n• ${pendingItems.join('\n• ')}`;
+                                                    completeOption.style.opacity = '0.6';
+
+                                                    console.log(`⏳ Order not ready: ${pendingItems.length} items pending`);
+                                                }
+                                            }
                                         })();
                                     </script>
                                     <script nonce="{{ $cspNonce ?? '' }}">
@@ -1625,8 +1853,8 @@
                                                 @endif
 
                                                 {{-- approved order status and all item status is received or shipped --}}
-                                                @if ($order->order_status === 'approved' && $order->items->where('remarks', '!=', 'Item Cancelled')->every(fn($item) => in_array($item->status, ['Received', 'Shipped'])))
-                                                    <option value="complete">Complete Order</option>
+                                                @if ($order->order_status === 'approved')
+                                                    <option value="complete" id="complete-order-option" style="display: none;">Complete Order</option>
                                                 @endif
 
                                                 {{-- @if ($order->order_status !== 'processing')
@@ -2410,10 +2638,18 @@
                 // ========================================
                 // CONSTANTS & CONFIGURATION
                 // ========================================
+                const $container = $('.order-details-component');
                 const LOCK_STATUSES = ["approved", "completed", "for approval", "cancelled"];
                 const ORDER_STATUS = "{{ $order->order_status }}".toLowerCase();
-                const IS_LOCKED = LOCK_STATUSES.includes(ORDER_STATUS);
+                const USER_ROLE = "{{ Auth::user()->role }}";
+                const IS_LOCKED = (LOCK_STATUSES.includes(ORDER_STATUS) && USER_ROLE !== 'super admin');
 
+
+                if (!IS_LOCKED) {
+                    $container.addClass('editable');
+                } else {
+                    $container.removeClass('editable');
+                }
                 // Change Detection Variables
                 let hasChanges = false;
                 let changesCount = 0;
@@ -2430,6 +2666,7 @@
                 // ORDER CALCULATION SYSTEM
                 // ========================================
                 class OrderCalculationSystem {
+
                     constructor() {
                         if (!IS_LOCKED) {
                             this.initializeEventListeners();
@@ -2978,7 +3215,7 @@
                         // Initialize all freebies after a delay
                         setTimeout(() => {
                             console.log('🔄 Running initial freebie calculation for all MAIN rows...');
-                            $('tbody tr[data-index]').each(function() {
+                            $container.find('tbody tr[data-index]').each(function() {
                                 const index = $(this).data("index");
                                 const itemTypeInput = this.querySelector(`input[name="items[${index}][item_type]"]`);
                                 const itemType = itemTypeInput?.value || "MAIN";
@@ -3003,70 +3240,51 @@
                 // ========================================
                 function lockFieldsByStatus() {
                     if (!IS_LOCKED) return;
+                    console.log('🔒 Locking fields inside component only...');
 
-                    console.log('🔒 Locking all fields...');
-
-                    // Lock all inputs except hidden - keep normal appearance
-                    $('input:not([type="hidden"])').each(function() {
-                        $(this).prop('readonly', true)
-                            .css({
-                                'pointer-events': 'none',
-                                'cursor': 'default'
-                            });
+                    // Lock inputs inside container
+                    $container.find('input:not([type="hidden"])').prop('readonly', true).css({
+                        'pointer-events': 'none',
+                        'cursor': 'default'
                     });
 
-                    // Lock textarea (comment) - keep normal appearance
-                    $('textarea[name="comment"]').prop('readonly', true)
-                        .css({
-                            'pointer-events': 'none',
-                            'cursor': 'default',
-                            'resize': 'none',
-                            'opacity': '0.7'
-                        });
-
-                    // Lock all selects except #orderAction - keep normal appearance
-                    $('select').not('#orderAction').each(function() {
-                        $(this).prop('disabled', true)
-                            .css({
-                                'pointer-events': 'none',
-                                'cursor': 'default',
-                                'opacity': '1',
-                                'background-color': 'transparent'
-                            });
+                    // Lock textarea inside container
+                    $container.find('textarea[name="comment"]').prop('readonly', true).css({
+                        'pointer-events': 'none',
+                        'cursor': 'default',
+                        'resize': 'none',
+                        'opacity': '0.7'
                     });
 
-                    // Lock contenteditable cells - keep normal appearance
-                    $('td[contenteditable="true"]').each(function() {
-                        $(this).attr('contenteditable', 'false')
-                            .css({
-                                'pointer-events': 'none',
-                                'cursor': 'default'
-                            })
-                            .off(); // Remove all event listeners
+                    // Lock selects inside container (except #orderAction which is inside)
+                    $container.find('select').not('#orderAction').prop('disabled', true).css({
+                        'pointer-events': 'none',
+                        'cursor': 'default',
+                        'opacity': '1',
+                        'background-color': 'transparent'
                     });
 
-                    // Disable search functionality - keep normal appearance
-                    $('td[contenteditable-search="true"]').each(function() {
-                        $(this).removeAttr('contenteditable-search')
-                            .attr('contenteditable', 'false')
-                            .css({
-                                'pointer-events': 'none',
-                                'cursor': 'default'
-                            })
-                            .off();
-                    });
+                    // Lock contenteditable cells inside container
+                    $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
+                        'pointer-events': 'none',
+                        'cursor': 'default'
+                    }).off();
 
-                    // Hide submit button
+                    // Disable search inside container
+                    $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
+                        'pointer-events': 'none',
+                        'cursor': 'default'
+                    }).off();
+
+                    // Hide submit button (inside container)
                     submitButton.prop('disabled', true).addClass('hidden');
                     changesCounter.addClass('hidden');
-
-                    console.log('✅ All fields locked (read-only mode)');
                 }
 
                 // ========================================
                 // CHANGE DETECTION FUNCTIONS
                 // ========================================
-                const trackableElements = $(
+                const trackableElements = $container.find(
                     'input[type="text"], input[type="date"], input[type="email"], textarea[name="comment"], select:not(#orderAction), td[contenteditable="true"]'
                 );
 
@@ -3258,7 +3476,7 @@
                     });
 
                     // Product search functionality
-                    $(document).on('keyup focus', '[contenteditable-search="true"]', function() {
+                    $container.on('input blur keyup', 'td[data-field="price_per_pc"]', function(e) {
                         const inputCell = $(this);
                         clearTimeout(inputCell.data('debounceTimeout'));
 
@@ -3316,7 +3534,7 @@
                         }
                     });
 
-                    $(document).on('click', '.product-item', function() {
+                    $container.on('click', '.product-item', function() {
                         const selected = $(this);
                         const sku = selected.data('sku');
                         const description = selected.data('description');
@@ -3342,8 +3560,9 @@
                     });
 
                     $(document).on('click', function(e) {
+                        if (!$(e.target).closest('#order-details-component').length) return;
                         if (!$(e.target).closest('[contenteditable-search="true"], .search-results').length) {
-                            $('.search-results').empty().addClass('hidden');
+                            $container.find('.search-results').empty().addClass('hidden');
                         }
                     });
 
@@ -3425,7 +3644,7 @@
                 // ========================================
                 // FORM SUBMISSION
                 // ========================================
-                $('form').on('submit', function(e) {
+                $container.find('form').on('submit', function(e) {
                     if (IS_LOCKED) return true;
 
                     if (!hasChanges) {
@@ -3544,12 +3763,12 @@
                         Swal.fire({
                             title: 'Processing Transfer...',
                             html: `
-                <div style="text-align: left;">
-                    <p>📤 Sending order to Oracle RIB</p>
-                    <p>🔄 Processing departments...</p>
-                    <p>⏳ Please wait, this may take a few moments</p>
-                </div>
-                `,
+                    <div style="text-align: left;">
+                        <p>📤 Sending order to Oracle RIB</p>
+                        <p>🔄 Processing departments...</p>
+                        <p>⏳ Please wait, this may take a few moments</p>
+                    </div>
+                    `,
                             allowOutsideClick: false,
                             didOpen: () => Swal.showLoading()
                         });
@@ -3595,7 +3814,7 @@
                             <p style="margin: 5px 0; color: #28a745;"><strong>✅ Successful:</strong> ${summary.successful || 0}</p>
                             <p style="margin: 5px 0; color: #dc3545;"><strong>⚠️ Failed:</strong> ${summary.failed || 0}</p>
                         </div>
-                `;
+                    `;
 
                                 deptKeys.forEach(dept => {
                                     const resp = responses[dept];
@@ -3805,7 +4024,7 @@
                             </ul>
                         </p>
                     </div>
-                `,
+                    `,
                                 showCancelButton: true,
                                 confirmButtonText: 'Retry',
                                 cancelButtonText: 'Cancel',
@@ -3967,12 +4186,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                       MOBILE CARD LAYOUT — items table (2-column grid)
-                                       Below 1024 px: table rows become cards with a 2-column
-                                       form-like grid. Labels sit above their values, aligned
-                                       left. All JS (data-field, contenteditable, hidden inputs)
-                                       is untouched — only CSS display changes.
-                                       ══════════════════════════════════════════════ */
+                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                   form-like grid. Labels sit above their values, aligned
+                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                   is untouched — only CSS display changes.
+                                                                                                                                   ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */

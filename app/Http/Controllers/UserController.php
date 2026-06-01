@@ -93,6 +93,11 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
 
         User::create($validated);
+        $this->logActivity(
+            'user.created',
+            "Created user {$validated['email']} with role {$validated['role']}",
+            ['email' => $validated['email'], 'role' => $validated['role'], 'user_location' => $validated['user_location']]
+        );
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -137,7 +142,10 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
+        $before = $user->only(['name', 'email', 'role', 'user_location']);
         $user->update($validated);
+        $this->logModelChange('user.updated', $user, $before, $user->fresh()->only(['name', 'email', 'role', 'user_location']));
+
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }

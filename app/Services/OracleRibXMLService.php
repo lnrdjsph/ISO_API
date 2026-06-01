@@ -35,12 +35,7 @@ class OracleRibXMLService
                 $scriptResult = self::runRemoteShellScript($fileName);
 
                 if (!$scriptResult['success']) {
-                    self::deleteFromSFTP($fileName);
-                    return [
-                        'success' => false,
-                        'message' => 'File uploaded but RIB processing failed.',
-                        'details' => $scriptResult
-                    ];
+                    Log::warning("⚠️ [SSH] Script polling failed for {$fileName}. Falling through to DB verification.");
                 }
             } else {
                 Log::info("⏭️ [SSH] Execution skipped (feature flag disabled)");

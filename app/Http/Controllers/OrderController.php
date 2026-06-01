@@ -63,10 +63,23 @@ class OrderController extends Controller
 
         // 🔍 Search filter
         if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
+            // Find store codes where the display name contains the search term
+            $matchedStoreCodes = [];
+            $allStores = LocationConfig::stores(); // code => name
+            foreach ($allStores as $code => $name) {
+                if (stripos($name, $search) !== false) {
+                    $matchedStoreCodes[] = $code;
+                }
+            }
+
+            $query->where(function ($q) use ($search, $matchedStoreCodes) {
                 $q->where('customer_name', 'like', "%{$search}%")
                     ->orWhere('sof_id', 'like', "%{$search}%")
                     ->orWhere('requesting_store', 'like', "%{$search}%");
+
+                if (!empty($matchedStoreCodes)) {
+                    $q->orWhereIn('requesting_store', $matchedStoreCodes);
+                }
             });
         }
 
@@ -569,15 +582,27 @@ class OrderController extends Controller
 
     public function archive(Request $request)
     {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+        $request->validate(['id' => 'required|exists:orders,id']);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
+
         $this->revertAllocationStock($order->id);
 
         $order->order_status = 'archived';
         $order->save();
+
+        $this->logActivity(
+            'order.archived',
+            "Archived order SOF #{$order->sof_id} (from {$previousStatus})",
+            [
+                'order_id'        => $order->id,
+                'sof_id'          => $order->sof_id,
+                'previous_status' => $previousStatus,
+                'new_status'      => 'archived',
+                'store'           => $order->requesting_store,
+            ]
+        );
 
         $order->notes()->create([
             'user_id' => auth()->id(),
@@ -585,8 +610,7 @@ class OrderController extends Controller
             'note'    => 'Order archived',
         ]);
 
-        return redirect()
-            ->route('orders.show', $order->id)
+        return redirect()->route('orders.show', $order->id)
             ->with('success', 'Order archived successfully.');
     }
 
@@ -594,12 +618,12 @@ class OrderController extends Controller
     {
         $request->validate([
             'id'   => 'required|exists:orders,id',
-            'note' => 'required|string', // require reason
+            'note' => 'required|string',
         ]);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
 
-        // Only revert allocation if the order was NOT already rejected
         if ($order->order_status !== 'rejected') {
             $this->revertAllocationStock($order->id);
         }
@@ -607,29 +631,52 @@ class OrderController extends Controller
         $order->order_status = 'cancelled';
         $order->save();
 
-        // Log note with reason
+        $this->logActivity(
+            'order.cancelled',
+            "Cancelled order SOF #{$order->sof_id} (from {$previousStatus})",
+            [
+                'order_id'        => $order->id,
+                'sof_id'          => $order->sof_id,
+                'previous_status' => $previousStatus,
+                'new_status'      => 'cancelled',
+                'store'           => $order->requesting_store,
+                'reason'          => $request->note,
+            ]
+        );
+
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'cancelled',
             'note'    => 'Order was cancelled. <br> Reason: ' . $request->note,
         ]);
 
-        return redirect()
-            ->route('orders.show', $order->id)
+        return redirect()->route('orders.show', $order->id)
             ->with('success', 'Order cancelled successfully.');
     }
 
 
     public function restore(Request $request)
     {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+        $request->validate(['id' => 'required|exists:orders,id']);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
+
         $order->order_status = 'new order';
         $this->deductAllocationStock($order->id);
         $order->save();
+
+        $this->logActivity(
+            'order.restored',
+            "Restored order SOF #{$order->sof_id} (from {$previousStatus})",
+            [
+                'order_id'        => $order->id,
+                'sof_id'          => $order->sof_id,
+                'previous_status' => $previousStatus,
+                'new_status'      => 'new order',
+                'store'           => $order->requesting_store,
+            ]
+        );
 
         $order->notes()->create([
             'user_id' => auth()->id(),
@@ -637,22 +684,32 @@ class OrderController extends Controller
             'note'    => 'Order restored',
         ]);
 
-        return redirect()
-            ->route('orders.show', $order->id)
+        return redirect()->route('orders.show', $order->id)
             ->with('success', 'Order restored successfully.');
     }
 
     //complete order
     public function complete(Request $request)
     {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+        $request->validate(['id' => 'required|exists:orders,id']);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
+
         $order->order_status = 'completed';
-        // $this->deductAllocationStock($order->id);
         $order->save();
+
+        $this->logActivity(
+            'order.completed',
+            "Completed order SOF #{$order->sof_id} (from {$previousStatus})",
+            [
+                'order_id'        => $order->id,
+                'sof_id'          => $order->sof_id,
+                'previous_status' => $previousStatus,
+                'new_status'      => 'completed',
+                'store'           => $order->requesting_store,
+            ]
+        );
 
         $order->notes()->create([
             'user_id' => auth()->id(),
@@ -660,8 +717,7 @@ class OrderController extends Controller
             'note'    => 'Order completed',
         ]);
 
-        return redirect()
-            ->route('orders.show', $order->id)
+        return redirect()->route('orders.show', $order->id)
             ->with('success', 'Order completed successfully.');
     }
 
@@ -675,9 +731,7 @@ class OrderController extends Controller
      */
     public function forApproval(Request $request)
     {
-        $request->validate([
-            'id' => 'required|exists:orders,id',
-        ]);
+        $request->validate(['id' => 'required|exists:orders,id']);
 
         $order = Order::findOrFail($request->id);
         $previousStatus = $order->order_status;
@@ -688,6 +742,19 @@ class OrderController extends Controller
         }
 
         $order->save();
+
+        $this->logActivity(
+            'order.for_approval',
+            "Sent order SOF #{$order->sof_id} for approval (from {$previousStatus})",
+            [
+                'order_id'         => $order->id,
+                'sof_id'           => $order->sof_id,
+                'previous_status'  => $previousStatus,
+                'new_status'       => 'for approval',
+                'store'            => $order->requesting_store,
+                'requeued_from_rejected' => $previousStatus === 'rejected',
+            ]
+        );
 
         $order->notes()->create([
             'user_id' => auth()->id(),
@@ -758,9 +825,25 @@ class OrderController extends Controller
             Storage::disk('public')->put($filePath, $pdf->output());
         }
 
+        $previousStatus = $order->order_status;
         $order->order_status      = 'approved';
         $order->approval_document = $filePath;
         $order->save();
+
+
+        $this->logActivity(
+            'order.approved',
+            "Approved order SOF #{$order->sof_id} for {$order->customer_name} (from {$previousStatus})",
+            [
+                'order_id'        => $order->id,
+                'sof_id'          => $order->sof_id,
+                'previous_status' => $previousStatus,
+                'new_status'      => 'approved',
+                'store'           => $order->requesting_store,
+                'approval_mode'   => $request->approval_mode,
+                'has_document'    => !is_null($filePath),
+            ]
+        );
 
         $order->notes()->create([
             'user_id' => auth()->id(),
@@ -792,9 +875,16 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($request->id);
+        $previousStatus = $order->order_status;
         $order->order_status = 'rejected';
         // $this->revertAllocationStock($order->id);
         $order->save();
+
+        $this->logActivity(
+            'order.rejected',
+            "Rejected order SOF #{$order->sof_id} (from {$previousStatus})",
+            ['order_id' => $order->id, 'sof_id' => $order->sof_id, 'previous_status' => $previousStatus, 'reason' => $request->note]
+        );
 
         // Log note with reason
         $order->notes()->create([
@@ -1300,7 +1390,7 @@ class OrderController extends Controller
                 ]);
 
                 // Track the change
-                $changes[] = "Item {$item->sku} ({$item->item_description}) - Remarks changed from '{$oldRemarks}' to 'Item Cancelled'";
+                $changes[] = "Item {$item->sku} ({$item->item_description}) - Item Comment changed from '{$oldRemarks}' to 'Item Cancelled'";
 
                 if ($oldAmount != 0) {
                     $changes[] = "Item {$item->sku} - Amount changed from '{$oldAmount}' to '0'";

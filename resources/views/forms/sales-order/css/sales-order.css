@@ -1,0 +1,82 @@
+/* Transitions & Animations */
+.delivery-group {
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+}
+
+.delivery-group:not(.hidden) {
+    max-height: 500px;
+    opacity: 1;
+}
+
+.collapse-icon {
+    transition: transform 0.2s ease;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Glow effect for search results */
+.glow-effect {
+    animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px 2px rgba(59, 130, 246, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 10px 4px rgba(59, 130, 246, 0.6);
+    }
+}
+
+/* Input highlights */
+.bg-indigo-50 {
+    background-color: #eef2ff;
+}
+
+.bg-yellow-50 {
+    background-color: #fefce8;
+}
+
+/* Order row animations */
+.order-row {
+    transition: all 0.3s ease;
+}
+
+.order-row .editable-side,
+.order-row .readonly-side {
+    transition: all 0.3s ease;
+}
+
+/* Remove button appears on hover */
+.remove-row {
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+/* Product search results */
+.search-results {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.product-item {
+    transition: background-color 0.15s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .order-row .readonly-side {
+        margin-top: 1rem;
+    }
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}

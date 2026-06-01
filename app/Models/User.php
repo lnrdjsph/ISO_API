@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use App\Notifications\CustomResetPasswordNotification;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
 
 class User extends Authenticatable
 {
@@ -46,6 +48,32 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    protected function role(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // Allow role switch only for user IDs 1,2,3
+                if (in_array($this->id, [1, 2, 3]) && session()->has('switched_role')) {
+                    return session('switched_role');
+                }
+                return $value;
+            },
+        );
+    }
+
+    protected function userLocation(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // Allow location switch only for user IDs 1,2,3
+                if (in_array($this->id, [1, 2, 3]) && session()->has('switched_location')) {
+                    return session('switched_location');
+                }
+                return $value;
+            },
+        );
+    }
 
     public function hasRole(string $role): bool
     {
