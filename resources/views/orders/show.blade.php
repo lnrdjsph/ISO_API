@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                           INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                           Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                           field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                           with a subtle underline separator.
-                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                   with a subtle underline separator.
+                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -1822,8 +1822,8 @@
                         <div class="relative grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
 
                             {{-- script jquery --}}
-                            {{-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+                            <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                            <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
                             <div class="actions-panel relative flex flex-col gap-2 space-y-2 rounded-lg border bg-white p-3 shadow-sm sm:col-span-2 lg:col-span-1 lg:justify-between">
 
@@ -2658,14 +2658,15 @@
                 // transfer number exists yet — limited to Customer / Payment / Delivery info.
                 const PARTIAL_UNLOCK =
                     ORDER_STATUS === 'approved' &&
-                    !HAS_TRANSFER_NO &&
+                    !HAS_TRANSFER_NO && // ← false once a transfer number exists
                     !IS_WAREHOUSE &&
                     USER_ROLE !== 'super admin';
 
-                const IS_LOCKED = (LOCK_STATUSES.includes(ORDER_STATUS) && USER_ROLE !== 'super admin') || IS_WAREHOUSE;
+                const IS_LOCKED = (LOCK_STATUSES.includes(ORDER_STATUS) && USER_ROLE !== 'super admin') ||
+                    IS_WAREHOUSE ||
+                    HAS_TRANSFER_NO; // ← any transfer number = fully locked
 
-                // Item table must lock once any transfer number exists, even on otherwise-editable orders.
-                const ITEMS_LOCKED = IS_LOCKED || HAS_TRANSFER_NO;
+                const ITEMS_LOCKED = IS_LOCKED; // table follows the same lock
 
 
                 if (!IS_LOCKED) {
@@ -4143,7 +4144,7 @@
 
 
 
-        <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+        <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
         <!-- Enhanced CSS for better visual feedback -->
         <style nonce="{{ $cspNonce ?? '' }}">
@@ -4258,12 +4259,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                               MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                               Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                               form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                               left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                               is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                               ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
