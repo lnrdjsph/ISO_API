@@ -6,8 +6,8 @@
 
         $role = auth()->user()->role;
         $isAdmin = $role === 'super admin';
-        $isMgr = $role === 'manager';
-        $isWarehouse = in_array($role, ['warehouse admin', 'warehouse personnel']);
+        $isMgr = $role === 'store manager';
+        $isWarehouse = in_array($role, ['warehouse manager', 'warehouse personnel']);
         $isStore = in_array($role, ['store personnel', 'store admin']);
         $month = now()->format('F Y');
 
@@ -67,7 +67,7 @@
                                 'this_month' => 'This Month (' . now()->format('F Y') . ')',
                                 'last_30_days' => 'Last 30 Days (' . now()->subDays(30)->format('M j') . ' - ' . now()->format('M j, Y') . ')',
                                 'this_year' => 'This Year (' . now()->format('Y') . ')',
-                                default => 'This Month',
+                                default => 'All Time',
                             };
                         @endphp
                         {{ $rangeDisplay }}
@@ -256,7 +256,9 @@
             } elseif ($isWarehouse) {
                 $quickActions = [
                     ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
-                    // ['Products', route('products.index'), $ic['cube'], 'bg-green-50 text-green-600', null],
+                    ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
+                    ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
+                    ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                 ];
             } else {
                 $quickActions = [
@@ -572,7 +574,7 @@
         @endif
 
         {{-- ══ ORDER PIPELINE (store personnel only) ═══════════════════════════ --}}
-        {{-- @if ($isStore)
+        @if ($isStore)
             @php
                 $pipeline = [
                     ['New Order', 'new order', $pipelineCounts['new_order_count'] ?? 0, 'bg-blue-500', 'text-blue-700', 'bg-blue-50'],
@@ -623,7 +625,7 @@
                     </div>
                 </div>
             </div>
-        @endif --}}
+        @endif
         {{-- ══ 5 · ORDER STATUS DISTRIBUTION (hidden for super admin) ══════════ --}}
         {{-- @if (!$isAdmin && ($isMgr || $isStore) && $statusBreakdown->isNotEmpty())
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">

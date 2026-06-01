@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                   Below 768 px: sections stack cleanly; each
-                                                                                                                                                                   field becomes a horizontal label → value row
-                                                                                                                                                                   with a subtle underline separator.
-                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                               INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                               Below 768 px: sections stack cleanly; each
+                                                                                                                                                                               field becomes a horizontal label → value row
+                                                                                                                                                                               with a subtle underline separator.
+                                                                                                                                                                               ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -1801,7 +1801,7 @@
                                     });
                                 @endphp
 
-                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo)
+                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
                                     <button
                                         type="button"
                                         id="generateSOButton"
@@ -1878,7 +1878,7 @@
                                         </select>
                                     @endif
                                     @if ($order->approval_document)
-                                        <div class="mt-1 rounded border border-dashed border-gray-300 bg-gray-50 px-2 py-4">
+                                        <div class="mt-4 rounded border border-dashed border-gray-300 bg-gray-50 px-2 py-4">
                                             <div class="flex items-center justify-between text-xs">
                                                 <span class="pl-1 text-gray-600">Approved Document</span>
                                                 <a href="{{ asset('storage/' . $order->approval_document) }}"
@@ -1916,7 +1916,7 @@
                     </style>
                 `;
                                                 } else if (ext === 'pdf') {
-                                                    const h = Math.min(window.innerHeight * 0.55, 500);
+                                                    const h = Math.min(window.innerHeight * 0.75, 500);
                                                     content = `<iframe src="${url}" height="${h}px" width="100%"></iframe>`;
                                                 } else if (['doc', 'docx'].includes(ext)) {
                                                     content = `
@@ -3560,7 +3560,7 @@
                     });
 
                     $(document).on('click', function(e) {
-                        if (!$(e.target).closest('#order-details-component').length) return;
+                        if (!$(e.target).closest('.order-details-component').length) return;
                         if (!$(e.target).closest('[contenteditable-search="true"], .search-results').length) {
                             $container.find('.search-results').empty().addClass('hidden');
                         }
@@ -4186,12 +4186,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                       is untouched — only CSS display changes.
-                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                   form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                   is untouched — only CSS display changes.
+                                                                                                                                                                                   ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */

@@ -3,7 +3,7 @@
 @section('content')
     <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {{-- ═══ Header (matching Activity Log) ═══ --}}
+        {{-- ═══ Header with clickable status flow button ═══ --}}
         <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center space-x-4">
                 <div class="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3 shadow-lg">
@@ -17,18 +17,34 @@
                     <p class="mt-1 text-gray-600">Manage and track all B2B orders</p>
                 </div>
             </div>
-            <div id="orders-summary" class="rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
-                <span class="text-xs font-medium text-gray-500">Total Orders</span>
-                <p class="text-xl font-bold text-gray-900">--</p>
-            </div>
+
+            @php
+                $currentUser = auth()->user();
+                $showStatusFlowButton = false;
+                if ($currentUser) {
+                    if (method_exists($currentUser, 'hasAnyRole')) {
+                        $showStatusFlowButton = $currentUser->hasAnyRole(['store personnel', 'super admin']);
+                    } else {
+                        $role = strtolower($currentUser->role ?? '');
+                        $showStatusFlowButton = in_array($role, ['store personnel', 'store_personnel', 'super admin'], true);
+                    }
+                }
+            @endphp
+
+            @if ($showStatusFlowButton)
+                <button type="button" onclick="showStatusFlowModal()"
+                    class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm transition hover:bg-gray-50 hover:shadow-md">
+                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Order Status Flow</span>
+                </button>
+            @endif
         </div>
 
-        {{-- ═══ Filters (Activity Log style) ═══ --}}
+        {{-- ═══ Filters (exactly as original) ═══ --}}
         <form method="GET" action="{{ route('orders.index') }}" id="orders-filter-form" class="ajax-form mb-6">
-
-            {{-- Primary row: Search + Store + Channel + Status --}}
             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                {{-- Search (full width, prominent) --}}
                 <div class="relative flex-1">
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -50,7 +66,6 @@
                     </div>
                 </div>
 
-                {{-- Store dropdown --}}
                 <select name="store_code" data-filter data-label="Store"
                     class="rounded-xl border-0 bg-white py-3 pl-3.5 pr-9 text-sm text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-indigo-500">
                     <option value="">All Stores</option>
@@ -59,7 +74,6 @@
                     @endforeach
                 </select>
 
-                {{-- Channel dropdown --}}
                 <select name="channel" data-filter data-label="Channel"
                     class="rounded-xl border-0 bg-white py-3 pl-3.5 pr-9 text-sm text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-indigo-500">
                     <option value="">All Channels</option>
@@ -68,7 +82,6 @@
                     @endforeach
                 </select>
 
-                {{-- Status dropdown --}}
                 <select name="status" data-filter data-label="Status"
                     class="rounded-xl border-0 bg-white py-3 pl-3.5 pr-9 text-sm text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-indigo-500">
                     <option value="">All Statuses</option>
@@ -78,9 +91,7 @@
                 </select>
             </div>
 
-            {{-- Secondary row: Date range presets + custom range (inline) --}}
             <div class="flex flex-wrap items-center gap-2">
-                {{-- Quick date presets as pill buttons --}}
                 <div class="inline-flex rounded-lg bg-gray-100 p-0.5">
                     <button type="button" id="preset-alltime"
                         class="{{ !request('start_date') && !request('end_date') ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800' }} rounded-md px-3 py-1.5 text-xs font-medium transition">
@@ -103,8 +114,6 @@
                         This month
                     </button>
                 </div>
-
-                {{-- Custom date range (inline) --}}
                 <div class="inline-flex items-center gap-1.5">
                     <input type="date" name="start_date" data-filter value="{{ request('start_date') }}"
                         class="rounded-lg border-0 bg-white px-2.5 py-1.5 text-xs text-gray-600 shadow-sm ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-indigo-500">
@@ -112,15 +121,12 @@
                     <input type="date" name="end_date" data-filter value="{{ request('end_date') }}"
                         class="rounded-lg border-0 bg-white px-2.5 py-1.5 text-xs text-gray-600 shadow-sm ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-indigo-500">
                 </div>
-
-                {{-- Optional: total records count (mobile right alignment) --}}
                 <span class="ml-auto text-xs text-gray-400" id="inline-total-count"></span>
             </div>
         </form>
 
-        {{-- Active filter chips (removable) --}}
+        {{-- Active filter chips --}}
         <div id="active-filters" class="mb-5 flex flex-wrap items-center gap-2"></div>
-
 
         {{-- ═══ Table Card ═══ --}}
         <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -133,55 +139,134 @@
                     @include('orders.partials.table')
                 </div>
 
-                <!-- Pagination -->
                 <div class="flex items-center justify-between p-4" style="margin-top:-65px;">
-                    <!-- Rows per page -->
                     <form method="GET" action="{{ route('orders.index') }}" class="ajax-form flex items-center space-x-2">
-
                         @foreach (request()->except('per_page', 'page') as $key => $value)
-                            <input
-                                type="hidden"
-                                name="{{ $key }}"
-                                value="{{ $value }}">
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                         @endforeach
-
-                        <label
-                            for="per_page"
-                            class="text-sm text-gray-600">Rows per page:</label>
-                        <select
-                            name="per_page"
-                            id="per_page"
-                            class="rounded border-0 px-8 py-1 text-sm">
-                            <option
-                                value="10"
-                                {{ $perPage == 10 ? 'selected' : '' }}>10</option>
-                            <option
-                                value="25"
-                                {{ $perPage == 25 ? 'selected' : '' }}>25</option>
-                            <option
-                                value="50"
-                                {{ $perPage == 50 ? 'selected' : '' }}>50</option>
-                            <option
-                                value="100"
-                                {{ $perPage == 100 ? 'selected' : '' }}>100</option>
+                        <label for="per_page" class="text-sm text-gray-600">Rows per page:</label>
+                        <select name="per_page" id="per_page" class="rounded border-0 px-8 py-1 text-sm">
+                            <option value="10" {{ $perPage == 10 ? 'selected' : '' }}>10</option>
+                            <option value="25" {{ $perPage == 25 ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100</option>
                         </select>
                     </form>
-
-                    <!-- Pagination -->
-                    {{-- <div>
-                        {{ $orders->links('pagination::tailwind') }}
-                    </div> --}}
                 </div>
-
-
             </div>
-
-
         </div>
     </div>
-    </div>
+
+    {{-- SweetAlert2 CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script nonce="{{ $cspNonce ?? '' }}">
+        // ========== Enhanced Status Flow Modal ==========
+        function showStatusFlowModal() {
+            Swal.fire({
+                title: 'Order Status Flow',
+                html: `
+            <div class="status-flow-container" style="font-family: system-ui, -apple-system, sans-serif;">
+                <!-- Main flow -->
+                <div class="flow-steps" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.5rem; margin: 0.5rem 0 1rem;">
+                    <!-- New Order (Blue) -->
+                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #eff6ff; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(59,130,246,0.2);">
+                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #1e3a8a;">New Order</div>
+                        <div style="font-size: 0.7rem; color: #3b82f6;">Pending review</div>
+                    </div>
+                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
+                    <!-- For Approval (Purple) -->
+                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #f3e8ff; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="width: 40px; height: 40px; background: #9333ea; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(147,51,234,0.2);">
+                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #4c1d95;">For Approval</div>
+                        <div style="font-size: 0.7rem; color: #9333ea;">Awaiting manager</div>
+                    </div>
+                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
+                    <!-- Approved (Green) -->
+                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #dcfce7; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="width: 40px; height: 40px; background: #22c55e; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(34,197,94,0.2);">
+                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #14532d;">Approved</div>
+                        <div style="font-size: 0.7rem; color: #16a34a;">Cleared for processing</div>
+                    </div>
+                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
+                    <!-- Completed (Dark Green) -->
+                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #bbf7d0; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="width: 40px; height: 40px; background: #059669; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
+                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: #064e3b;">Completed</div>
+                        <div style="font-size: 0.7rem; color: #059669;">Fulfilled & closed order</div>
+                    </div>
+                </div>
+
+                <!-- Terminal statuses (Rejected / Cancelled) -->
+                <div style="border-top: 1px solid #e2e8f0; margin: 0.5rem 0 0.5rem; padding-top: 0.8rem;">
+                    <div style="display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap;">
+                        <!-- Rejected (Orange) -->
+                        <div style="text-align: center; background: #ffedd5; border-radius: 1rem; padding: 0.4rem 1rem; min-width: 100px;">
+                            <div style="width: 34px; height: 34px; background: #f97316; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; box-shadow: 0 2px 4px rgba(249,115,22,0.2);">
+                                <svg style="width: 18px; height: 18px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </div>
+                            <div style="font-weight: 600; font-size: 0.8rem; color: #9a3412;">Rejected</div>
+                            <div style="font-size: 0.65rem; color: #c2410c;">Order declined by manager</div>
+                        </div>
+                        <!-- Cancelled (Red) -->
+                        <div style="text-align: center; background: #fee2e2; border-radius: 1rem; padding: 0.4rem 1rem; min-width: 100px;">
+                            <div style="width: 34px; height: 34px; background: #ef4444; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; box-shadow: 0 2px 4px rgba(239,68,68,0.2);">
+                                <svg style="width: 18px; height: 18px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div style="font-weight: 600; font-size: 0.8rem; color: #991b1b;">Cancelled</div>
+                            <div style="font-size: 0.65rem; color: #dc2626;">Order voided or archived</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <style>
+                @media (max-width: 550px) {
+                    .flow-steps { flex-direction: column; gap: 0.25rem !important; }
+                    .arrow { transform: rotate(90deg); margin: 0.25rem 0; }
+                    .step { width: 80%; margin: 0 auto; }
+                }
+            </style>
+        `,
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: 'auto',
+                customClass: {
+                    popup: 'compact-swal rounded-2xl',
+                    title: 'text-lg font-bold'
+                },
+                didOpen: () => {
+                    const style = document.createElement('style');
+                    style.textContent = `
+                @media (max-width: 480px) {
+                    .compact-swal {
+                        width: 92% !important;
+                        max-width: 400px !important;
+                        padding: 1rem !important;
+                    }
+                    .compact-swal .swal2-title {
+                        font-size: 1.2rem !important;
+                        padding-bottom: 0 !important;
+                    }
+                    .compact-swal .swal2-html-container {
+                        padding: 0 !important;
+                    }
+                }
+            `;
+                    document.head.appendChild(style);
+                }
+            });
+        }
+
+        // ========== Original AJAX Filtering Script (summarySpan references removed) ==========
         (function() {
             const form = document.getElementById('orders-filter-form');
             const action = form.getAttribute('action');
@@ -191,21 +276,16 @@
             const perPage = document.getElementById('per_page');
             const overlay = document.getElementById('orders-loading');
             const chipsBox = document.getElementById('active-filters');
-            const summarySpan = document.querySelector('#orders-summary p');
             const paginationInfoSpan = document.getElementById('pagination-info');
 
             const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
             function getState() {
                 const state = {};
-                // Collect all filters from the main form
                 new FormData(form).forEach((v, k) => {
                     if (v !== '' && v != null) state[k] = v;
                 });
-                // Add per_page value from the static select element
-                if (perPage && perPage.value) {
-                    state.per_page = perPage.value;
-                }
+                if (perPage && perPage.value) state.per_page = perPage.value;
                 return state;
             }
 
@@ -233,9 +313,6 @@
                     .then(html => {
                         document.getElementById('orders-table').innerHTML = html;
                         window.history.pushState({}, '', url);
-
-                        const summaryElem = document.querySelector('#orders-table .orders-summary');
-                        if (summaryElem && summarySpan) summarySpan.innerText = summaryElem.innerText;
                         const paginationElem = document.querySelector('#orders-table .pagination-info-text');
                         if (paginationElem && paginationInfoSpan) paginationInfoSpan.innerText = paginationElem.innerText;
                     })
@@ -279,7 +356,6 @@
 
             function renderChips(state) {
                 chipsBox.innerHTML = '';
-
                 form.querySelectorAll('select[data-filter]').forEach(sel => {
                     if (sel.value) {
                         const opt = sel.options[sel.selectedIndex];
@@ -289,7 +365,6 @@
                         }));
                     }
                 });
-
                 const start = form.querySelector('[name="start_date"]');
                 const end = form.querySelector('[name="end_date"]');
                 if (start && start.value) {
@@ -304,7 +379,6 @@
                         applyFilters();
                     }));
                 }
-
                 const activeTotal = chipsBox.children.length + (searchInput.value ? 1 : 0);
                 if (activeTotal > 1) {
                     const clearAll = document.createElement('a');
@@ -327,7 +401,6 @@
                 applyFilters();
             }
 
-            // Event listeners
             let searchTimer;
             searchInput.addEventListener('input', function() {
                 searchClear.classList.toggle('hidden', !this.value);
@@ -356,7 +429,6 @@
                 return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             }
 
-            // Handle "All time" button (clears both date inputs)
             const allTimeBtn = document.getElementById('preset-alltime');
             if (allTimeBtn) {
                 allTimeBtn.addEventListener('click', function(e) {
@@ -369,7 +441,6 @@
                 });
             }
 
-            // Handle other presets (Today, Last 7 days, etc.)
             document.querySelectorAll('[data-preset]').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -377,7 +448,6 @@
                     const end = form.querySelector('[name="end_date"]');
                     const today = new Date();
                     let from = new Date();
-
                     switch (this.dataset.preset) {
                         case 'today':
                             from = today;
@@ -400,17 +470,14 @@
                 });
             });
 
-            // Prevent full form submission (AJAX only)
             form.addEventListener('submit', (e) => e.preventDefault());
 
-            // Per page change
             if (perPage) {
                 perPage.addEventListener('change', function() {
                     applyFilters();
                 });
             }
 
-            // Pagination links (delegation)
             document.addEventListener('click', function(e) {
                 const link = e.target.closest('nav[aria-label="Pagination Navigation"] a');
                 if (!link) return;
@@ -418,17 +485,15 @@
                 fetchOrders(link.href);
             });
 
-            // Browser back/forward
             window.addEventListener('popstate', () => fetchOrders(window.location.href));
 
-            // Initial render
             renderChips(getState());
             setTimeout(() => {
-                const summaryElem = document.querySelector('#orders-table .orders-summary');
-                if (summaryElem && summarySpan) summarySpan.innerText = summaryElem.innerText;
                 const paginationElem = document.querySelector('#orders-table .pagination-info-text');
                 if (paginationElem && paginationInfoSpan) paginationInfoSpan.innerText = paginationElem.innerText;
             }, 100);
         })();
     </script>
 @endsection
+
+<!-- Your existing table partial and styles remain exactly as before -->

@@ -23,7 +23,7 @@ class DashboardController extends Controller
             'this_year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
             'all_time' => [null, null],
         ];
-        $dateRange = $dateRanges[$timeRange] ?? $dateRanges['all_time'];
+        $dateRange = $dateRanges[$timeRange] ?? $dateRanges['this_month'];
         $startDate = $dateRange[0];
         $endDate = $dateRange[1];
 

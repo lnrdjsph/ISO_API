@@ -33,11 +33,24 @@ class OrderController extends Controller
         $allowedStatuses = null;
 
         // 👔 Role-based filters
-        if ($user->role === 'manager') {
+        if ($user->role === 'store manager') {
             $allowedStatuses = ['for approval', 'approved', 'rejected'];
             $query->whereIn('order_status', $allowedStatuses);
 
             // Restrict managers by region
+            if ($user->user_location) {
+                $stores = LocationConfig::regionStores($user->user_location);
+                if (!empty($stores)) {
+                    $query->whereIn('requesting_store', $stores);
+                } else {
+                    $query->where('requesting_store', $user->user_location);
+                }
+            }
+        } elseif ($user->role === 'warehouse personnel' || $user->role === 'warehouse manager') {
+            $allowedStatuses = ['completed', 'approved'];
+            $query->whereIn('order_status', $allowedStatuses);
+
+            // Restrict warehouse staff by region
             if ($user->user_location) {
                 $stores = LocationConfig::regionStores($user->user_location);
                 if (!empty($stores)) {
