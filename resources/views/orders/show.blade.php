@@ -137,11 +137,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                               INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                               Below 768 px: sections stack cleanly; each
-                                                                                                                                                                               field becomes a horizontal label → value row
-                                                                                                                                                                               with a subtle underline separator.
-                                                                                                                                                                               ══════════════════════════════════════════════ */
+                                                                                                                                                                                                               INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                               Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                               field becomes a horizontal label → value row
+                                                                                                                                                                                                               with a subtle underline separator.
+                                                                                                                                                                                                               ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -1821,7 +1821,9 @@
                     <div class="relative col-span-1 grid lg:col-span-1">
                         <div class="relative grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
 
-
+                            {{-- script jquery --}}
+                            {{-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
                             <div class="actions-panel relative flex flex-col gap-2 space-y-2 rounded-lg border bg-white p-3 shadow-sm sm:col-span-2 lg:col-span-1 lg:justify-between">
 
@@ -1882,39 +1884,28 @@
                                             <div class="flex items-center justify-between text-xs">
                                                 <span class="pl-1 text-gray-600">Approved Document</span>
                                                 <a href="{{ asset('storage/' . $order->approval_document) }}"
-                                                    onclick="event.preventDefault(); previewApprovalDocument(this.href);"
-                                                    class="rounded bg-indigo-600 px-2 py-2 text-xs text-white hover:bg-indigo-700">
+                                                    class="approval-doc-view rounded bg-indigo-600 px-2 py-2 text-xs text-white hover:bg-indigo-700"
+                                                    data-doc-url="{{ asset('storage/' . $order->approval_document) }}">
                                                     View
                                                 </a>
                                             </div>
                                         </div>
 
                                         <script nonce="{{ $cspNonce ?? '' }}">
+                                            document.addEventListener('click', function(e) {
+                                                const link = e.target.closest('.approval-doc-view');
+                                                if (!link) return;
+                                                e.preventDefault();
+                                                previewApprovalDocument(link.dataset.docUrl);
+                                            });
+
                                             function previewApprovalDocument(url) {
-                                                const ext = url.split('.').pop().toLowerCase();
+                                                const ext = url.split('?')[0].split('.').pop().toLowerCase();
                                                 let content = '';
 
                                                 if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                                                    content = `
-                    <div id="image-container" style="position: relative; min-height: 200px;">
-                        <div id="skeleton" style="position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                            <svg style="width: 48px; height: 48px; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                        <img src="${url}"
-                             style="max-height: 400px; width: auto; cursor: zoom-in; display: none; margin: 0 auto;"
-                             onload="this.style.display='block'; document.getElementById('skeleton').style.display='none';"
-                             onerror="document.getElementById('skeleton').innerHTML='<div style=\'text-align:center;padding:20px\'><p class=\'text-red-500 mt-2\'>Failed to load image</p></div>'; document.getElementById('skeleton').style.display='flex';"
-                             onclick="this.style.transform=this.style.transform==='scale(1.5)'?'scale(1)':'scale(1.5)'; this.style.transition='transform 0.2s';">
-                    </div>
-                    <style>
-                        @keyframes loading {
-                            0% { background-position: 200% 0; }
-                            100% { background-position: -200% 0; }
-                        }
-                    </style>
-                `;
+                                                    content = `<img id="swalDocImg" src="${url}"
+                 style="max-height:400px;width:auto;cursor:zoom-in;display:block;margin:0 auto;">`;
                                                 } else if (ext === 'pdf') {
                                                     const h = Math.min(window.innerHeight * 0.75, 500);
                                                     content = `<iframe src="${url}" height="${h}px" width="100%"></iframe>`;
@@ -1949,6 +1940,20 @@
                                                     confirmButtonColor: '#4f46e5',
                                                     showCloseButton: true,
                                                     allowOutsideClick: false,
+                                                    didOpen: () => {
+                                                        const img = document.getElementById('swalDocImg');
+                                                        if (img) {
+                                                            img.onerror = () => {
+                                                                img.insertAdjacentHTML('afterend',
+                                                                    '<p style="color:#ef4444;text-align:center;margin-top:8px">Failed to load image</p>');
+                                                                img.style.display = 'none';
+                                                            };
+                                                            img.addEventListener('click', () => {
+                                                                img.style.transition = 'transform 0.2s';
+                                                                img.style.transform = img.style.transform === 'scale(1.5)' ? 'scale(1)' : 'scale(1.5)';
+                                                            });
+                                                        }
+                                                    }
                                                 }).then((r) => r.isConfirmed && window.open(url, '_blank'));
                                             }
                                         </script>
@@ -2625,9 +2630,6 @@
         </div>
     </form>
     @if (request()->routeIs('orders.show'))
-        {{-- script jquery --}}
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         {{-- script for input change detection --}}
         <!-- Complete Order Editing System -->
 
@@ -4186,12 +4188,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                   form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                   is untouched — only CSS display changes.
-                                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                   form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                   is untouched — only CSS display changes.
+                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
