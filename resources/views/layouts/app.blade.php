@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#0f172a" />
     <title>ISO B2B2C Ordering System</title>
     <link rel="icon" type="image/png" href="{{ asset('images/MarengEms_Logo.png') }}">
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style nonce="{{ $cspNonce ?? '' }}">
@@ -741,6 +743,7 @@
     <div class="main-container min-h-screen">
         <main class="min-h-screen w-full bg-gradient-to-br from-slate-100 via-white to-indigo-100 py-6">@yield('content')</main>
     </div>
+
 
     <script nonce="{{ $cspNonce ?? '' }}">
         document.addEventListener('DOMContentLoaded', function() {
