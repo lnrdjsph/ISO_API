@@ -1217,11 +1217,26 @@ class OrderController extends Controller
     {
         $order = Order::with('items')->findOrFail($id);
 
-        $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
-            ->setPaper('A4', 'landscape'); // switched to landscape
+        // If an approval document exists, serve that instead of regenerating.
+        if ($order->approval_document && Storage::disk('public')->exists($order->approval_document)) {
+            $path = Storage::disk('public')->path($order->approval_document);
+            $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        return $pdf->stream("{$order->id}.pdf"); // Opens in browser
-        // return $pdf->download("SOF-Order-{$order->id}.pdf"); // Downloads directly
+            // Only inline-stream file types a browser renders (pdf/images).
+            // Other types (doc/docx) are forced to download.
+            $inlineTypes = ['pdf', 'jpg', 'jpeg', 'png'];
+            $disposition = in_array($ext, $inlineTypes) ? 'inline' : 'attachment';
+
+            return response()->file($path, [
+                'Content-Disposition' => $disposition . '; filename="SOF-Order-' . $order->id . '.' . $ext . '"',
+            ]);
+        }
+
+        // Fallback: generate the SOF PDF on the fly.
+        $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
+            ->setPaper('A4', 'landscape');
+
+        return $pdf->stream("{$order->id}.pdf");
     }
     public function printSOFInvoice($id)
     {
