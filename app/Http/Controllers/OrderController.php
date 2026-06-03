@@ -1219,7 +1219,9 @@ class OrderController extends Controller
 
         // If an approval document exists, serve that instead of regenerating.
         if ($order->approval_document && Storage::disk('public')->exists($order->approval_document)) {
-            $path = Storage::disk('public')->path($order->approval_document);
+            // Resolve filesystem path for the public disk file
+            // Use storage_path for the local 'public' disk (storage/app/public)
+            $path = storage_path('app/public/' . ltrim($order->approval_document, '/'));
             $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
             // Only inline-stream file types a browser renders (pdf/images).
@@ -1238,6 +1240,7 @@ class OrderController extends Controller
 
         return $pdf->stream("{$order->id}.pdf");
     }
+
     public function printSOFInvoice($id)
     {
         $order = Order::with('items')->findOrFail($id);
