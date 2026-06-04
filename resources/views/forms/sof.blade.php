@@ -755,7 +755,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                     id="mode_dispatching"
                                     class="required-input dispatch-controller peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
                                     autocomplete="off"
-                                    data-hide-value="Customer Pick-up"
+                                    data-hide-value="Pick-up at Warehouse"
                                     data-target=".delivery-group">
                                     <option
                                         value=""
@@ -764,14 +764,19 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                         Select Mode of Dispatch
                                     </option>
                                     <option
-                                        value="Customer Pick-up"
-                                        {{ old('mode_dispatching') === 'Customer Pick-up' ? 'selected' : '' }}>
-                                        Customer Pick-up
+                                        value="Delivery to Store"
+                                        {{ old('mode_dispatching') === 'Delivery to Store' ? 'selected' : '' }}>
+                                        Delivery to Store
                                     </option>
                                     <option
                                         value="Delivery Direct to Customer"
                                         {{ old('mode_dispatching') === 'Delivery Direct to Customer' ? 'selected' : '' }}>
                                         Delivery Direct to Customer
+                                    </option>
+                                    <option
+                                        value="Pick-up at Warehouse"
+                                        {{ old('mode_dispatching') === 'Pick-up at Warehouse' ? 'selected' : '' }}>
+                                        Pick-up at Warehouse
                                     </option>
                                 </select>
 
@@ -1509,7 +1514,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
     console.log('Form Data:', data);
 });
 </script> --}}
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     {{--  --}}
     <script nonce="{{ $cspNonce ?? '' }}">
         const form = document.querySelector('form');
@@ -2577,7 +2582,7 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
 
             function toggleDeliveryGroup() {
                 const value = modeDispatching.value.trim().toLowerCase();
-                const shouldShow = value === "delivery direct to customer".toLowerCase();
+                const shouldShow = value === "Delivery Direct to Customer".toLowerCase();
 
                 if (shouldShow) {
                     deliveryGroup.classList.remove("hidden", "opacity-0", "max-h-0");
