@@ -34,7 +34,7 @@ class Order extends Model
         'customer_name',
         'contact_number',
         'email',
-        'order_status', // 👈 make sure this is included
+        'order_status',
         'approval_document',
     ];
 
@@ -48,13 +48,11 @@ class Order extends Model
             ->orderBy('created_at', 'desc');
     }
 
-    private const REGION_APPROVER = [
-        'lz'  => ['role' => 'store manager', 'location' => 'lz'],
-        'stc' => ['role' => 'store manager', 'location' => 'stc'],
-        'ntc' => ['role' => 'store manager', 'location' => 'ntc'],
-        'vs'  => ['role' => 'store manager', 'location' => 'vs'],
-    ];
-
+    /**
+     * Resolve the approver User for this order based on its requesting store's region.
+     * The approver is configured per-region in Settings → Regions, stored as a sentinel
+     * row in settings_region_emails (email='__approver__', label=user_id).
+     */
     public function approver(): ?User
     {
         $storeCode = strtolower($this->requesting_store);
@@ -64,18 +62,16 @@ class Order extends Model
                 continue;
             }
 
-            $criteria = self::REGION_APPROVER[$regionKey] ?? null;
-            if (!$criteria) return null;
+            $userId = LocationConfig::regionApproverUserId($regionKey);
+            if (!$userId) return null;
 
-            return User::where('role', $criteria['role'])
-                ->where('user_location', $criteria['location'])
-                ->first();
+            return User::find($userId);
         }
 
         return null;
     }
 
-    public function getApproverNameAttribute()
+    public function getApproverNameAttribute(): ?string
     {
         return $this->approver()?->name;
     }
