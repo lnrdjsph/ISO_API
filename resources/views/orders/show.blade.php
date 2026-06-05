@@ -20,8 +20,14 @@
             str_contains(strtolower(Auth::user()->role), 'warehouse') ||
             $hasAnyTransferNo;
 
-        // For the items table – this will now work because $hasAnyTransferNo is defined
-        $itemsLocked = $isFullyLocked;
+        $isInfoLocked = $isFullyLocked && !$partialUnlock;
+        // For the items table — items stay editable before approval
+        // (new order, "for approval"). They lock once the order is approved,
+        // completed/cancelled, has a transfer number, or for warehouse users.
+        $itemsLocked =
+            (in_array(strtolower($order->order_status), ['approved', 'completed', 'cancelled']) && Auth::user()->role !== 'super admin') ||
+            str_contains(strtolower(Auth::user()->role), 'warehouse') ||
+            $hasAnyTransferNo;
         if (Auth::user()->role === 'super admin') {
             $itemsLocked = false;
         }
@@ -159,11 +165,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                                                                                                   with a subtle underline separator.
-                                                                                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                                                                                                                                                   with a subtle underline separator.
+                                                                                                                                                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -375,9 +381,10 @@
             }
         }
 
-        /* Underline effect when component is editable */
-        .order-details-component.editable input:not([type="hidden"]),
-        .order-details-component.editable select,
+        /* Underline effect when component is editable.
+                                                                           Exclude checkboxes/radios — they should keep their native look. */
+        .order-details-component.editable input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        .order-details-component.editable select:not(#orderAction),
         .order-details-component.editable textarea,
         .order-details-component.editable td[contenteditable="true"] {
             border-bottom: 1px solid #dbe2eb !important;
@@ -390,8 +397,8 @@
             transition: border-color 0.2s;
         }
 
-        .order-details-component.editable input:focus,
-        .order-details-component.editable select:focus,
+        .order-details-component.editable input:not([type="checkbox"]):not([type="radio"]):focus,
+        .order-details-component.editable select:not(#orderAction):focus,
         .order-details-component.editable textarea:focus,
         .order-details-component.editable td[contenteditable="true"]:focus {
             border-bottom-color: #3b82f6 !important;
@@ -404,13 +411,132 @@
         }
 
         /* Style select dropdown arrow for editable mode */
-        .order-details-component.editable select {
+        .order-details-component.editable select:not(#orderAction) {
             background-color: transparent;
             appearance: none;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
             background-repeat: no-repeat;
             background-position: right 0.25rem center;
             padding-right: 1.25rem;
+        }
+
+        /* ══════════════════════════════════════════════════════════
+                               VIEW MODE vs EDIT MODE
+                               An editable order (.editable) still loads in VIEW mode: all
+                               fields look and behave like static read-only values until the
+                               user clicks "Edit Order", which adds .edit-mode and reveals
+                               the editable styling below. The PHP-level locks ($isInfoLocked,
+                               $itemsLocked) are unchanged — this is a presentation gate on
+                               top of them.
+                               ══════════════════════════════════════════════════════════ */
+
+        /* --- VIEW MODE: editable fields render as plain read-only text ---
+                               #orderAction (Order Actions) is excluded everywhere — it is NOT an
+                               editable order field and must stay a normal, always-active dropdown. */
+        .order-details-component.editable:not(.edit-mode) input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        .order-details-component.editable:not(.edit-mode) select:not(#orderAction),
+        .order-details-component.editable:not(.edit-mode) textarea {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            pointer-events: none;
+            cursor: default;
+            padding-right: 0 !important;
+            background-image: none !important;
+        }
+
+        .order-details-component.editable:not(.edit-mode) td[contenteditable] {
+            border: none !important;
+            background: transparent !important;
+            cursor: default;
+        }
+
+        /* Hide edit-only controls until edit mode */
+        .order-details-component:not(.edit-mode) #submitButton,
+        .order-details-component:not(.edit-mode) #cancelEditButton,
+        .order-details-component:not(.edit-mode) #changesCounter {
+            display: none !important;
+        }
+
+        /* Hide the Edit button once we are editing */
+        .order-details-component.edit-mode #editButton {
+            display: none !important;
+        }
+
+        /* --- EDIT MODE: editable fields read as real, bordered input boxes ---
+                               Non-minimalist but professional: solid border, soft fill, rounded
+                               corners and a clear focus ring. Uses the app's indigo accent. */
+        .order-details-component.editable.edit-mode input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        .order-details-component.editable.edit-mode select:not(#orderAction),
+        .order-details-component.editable.edit-mode textarea {
+            border: 1.5px solid #c7d2fe !important;
+            border-radius: 0.5rem !important;
+            background: #fbfcff !important;
+            padding: 0.45rem 0.6rem !important;
+            color: #1e293b !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+
+        .order-details-component.editable.edit-mode input:not([type="checkbox"]):not([type="radio"]):hover,
+        .order-details-component.editable.edit-mode select:not(#orderAction):hover,
+        .order-details-component.editable.edit-mode textarea:hover {
+            border-color: #a5b4fc !important;
+            background: #fff !important;
+        }
+
+        .order-details-component.editable.edit-mode input:not([type="checkbox"]):not([type="radio"]):focus,
+        .order-details-component.editable.edit-mode select:not(#orderAction):focus,
+        .order-details-component.editable.edit-mode textarea:focus {
+            border-color: #6366f1 !important;
+            background: #fff !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+        }
+
+        /* Restore a real dropdown caret for selects in edit mode */
+        .order-details-component.editable.edit-mode select:not(#orderAction) {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.55rem center !important;
+            padding-right: 1.75rem !important;
+        }
+
+        /* Editable item-table cells: same bordered-box treatment */
+        .order-details-component.editable.edit-mode td[contenteditable="true"] {
+            position: relative;
+            border: 1.5px solid #c7d2fe !important;
+            border-radius: 0.5rem !important;
+            background: #fbfcff !important;
+            padding: 0.45rem 1.1rem 0.45rem 0.6rem !important;
+            cursor: text;
+            color: #1e293b !important;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+        }
+
+        .order-details-component.editable.edit-mode td[contenteditable="true"]:hover {
+            border-color: #a5b4fc !important;
+            background: #fff !important;
+        }
+
+        .order-details-component.editable.edit-mode td[contenteditable="true"]:focus {
+            border-color: #6366f1 !important;
+            background: #fff !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+        }
+
+        /* Subtle pencil marker so editable item cells are obvious */
+        .order-details-component.editable.edit-mode td[contenteditable="true"]::after {
+            content: "✎";
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 0.6rem;
+            line-height: 1;
+            color: #818cf8;
+            pointer-events: none;
         }
     </style>
     <form
@@ -482,32 +608,22 @@
 
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">MBC Card No</p>
-                                        <input
-                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
-                                            name="mbc_card_no"
-                                            value="{{ $order->mbc_card_no ?? '' }}"
-                                            data-original="{{ $order->mbc_card_no ?? '' }}"
-                                            class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            autocomplete="off"
-                                            maxlength="16">
+                                        {{-- Display-only (styled like Order Info); hidden input keeps it submittable --}}
+                                        <p class="text-xs font-medium text-gray-900">{{ $order->mbc_card_no ?: '-' }}</p>
+                                        <input type="hidden" name="mbc_card_no" value="{{ $order->mbc_card_no ?? '' }}">
                                     </div>
 
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Customer Name</p>
-                                        <input
-                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
-                                            name="customer_name"
-                                            value="{{ $order->customer_name ?? '' }}"
-                                            data-original="{{ $order->customer_name ?? '' }}"
-                                            class="w-full border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            autocomplete="off"
-                                            maxlength="100">
+                                        {{-- Display-only (styled like Order Info); hidden input keeps it submittable --}}
+                                        <p class="text-xs font-medium text-gray-900">{{ $order->customer_name ?: '-' }}</p>
+                                        <input type="hidden" name="customer_name" value="{{ $order->customer_name ?? '' }}">
                                     </div>
 
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Contact Number</p>
                                         <input
-                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
+                                            type="text" {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="contact_number"
                                             value="{{ $order->contact_number ?? '' }}"
                                             data-original="{{ $order->contact_number ?? '' }}"
@@ -520,7 +636,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Email</p>
                                         <input
-                                            type="email" {{ $isFullyLocked ? 'readonly' : '' }}
+                                            type="email" {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="email"
                                             value="{{ $order->email ?? '' }}"
                                             data-original="{{ $order->email ?? '' }}"
@@ -538,26 +654,11 @@
                                     <!-- Payment Center -->
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Center</p>
-                                        <select
-                                            name="payment_center"
-                                            {{ $isFullyLocked ? 'disabled' : '' }}
-                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="background-image: none;">
-                                            <option
-                                                value=""
-                                                disabled
-                                                {{ $order->payment_center ? '' : 'selected' }}>
-                                                Select Payment Center
-                                            </option>
-
-                                            @foreach (\App\Support\LocationConfig::stores() as $code => $label)
-                                                <option
-                                                    value="{{ $code }}"
-                                                    {{ (string) $order->payment_center === (string) $code ? 'selected' : '' }}>
-                                                    {{ $label }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        {{-- Display-only (styled like Order Info); hidden input submits the store code --}}
+                                        <p class="text-xs font-medium text-gray-900">
+                                            {{ $order->payment_center ? \App\Support\LocationConfig::storeName($order->payment_center, $order->payment_center) : '-' }}
+                                        </p>
+                                        <input type="hidden" name="payment_center" value="{{ $order->payment_center ?? '' }}">
                                     </div>
 
 
@@ -587,7 +688,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Payment Date</p>
                                         <input
                                             type="date"
-                                            {{ $isFullyLocked ? 'readonly' : '' }}
+                                            {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="payment_date"
                                             id="payment_date_inline"
                                             value="{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('Y-m-d') : '' }}"
@@ -643,20 +744,7 @@
                                                 }
                                             });
 
-                                            // Initial validation for pre-filled past date
-                                            if (paymentDateInput.value && paymentDateInput.value < todayFormatted) {
-                                                if (typeof Swal !== 'undefined') {
-                                                    Swal.fire({
-                                                        icon: 'warning',
-                                                        title: 'Invalid Pre-filled Date',
-                                                        text: 'The pre-filled payment date is in the past. Please select a valid date.',
-                                                        confirmButtonColor: '#3085d6',
-                                                        confirmButtonText: 'OK'
-                                                    });
-                                                }
-                                                paymentDateInput.value = '';
-                                                lastValidValue = '';
-                                            }
+                                            // Past-date validation runs on blur/change and at submit — NOT on page load.
                                         })();
                                     </script>
 
@@ -679,14 +767,19 @@
                                                 disabled
                                                 {{ !$order->mode_dispatching ? 'selected' : '' }}>Select Mode of Dispatch</option>
                                             <option
-                                                value="Customer Pick-up"
-                                                {{ old('mode_dispatching', $order->mode_dispatching) == 'Customer Pick-up' ? 'selected' : '' }}>
-                                                Customer Pick-up
+                                                value="Delivery to Store"
+                                                {{ old('mode_dispatching', $order->mode_dispatching) == 'Delivery to Store' ? 'selected' : '' }}>
+                                                Delivery to Store
                                             </option>
                                             <option
                                                 value="Delivery Direct to Customer"
                                                 {{ old('mode_dispatching', $order->mode_dispatching) == 'Delivery Direct to Customer' ? 'selected' : '' }}>
                                                 Delivery Direct to Customer
+                                            </option>
+                                            <option
+                                                value="Pick-up at Warehouse"
+                                                {{ old('mode_dispatching', $order->mode_dispatching) == 'Pick-up at Warehouse' ? 'selected' : '' }}>
+                                                Pick-up at Warehouse
                                             </option>
                                         </select>
                                     </div>
@@ -707,7 +800,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Delivery/Pickup Date</p>
                                         <input
                                             type="date"
-                                            {{ $isFullyLocked ? 'readonly' : '' }}
+                                            {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="delivery_date"
                                             id="delivery_date_inline"
                                             value="{{ $order->delivery_date ? \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') : '' }}"
@@ -763,20 +856,7 @@
                                                 }
                                             });
 
-                                            // Initial validation in case the pre-filled value is a past date
-                                            if (deliveryDateInput.value && deliveryDateInput.value < todayFormatted) {
-                                                if (typeof Swal !== 'undefined') {
-                                                    Swal.fire({
-                                                        icon: 'warning',
-                                                        title: 'Invalid Pre-filled Date',
-                                                        text: 'The pre-filled delivery/pickup date is in the past. Please select a valid date.',
-                                                        confirmButtonColor: '#3085d6',
-                                                        confirmButtonText: 'OK'
-                                                    });
-                                                }
-                                                deliveryDateInput.value = '';
-                                                lastValidValue = '';
-                                            }
+                                            // Past-date validation runs on blur/change and at submit — NOT on page load.
                                         })();
                                     </script>
 
@@ -784,7 +864,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Address</p>
                                         <input
-                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
+                                            type="text" {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="address"
                                             value="{{ $order->address ?? '' }}"
                                             placeholder="-"
@@ -795,7 +875,7 @@
                                     <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Landmark</p>
                                         <input
-                                            type="text" {{ $isFullyLocked ? 'readonly' : '' }}
+                                            type="text" {{ $isInfoLocked ? 'readonly' : '' }}
                                             name="landmark"
                                             value="{{ $order->landmark ?? '' }}"
                                             placeholder="-"
@@ -874,7 +954,7 @@
                             <label class="mb-1 block text-xs font-semibold text-gray-700">Order Comments</label>
                             <textarea
                                 name="comment"
-                                {{ $isFullyLocked ? 'readonly' : '' }}
+                                {{ $isInfoLocked ? 'readonly' : '' }}
                                 rows="2"
                                 maxlength="1800"
                                 data-original="{{ $order->comment ?? '' }}"
@@ -887,6 +967,17 @@
 
                             <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                                 <h2 class="text-lg font-semibold text-gray-700">Ordered Items</h2>
+
+                                {{-- Status legend / flow trigger --}}
+                                <button
+                                    type="button"
+                                    id="statusLegendBtn"
+                                    class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 shadow-sm transition hover:bg-indigo-100 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Item Status Guide
+                                </button>
 
                                 {{-- <script>
 																		document.getElementById('generateSOButton').addEventListener('click', function() {
@@ -917,6 +1008,104 @@
 
 
                             </div>
+
+                            <script nonce="{{ $cspNonce ?? '' }}">
+                                (function() {
+                                    const btn = document.getElementById('statusLegendBtn');
+                                    if (!btn) return;
+
+                                    // Status definitions — kept in sync with the badge logic
+                                    // used when rendering each item's Status cell.
+                                    const STATUSES = [{
+                                            name: 'Processing',
+                                            bg: '#fef9c3',
+                                            fg: '#854d0e',
+                                            desc: 'Order is being processed for shipment.'
+                                        },
+                                        {
+                                            name: 'Picking',
+                                            bg: '#ffedd5',
+                                            fg: '#9a3412',
+                                            desc: 'Order is being picked at the warehouse.'
+                                        },
+                                        {
+                                            name: 'Shipped',
+                                            bg: '#dbeafe',
+                                            fg: '#1e40af',
+                                            desc: 'Order is currently in transit to the store.'
+                                        },
+                                        {
+                                            name: 'Received',
+                                            bg: '#dcfce7',
+                                            fg: '#166534',
+                                            desc: 'Order has been received by the store.'
+                                        },
+                                    ];
+
+                                    const OTHER = [{
+                                            name: 'N/A',
+                                            bg: '#f3f4f6',
+                                            fg: '#374151',
+                                            desc: 'No transfer number provided yet.'
+                                        },
+                                        {
+                                            name: 'Not Found',
+                                            bg: '#fee2e2',
+                                            fg: '#991b1b',
+                                            desc: 'Transfer number not found in the system.'
+                                        },
+                                        {
+                                            name: 'Error',
+                                            bg: '#fee2e2',
+                                            fg: '#991b1b',
+                                            desc: 'An error occurred while checking the status.'
+                                        },
+                                    ];
+
+                                    function badge(s) {
+                                        return `<span style="display:inline-block;min-width:84px;text-align:center;background:${s.bg};color:${s.fg};font-size:11px;font-weight:600;padding:3px 8px;border-radius:9999px;">${s.name}</span>`;
+                                    }
+
+                                    function row(s) {
+                                        return `
+                                            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;text-align:left;">
+                                                <div style="flex-shrink:0;margin-top:1px;">${badge(s)}</div>
+                                                <div style="font-size:12.5px;color:#475569;line-height:1.4;">${s.desc}</div>
+                                            </div>`;
+                                    }
+
+                                    btn.addEventListener('click', function() {
+                                        if (typeof Swal === 'undefined') return;
+
+                                        const arrow = '<span style="color:#94a3b8;font-size:13px;padding:0 2px;">&rarr;</span>';
+                                        const flow = STATUSES
+                                            .map(s => `<span style="display:inline-block;margin:2px 0;">${badge(s)}</span>`)
+                                            .join(arrow);
+
+                                        const html = `
+                                            <div style="text-align:left;">
+                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;">Normal Flow</p>
+                                                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:16px;">
+                                                    ${flow}
+                                                </div>
+
+                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px;">What each status means</p>
+                                                ${STATUSES.map(row).join('')}
+
+                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 4px;">Other states</p>
+                                                ${OTHER.map(row).join('')}
+                                            </div>`;
+
+                                        Swal.fire({
+                                            title: 'Item Status Guide',
+                                            html: html,
+                                            width: 560,
+                                            confirmButtonText: 'Got it',
+                                            confirmButtonColor: '#4f46e5',
+                                        });
+                                    });
+                                })();
+                            </script>
 
                             {{-- scroll hint for tablets/phones --}}
                             <div class="table-scroll-hint mb-2 w-fit items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-600">
@@ -1000,6 +1189,10 @@
                                                 type="hidden"
                                                 name="items[{{ $loop->index }}][id]"
                                                 value="{{ $item->id }}">
+                                            {{-- Preserve freebie_sku & sale_type — the controller writes both back,
+                                                 so without these they'd be nulled on every save. --}}
+                                            <input type="hidden" name="items[{{ $loop->index }}][freebie_sku]" value="{{ $item->freebie_sku }}">
+                                            <input type="hidden" name="items[{{ $loop->index }}][sale_type]" value="{{ $item->sale_type }}">
                                             {{-- Checkbox column --}}
                                             <td class="td-checkbox border p-2 text-center">
                                                 <input type="checkbox" name="items[{{ $loop->index }}][cancel]" value="1"
@@ -1073,12 +1266,9 @@
                                                 class="border p-2 text-center"
                                                 contenteditable="false"
                                                 data-field="price"
-                                                data-label="Price">{{ number_format($item->price, 2) }}
-                                                <input
-                                                    type="hidden"
-                                                    name="items[{{ $loop->index }}][price]"
-                                                    value="{{ $item->price }}">
+                                                data-label="Price"> {{ number_format($item->price, 2) }}
                                             </td>
+                                            <input type="hidden" name="items[{{ $loop->index }}][price]" value="{{ $item->price ?? 0 }}">
                                             <td
                                                 class="border p-2 text-center"
                                                 @if ($item->item_type == 'DISCOUNT') contenteditable="{{ $itemsLocked ? 'false' : 'true' }}" @endif
@@ -1135,11 +1325,11 @@
                                                 @else
                                                     {!! $item->freebies_per_cs == 0 ? '0' : $item->freebies_per_cs !!}
                                                 @endif
-                                                <input
-                                                    type="hidden"
-                                                    name="items[{{ $loop->index }}][freebies_per_cs]"
-                                                    value="{{ $item->item_type === 'FREEBIE' ? $item->freebies_per_cs : 0 }}">
                                             </td>
+                                            <input
+                                                type="hidden"
+                                                name="items[{{ $loop->index }}][freebies_per_cs]"
+                                                value="{{ $item->item_type === 'FREEBIE' ? $item->freebies_per_cs : 0 }}">
 
 
                                             <td
@@ -1167,10 +1357,10 @@
                                             <td class="remark-cell border p-2 text-center" data-label="Remarks">
                                                 <div class="relative">
                                                     <input
-                                                        type="text" {{ $isFullyLocked ? 'readonly' : '' }}
+                                                        type="text" {{ $isInfoLocked ? 'readonly' : '' }}
                                                         name="items[{{ $loop->index }}][remarks]"
                                                         value="{{ old('items.' . $loop->index . '.remarks', $item->remarks ?? '') }}"
-                                                        class="w-full border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0" />
+                                                        class="item-comment w-full border-none bg-transparent px-2 py-0 text-left text-xs transition-all duration-200 ease-in-out focus:outline-none focus:ring-0" />
                                                 </div>
                                             </td>
 
@@ -1799,6 +1989,9 @@
                                                             timerProgressBar: true
                                                         }).then(() => {
                                                             // Reload the page or update the UI
+                                                            if (window.allowIntentionalLeave) window.allowIntentionalLeave();
+                                                            window.isLeavingIntentionally = true;
+                                                            window.onbeforeunload = null;
                                                             window.location.reload();
                                                         });
                                                     } else {
@@ -2038,8 +2231,63 @@
                                         </a>
                                     </div>
 
+                                    {{-- Edit / Update / Cancel — sits directly below the print buttons --}}
+                                    @if (session('success'))
+                                        <div class="mt-3 rounded-md border border-green-400 bg-green-100 px-3 py-2 text-xs text-green-700">
+                                            ✅ {{ session('success') }}
+                                        </div>
+                                    @endif
+                                    <div class="relative">
+                                        @if ($errors->any())
+                                            <div class="mt-3 rounded-md border border-red-400 bg-red-100 px-3 py-2 text-xs text-red-700">
+                                                <strong>⚠ Whoops!</strong> Problems:
+                                                <ul class="mt-1 list-disc pl-4">
+                                                    @foreach ($errors->all() as $error)
+                                                        <li>{{ $error }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endif
 
+                                        @if (Auth::user()->role !== 'store manager' || (isset($partialUnlock) && $partialUnlock))
+                                            <div
+                                                id="changesCounter"
+                                                class="mt-3 hidden text-center text-xs text-gray-600">
+                                                <span
+                                                    id="changesCount"
+                                                    class="font-semibold">0</span> field(s) modified
+                                            </div>
+                                            <!-- Edit toggle (shown first) -->
+                                            <button
+                                                type="button"
+                                                id="editButton"
+                                                class="mt-3 inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                <span>Edit Order</span>
+                                            </button>
 
+                                            <!-- Submit Button (revealed in edit mode) -->
+                                            <button
+                                                type="submit"
+                                                id="submitButton"
+                                                class="mt-3 hidden w-full items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                                disabled>
+                                                <span id="submitButtonText">Update</span>
+                                            </button>
+
+                                            <!-- Cancel edit (revealed in edit mode) -->
+                                            <button
+                                                type="button"
+                                                id="cancelEditButton"
+                                                class="mt-2 hidden w-full items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm transition duration-200 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-400">
+                                                <span>Cancel</span>
+                                            </button>
+                                        @endif
+                                    </div>
 
                                 </div>
 
@@ -2050,7 +2298,7 @@
                                         <h3 class="text-xs font-semibold text-gray-600">📄 Order Notes</h3>
 
                                         <div class="rounded-md border border-gray-200 bg-gray-50 p-2">
-                                            <div class="custom-scrollbar max-h-48 space-y-2 overflow-y-auto pr-1">
+                                            <div class="custom-scrollbar max-h-80 min-h-24 space-y-2 overflow-y-auto pr-1">
                                                 @forelse ($order->notes as $note)
                                                     <div class="rounded-md border border-gray-200 bg-white p-2 text-xs">
                                                         <div class="flex justify-between">
@@ -2073,41 +2321,6 @@
 
                                 </div>
 
-                                @if (session('success'))
-                                    <div class="rounded-md border border-green-400 bg-green-100 px-3 py-2 text-xs text-green-700">
-                                        ✅ {{ session('success') }}
-                                    </div>
-                                @endif
-                                <div class="relative">
-                                    @if ($errors->any())
-                                        <div class="rounded-md border border-red-400 bg-red-100 px-3 py-2 text-xs text-red-700">
-                                            <strong>⚠ Whoops!</strong> Problems:
-                                            <ul class="mt-1 list-disc pl-4">
-                                                @foreach ($errors->all() as $error)
-                                                    <li>{{ $error }}</li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
-
-                                    @if (Auth::user()->role !== 'store manager' || (isset($partialUnlock) && $partialUnlock))
-                                        <div
-                                            id="changesCounter"
-                                            class="hidden text-center text-xs text-gray-600">
-                                            <span
-                                                id="changesCount"
-                                                class="font-semibold">0</span> field(s) modified
-                                        </div>
-                                        <!-- Bottom: Submit Button -->
-                                        <button
-                                            type="submit"
-                                            id="submitButton"
-                                            class="mt-3 inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled>
-                                            <span id="submitButtonText">Update</span>
-                                        </button>
-                                    @endif
-                                </div>
                             </div>
 
 
@@ -2451,6 +2664,9 @@
                                                                 timer: 2000,
                                                                 showConfirmButton: false,
                                                             }).then(() => {
+                                                                if (window.allowIntentionalLeave) window.allowIntentionalLeave();
+                                                                window.isLeavingIntentionally = true;
+                                                                window.onbeforeunload = null;
                                                                 window.location.href = data.redirect ?? window.location.href;
                                                             });
                                                         })
@@ -2528,6 +2744,11 @@
                                     });
 
                                     function submitForm(action, note = null, file = null) {
+                                        // Intentional navigation — skip the unsaved-changes prompt.
+                                        if (window.allowIntentionalLeave) window.allowIntentionalLeave();
+                                        window.isLeavingIntentionally = true;
+                                        window.onbeforeunload = null;
+
                                         const form = document.createElement('form');
                                         form.method = 'POST';
                                         form.enctype = 'multipart/form-data'; // ✅ needed for file upload
@@ -2720,10 +2941,17 @@
                     IS_WAREHOUSE ||
                     HAS_TRANSFER_NO; // ← any transfer number = fully locked
 
-                const ITEMS_LOCKED = IS_LOCKED; // table follows the same lock
+                // Items follow their OWN lock (see $itemsLocked in the @php block):
+                // editable before approval (new / for approval), locked once approved,
+                // completed/cancelled, a transfer number exists, or for warehouse users.
+                const ITEMS_LOCKED = {{ $itemsLocked ? 'true' : 'false' }};
 
 
-                if (!IS_LOCKED) {
+                // The component is "editable" whenever this user/status can change
+                // ANYTHING — that includes PARTIAL_UNLOCK (e.g. an approved order where
+                // store personnel may still edit the info panel before a transfer no).
+                // Without this, edit-mode styling never applies to approved orders.
+                if (!IS_LOCKED || PARTIAL_UNLOCK) {
                     $container.addClass('editable');
                 } else {
                     $container.removeClass('editable');
@@ -2731,6 +2959,10 @@
                 // Change Detection Variables
                 let hasChanges = false;
                 let changesCount = 0;
+                // Set when the user submits (Update), cancels, or triggers an order
+                // action, so the "unsaved changes" prompt is suppressed for intentional
+                // navigation. Exposed on window so action scripts in other scopes can set it.
+                window.isLeavingIntentionally = window.isLeavingIntentionally || false;
                 const submitButton = $('#submitButton');
                 const submitButtonText = $('#submitButtonText');
                 const changesCounter = $('#changesCounter');
@@ -3321,14 +3553,16 @@
                     console.log('🔒 Locking fields...');
 
                     if (IS_LOCKED) {
-                        // Lock inputs (except info-panel inputs when partial-unlocked)
-                        $container.find('input:not([type="hidden"])' + (PARTIAL_UNLOCK ? ':not(.info-section input)' : ''))
+                        // Lock inputs (except info-panel inputs AND item-comment fields
+                        // when partial-unlocked — item comments follow the same rule as
+                        // the order comment: editable while partial-unlocked).
+                        $container.find('input:not([type="hidden"])' + (PARTIAL_UNLOCK ? ':not(.info-section input):not(.item-comment)' : ''))
                             .prop('readonly', true).css({
                                 'pointer-events': 'none',
                                 'cursor': 'default'
                             });
 
-                        // Lock comment textarea (skip when partial-unlocked)
+                        // Lock comment textarea + item-comment inputs (skip when partial-unlocked)
                         if (!PARTIAL_UNLOCK) {
                             $container.find('textarea[name="comment"]').prop('readonly', true).css({
                                 'pointer-events': 'none',
@@ -3351,16 +3585,18 @@
                             });
                     }
 
-                    // Item-table cells ALWAYS lock when this function runs (ITEMS_LOCKED or IS_LOCKED)
-                    $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
-                        'pointer-events': 'none',
-                        'cursor': 'default'
-                    }).off();
+                    // Item-table cells lock ONLY when the items table is locked.
+                    if (ITEMS_LOCKED) {
+                        $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
+                            'pointer-events': 'none',
+                            'cursor': 'default'
+                        }).off();
 
-                    $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
-                        'pointer-events': 'none',
-                        'cursor': 'default'
-                    }).off();
+                        $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
+                            'pointer-events': 'none',
+                            'cursor': 'default'
+                        }).off();
+                    }
 
                     // Submit button
                     if (PARTIAL_UNLOCK || !IS_LOCKED) {
@@ -3389,7 +3625,10 @@
 
                     trackableElements.filter('[contenteditable]').each(function() {
                         const $element = $(this);
-                        const originalValue = $element.text().trim();
+                        let originalValue = $element.text().trim();
+                        if (originalValue === '' || originalValue === '-' || originalValue === 'N/A') {
+                            originalValue = '0';
+                        }
                         $element.data('original-value', originalValue);
                     });
                 }
@@ -3658,21 +3897,37 @@
                         }
                     });
 
-                    window.addEventListener('beforeunload', function(e) {
+                    window.__unsavedChangesHandler = function(e) {
+                        // Don't warn when we're intentionally leaving via Update/Cancel/action.
+                        if (window.isLeavingIntentionally) return undefined;
                         if (hasChanges) {
                             e.preventDefault();
                             e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                             return e.returnValue;
                         }
-                    });
+                    };
+                    window.addEventListener('beforeunload', window.__unsavedChangesHandler);
+
+                    // Single entry point to fully suppress the unsaved-changes guard
+                    // for intentional navigation (Update / Cancel / order actions).
+                    window.allowIntentionalLeave = function() {
+                        window.isLeavingIntentionally = true;
+                        hasChanges = false;
+                        if (window.__unsavedChangesHandler) {
+                            window.removeEventListener('beforeunload', window.__unsavedChangesHandler);
+                        }
+                        window.onbeforeunload = null;
+                    };
 
 
                 }
-                // Partial unlock: track only info-panel field edits (item table stays locked)
+                // Partial unlock: track info-panel field edits + the order comment +
+                // item-comment fields (item table otherwise stays locked).
                 if (IS_LOCKED && PARTIAL_UNLOCK) {
                     $container.find('.info-section')
                         .find('input:not([type="hidden"]), select')
                         .add($container.find('textarea[name="comment"]'))
+                        .add($container.find('input.item-comment'))
                         .on('change input keyup', function() {
                             checkElementChange(this);
                         });
@@ -3700,8 +3955,11 @@
                             'qty_per_cs',
                             'freebies_per_cs',
                             'total_qty',
-                            'amount',
-                            'store_order_no'
+                            'amount'
+                            // NOTE: store_order_no is intentionally NOT synced here.
+                            // It is non-editable and its hidden input already carries the
+                            // correct server value (empty when null). Re-deriving it from
+                            // the cell's text would wrongly blank it or coerce it to '0'.
                         ];
 
                         fieldsToSync.forEach(field => {
@@ -3723,8 +3981,9 @@
                                 // Get text content, excluding any child elements (like the hidden input)
                                 let value = cell.clone().children().remove().end().text().trim();
 
-                                // Handle special cases
-                                if (value === '-' || value === 'N/A') {
+                                // Handle special cases (store_order_no is excluded from the
+                                // sync list above because it is nullable and non-editable).
+                                if (value === '-' || value === 'N/A' || value === '') {
                                     value = '0';
                                 }
 
@@ -3747,13 +4006,29 @@
                 // ========================================
                 // FORM SUBMISSION
                 // ========================================
-                $container.find('form').on('submit', function(e) {
-                    if (IS_LOCKED && !PARTIAL_UNLOCK) return true;
+                // NOTE: the <form> WRAPS .order-details-component, so it is an
+                // ancestor — use closest(), not find() (find() matched nothing,
+                // which is why this submit handler never ran and the unsaved-changes
+                // prompt kept firing on Update).
+                $container.closest('form').on('submit', function(e) {
+                    if (IS_LOCKED && !PARTIAL_UNLOCK) {
+                        // Locked submit (rare) — still intentional, allow leave.
+                        if (window.allowIntentionalLeave) window.allowIntentionalLeave();
+                        return true;
+                    }
 
                     if (!hasChanges) {
                         e.preventDefault();
                         alert('No changes detected to save.');
                         return false;
+                    }
+
+                    // We are really submitting now → disable the unsaved-changes guard.
+                    if (window.allowIntentionalLeave) {
+                        window.allowIntentionalLeave();
+                    } else {
+                        window.isLeavingIntentionally = true;
+                        window.onbeforeunload = null;
                     }
 
                     // CRITICAL: Sync all contenteditable values to hidden inputs
@@ -3768,7 +4043,6 @@
                         }
                     }
 
-                    window.onbeforeunload = null;
                     hasChanges = false;
 
                     submitButton.prop('disabled', true);
@@ -3852,23 +4126,88 @@
                         });
                     }
 
-                    // Item-table cells always lock when ITEMS_LOCKED (transfer number OR locked status)
-                    $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
-                        'pointer-events': 'none',
-                        'cursor': 'default'
-                    }).off();
+                    // Item-table cells lock ONLY when the items table is locked
+                    // (approved/terminal/transfer/warehouse). New & "for approval" stay editable.
+                    if (ITEMS_LOCKED) {
+                        $container.find('td[contenteditable="true"]').attr('contenteditable', 'false').css({
+                            'pointer-events': 'none',
+                            'cursor': 'default'
+                        }).off();
 
-                    $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
-                        'pointer-events': 'none',
-                        'cursor': 'default'
-                    }).off();
+                        $container.find('td[contenteditable-search="true"]').removeAttr('contenteditable-search').attr('contenteditable', 'false').css({
+                            'pointer-events': 'none',
+                            'cursor': 'default'
+                        }).off();
+                    }
 
-                    // Submit button visibility unchanged
-                    if (PARTIAL_UNLOCK || !IS_LOCKED) {
-                        submitButton.removeClass('hidden');
+                    // ========================================
+                    // EDIT-MODE GATE
+                    // Even an editable order starts in VIEW mode. The
+                    // "Edit Order" button flips .edit-mode on, which both
+                    // reveals the noticeable styling (see CSS) and turns
+                    // interaction back on for the genuinely-editable fields.
+                    // ========================================
+                    const CAN_EDIT = PARTIAL_UNLOCK || !IS_LOCKED;
+                    const editButton = $('#editButton');
+                    const cancelEditButton = $('#cancelEditButton');
+
+                    if (!CAN_EDIT) {
+                        // Nothing is editable for this user/status — no Edit button.
+                        editButton.addClass('hidden');
                     } else {
-                        submitButton.prop('disabled', true).addClass('hidden');
-                        changesCounter.addClass('hidden');
+                        // Start in VIEW mode: disable item-cell editing until Edit is clicked.
+                        // Tag the cells that SHOULD become editable so we can restore them.
+                        $container.find('td[contenteditable="true"]')
+                            .attr('data-editable-cell', '1')
+                            .attr('contenteditable', 'false');
+                        $container.find('td[contenteditable-search="true"]')
+                            .attr('data-editable-search', '1');
+
+                        // Info-panel form fields: collect the ones that are genuinely
+                        // editable (not already readonly/disabled by the PHP lock) so we
+                        // can switch them off in view mode and back on in edit mode.
+                        const editableFields = $container.find(
+                            'input[type="text"], input[type="date"], input[type="email"], textarea[name="comment"], select:not(#orderAction)'
+                        ).filter(function() {
+                            const el = $(this);
+                            return !el.prop('readonly') && !el.prop('disabled');
+                        });
+                        // View mode: prevent keyboard focus / interaction.
+                        editableFields.attr('tabindex', '-1');
+
+                        submitButton.addClass('hidden');
+                        cancelEditButton.addClass('hidden');
+                        $container.removeClass('edit-mode');
+
+                        function enterEditMode() {
+                            $container.addClass('edit-mode');
+
+                            // Restore item-cell editability (respecting the items lock).
+                            if (!ITEMS_LOCKED) {
+                                $container.find('td[data-editable-cell="1"]').attr('contenteditable', 'true');
+                            }
+                            // Restore info-field interaction.
+                            editableFields.removeAttr('tabindex');
+
+                            editButton.addClass('hidden');
+                            cancelEditButton.removeClass('hidden');
+                            submitButton.removeClass('hidden');
+                            updateSubmitButtonState();
+                            console.log('✏️  Edit mode ON');
+                        }
+
+                        editButton.on('click', enterEditMode);
+
+                        // Cancel: discard edits by reloading the original record.
+                        cancelEditButton.on('click', function() {
+                            if (window.allowIntentionalLeave) {
+                                window.allowIntentionalLeave();
+                            } else {
+                                window.isLeavingIntentionally = true;
+                                window.onbeforeunload = null;
+                            }
+                            window.location.reload();
+                        });
                     }
 
                     console.log('✅ Initialization complete');
@@ -3880,60 +4219,56 @@
             // ========================================
             document.addEventListener('DOMContentLoaded', () => {
                 const generateBtn = document.getElementById('generateSOButton');
-                if (!generateBtn) return; // Button not rendered
-                generateBtn.addEventListener('click', async () => {
+                if (!generateBtn) return;
+
+                // Move the original transfer logic into a reusable async function
+                const executeTransfer = async () => {
                     const sofId = "{{ $order->sof_id }}";
                     const url = "{{ route('oracle.transfer') }}";
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                    const executeTransfer = async () => {
-                        Swal.fire({
-                            title: 'Processing Transfer...',
-                            html: `
-                    <div style="text-align: left;">
-                        <p>📤 Sending order to Oracle RIB</p>
-                        <p>🔄 Processing departments...</p>
-                        <p>⏳ Please wait, this may take a few moments</p>
-                    </div>
-                    `,
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
+                    Swal.fire({
+                        title: 'Processing Transfer...',
+                        html: `
+                <div style="text-align: left;">
+                    <p>📤 Sending order to Oracle RIB</p>
+                    <p>🔄 Processing departments...</p>
+                    <p>⏳ Please wait, this may take a few moments</p>
+                </div>
+            `,
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                sof_id: sofId
+                            })
                         });
 
+                        const text = await response.text();
+                        let data = {};
                         try {
-                            const response = await fetch(url, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': csrfToken
-                                },
-                                body: JSON.stringify({
-                                    sof_id: sofId
-                                })
-                            });
+                            data = JSON.parse(text);
+                        } catch (parseError) {
+                            throw new Error('Invalid response from server');
+                        }
 
-                            const text = await response.text();
-                            console.log('Raw response:', text);
+                        Swal.close();
 
-                            let data = {};
-                            try {
-                                data = JSON.parse(text);
-                            } catch (parseError) {
-                                console.error('JSON parse error:', parseError);
-                                throw new Error('Invalid response from server');
-                            }
+                        if (response.ok && data.responses) {
+                            const summary = data.summary || {};
+                            const responses = data.responses || {};
+                            const deptKeys = Object.keys(responses);
 
-                            Swal.close();
-
-                            // Handle success with detailed summary
-                            if (response.ok && data.responses) {
-                                const summary = data.summary || {};
-                                const responses = data.responses || {};
-                                const deptKeys = Object.keys(responses);
-
-                                // Build detailed HTML summary
-                                let htmlContent = `
+                            let htmlContent = `
                     <div style="text-align: left; max-height: 500px; overflow-y: auto;">
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
                             <h4 style="margin: 0 0 10px 0;">📊 Transfer Summary</h4>
@@ -3941,43 +4276,42 @@
                             <p style="margin: 5px 0; color: #28a745;"><strong>✅ Successful:</strong> ${summary.successful || 0}</p>
                             <p style="margin: 5px 0; color: #dc3545;"><strong>⚠️ Failed:</strong> ${summary.failed || 0}</p>
                         </div>
-                    `;
+                `;
 
-                                deptKeys.forEach(dept => {
-                                    const resp = responses[dept];
-                                    const status = resp.status || 'unknown';
-                                    const tsfNo = resp.tsf_no || 'N/A';
-                                    const itemCount = resp.item_count || 0;
+                            deptKeys.forEach(dept => {
+                                const resp = responses[dept];
+                                const status = resp.status || 'unknown';
+                                const tsfNo = resp.tsf_no || 'N/A';
+                                const itemCount = resp.item_count || 0;
 
-                                    // Status styling
-                                    let statusIcon = '❓';
-                                    let statusColor = '#6c757d';
-                                    let statusText = 'Unknown';
+                                let statusIcon = '❓';
+                                let statusColor = '#6c757d';
+                                let statusText = 'Unknown';
 
-                                    switch (status) {
-                                        case 'success':
-                                            statusIcon = '✅';
-                                            statusColor = '#28a745';
-                                            statusText = 'Success';
-                                            break;
-                                        case 'rib_errors':
-                                            statusIcon = '⚠️';
-                                            statusColor = '#ffc107';
-                                            statusText = 'RIB Errors';
-                                            break;
-                                        case 'verification_failed':
-                                            statusIcon = '❌';
-                                            statusColor = '#dc3545';
-                                            statusText = 'Verification Failed';
-                                            break;
-                                        case 'processing_failed':
-                                            statusIcon = '❌';
-                                            statusColor = '#dc3545';
-                                            statusText = 'Processing Failed';
-                                            break;
-                                    }
+                                switch (status) {
+                                    case 'success':
+                                        statusIcon = '✅';
+                                        statusColor = '#28a745';
+                                        statusText = 'Success';
+                                        break;
+                                    case 'rib_errors':
+                                        statusIcon = '⚠️';
+                                        statusColor = '#ffc107';
+                                        statusText = 'RIB Errors';
+                                        break;
+                                    case 'verification_failed':
+                                        statusIcon = '❌';
+                                        statusColor = '#dc3545';
+                                        statusText = 'Verification Failed';
+                                        break;
+                                    case 'processing_failed':
+                                        statusIcon = '❌';
+                                        statusColor = '#dc3545';
+                                        statusText = 'Processing Failed';
+                                        break;
+                                }
 
-                                    htmlContent += `
+                                htmlContent += `
                         <div style="border: 2px solid ${statusColor}; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: white;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <h5 style="margin: 0; color: ${statusColor};">
@@ -3987,185 +4321,148 @@
                                     ${statusText}
                                 </span>
                             </div>
-                            
                             <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
                                 ${status === 'success' ? `<p style="margin: 3px 0;"><strong>TSF Number:</strong> <code>${tsfNo}</code></p>` : ''}
                                 <p style="margin: 3px 0;"><strong>Items:</strong> ${itemCount}</p>
                             </div>
-                        `;
+                    `;
 
-                                    // Success details
-                                    if (status === 'success' && resp.details && resp.details.length > 0) {
-                                        htmlContent += `
+                                if (status === 'success' && resp.details && resp.details.length > 0) {
+                                    htmlContent += `
                             <div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; border-left: 4px solid #28a745;">
                                 <strong>✓ Verification Details:</strong>
                                 <ul style="margin: 5px 0; padding-left: 20px;">
+                                    ${resp.details.map(d => `<li style="font-size: 13px;">${d}</li>`).join('')}
+                                </ul>
+                            </div>
                         `;
-                                        resp.details.forEach(detail => {
-                                            htmlContent += `<li style="font-size: 13px;">${detail}</li>`;
-                                        });
-                                        htmlContent += `</ul></div>`;
-                                    }
+                                }
 
-                                    // Error details
-                                    if (resp.errors && resp.errors.length > 0) {
-                                        htmlContent += `
+                                if (resp.errors && resp.errors.length > 0) {
+                                    htmlContent += `
                             <div style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px; border-left: 4px solid #dc3545;">
                                 <strong>⚠️ Issue Details:</strong>
                                 <ul style="margin: 5px 0; padding-left: 20px;">
-                        `;
-                                        resp.errors.forEach(err => {
-                                            const errorMsg = err.message || 'Unknown error';
-                                            const attempts = err.attempts ? ` (${err.attempts} verification attempts)` : '';
-
-                                            // Simplify error type labels for users
-                                            let typeLabel = '';
-                                            switch (err.type) {
-                                                case 'rib_failure':
-                                                    typeLabel = 'Oracle Processing Error';
-                                                    break;
-                                                case 'verification_failure':
-                                                    typeLabel = 'Verification Issue';
-                                                    break;
-                                                case 'processing_failure':
-                                                    typeLabel = 'Processing Error';
-                                                    break;
-                                                default:
-                                                    typeLabel = 'Error';
-                                            }
-
-                                            htmlContent += `
-                                <li style="font-size: 13px; margin: 5px 0;">
-                                    <strong>${typeLabel}:</strong> ${errorMsg}${attempts}
-                                </li>
-                            `;
-                                        });
-                                        htmlContent += `</ul></div>`;
-                                    }
-
-                                    // Verification info (only show meaningful info)
-                                    if (resp.verification && !resp.verification.exists && status === 'verification_failed') {
-                                        const verifyAttempts = resp.verification.attempt || 0;
-
-                                        htmlContent += `
-                            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
-                                <strong>🔍 Database Check:</strong>
-                                <p style="margin: 5px 0; font-size: 13px;">
-                                    The TSF could not be confirmed in the Oracle database after ${verifyAttempts} attempt(s).
-                                </p>
-                                <p style="margin: 5px 0; font-size: 13px; color: #856404;">
-                                    <em>Note: The transfer may still be processing. Please check Oracle RMS directly or contact IT support.</em>
-                                </p>
+                                    ${resp.errors.map(err => `<li style="font-size: 13px; margin: 5px 0;"><strong>${err.type || 'Error'}:</strong> ${err.message}${err.attempts ? ` (${err.attempts} attempts)` : ''}</li>`).join('')}
+                                </ul>
                             </div>
                         `;
-                                    }
-
-                                    htmlContent += `</div>`;
-                                });
-
-                                htmlContent += `</div>`;
-
-                                // Show appropriate dialog based on overall success
-                                if (data.success) {
-                                    await Swal.fire({
-                                        icon: 'success',
-                                        title: '✅ Transfer Complete',
-                                        html: htmlContent,
-                                        confirmButtonText: 'OK',
-                                        width: Math.min(window.innerWidth * 0.95, 800) + 'px',
-                                        customClass: {
-                                            popup: 'swal-wide'
-                                        }
-                                    });
-                                    location.reload();
-                                } else {
-                                    const result = await Swal.fire({
-                                        icon: 'warning',
-                                        title: '⚠️ Transfer Completed with Issues',
-                                        html: htmlContent,
-                                        showCancelButton: true,
-                                        confirmButtonText: 'Retry Failed Items',
-                                        cancelButtonText: 'Close',
-                                        reverseButtons: true,
-                                        width: Math.min(window.innerWidth * 0.95, 800) + 'px',
-                                        customClass: {
-                                            popup: 'swal-wide'
-                                        }
-                                    });
-
-                                    if (result.isConfirmed) {
-                                        await executeTransfer();
-                                    }
                                 }
 
-                            } else if (data.error_type === 'no_items') {
-                                // No items to process
-                                await Swal.fire({
-                                    icon: 'info',
-                                    title: 'No Items to Process',
-                                    text: data.message || 'All items have already been processed.',
-                                    confirmButtonText: 'OK'
-                                });
+                                if (resp.verification && !resp.verification.exists && status === 'verification_failed') {
+                                    htmlContent += `
+                            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                                <strong>🔍 Database Check:</strong>
+                                <p style="margin: 5px 0; font-size: 13px;">The TSF could not be confirmed in the Oracle database after ${resp.verification.attempt || 0} attempt(s).</p>
+                                <p style="margin: 5px 0; font-size: 13px; color: #856404;"><em>Note: The transfer may still be processing. Please check Oracle RMS directly or contact IT support.</em></p>
+                            </div>
+                        `;
+                                }
 
+                                htmlContent += `</div>`;
+                            });
+
+                            htmlContent += `</div>`;
+
+                            if (data.success) {
+                                await Swal.fire({
+                                    icon: 'success',
+                                    title: '✅ Transfer Complete',
+                                    html: htmlContent,
+                                    confirmButtonText: 'OK',
+                                    width: Math.min(window.innerWidth * 0.95, 800) + 'px',
+                                    customClass: {
+                                        popup: 'swal-wide'
+                                    }
+                                });
+                                if (window.allowIntentionalLeave) window.allowIntentionalLeave();
+                                window.isLeavingIntentionally = true;
+                                window.onbeforeunload = null;
+                                location.reload();
                             } else {
-                                // General error
-                                const errorMsg = data.message || 'An unexpected error occurred.';
                                 const result = await Swal.fire({
-                                    icon: 'error',
-                                    title: 'Transfer Failed',
-                                    html: `
-                        <div style="text-align: left;">
-                            <p><strong>Error:</strong></p>
-                            <pre style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap; word-wrap: break-word;">${errorMsg}</pre>
-                        </div>
-                    `,
+                                    icon: 'warning',
+                                    title: '⚠️ Transfer Completed with Issues',
+                                    html: htmlContent,
                                     showCancelButton: true,
-                                    confirmButtonText: 'Retry',
-                                    cancelButtonText: 'Cancel',
-                                    reverseButtons: true
+                                    confirmButtonText: 'Retry Failed Items',
+                                    cancelButtonText: 'Close',
+                                    reverseButtons: true,
+                                    width: Math.min(window.innerWidth * 0.95, 800) + 'px',
+                                    customClass: {
+                                        popup: 'swal-wide'
+                                    }
                                 });
 
                                 if (result.isConfirmed) {
                                     await executeTransfer();
                                 }
                             }
-
-                        } catch (err) {
-                            Swal.close();
-                            console.error('Transfer failed:', err);
-
+                        } else if (data.error_type === 'no_items') {
+                            await Swal.fire({
+                                icon: 'info',
+                                title: 'No Items to Process',
+                                text: data.message || 'All items have already been processed.',
+                                confirmButtonText: 'OK'
+                            });
+                        } else {
+                            const errorMsg = data.message || 'An unexpected error occurred.';
                             const result = await Swal.fire({
                                 icon: 'error',
-                                title: '🔥 Connection Failed',
-                                html: `
-                    <div style="text-align: left;">
-                        <p><strong>Error Type:</strong> Network/Connection Issue</p>
-                        <p><strong>Message:</strong></p>
-                        <pre style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap;">${err.message || 'Server unreachable or timeout'}</pre>
-                        <p style="margin-top: 15px; font-size: 14px; color: #6c757d;">
-                            This could be due to:
-                            <ul style="margin: 5px 0; padding-left: 20px;">
-                                <li>Network timeout</li>
-                                <li>Server overload</li>
-                                <li>Connection interrupted</li>
-                            </ul>
-                        </p>
-                    </div>
-                    `,
+                                title: 'Transfer Failed',
+                                html: `<div style="text-align: left;"><p><strong>Error:</strong></p><pre style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: left; white-space: pre-wrap;">${errorMsg}</pre></div>`,
                                 showCancelButton: true,
                                 confirmButtonText: 'Retry',
                                 cancelButtonText: 'Cancel',
-                                reverseButtons: true,
-                                width: Math.min(window.innerWidth * 0.95, 600) + 'px'
+                                reverseButtons: true
                             });
 
                             if (result.isConfirmed) {
                                 await executeTransfer();
                             }
                         }
-                    };
+                    } catch (err) {
+                        Swal.close();
+                        const result = await Swal.fire({
+                            icon: 'error',
+                            title: '🔥 Connection Failed',
+                            html: `<div style="text-align: left;"><p><strong>Error Type:</strong> Network/Connection Issue</p><p><strong>Message:</strong></p><pre style="background: #f8d7da; padding: 10px; border-radius: 5px; white-space: pre-wrap;">${err.message || 'Server unreachable or timeout'}</pre><p style="margin-top: 15px; font-size: 14px; color: #6c757d;">This could be due to network timeout, server overload, or interrupted connection.</p></div>`,
+                            showCancelButton: true,
+                            confirmButtonText: 'Retry',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            width: Math.min(window.innerWidth * 0.95, 600) + 'px'
+                        });
 
-                    await executeTransfer();
+                        if (result.isConfirmed) {
+                            await executeTransfer();
+                        }
+                    }
+                };
+
+                // Add confirmation BEFORE starting the transfer
+                generateBtn.addEventListener('click', async () => {
+                    const result = await Swal.fire({
+                        title: 'Confirm Transfer Generation',
+                        html: `
+                <div style="text-align: left;">
+                    <p><strong>⚠️ Important</strong></p>
+                    <p>This will generate transfer numbers for all eligible items in this order.</p>
+                    <p>Once generated, items will be sent to Oracle RIB and will become <strong>locked</strong> for further editing.</p>
+                    <p>This action cannot be undone.</p>
+                </div>
+            `,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, proceed',
+                        cancelButtonText: 'Cancel'
+                    });
+
+                    if (result.isConfirmed) {
+                        await executeTransfer();
+                    }
                 });
             });
         </script>
@@ -4313,12 +4610,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
