@@ -802,6 +802,10 @@ class OrderController extends Controller
     }
 
 
+    /**
+     * Approve an order (digital signature or scanned SOF upload).
+     * The approver name is taken from the region's Document Approver setting.
+     */
     public function approveOrder(Request $request)
     {
         $request->validate([
@@ -813,10 +817,28 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($request->id);
 
+        // 1. Get region key for this order's store
+        $regionKey = \App\Support\LocationConfig::regionForStore($order->requesting_store);
+
+        // 2. Get region approver user ID (if configured)
+        $approverUserId = $regionKey ? \App\Support\LocationConfig::regionApproverUserId($regionKey) : null;
+
+        // 3. Fetch approver name from User model, fallback to logged‑in user
+        $approverName = null;
+        if ($approverUserId) {
+            $approverUser = \App\Models\User::find($approverUserId);
+            $approverName = $approverUser?->name;
+        }
+        if (!$approverName) {
+            $approverName = auth()->user()->name;
+        }
+
+        // Prepare storage path for approval document
         $year       = date('Y', strtotime($order->time_order));
         $month      = date('m', strtotime($order->time_order));
         $folderPath = "order_approvals/{$year}/{$month}/{$order->sof_id}";
 
+        // Delete previous approval document if exists
         if ($order->approval_document) {
             Storage::disk('public')->delete($order->approval_document);
         }
@@ -824,15 +846,15 @@ class OrderController extends Controller
         $filePath = null;
 
         if ($request->approval_mode === 'scan') {
-
+            // Scanned SOF upload
             $filePath = $request->file('scanned_sof')->store($folderPath, 'public');
         } else {
-
+            // Digital approval: generate signed PDF
             $signatureBase64 = preg_replace('/^data:image\/\w+;base64,/', '', $request->approval_signature);
 
             $pdf = Pdf::loadView('pdf.pdf_sof', [
                 'order'              => $order,
-                'approver_name'      => $order->approver_name ?? auth()->user()->name,
+                'approver_name'      => $approverName,
                 'approval_signature' => $signatureBase64,
                 'approved_at'        => now(),
             ])->setPaper('A4', 'landscape');
@@ -842,33 +864,39 @@ class OrderController extends Controller
         }
 
         $previousStatus = $order->order_status;
+
+        // Update order
         $order->order_status      = 'approved';
         $order->approval_document = $filePath;
+        $order->approver_name     = $approverName;   // store the region approver name
+        $order->approved_at       = now();
         $order->save();
 
-
+        // Log activity
         $this->logActivity(
             'order.approved',
             "Approved order SOF #{$order->sof_id} for {$order->customer_name} (from {$previousStatus})",
             [
-                'order_id'        => $order->id,
-                'sof_id'          => $order->sof_id,
-                'previous_status' => $previousStatus,
-                'new_status'      => 'approved',
-                'store'           => $order->requesting_store,
-                'approval_mode'   => $request->approval_mode,
-                'has_document'    => !is_null($filePath),
+                'order_id'         => $order->id,
+                'sof_id'           => $order->sof_id,
+                'previous_status'  => $previousStatus,
+                'new_status'       => 'approved',
+                'store'            => $order->requesting_store,
+                'approval_mode'    => $request->approval_mode,
+                'approver_name'    => $approverName,
+                'has_document'     => !is_null($filePath),
             ]
         );
 
+        // Add note to order
         $order->notes()->create([
             'user_id' => auth()->id(),
             'status'  => 'approved',
-            'note'    => "Order approved by:<br>" .
-                "<strong>" . auth()->user()->name . "</strong><br>" .
-                ucfirst(auth()->user()->role),
+            'note'    => "Order approved by region approver: <strong>{$approverName}</strong><br>" .
+                "Approved by user: " . auth()->user()->name . " (" . ucfirst(auth()->user()->role) . ")",
         ]);
 
+        // Notify the requester (store manager or user who requested)
         $requester = \App\Models\User::find($order->requested_by);
         if ($requester && $requester->email) {
             Mail::to($requester->email)->send(new \App\Mail\OrderApprovedMail($order));
@@ -1216,17 +1244,37 @@ class OrderController extends Controller
 
     // }
 
+    /**
+     * Print the Sales Order Form (SOF) as PDF.
+     * Uses the region's designated approver from settings.
+     */
     public function printSOF($id)
     {
         $order = Order::with('items')->findOrFail($id);
 
+        // 1. Get region key for this order's store
+        $regionKey = \App\Support\LocationConfig::regionForStore($order->requesting_store);
+
+        // 2. Get region approver user ID (if configured)
+        $approverUserId = $regionKey ? \App\Support\LocationConfig::regionApproverUserId($regionKey) : null;
+
+        // 3. Fetch approver name: use region approver if available, otherwise fallback to stored `approver_name` or 'N/A'
+        $approverName = null;
+        if ($approverUserId) {
+            $approverUser = \App\Models\User::find($approverUserId);
+            $approverName = $approverUser?->name;
+        }
+        if (!$approverName) {
+            $approverName = $order->approver_name ?? 'N/A';
+        }
+
         $pdf = Pdf::loadView('pdf.pdf_sof', [
             'order'         => $order,
-            'approver_name' => $order->approver_name ?? 'N/A',
+            'approver_name' => $approverName,
             'approved_at'   => $order->order_status === 'approved' ? $order->updated_at : null,
         ])->setPaper('A4', 'landscape');
 
-        return $pdf->stream("{$order->id}.pdf");
+        return $pdf->stream("{$order->sof_id}.pdf");
     }
 
     public function printSOFInvoice($id)

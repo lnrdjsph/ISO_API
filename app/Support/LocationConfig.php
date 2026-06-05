@@ -182,6 +182,14 @@ class LocationConfig
             'vs'  => ['2010', '2017', '2019', '3018', '3019'],
         ];
 
+        // Static fallback for region approvers (none by default)
+        $regionApprovers = [
+            'lz' => null,
+            'ntc' => null,
+            'stc' => null,
+            'vs' => null,
+        ];
+
         return compact(
             'storesMap',
             'storeNameToCode',
@@ -190,7 +198,8 @@ class LocationConfig
             'whToStores',
             'whToFacility',
             'regionsMap',
-            'regionLabels'
+            'regionLabels',
+            'regionApprovers'
         );
     }
 
@@ -288,6 +297,22 @@ class LocationConfig
     public static function regionApproverUserId(string $regionKey): ?int
     {
         return self::payload()['regionApprovers'][$regionKey] ?? null;
+    }
+
+    /**
+     * Get the region key for a given store code.
+     *
+     * @param string $storeCode
+     * @return string|null
+     */
+    public static function regionForStore(string $storeCode): ?string
+    {
+        foreach (self::regions() as $regionKey => $stores) {
+            if (in_array($storeCode, $stores, true)) {
+                return $regionKey;
+            }
+        }
+        return null;
     }
 
     public static function resolveWarehouseCode(
