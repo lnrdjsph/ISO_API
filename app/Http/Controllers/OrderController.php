@@ -18,9 +18,11 @@ use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 // use App\Models\LocationConfig;
 use App\Support\LocationConfig;
+use App\Traits\LogsActivity;
 
 class OrderController extends Controller
 {
+    use LogsActivity;
 
     public function index(Request $request)
     {
