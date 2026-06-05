@@ -868,8 +868,6 @@ class OrderController extends Controller
         // Update order
         $order->order_status      = 'approved';
         $order->approval_document = $filePath;
-        $order->approver_name     = $approverName;   // store the region approver name
-        $order->approved_at       = now();
         $order->save();
 
         // Log activity
@@ -1252,20 +1250,16 @@ class OrderController extends Controller
     {
         $order = Order::with('items')->findOrFail($id);
 
-        // 1. Get region key for this order's store
+        // Resolve region approver name dynamically
         $regionKey = \App\Support\LocationConfig::regionForStore($order->requesting_store);
-
-        // 2. Get region approver user ID (if configured)
         $approverUserId = $regionKey ? \App\Support\LocationConfig::regionApproverUserId($regionKey) : null;
-
-        // 3. Fetch approver name: use region approver if available, otherwise fallback to stored `approver_name` or 'N/A'
         $approverName = null;
         if ($approverUserId) {
             $approverUser = \App\Models\User::find($approverUserId);
             $approverName = $approverUser?->name;
         }
         if (!$approverName) {
-            $approverName = $order->approver_name ?? 'N/A';
+            $approverName = 'N/A';
         }
 
         $pdf = Pdf::loadView('pdf.pdf_sof', [
