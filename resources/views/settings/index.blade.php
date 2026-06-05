@@ -404,7 +404,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p class="text-xs text-indigo-800">Enrolling a store creates the <code class="rounded bg-indigo-100 px-1">products_{code}</code> table immediately. Deactivating sets status to
-                    <strong>inactive</strong> but preserves all product data.</p>
+                    <strong>inactive</strong> but preserves all product data.
+                </p>
             </div>
         </div>
 
@@ -539,7 +540,6 @@
                     @php
                         $regStores = $stores->where('region_key', $region->region_key);
                         $regC = $regionColors[$region->region_key] ?? $defaultRegion;
-                        $emails = $regionEmails->get($region->region_key, collect());
                     @endphp
                     <div class="{{ $regC['card'] }} rounded-xl border p-5">
                         {{-- Header --}}
@@ -565,57 +565,31 @@
                             @endforeach
                         </div>
 
-                        {{-- Approval Emails --}}
+
+                        {{-- Document Approver --}}
                         <div class="mt-3 border-t border-black/5 pt-3">
-                            <div class="mb-2 flex items-center justify-between">
-                                <span class="text-xs font-semibold text-gray-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 inline h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    Approval Emails
-                                </span>
-                                <span class="rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-semibold text-gray-500">{{ $emails->count() }}</span>
+                            <div class="mb-2 flex items-center gap-1.5">
+                                <svg class="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                <span class="text-xs font-semibold text-gray-600">Document Approver</span>
+                                <span id="approver-saved-{{ $region->region_key }}"
+                                    class="ml-auto hidden text-[10px] font-medium text-green-600">Saved</span>
                             </div>
-
-                            {{-- Email list (populated server-side, updated live via JS) --}}
-                            <div id="email-list-{{ $region->region_key }}" class="mb-2 space-y-1">
-                                @forelse ($emails as $em)
-                                    <div class="email-row" data-email-id="{{ $em->id }}">
-                                        <div>
-                                            <span class="text-xs font-medium text-gray-800">{{ $em->email }}</span>
-                                            @if ($em->label)
-                                                <span class="ml-1 text-xs text-gray-400">({{ $em->label }})</span>
-                                            @endif
-                                        </div>
-                                        <button class="delete-email-btn ml-2 rounded p-0.5 text-red-400 hover:bg-red-50 hover:text-red-600"
-                                            data-email-id="{{ $em->id }}"
-                                            data-email="{{ $em->email }}"
-                                            data-region="{{ $region->region_key }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                @empty
-                                    <p class="text-xs italic text-gray-400">No recipients yet — add one below.</p>
-                                @endforelse
-                            </div>
-
-                            {{-- Inline Add Email form --}}
-                            <div class="add-email-form mt-1 flex gap-1.5" data-region="{{ $region->region_key }}">
-                                <input type="email"
-                                    class="email-input w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                                    placeholder="manager@example.com" />
-                                <button class="add-email-btn inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
-                                    data-region="{{ $region->region_key }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Add
-                                </button>
-                            </div>
+                            <select
+                                class="region-approver-select w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                data-region="{{ $region->region_key }}"
+                                data-url="{{ route('settings.regions.approver.update', $region->region_key) }}">
+                                <option value="">— No approver —</option>
+                                @php $currentApproverId = $regionApprovers->get($region->region_key)?->label; @endphp
+                                @foreach ($managerUsers as $mgr)
+                                    <option value="{{ $mgr->id }}"
+                                        {{ $currentApproverId == $mgr->id ? 'selected' : '' }}>
+                                        {{ $mgr->name }} — {{ $mgr->email }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
 
                         {{-- Manage Stores button --}}
@@ -943,7 +917,10 @@
                 position: 'top-end',
                 showConfirmButton: false,
                 timer: 3500,
-                timerProgressBar: true
+                timerProgressBar: true,
+                customClass: {
+                    container: 'mt-4'
+                }
             });
 
             // ── Modal helpers ──────────────────────────────────────────
@@ -1139,103 +1116,38 @@
                     return;
                 }
 
-                // ── Add email button ──────────────────────────────────
-                const addEmailBtn = e.target.closest('.add-email-btn');
-                if (addEmailBtn) {
-                    e.preventDefault();
-                    const regionKey = addEmailBtn.dataset.region;
-                    const form = document.querySelector(`.add-email-form[data-region="${regionKey}"]`);
-                    const input = form?.querySelector('.email-input');
-                    const email = input?.value.trim();
 
-                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        Toast.fire({
-                            icon: 'warning',
-                            title: 'Enter a valid email address.'
-                        });
-                        return;
-                    }
+                document.querySelectorAll('.region-approver-select').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const regionKey = this.dataset.region;
+                        const url = this.dataset.url;
+                        const approverUserId = this.value || null;
+                        const savedBadge = document.getElementById(`approver-saved-${regionKey}`);
 
-                    addEmailBtn.disabled = true;
-                    fetch(`/settings/regions/${regionKey}/emails`, {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': CSRF,
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                email
-                            }),
-                        })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.id) {
-                                const listEl = document.getElementById(`email-list-${regionKey}`);
-                                addEmailRow(listEl, data.id, data.email, data.label);
-                                input.value = '';
-                                Toast.fire({
-                                    icon: 'success',
-                                    title: data.message
-                                });
-                            } else {
-                                Toast.fire({
-                                    icon: 'error',
-                                    title: data.message || 'Could not add email.'
-                                });
-                            }
-                        })
-                        .catch(() => Toast.fire({
-                            icon: 'error',
-                            title: 'Request failed.'
-                        }))
-                        .finally(() => {
-                            addEmailBtn.disabled = false;
-                        });
-                    return;
-                }
-
-                // ── Delete email button ───────────────────────────────
-                const delEmailBtn = e.target.closest('.delete-email-btn');
-                if (delEmailBtn) {
-                    e.preventDefault();
-                    const emailId = delEmailBtn.dataset.emailId;
-                    const emailVal = delEmailBtn.dataset.email;
-
-                    Swal.fire({
-                        title: 'Remove email?',
-                        html: `<span class="text-sm text-gray-700">${emailVal}</span><br><span class="text-xs text-gray-400">This recipient will no longer receive approval notifications.</span>`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#dc2626',
-                        cancelButtonColor: '#6b7280',
-                        confirmButtonText: 'Remove',
-                        reverseButtons: true,
-                    }).then(result => {
-                        if (!result.isConfirmed) return;
-                        fetch(`/settings/region-emails/${emailId}`, {
-                                method: 'DELETE',
+                        fetch(url, {
+                                method: 'POST',
                                 headers: {
                                     'X-CSRF-TOKEN': CSRF,
+                                    'Content-Type': 'application/json',
                                     'Accept': 'application/json'
                                 },
+                                body: JSON.stringify({ approver_user_id: approverUserId }),
                             })
                             .then(r => r.json())
                             .then(data => {
-                                Toast.fire({
-                                    icon: 'success',
-                                    title: data.message
-                                });
-                                const row = document.querySelector(`.email-row[data-email-id="${emailId}"]`);
-                                if (row) row.remove();
+                                if (data.ok) {
+                                    if (savedBadge) {
+                                        savedBadge.classList.remove('hidden');
+                                        setTimeout(() => savedBadge.classList.add('hidden'), 2000);
+                                    }
+                                    Toast.fire({ icon: 'success', title: data.message });
+                                } else {
+                                    Toast.fire({ icon: 'error', title: data.message || 'Could not update.' });
+                                }
                             })
-                            .catch(() => Toast.fire({
-                                icon: 'error',
-                                title: 'Could not remove email.'
-                            }));
+                            .catch(() => Toast.fire({ icon: 'error', title: 'Request failed.' }));
                     });
-                    return;
-                }
+                });
 
                 // Reset store filters
                 if (e.target.closest('#resetStoreFilters')) {

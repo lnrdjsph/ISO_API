@@ -41,14 +41,15 @@ class LocationConfig
         $warehouses = DB::table('settings_warehouses')->where('is_active', true)->get();
         $regions    = DB::table('settings_regions')->where('is_active', true)->get();
 
-        $storesMap       = [];
-        $storeNameToCode = [];
-        $storeToWh       = [];
-        $whToStores      = [];
-        $whMap           = [];
-        $whToFacility    = [];
-        $regionsMap      = [];
-        $regionLabels    = [];
+        $storesMap         = [];
+        $storeNameToCode   = [];
+        $storeToWh         = [];
+        $whToStores        = [];
+        $whMap             = [];
+        $whToFacility      = [];
+        $regionsMap        = [];
+        $regionLabels      = [];
+        $regionApprovers   = [];
 
         foreach ($warehouses as $w) {
             $whMap[$w->warehouse_code]        = $w->name;
@@ -67,9 +68,16 @@ class LocationConfig
             }
         }
 
+        // Approvers stored as sentinel rows in settings_region_emails (email='__approver__', label=user_id).
+        $approverRows = DB::table('settings_region_emails')
+            ->where('email', '__approver__')
+            ->get()->keyBy('region_key');
+
         foreach ($regions as $r) {
-            $regionLabels[$r->region_key] = $r->label;
-            $regionsMap[$r->region_key]   = [];
+            $regionLabels[$r->region_key]    = $r->label;
+            $regionsMap[$r->region_key]      = [];
+            $sentinelLabel                   = $approverRows->get($r->region_key)?->label;
+            $regionApprovers[$r->region_key] = $sentinelLabel ? (int) $sentinelLabel : null;
         }
 
         foreach ($stores as $s) {
@@ -86,7 +94,8 @@ class LocationConfig
             'whToStores',
             'whToFacility',
             'regionsMap',
-            'regionLabels'
+            'regionLabels',
+            'regionApprovers'
         );
     }
 
@@ -271,6 +280,14 @@ class LocationConfig
     public static function regionLabels(): array
     {
         return self::payload()['regionLabels'];
+    }
+
+    /**
+     * Return the approver user ID for a given region key, or null if not set.
+     */
+    public static function regionApproverUserId(string $regionKey): ?int
+    {
+        return self::payload()['regionApprovers'][$regionKey] ?? null;
     }
 
     public static function resolveWarehouseCode(

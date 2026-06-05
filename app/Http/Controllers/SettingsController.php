@@ -24,9 +24,20 @@ class SettingsController extends Controller
         $regions      = SettingsRegion::orderBy('region_key')->get();
         $stores       = SettingsStore::with(['warehouse', 'region'])->orderBy('store_code')->get();
         $auditLogs    = SettingsAuditLog::with('user')->orderByDesc('created_at')->limit(50)->get();
-        $regionEmails = SettingsRegionEmail::orderBy('region_key')->orderBy('email')->get()->groupBy('region_key');
+        // Approver sentinel rows: email='__approver__', label=user_id string.
+        $regionApprovers = SettingsRegionEmail::where('email', '__approver__')
+            ->get()->keyBy('region_key');
 
-        return view('settings.index', compact('stores', 'warehouses', 'regions', 'auditLogs', 'regionEmails'));
+        $managerUsers = \App\Models\User::orderBy('name')->get(['id', 'name', 'email']);
+
+        return view('settings.index', compact(
+            'stores',
+            'warehouses',
+            'regions',
+            'auditLogs',
+            'regionApprovers',
+            'managerUsers'
+        ));
     }
 
     // ── STORES ───────────────────────────────────────────────────────────
@@ -265,58 +276,62 @@ class SettingsController extends Controller
 
     // ── REGION EMAILS ────────────────────────────────────────────────────
 
-    /**
-     * Add an approval email to a region.
-     * Called via fetch() from the settings blade — returns JSON.
-     */
-    public function storeRegionEmail(Request $request, string $key)
+
+    // ── REGION APPROVER ──────────────────────────────────────────────────
+
+    public function updateRegionApprover(Request $request, string $key)
     {
         abort_unless(auth()->user()->role === 'super admin', 403);
 
         $data = $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                "unique:settings_region_emails,email,NULL,id,region_key,{$key}",
-            ],
-            'label' => 'nullable|string|max:100',
+            'approver_user_id' => 'nullable|exists:users,id',
         ]);
 
-        $email = SettingsRegionEmail::create([
-            'region_key' => $key,
-            'email'      => $data['email'],
-            'label'      => $data['label'] ?? null,
-            'is_active'  => true,
-            'created_by' => auth()->id(),
-        ]);
+        SettingsRegion::where('region_key', $key)->firstOrFail();
 
-        SettingsAuditLog::record('region_email', $key, 'created', [], $email->toArray());
+        $userId = $data['approver_user_id'] ?: null;
+        $before = SettingsRegionEmail::where('region_key', $key)
+            ->where('email', '__approver__')->value('label');
+
+        // Remove all existing non-sentinel rows so the approver's email
+        // becomes the sole notification recipient for this region.
+        SettingsRegionEmail::where('region_key', $key)
+            ->where('email', '!=', '__approver__')
+            ->delete();
+
+        if ($userId) {
+            $user = \App\Models\User::findOrFail($userId);
+
+            // Sentinel row: tracks the approver user ID for document generation.
+            SettingsRegionEmail::updateOrCreate(
+                ['region_key' => $key, 'email' => '__approver__'],
+                ['label' => (string) $userId, 'is_active' => false, 'created_by' => auth()->id()]
+            );
+
+            // Real email row: used by emailsForRegion() for notification sending.
+            SettingsRegionEmail::updateOrCreate(
+                ['region_key' => $key, 'email' => $user->email],
+                ['label' => $user->name, 'is_active' => true, 'created_by' => auth()->id()]
+            );
+        } else {
+            SettingsRegionEmail::where('region_key', $key)
+                ->where('email', '__approver__')->delete();
+        }
+
+        SettingsAuditLog::record('region', $key, 'approver_updated',
+            ['approver_user_id' => $before],
+            ['approver_user_id' => $userId]
+        );
+
+        $this->flushCache();
+
+        $approverName = $userId ? \App\Models\User::find($userId)?->name : null;
 
         return response()->json([
-            'id'         => $email->id,
-            'email'      => $email->email,
-            'label'      => $email->label,
-            'region_key' => $key,
-            'message'    => "Email {$email->email} added to region {$key}.",
+            'ok'            => true,
+            'message'       => 'Approver updated.',
+            'approver_name' => $approverName,
         ]);
-    }
-
-    /**
-     * Remove a region approval email.
-     * Called via fetch() from the settings blade — returns JSON.
-     */
-    public function destroyRegionEmail(int $id)
-    {
-        abort_unless(auth()->user()->role === 'super admin', 403);
-
-        $email  = SettingsRegionEmail::findOrFail($id);
-        $before = $email->toArray();
-        $email->delete();
-
-        SettingsAuditLog::record('region_email', $email->region_key, 'deleted', $before, []);
-
-        return response()->json(['message' => "Email {$email->email} removed."]);
     }
 
     // ── CACHE ────────────────────────────────────────────────────────────

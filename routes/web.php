@@ -69,6 +69,7 @@ Route::prefix('b2b2c')->middleware(['auth', 'session.expired'])->group(function 
         Route::get('/{id}/print-sof-invoice', [OrderController::class, 'printSOFInvoice'])->name('print.sof_invoice');
         Route::get('/{id}/freebies-pdf', [OrderController::class, 'generateFreebiesForm'])->name('print.freebies');
         Route::get('/{id}/print-order-slip', [OrderController::class, 'generateOrderSlip'])->name('print.order_slip');
+        Route::get('/{id}/items-status-summary', [\App\Http\Controllers\OracleTransferController::class, 'getOrderItemsStatusSummary'])->name('items.status.summary');
     });
 
     // Forms Routes
@@ -212,9 +213,6 @@ Route::middleware(['auth'])->prefix('settings')->name('settings.')->group(functi
     Route::post('regions',                 [SettingsController::class, 'storeRegion'])->name('regions.store');
     Route::put('regions/{key}',            [SettingsController::class, 'updateRegion'])->name('regions.update');
 
-    // Region Emails
-    Route::post('regions/{key}/emails', [SettingsController::class, 'storeRegionEmail'])->name('settings.regions.emails.store');
-    Route::delete('region-emails/{id}', [SettingsController::class, 'destroyRegionEmail'])->name('settings.regions.emails.destroy');
 });
 
 
@@ -251,11 +249,9 @@ Route::middleware(['auth', 'session.expired'])->prefix('settings')->name('settin
     Route::post('warehouses',     [SettingsController::class, 'storeWarehouse'])->name('warehouses.store');
     Route::put('warehouses/{code}', [SettingsController::class, 'updateWarehouse'])->name('warehouses.update');
 
-    Route::post('regions',        [SettingsController::class, 'storeRegion'])->name('regions.store');
-    Route::put('regions/{key}',   [SettingsController::class, 'updateRegion'])->name('regions.update');
-
-    Route::post('regions/{key}/emails', [SettingsController::class, 'storeRegionEmail'])->name('settings.regions.emails.store');
-    Route::delete('region-emails/{id}', [SettingsController::class, 'destroyRegionEmail'])->name('settings.regions.emails.destroy');
+    Route::post('regions',                    [SettingsController::class, 'storeRegion'])->name('regions.store');
+    Route::put('regions/{key}',               [SettingsController::class, 'updateRegion'])->name('regions.update');
+    Route::post('regions/{key}/approver',     [SettingsController::class, 'updateRegionApprover'])->name('regions.approver.update');
 });
 
 // Logs — was missing session.expired
