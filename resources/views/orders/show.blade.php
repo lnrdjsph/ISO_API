@@ -165,11 +165,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                                                                                   INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                                                                                                                                                                   Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                                                                                                                                                                   field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                                                                                                                                                                   with a subtle underline separator.
-                                                                                                                                                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                       INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                                                                                                                                                       Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                                                                                                                                                       field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                                                                                                                                                       with a subtle underline separator.
+                                                                                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -382,7 +382,7 @@
         }
 
         /* Underline effect when component is editable.
-                                                                           Exclude checkboxes/radios — they should keep their native look. */
+                                                                               Exclude checkboxes/radios — they should keep their native look. */
         .order-details-component.editable input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable select:not(#orderAction),
         .order-details-component.editable textarea,
@@ -421,18 +421,18 @@
         }
 
         /* ══════════════════════════════════════════════════════════
-                               VIEW MODE vs EDIT MODE
-                               An editable order (.editable) still loads in VIEW mode: all
-                               fields look and behave like static read-only values until the
-                               user clicks "Edit Order", which adds .edit-mode and reveals
-                               the editable styling below. The PHP-level locks ($isInfoLocked,
-                               $itemsLocked) are unchanged — this is a presentation gate on
-                               top of them.
-                               ══════════════════════════════════════════════════════════ */
+                                   VIEW MODE vs EDIT MODE
+                                   An editable order (.editable) still loads in VIEW mode: all
+                                   fields look and behave like static read-only values until the
+                                   user clicks "Edit Order", which adds .edit-mode and reveals
+                                   the editable styling below. The PHP-level locks ($isInfoLocked,
+                                   $itemsLocked) are unchanged — this is a presentation gate on
+                                   top of them.
+                                   ══════════════════════════════════════════════════════════ */
 
         /* --- VIEW MODE: editable fields render as plain read-only text ---
-                               #orderAction (Order Actions) is excluded everywhere — it is NOT an
-                               editable order field and must stay a normal, always-active dropdown. */
+                                   #orderAction (Order Actions) is excluded everywhere — it is NOT an
+                                   editable order field and must stay a normal, always-active dropdown. */
         .order-details-component.editable:not(.edit-mode) input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable:not(.edit-mode) select:not(#orderAction),
         .order-details-component.editable:not(.edit-mode) textarea {
@@ -464,8 +464,8 @@
         }
 
         /* --- EDIT MODE: editable fields read as real, bordered input boxes ---
-                               Non-minimalist but professional: solid border, soft fill, rounded
-                               corners and a clear focus ring. Uses the app's indigo accent. */
+                                   Non-minimalist but professional: solid border, soft fill, rounded
+                                   corners and a clear focus ring. Uses the app's indigo accent. */
         .order-details-component.editable.edit-mode input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable.edit-mode select:not(#orderAction),
         .order-details-component.editable.edit-mode textarea {
@@ -597,6 +597,60 @@
                     type="hidden"
                     name="id"
                     value="{{ $order->id }}">
+
+                @if (strtolower($order->order_status) === 'approved')
+                    {{-- Received-items reminder — shown by JS once any WMS item status becomes "Received" --}}
+                    <div id="received-reminder"
+                        class="mb-3 hidden items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+                        <div class="mt-0.5 flex-shrink-0 rounded-full bg-amber-100 p-1.5">
+                            <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-amber-800">Items received at the store</p>
+                            <p class="mt-0.5 text-xs text-amber-700">
+                                One or more items on this order have been marked as <strong>Received</strong>.
+                                Remember to <strong>Complete the Order</strong> once all items have been released to the customer.
+                            </p>
+                        </div>
+                        <button type="button" onclick="this.closest('#received-reminder').classList.add('hidden')"
+                            class="flex-shrink-0 rounded-lg p-1 text-amber-400 hover:bg-amber-100 hover:text-amber-600">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <script nonce="{{ $cspNonce ?? '' }}">
+                        (function() {
+                            const banner = document.getElementById('received-reminder');
+                            if (!banner) return;
+
+                            function checkForReceived() {
+                                const hasReceived = [...document.querySelectorAll('td[data-item-status]')]
+                                    .some(td => td.dataset.itemStatus === 'Received');
+                                if (hasReceived) {
+                                    banner.classList.remove('hidden');
+                                    banner.classList.add('flex');
+                                }
+                            }
+
+                            // Watch for status cells being updated by the AJAX loader
+                            const observer = new MutationObserver(() => checkForReceived());
+                            observer.observe(document.body, {
+                                subtree: true,
+                                attributes: true,
+                                attributeFilter: ['data-item-status']
+                            });
+
+                            // Also check once after page load in case statuses are already set
+                            document.addEventListener('DOMContentLoaded', () => setTimeout(checkForReceived, 3000));
+                        })();
+                    </script>
+                @endif
+
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-6">
                     <div class="col-span-1 grid gap-3 lg:col-span-5">
                         <!-- Customer and Payment Info -->
@@ -995,11 +1049,11 @@
 																						})
 																						.then(response => response.json())
 																						.then(data => {
-																								console.log(data);
+																								// console.log(data);
 																								alert('✅ TSF generated: ' + data.generated_tsf_no);
 																						})
 																						.catch(error => {
-																								console.error(error);
+																								// console.error(error);
 																								alert('❌ Failed to generate SO.');
 																						});
 																		});
@@ -1162,11 +1216,13 @@
                                     </tr>
                                 </thead>
                                 @php
+                                    // Items lock once the order reaches 'for approval' or beyond,
+                                    // has a transfer number, or the user is warehouse staff.
+                                    // Super admin can always edit.
                                     $itemsLocked =
                                         in_array(strtolower($order->order_status), ['approved', 'for approval', 'completed', 'cancelled']) ||
                                         $hasAnyTransferNo ||
                                         str_contains(strtolower(Auth::user()->role), 'warehouse');
-                                    // But super admin can always edit (optional, remove if you want super admin to also lock)
                                     if (Auth::user()->role === 'super admin') {
                                         $itemsLocked = false;
                                     }
@@ -1465,96 +1521,6 @@
                                                 });
                                             });
 
-                                            // Get all TDs with store order numbers
-                                            const tds = document.querySelectorAll('td[data-load-status="true"]');
-
-                                            tds.forEach((td) => {
-                                                const storeOrderNo = td.dataset.storeOrderNo;
-                                                const skuInput = td.closest('tr')?.querySelector('.sku-hidden');
-                                                const sku = skuInput ? skuInput.value : null;
-
-                                                const url =
-                                                    "{{ route('order.status', [
-                                                        'storeOrderNo' => '__ORDER__',
-                                                        'sku' => '__SKU__',
-                                                    ]) }}"
-                                                    .replace('__ORDER__', storeOrderNo)
-                                                    .replace('__SKU__', sku);
-
-                                                fetch(url)
-                                                    .then(async response => {
-                                                        const text = await response.text();
-                                                        if (!text) {
-                                                            throw new Error('Empty response from server');
-                                                        }
-                                                        let data;
-                                                        try {
-                                                            data = JSON.parse(text);
-                                                        } catch (parseError) {
-                                                            throw new Error('Invalid response format');
-                                                        }
-                                                        return data;
-                                                    })
-                                                    .then(data => {
-                                                        const status = data?.status ?? 'Unknown';
-                                                        let badgeClass = 'bg-gray-100 text-gray-800';
-                                                        let description = '';
-
-                                                        if (status === 'Received') {
-                                                            badgeClass = 'bg-green-100 text-green-800';
-                                                            description = 'Order has been received by the store';
-                                                        } else if (status === 'Shipped') {
-                                                            badgeClass = 'bg-blue-100 text-blue-800';
-                                                            description = 'Order is currently in transit to the store';
-                                                        } else if (status === 'Processing') {
-                                                            badgeClass = 'bg-yellow-100 text-yellow-800';
-                                                            description = 'Order is being processed for shipment';
-                                                        } else if (status === 'Pending') {
-                                                            badgeClass = 'bg-purple-100 text-purple-800';
-                                                            description = 'Order is pending for shipment';
-                                                        }
-                                                        //picking
-                                                        else if (status === 'Picking') {
-                                                            badgeClass = 'bg-orange-100 text-orange-800';
-                                                            description = 'Order is being picked at the warehouse';
-                                                        } else if (status === 'Not Found') {
-                                                            badgeClass = 'bg-red-100 text-red-800';
-                                                            description = 'Order not found in the system';
-                                                        } else if (status === 'N/A') {
-                                                            badgeClass = 'bg-gray-100 text-gray-800';
-                                                            description = 'No order number provided';
-                                                        } else if (status === 'Error') {
-                                                            badgeClass = 'bg-red-100 text-red-800';
-                                                            description = 'An error occurred while checking the order status';
-                                                        } else {
-                                                            badgeClass = 'bg-gray-100 text-gray-800';
-                                                            description = 'Order status is unknown';
-                                                        }
-
-                                                        td.innerHTML = `
-                                                            <div class="relative inline-block">
-                                                                <div class="peer inline-flex items-center rounded-full ${badgeClass} px-3 py-1 text-xs font-medium">
-                                                                    ${status}
-                                                                </div>
-                                                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                                                    ${description}
-                                                                </div>
-                                                            </div>
-                                                        `;
-                                                    })
-                                                    .catch(error => {
-                                                        td.innerHTML = `
-                                                            <div class="relative inline-block">
-                                                                <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
-                                                                    Error
-                                                                </div>
-                                                                <div class="pointer-events-none absolute right-full top-1/2 z-[100000] mr-2 w-max -translate-y-1/2 whitespace-normal break-words rounded bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
-                                                                    Failed to load order status. Please try again later.
-                                                                </div>
-                                                            </div>
-                                                        `;
-                                                    });
-                                            });
                                         })();
                                     </script>
                                     <script nonce="{{ $cspNonce ?? '' }}">
@@ -1569,7 +1535,9 @@
                                                 const sku = skuInput ? skuInput.value : null;
 
                                                 if (!storeOrderNo || !sku) {
-                                                    // Resolve immediately for items without data
+                                                    // No TSF or no SKU — mark as N/A so the check
+                                                    // doesn't fall back to unreliable textContent.
+                                                    td.dataset.itemStatus = 'N/A';
                                                     statusPromises.push(Promise.resolve());
                                                     return;
                                                 }
@@ -1644,7 +1612,7 @@
                                                         };
                                                     })
                                                     .catch(error => {
-                                                        console.error('Status fetch error:', error);
+                                                        // console.error('Status fetch error:', error);
                                                         td.innerHTML = `
                         <div class="relative inline-block">
                             <div class="peer inline-flex items-center rounded-full bg-red-100 text-red-800 px-3 py-1 text-xs font-medium">
@@ -1668,7 +1636,7 @@
 
                                             // Wait for ALL statuses to load, then check if order can be completed
                                             Promise.all(statusPromises).then(() => {
-                                                console.log('All statuses loaded, checking completion eligibility...');
+                                                // console.log('All statuses loaded, checking completion eligibility...');
                                                 checkAndUpdateCompleteOrderOption();
                                             });
 
@@ -1684,13 +1652,12 @@
                                                 let totalActiveItems = 0;
 
                                                 rows.forEach(row => {
-                                                    // Check if item is cancelled
+                                                    // Skip cancelled items
                                                     const remarksInput = row.querySelector('input[name*="[remarks]"]');
-                                                    const isCancelled = remarksInput && remarksInput.value === 'Item Cancelled';
+                                                    if (remarksInput && remarksInput.value === 'Item Cancelled') return;
 
-                                                    if (isCancelled) {
-                                                        return; // Skip cancelled items
-                                                    }
+                                                    // Skip FREEBIE rows — they don't need a WMS status to complete
+                                                    if (row.dataset.itemType === 'FREEBIE') return;
 
                                                     totalActiveItems++;
 
@@ -1730,7 +1697,7 @@
                                                         orderActionSelect.style.backgroundColor = '#f0fdf4';
                                                     }
 
-                                                    console.log('✅ Order is ready for completion');
+                                                    // console.log('✅ Order is ready for completion');
                                                 } else {
                                                     completeOption.style.display = 'block';
                                                     completeOption.disabled = true;
@@ -1738,7 +1705,7 @@
                                                     completeOption.title = `Cannot complete order:\n• ${pendingItems.join('\n• ')}`;
                                                     completeOption.style.opacity = '0.6';
 
-                                                    console.log(`⏳ Order not ready: ${pendingItems.length} items pending`);
+                                                    // console.log(`⏳ Order not ready: ${pendingItems.length} items pending`);
                                                 }
                                             }
                                         })();
@@ -1747,7 +1714,7 @@
                                         // BOL Fetcher - Only updates the BOL under store order number
                                         document.addEventListener('DOMContentLoaded', function() {
                                             if (typeof jQuery === 'undefined') {
-                                                console.error('jQuery not loaded – CSP may be blocking it. Reloading...');
+                                                // console.error('jQuery not loaded – CSP may be blocking it. Reloading...');
 
                                                 return;
                                             }
@@ -1765,7 +1732,7 @@
                                                     fetch(url)
                                                         .then(response => response.json())
                                                         .then(data => {
-                                                            console.log('Order data for BOL:', data);
+                                                            // console.log('Order data for BOL:', data);
 
                                                             const loadingSpan = container.querySelector('.bol-loading');
                                                             const bolValueSpan = container.querySelector('.bol-value');
@@ -1783,7 +1750,7 @@
                                                             }
                                                         })
                                                         .catch(error => {
-                                                            console.error('Error fetching BOL:', error);
+                                                            // console.error('Error fetching BOL:', error);
                                                             const loadingSpan = container.querySelector('.bol-loading');
                                                             const bolNaSpan = container.querySelector('.bol-na');
 
@@ -1799,28 +1766,6 @@
                             </table>
 
                             <div class="my-4 flex items-center justify-end gap-2">
-                                {{-- @php
-                                    $hasStoreOrderNo = false;
-                                @endphp
-
-                                @forelse ($order->items as $item)
-                                    @if (!empty($item->store_order_no))
-                                        @php $hasStoreOrderNo = true; @endphp
-                                    @endif
-                                @empty
-                                @endforelse --}}
-
-                                {{-- @if ($hasStoreOrderNo)
-                                    <button
-                                        type="button"
-                                        id="compareBOLButton"
-                                        class="items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50">
-                                        Compare to BOL
-                                    </button>
-                                @endif --}}
-
-                                <!-- Add SweetAlert2 CDN in your layout/head section -->
-                                {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 
                                 <!-- Add this button above or below your table -->
                                 <div class="mb-4 flex items-center justify-between">
@@ -1847,7 +1792,7 @@
                                         const selectedCountSpan = document.getElementById('selected-count');
                                         const itemCheckboxes = document.querySelectorAll('.item-checkbox');
                                         const selectAllCheckbox = document.getElementById('select-all');
-                                        const orderStatus = '{{ strtolower($order->order_status) }}';
+                                        const orderStatus = @json(strtolower($order->order_status));
                                         const lockedStatuses = ['approved', 'completed'];
 
                                         // Hide checkboxes if order status is approved or completed
@@ -1963,9 +1908,11 @@
 
                                             // Add CSRF token
                                             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                                            if (csrfToken) {
-                                                formData.append('_token', csrfToken);
+                                            if (!csrfToken) {
+                                                Swal.fire('Error', 'CSRF token missing. Please refresh the page.', 'error');
+                                                return;
                                             }
+                                            formData.append('_token', csrfToken);
 
                                             // Make POST request
                                             fetch('{{ route('orders.cancel-items') }}', {
@@ -2005,7 +1952,7 @@
                                                     }
                                                 })
                                                 .catch(error => {
-                                                    console.error('Error:', error);
+                                                    // console.error('Error:', error);
                                                     Swal.fire({
                                                         icon: 'error',
                                                         title: 'Error',
@@ -2020,22 +1967,6 @@
                                     })();
                                 </script>
 
-                                <style nonce="{{ $cspNonce ?? '' }}">
-                                    /* Optional: Customize SweetAlert2 styles */
-                                    .swal2-popup {
-                                        font-family: inherit;
-                                    }
-
-                                    .swal2-title {
-                                        font-size: 1.5rem;
-                                        font-weight: 600;
-                                    }
-
-                                    .swal2-html-container {
-                                        font-size: 0.95rem;
-                                        line-height: 1.5;
-                                    }
-                                </style>
                                 @php
                                     $hasEmptyStoreOrderNo = $order->items->contains(function ($item) {
                                         return empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
@@ -2049,9 +1980,6 @@
                                         class="items-center justify-center rounded-md bg-green-700 px-3 py-2 text-xs font-medium text-white shadow-sm transition duration-200 hover:bg-green-800 focus:outline-none focus:ring-1 focus:ring-green-600 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50">
                                         Generate Transfer Number
                                     </button>
-                                    <meta
-                                        name="csrf-token"
-                                        content="{{ csrf_token() }}">
                                 @endif
                             </div>
 
@@ -2080,7 +2008,7 @@
                                             <option value="">-- Select Action --</option>
 
                                             @if (!str_contains(strtolower(Auth::user()->role), 'store manager') && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
-                                                @if ($order->order_status !== 'cancelled')
+                                                @if (!in_array($order->order_status, ['cancelled', 'completed', 'for approval', 'approved']))
                                                     <option value="cancel">Cancel Order</option>
                                                 @endif
 
@@ -2111,7 +2039,7 @@
                                                     <option value="approve">Approve Order</option>
                                                 @endif
 
-                                                @if (in_array($order->order_status, ['for approval', 'approved']))
+                                                @if (in_array($order->order_status, ['for approval']))
                                                     <option value="rejected">Reject Order</option>
                                                 @endif
                                             @endif
@@ -2968,9 +2896,9 @@
                 const changesCounter = $('#changesCounter');
                 const changesCountElement = $('#changesCount');
 
-                console.log('🚀 Initializing order page');
-                console.log('📊 Order Status:', ORDER_STATUS);
-                console.log('🔒 Is Locked:', IS_LOCKED);
+                // console.log('🚀 Initializing order page');
+                // console.log('📊 Order Status:', ORDER_STATUS);
+                // console.log('🔒 Is Locked:', IS_LOCKED);
 
                 // ========================================
                 // ORDER CALCULATION SYSTEM
@@ -3301,7 +3229,7 @@
                 // FREEBIE CALCULATOR SYSTEM
                 // ========================================
                 function initializeFreebieCalculator() {
-                    console.log('🎯 Initializing Freebie Calculator');
+                    // console.log('🎯 Initializing Freebie Calculator');
 
                     // Listen for ANY change on contenteditable cells in MAIN rows
                     $(document).on('blur input keyup paste', 'td[contenteditable="true"]', function(e) {
@@ -3320,7 +3248,7 @@
                         const itemTypeInput = row[0].querySelector(`input[name="items[${index}][item_type]"]`);
                         const itemType = itemTypeInput?.value || "MAIN";
 
-                        console.log(`🔍 Field changed: ${field}, Item Type: ${itemType}, Row Index: ${index}`);
+                        // console.log(`🔍 Field changed: ${field}, Item Type: ${itemType}, Row Index: ${index}`);
 
                         if (itemType === "MAIN") {
                             // Update the hidden input first
@@ -3329,7 +3257,7 @@
                                 let value = cell.text().trim();
                                 if (value === '-' || value === 'N/A') value = '0';
                                 hiddenInput.val(value);
-                                console.log(`✏️ Updated hidden input [${field}]: ${value}`);
+                                // console.log(`✏️ Updated hidden input [${field}]: ${value}`);
                             }
 
                             // Trigger freebie update
@@ -3361,11 +3289,11 @@
                 function updateFreebieRowFromMain(mainRow) {
                     const mainIndex = $(mainRow).data("index");
                     if (mainIndex === undefined) {
-                        console.error('❌ Main row has no index');
+                        // console.error('❌ Main row has no index');
                         return;
                     }
 
-                    console.log(`\n📦 Processing MAIN row index: ${mainIndex}`);
+                    // console.log(`\n📦 Processing MAIN row index: ${mainIndex}`);
 
                     // Get MAIN item values - try both from cell and hidden input
                     const schemeCell = mainRow.querySelector(`td[data-field="scheme"]`);
@@ -3383,44 +3311,44 @@
 
                     const qtyPerCsValue = parseInt(qtyPerCsText);
 
-                    console.log(`   Scheme: ${schemeValue}`);
-                    console.log(`   Qty/CS: ${qtyPerCsValue}`);
+                    // console.log(`   Scheme: ${schemeValue}`);
+                    // console.log(`   Qty/CS: ${qtyPerCsValue}`);
 
                     // Calculate freebies
                     const freebieCount = calculateFreebies(schemeValue, qtyPerCsValue);
 
-                    console.log(`   💎 Calculated Freebies: ${freebieCount}`);
+                    // console.log(`   💎 Calculated Freebies: ${freebieCount}`);
 
                     // Find the next FREEBIE row
                     let nextRow = mainRow.nextElementSibling;
 
                     if (!nextRow) {
-                        console.warn('⚠️ No next row found after MAIN row');
+                        // console.warn('⚠️ No next row found after MAIN row');
                         return;
                     }
 
                     const nextIndex = $(nextRow).data("index");
                     if (nextIndex === undefined) {
-                        console.error('❌ Next row has no index');
+                        // console.error('❌ Next row has no index');
                         return;
                     }
 
                     const nextItemTypeInput = nextRow.querySelector(`input[name="items[${nextIndex}][item_type]"]`);
                     const nextItemType = nextItemTypeInput?.value || "MAIN";
 
-                    console.log(`   Next row index: ${nextIndex}, Type: ${nextItemType}`);
+                    // console.log(`   Next row index: ${nextIndex}, Type: ${nextItemType}`);
 
                     if (nextItemType === "FREEBIE") {
-                        console.log(`   ✅ Found FREEBIE row, updating...`);
+                        // console.log(`   ✅ Found FREEBIE row, updating...`);
 
                         // 1. Update freebies_per_cs hidden input
                         const freebiesInput = nextRow.querySelector(`input[name="items[${nextIndex}][freebies_per_cs]"]`);
                         if (freebiesInput) {
                             const oldValue = freebiesInput.value;
                             freebiesInput.value = freebieCount;
-                            console.log(`      freebies_per_cs input: ${oldValue} → ${freebieCount}`);
+                            // console.log(`      freebies_per_cs input: ${oldValue} → ${freebieCount}`);
                         } else {
-                            console.error('      ❌ freebies_per_cs input not found!');
+                            // console.error('      ❌ freebies_per_cs input not found!');
                         }
 
                         // 2. Update freebies_per_cs cell display
@@ -3428,14 +3356,14 @@
                         if (freebiesCell) {
                             const oldText = freebiesCell.textContent;
                             freebiesCell.textContent = freebieCount > 0 ? freebieCount : "0";
-                            console.log(`      freebies_per_cs cell: ${oldText} → ${freebiesCell.textContent}`);
+                            // console.log(`      freebies_per_cs cell: ${oldText} → ${freebiesCell.textContent}`);
 
                             // Mark as changed
                             if (typeof checkElementChange === 'function') {
                                 checkElementChange(freebiesCell);
                             }
                         } else {
-                            console.error('      ❌ freebies_per_cs cell not found!');
+                            // console.error('      ❌ freebies_per_cs cell not found!');
                         }
 
                         // 3. ✅ UPDATE TOTAL_QTY instead of qty_per_cs
@@ -3443,9 +3371,9 @@
                         if (totalQtyInput) {
                             const oldValue = totalQtyInput.value;
                             totalQtyInput.value = freebieCount;
-                            console.log(`      total_qty input: ${oldValue} → ${freebieCount}`);
+                            // console.log(`      total_qty input: ${oldValue} → ${freebieCount}`);
                         } else {
-                            console.error('      ❌ total_qty input not found!');
+                            // console.error('      ❌ total_qty input not found!');
                         }
 
                         // 4. ✅ UPDATE TOTAL_QTY cell display
@@ -3453,22 +3381,22 @@
                         if (totalQtyCell) {
                             const oldText = totalQtyCell.textContent;
                             totalQtyCell.textContent = freebieCount;
-                            console.log(`      total_qty cell: ${oldText} → ${freebieCount}`);
+                            // console.log(`      total_qty cell: ${oldText} → ${freebieCount}`);
 
                             // Mark as changed
                             if (typeof checkElementChange === 'function') {
                                 checkElementChange(totalQtyCell);
                             }
                         } else {
-                            console.error('      ❌ total_qty cell not found!');
+                            // console.error('      ❌ total_qty cell not found!');
                         }
 
                         // 5. Keep qty_per_cs as "N/A" for FREEBIE items (don't update it)
-                        console.log(`      ℹ️ Leaving qty_per_cs as "N/A" for FREEBIE item`);
+                        // console.log(`      ℹ️ Leaving qty_per_cs as "N/A" for FREEBIE item`);
 
                         // 6. Recalculate row totals
                         if (typeof window.orderCalcSystem !== 'undefined' && window.orderCalcSystem.calculateRowTotals) {
-                            console.log(`      🧮 Recalculating FREEBIE row amounts...`);
+                            // console.log(`      🧮 Recalculating FREEBIE row amounts...`);
                             window.orderCalcSystem.calculateRowTotals(nextRow);
                         }
 
@@ -3476,26 +3404,26 @@
                         setTimeout(() => {
                             if (typeof updateOrderTotal === 'function') {
                                 updateOrderTotal();
-                                console.log(`      💰 Order total updated`);
+                                // console.log(`      💰 Order total updated`);
                             }
                         }, 50);
 
-                        console.log(`   ✅ FREEBIE row update complete\n`);
+                        // console.log(`   ✅ FREEBIE row update complete\n`);
                     } else {
-                        console.warn(`   ⚠️ Next row is NOT a FREEBIE (it's ${nextItemType})\n`);
+                        // console.warn(`   ⚠️ Next row is NOT a FREEBIE (it's ${nextItemType})\n`);
                     }
                 }
 
                 function calculateFreebies(scheme, qty) {
                     if (!scheme || qty <= 0) {
-                        console.log(`   ⚠️ Invalid input: scheme="${scheme}", qty=${qty}`);
+                        // console.log(`   ⚠️ Invalid input: scheme="${scheme}", qty=${qty}`);
                         return 0;
                     }
 
                     // Parse scheme like "15+1"
                     const match = scheme.toString().match(/(\d+)\+(\d+)/);
                     if (!match) {
-                        console.log(`   ⚠️ Scheme "${scheme}" doesn't match pattern X+Y`);
+                        // console.log(`   ⚠️ Scheme "${scheme}" doesn't match pattern X+Y`);
                         return 0;
                     }
 
@@ -3503,28 +3431,28 @@
                     const freebieRatio = parseInt(match[2]); // 1
 
                     if (mainRatio <= 0) {
-                        console.log(`   ⚠️ Invalid mainRatio: ${mainRatio}`);
+                        // console.log(`   ⚠️ Invalid mainRatio: ${mainRatio}`);
                         return 0;
                     }
 
                     // Calculate: floor(35 / 15) * 1 = floor(2.33) * 1 = 2 * 1 = 2
                     const result = Math.floor(qty / mainRatio) * freebieRatio;
 
-                    console.log(`   📊 Formula: floor(${qty} / ${mainRatio}) × ${freebieRatio} = ${result}`);
+                    // console.log(`   📊 Formula: floor(${qty} / ${mainRatio}) × ${freebieRatio} = ${result}`);
 
                     return result;
                 }
 
                 // Initialize on page load
                 $(document).ready(function() {
-                    console.log('📅 Document ready - initializing freebie calculator');
+                    // console.log('📅 Document ready - initializing freebie calculator');
 
                     if (!ITEMS_LOCKED) {
                         initializeFreebieCalculator();
 
                         // Initialize all freebies after a delay
                         setTimeout(() => {
-                            console.log('🔄 Running initial freebie calculation for all MAIN rows...');
+                            // console.log('🔄 Running initial freebie calculation for all MAIN rows...');
                             $container.find('tbody tr[data-index]').each(function() {
                                 const index = $(this).data("index");
                                 const itemTypeInput = this.querySelector(`input[name="items[${index}][item_type]"]`);
@@ -3534,10 +3462,10 @@
                                     updateFreebieRowFromMain(this);
                                 }
                             });
-                            console.log('✅ Initial freebie calculation complete\n');
+                            // console.log('✅ Initial freebie calculation complete\n');
                         }, 300);
                     } else {
-                        console.log('🔒 Order is locked - skipping freebie calculator');
+                        // console.log('🔒 Order is locked - skipping freebie calculator');
                     }
                 });
                 // ========================================
@@ -3550,7 +3478,7 @@
                 // ========================================
                 function lockFieldsByStatus() {
                     if (!IS_LOCKED && !ITEMS_LOCKED) return;
-                    console.log('🔒 Locking fields...');
+                    // console.log('🔒 Locking fields...');
 
                     if (IS_LOCKED) {
                         // Lock inputs (except info-panel inputs AND item-comment fields
@@ -3724,11 +3652,11 @@
 
                 function initializeChangeDetection() {
                     if (IS_LOCKED && !PARTIAL_UNLOCK) {
-                        console.log('⏭️  Skipping change detection - order is locked');
+                        // console.log('⏭️  Skipping change detection - order is locked');
                         return;
                     }
 
-                    console.log('🔍 Initializing change detection');
+                    // console.log('🔍 Initializing change detection');
                     initializeOriginalValues();
 
                     setTimeout(() => {
@@ -3935,7 +3863,7 @@
 
 
                 function syncAllHiddenInputs() {
-                    console.log('🔄 Syncing all contenteditable cells to hidden inputs...');
+                    // console.log('🔄 Syncing all contenteditable cells to hidden inputs...');
 
                     $("tbody tr[data-index]").each(function() {
                         const row = $(this);
@@ -3973,7 +3901,7 @@
                             if (cell.length) {
                                 // If hidden input doesn't exist, create it
                                 if (!hiddenInput.length) {
-                                    console.warn(`⚠️ Hidden input not found for ${field}[${index}], creating it...`);
+                                    // console.warn(`⚠️ Hidden input not found for ${field}[${index}], creating it...`);
                                     hiddenInput = $(`<input type="hidden" name="items[${index}][${field}]" />`);
                                     cell.append(hiddenInput);
                                 }
@@ -3993,14 +3921,14 @@
                                 }
 
                                 hiddenInput.val(value);
-                                console.log(`✓ Synced ${field}[${index}]: "${value}"`);
+                                // console.log(`✓ Synced ${field}[${index}]: "${value}"`);
                             } else {
-                                console.error(`❌ Cell not found for ${field}[${index}]`);
+                                // console.error(`❌ Cell not found for ${field}[${index}]`);
                             }
                         });
                     });
 
-                    console.log('✅ All hidden inputs synced');
+                    // console.log('✅ All hidden inputs synced');
                 }
 
                 // ========================================
@@ -4035,11 +3963,11 @@
                     syncAllHiddenInputs();
 
                     // Log all form data for debugging
-                    console.log('📝 Form data being submitted:');
+                    // console.log('📝 Form data being submitted:');
                     const formData = new FormData(this);
                     for (let pair of formData.entries()) {
                         if (pair[0].includes('items[')) {
-                            console.log(pair[0] + ': ' + pair[1]);
+                            // console.log(pair[0] + ': ' + pair[1]);
                         }
                     }
 
@@ -4057,7 +3985,7 @@
                 // $('form').on('submit', function(e) {
                 //     e.preventDefault(); // Prevent actual submission temporarily
 
-                //     console.log('=== FORM VALIDATION CHECK ===');
+                //     // console.log('=== FORM VALIDATION CHECK ===');
                 //     const itemsData = {};
 
                 //     $("tbody tr[data-index]").each(function() {
@@ -4078,9 +4006,9 @@
                 //     // Check for missing required fields
                 //     Object.keys(itemsData).forEach(index => {
                 //         const item = itemsData[index];
-                //         if (!item.price) console.error(`❌ Item ${index} missing PRICE!`);
-                //         if (!item.price_per_pc) console.error(`❌ Item ${index} missing PRICE_PER_PC!`);
-                //         if (!item.sku) console.error(`❌ Item ${index} missing SKU!`);
+                //         if (!item.price) // console.error(`❌ Item ${index} missing PRICE!`);
+                //         if (!item.price_per_pc) // console.error(`❌ Item ${index} missing PRICE_PER_PC!`);
+                //         if (!item.sku) // console.error(`❌ Item ${index} missing SKU!`);
                 //     });
 
                 //     // Remove this e.preventDefault() once you verify data is correct
@@ -4104,7 +4032,7 @@
                 // INITIALIZATION SEQUENCE
                 // ========================================
                 setTimeout(() => {
-                    console.log('⚙️ Running initialization sequence...');
+                    // console.log('⚙️ Running initialization sequence...');
 
                     // Step 1: Calculate everything
                     orderCalculator.calculateAllRows();
@@ -4193,7 +4121,7 @@
                             cancelEditButton.removeClass('hidden');
                             submitButton.removeClass('hidden');
                             updateSubmitButtonState();
-                            console.log('✏️  Edit mode ON');
+                            // console.log('✏️  Edit mode ON');
                         }
 
                         editButton.on('click', enterEditMode);
@@ -4210,7 +4138,7 @@
                         });
                     }
 
-                    console.log('✅ Initialization complete');
+                    // console.log('✅ Initialization complete');
                 }, 150);
             });
 
@@ -4610,12 +4538,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                                                                                       MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                                                                                                                                                                       Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                                                                                                                                                                       form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                                                                                                                                                                       left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                                                                                                                                                                       is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                           MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                                                                                                                                                           Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                                                                                                                                                           form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                                                                                                                                                           left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                                                                                                                                                           is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
@@ -4891,3 +4819,4 @@
         </style>
     @endif
 @endsection
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

@@ -830,8 +830,9 @@ class OrderController extends Controller
 
             $pdf = Pdf::loadView('pdf.pdf_sof', [
                 'order'              => $order,
-                'approver_name'      => auth()->user()->name,
+                'approver_name'      => $order->approver_name ?? auth()->user()->name,
                 'approval_signature' => $signatureBase64,
+                'approved_at'        => now(),
             ])->setPaper('A4', 'landscape');
 
             $filePath = "{$folderPath}/{$order->sof_id}_signed.pdf";
@@ -1217,26 +1218,11 @@ class OrderController extends Controller
     {
         $order = Order::with('items')->findOrFail($id);
 
-        // If an approval document exists, serve that instead of regenerating.
-        if ($order->approval_document && Storage::disk('public')->exists($order->approval_document)) {
-            // Resolve filesystem path for the public disk file
-            // Use storage_path for the local 'public' disk (storage/app/public)
-            $path = storage_path('app/public/' . ltrim($order->approval_document, '/'));
-            $ext  = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-            // Only inline-stream file types a browser renders (pdf/images).
-            // Other types (doc/docx) are forced to download.
-            $inlineTypes = ['pdf', 'jpg', 'jpeg', 'png'];
-            $disposition = in_array($ext, $inlineTypes) ? 'inline' : 'attachment';
-
-            return response()->file($path, [
-                'Content-Disposition' => $disposition . '; filename="SOF-Order-' . $order->id . '.' . $ext . '"',
-            ]);
-        }
-
-        // Fallback: generate the SOF PDF on the fly.
-        $pdf = Pdf::loadView('pdf.pdf_sof', compact('order'))
-            ->setPaper('A4', 'landscape');
+        $pdf = Pdf::loadView('pdf.pdf_sof', [
+            'order'         => $order,
+            'approver_name' => $order->approver_name ?? 'N/A',
+            'approved_at'   => $order->order_status === 'approved' ? $order->updated_at : null,
+        ])->setPaper('A4', 'landscape');
 
         return $pdf->stream("{$order->id}.pdf");
     }
