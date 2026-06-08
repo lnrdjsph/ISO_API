@@ -10,35 +10,21 @@
     <h3 class="text-sm font-semibold text-gray-900">How an Order Moves</h3>
     <p class="mt-1 text-sm text-gray-500">Once an order is approved and sent to the warehouse, every item moves through these stages:</p>
     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium">
-        @foreach ([
-            ['Processing', 'bg-gray-100 text-gray-700'],
-            ['Picking', 'bg-amber-100 text-amber-800'],
-            ['Shipped', 'bg-blue-100 text-blue-800'],
-            ['Received', 'bg-green-100 text-green-800'],
-        ] as $i => $stage)
+        @foreach ([['Processing', 'bg-gray-100 text-gray-700'], ['Picking', 'bg-amber-100 text-amber-800'], ['Shipped', 'bg-blue-100 text-blue-800'], ['Received', 'bg-green-100 text-green-800']] as $i => $stage)
             @if ($i > 0)
-                <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
             @endif
-            <span class="rounded-full {{ $stage[1] }} px-3 py-1">{{ $stage[0] }}</span>
+            <span class="{{ $stage[1] }} rounded-full px-3 py-1">{{ $stage[0] }}</span>
         @endforeach
     </div>
-    <x-guide.screenshot src="warehouse-fulfillment-flow.png" height="h-48" placeholder
-        caption="Ordered Items table showing each item's delivery stage as picking and shipping progress" />
-
-    {{-- Received reminder --}}
-    <h3 class="mt-6 text-sm font-semibold text-gray-900">"Items Received" Reminder</h3>
-    <p class="mt-1 text-sm text-gray-500">
-        On an approved order, a banner appears automatically once any item is marked <strong>Received</strong>. It's a
-        cue that goods have reached the store and the order is close to completion.
-    </p>
-    <x-guide.screenshot src="warehouse-received-banner.png" height="h-auto" placeholder
-        caption="The amber 'Items received at the store' banner on an approved order" />
 
     {{-- Capabilities --}}
     <h3 class="mt-6 text-sm font-semibold text-gray-900">What You Can &amp; Can't Do</h3>
     @php
         $yes = '<span class="inline-flex items-center gap-1 text-green-700"><span class="inline-block h-2 w-2 rounded-full bg-green-500"></span>Yes</span>';
-        $no  = '<span class="inline-flex items-center gap-1 text-gray-400"><span class="inline-block h-2 w-2 rounded-full bg-gray-300"></span>No</span>';
+        $no = '<span class="inline-flex items-center gap-1 text-gray-400"><span class="inline-block h-2 w-2 rounded-full bg-gray-300"></span>No</span>';
     @endphp
     <x-guide.table :headers="['Can you…', 'Warehouse']" :rows="[
         ['See approved &amp; completed orders for your warehouse', $yes],

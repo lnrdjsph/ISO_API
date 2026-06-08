@@ -1,17 +1,16 @@
 {{-- ═══ 05 · PRODUCTS ═══ --}}
-<x-guide.section id="products" number="05" title="Products Page" roles="personnel admin whmanager whpersonnel">
+<x-guide.section id="products" number="05" title="Products Page" roles="personnel admin">
 
     <p class="text-sm text-gray-600">The product catalog. Search by SKU, description, or sub-department.</p>
 
     <div data-roles="personnel">
-        <x-guide.callout type="info">The depot selector is <strong>not available</strong> for store personnel, and the page is <strong>view-only</strong> — contact your admin for product changes.</x-guide.callout>
+        <x-guide.callout type="info">The depot selector is <strong>not available</strong> for store personnel, and the page is <strong>view-only</strong> — contact your admin for product
+            changes.</x-guide.callout>
     </div>
     <div data-roles="admin">
         <x-guide.callout type="tip">Full access: depot filter, <strong>Add Product</strong>, and <strong>Import CSV</strong>.</x-guide.callout>
     </div>
-    <div data-roles="whmanager whpersonnel">
-        <x-guide.callout type="info" title="Warehouse view:">The <strong>depot / warehouse filter</strong> lets you switch between the warehouses you cover. Stock figures reflect the selected warehouse.</x-guide.callout>
-    </div>
+
 
     <x-guide.screenshot src="products-table.png" caption="Product catalog with inventory levels and pricing" />
 
@@ -24,7 +23,8 @@
         <x-guide.field name="Price (SRP)">The selling price per piece.</x-guide.field>
         @if (auth()->user()->role === 'super admin')
             <x-guide.field name="WMS Actual Inventory">The stock physically sitting in the warehouse right now.</x-guide.field>
-            <x-guide.field name="WMS Virtual Inventory">The warehouse stock as the system currently sees it — including items already set aside for orders that haven't shipped yet, so it can differ from the physical count for a short while.</x-guide.field>
+            <x-guide.field name="WMS Virtual Inventory">The warehouse stock as the system currently sees it — including items already set aside for orders that haven't shipped yet, so it can
+                differ from the physical count for a short while.</x-guide.field>
         @else
             <x-guide.field name="WMS Inventory">The warehouse stock available for your store. Goes up and down as orders are placed or cancelled.</x-guide.field>
         @endif

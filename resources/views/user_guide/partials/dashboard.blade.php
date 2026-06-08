@@ -23,7 +23,7 @@
             caption="Super Admin Dashboard — Summary cards, revenue strip, Store Performance, Activity Feed" />
     </div>
     <div data-roles="whmanager whpersonnel">
-        <x-guide.screenshot src="dashboard-warehouse.png" height="h-auto" placeholder
+        <x-guide.screenshot src="dashboard-warehouse.png" height="h-auto"
             caption="Warehouse Dashboard — 3 Summary cards (Total / Approved / Completed) for the stores your warehouse serves" />
     </div>
 

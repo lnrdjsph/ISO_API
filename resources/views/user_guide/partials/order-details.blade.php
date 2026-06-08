@@ -197,7 +197,7 @@
             Processing to Picking, Shipped, and Received. See <strong>Fulfilment Tracking</strong> below for the full
             flow.
         </p>
-        <x-guide.screenshot src="od-warehouse-items.png" placeholder
+        <x-guide.screenshot src="od-warehouse-items.png"
             caption="Ordered Items table with each item's delivery stage (view-only for warehouse)" />
     </div>
 

@@ -38,7 +38,7 @@
             <x-guide.screenshot src="orders-table-manager.png" caption="Manager order table — region-scoped, three statuses" />
         </div>
         <div data-roles="whmanager whpersonnel">
-            <x-guide.screenshot src="orders-table-warehouse.png" placeholder
+            <x-guide.screenshot src="orders-table-warehouse.png"
                 caption="Warehouse order table — approved &amp; completed orders for your warehouse's stores" />
         </div>
         <p class="mt-2 text-sm text-gray-500">
