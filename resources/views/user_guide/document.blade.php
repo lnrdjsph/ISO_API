@@ -318,7 +318,7 @@
                         <div data-roles="personnel">
                             <div class="screenshot-frame mt-4 overflow-hidden rounded-lg bg-gray-50 ring-1 ring-gray-200">
                                 <div class="flex h-64 items-center justify-center overflow-hidden"><img class="h-full w-full object-cover"
-                                        src="{{ asset('images/guide/dashboard-full.png') }}" alt="Personnel Dashboard"></div>
+                                        src="{{ asset('images/guide/dashboard-personnel.png') }}" alt="Personnel Dashboard"></div>
                                 <p class="border-t border-gray-100 bg-white px-3 py-2 text-center text-xs text-gray-400">Store Personnel Dashboard — Order counts, quick access cards, and recent
                                     activity</p>
                             </div>
