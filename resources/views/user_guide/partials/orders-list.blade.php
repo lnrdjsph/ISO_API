@@ -22,7 +22,7 @@
     </div>
 
     <h3 id="orders-filters" class="mt-5 text-sm font-semibold text-gray-900">Filtering &amp; Searching</h3>
-    <x-guide.screenshot src="orders-filter-bar.png" height="h-36" caption="Filter by keyword, store, channel, status, and date range" />
+    <x-guide.screenshot src="orders-filter-bar.png" height="h-64" caption="Filter by keyword, store, channel, status, and date range" />
     <p class="mt-2 text-sm text-gray-500">
         Narrow results by <strong>keyword</strong> (customer name, SOF ID, store code), <strong>store</strong>,
         <strong>channel</strong>, <strong>status</strong>, or <strong>date range</strong>. Click <strong>Apply</strong>

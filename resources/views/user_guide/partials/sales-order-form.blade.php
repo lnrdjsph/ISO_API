@@ -18,7 +18,8 @@
                 <x-guide.field name="SOF Order ID">Auto-generated order number in the format <strong>SOF + Year/Month + Sequence</strong> (e.g. SOF202603-001). Read-only.</x-guide.field>
                 <x-guide.field name="Requesting Store">Your assigned store (e.g. "F2 – Metro Wholesalemart Colon"). Read-only — set from your account.</x-guide.field>
                 <x-guide.field name="Requested By">Your name as the logged-in user creating the order. Read-only.</x-guide.field>
-                <x-guide.field name="Channel of Order">Select the sales channel: <strong>E-Commerce</strong>, <strong>Store</strong>, <strong>ISO Retail</strong>, or <strong>Wholesale</strong>.</x-guide.field>
+                <x-guide.field name="Channel of Order">Select the sales channel: <strong>E-Commerce</strong>, <strong>Store</strong>, <strong>ISO Retail</strong>, or
+                    <strong>Wholesale</strong>.</x-guide.field>
                 <x-guide.field name="Serving Warehouse">The warehouse that will fulfil this order, auto-assigned from your store location. Read-only.</x-guide.field>
                 <x-guide.field name="Date &amp; Time of Order">Pre-filled with the current date and time. Adjustable for backdated orders.</x-guide.field>
             </div>
@@ -27,7 +28,8 @@
         <div>
             <h4 class="text-sm font-medium text-gray-800">Customer Information</h4>
             <div class="space-y-1">
-                <x-guide.field name="MBC Card Number">The customer's 16-digit MBC loyalty card. A valid card auto-fills name, contact, and email; otherwise enter details manually.</x-guide.field>
+                <x-guide.field name="MBC Card Number">The customer's 16-digit MBC loyalty card. A valid card auto-fills name, contact, and email; otherwise enter details
+                    manually.</x-guide.field>
                 <x-guide.field name="Customer Name">Full name. Auto-filled from MBC lookup, or enter manually.</x-guide.field>
                 <x-guide.field name="Contact Number">Phone number. Auto-filled from MBC lookup, or enter manually.</x-guide.field>
                 <x-guide.field name="Customer Email">Email address. Auto-filled from MBC lookup, or enter manually.</x-guide.field>
@@ -39,7 +41,8 @@
             <h4 class="text-sm font-medium text-gray-800">Payment Information</h4>
             <div class="space-y-1">
                 <x-guide.field name="Payment Center">Auto-assigned to match your store. Read-only for store personnel.</x-guide.field>
-                <x-guide.field name="Mode of Payment">Select <strong>PO15%</strong> (purchase order, 15% terms) or <strong>Cash / Bank Card</strong> (paid right away). This affects the deals — discounts and free items — offered on the items.</x-guide.field>
+                <x-guide.field name="Mode of Payment">Select <strong>PO15%</strong> (purchase order, 15% terms) or <strong>Cash / Bank Card</strong> (paid right away). This affects the deals
+                    — discounts and free items — offered on the items.</x-guide.field>
                 <x-guide.field name="Payment Date">Pre-filled with today's date. Editable to the customer's preferred date.</x-guide.field>
             </div>
         </div>
@@ -48,19 +51,21 @@
             <h4 class="text-sm font-medium text-gray-800">Dispatch Details</h4>
             <div class="space-y-1">
                 <x-guide.field name="Delivery / Pick-up Date">Expected date for delivery or pick-up.</x-guide.field>
-                <x-guide.field name="Mode of Dispatching">Choose one of three: <strong>Customer Pick-up</strong> (collected at the store), <strong>Pick-up at Warehouse</strong> (collected at the serving warehouse), or <strong>Delivery Direct to Customer</strong> (Address &amp; Landmark fields appear and are required).</x-guide.field>
+                <x-guide.field name="Mode of Dispatching">Choose one of three: <strong>Customer Pick-up</strong> (collected at the store), <strong>Pick-up at Warehouse</strong> (collected at
+                    the serving warehouse), or <strong>Delivery Direct to Customer</strong> (Address &amp; Landmark fields appear and are required).</x-guide.field>
                 <x-guide.field name="Address">Delivery address. Appears only for "Delivery Direct to Customer".</x-guide.field>
                 <x-guide.field name="Landmark">A nearby landmark to aid delivery. Appears only for "Delivery Direct to Customer".</x-guide.field>
             </div>
         </div>
     </div>
 
-    <x-guide.callout type="danger">The Order Items section only appears after <strong>all required header fields</strong> are complete. If any required field is empty, the items section stays hidden.</x-guide.callout>
+    <x-guide.callout type="danger">The Order Items section only appears after <strong>all required header fields</strong> are complete. If any required field is empty, the items section
+        stays hidden.</x-guide.callout>
 
     {{-- Step 2 --}}
     <div id="sof-items" class="mt-6 border-t border-gray-100 pt-5">
         <h3 class="text-sm font-semibold text-gray-900">Step 2 — Add Order Items</h3>
-        <x-guide.screenshot src="sof-order-items.png" height="h-56"
+        <x-guide.screenshot src="sof-order-items.png" height="h-auto"
             caption="Order Items — sale type, product search, quantities, and the live breakdown" />
         <x-guide.steps :items="[
             'Select <strong>Sale Type</strong>: <strong>Freebie</strong> (buy X get Y free — shows Scheme and Freebie Product fields) or <strong>Discount</strong> (fixed amount or percentage off — shows a Discount field).',

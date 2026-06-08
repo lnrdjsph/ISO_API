@@ -11,19 +11,19 @@
 
     {{-- ── Role screenshots ── --}}
     <div data-roles="personnel">
-        <x-guide.screenshot src="dashboard-personnel.png" height="h-64"
+        <x-guide.screenshot src="dashboard-personnel.png" height="h-auto"
             caption="Store Personnel Dashboard — Summary cards, Quick Actions, Attention Required, Inventory Snapshot, Recent Orders" />
     </div>
     <div data-roles="manager">
-        <x-guide.screenshot src="dashboard-manager.png" height="h-64"
+        <x-guide.screenshot src="dashboard-manager.png" height="h-auto"
             caption="Manager Dashboard — region-scoped Summary cards, Attention Required, and Recent Orders" />
     </div>
     <div data-roles="admin">
-        <x-guide.screenshot src="dashboard-full.png" height="h-64"
+        <x-guide.screenshot src="dashboard-full.png" height="h-auto"
             caption="Super Admin Dashboard — Summary cards, revenue strip, Store Performance, Activity Feed" />
     </div>
     <div data-roles="whmanager whpersonnel">
-        <x-guide.screenshot src="dashboard-warehouse.png" height="h-64" placeholder
+        <x-guide.screenshot src="dashboard-warehouse.png" height="h-auto" placeholder
             caption="Warehouse Dashboard — 3 Summary cards (Total / Approved / Completed) for the stores your warehouse serves" />
     </div>
 
