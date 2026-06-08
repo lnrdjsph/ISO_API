@@ -1359,6 +1359,65 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <script nonce="{{ $cspNonce ?? '' }}">
+                                            // Add this function once
+                                            function updateDisplayWithCommas(inputElement, displayElement) {
+                                                if (inputElement && displayElement) {
+                                                    let rawValue = inputElement.value;
+                                                    let numericValue = parseFloat(rawValue) || 0;
+                                                    displayElement.textContent = numericValue.toLocaleString('en-US', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    });
+                                                }
+                                            }
+
+                                            // Format Price displays
+                                            document.querySelectorAll('.computed-price').forEach((input, index) => {
+                                                const display = document.querySelectorAll('.price-display')[index];
+                                                updateDisplayWithCommas(input, display);
+
+                                                input.addEventListener('input', function() {
+                                                    updateDisplayWithCommas(this, display);
+                                                });
+                                            });
+
+                                            // Format Total Payable displays
+                                            document.querySelectorAll('.computed-amount').forEach((input, index) => {
+                                                const display = document.querySelectorAll('.amount-display')[index];
+                                                updateDisplayWithCommas(input, display);
+
+                                                input.addEventListener('input', function() {
+                                                    updateDisplayWithCommas(this, display);
+                                                });
+                                            });
+
+                                            // Format Freebie Amount displays
+                                            document.querySelectorAll('.computed-freebie-amount').forEach((input, index) => {
+                                                const display = document.querySelectorAll('.freebie-amount-display')[index];
+                                                updateDisplayWithCommas(input, display);
+
+                                                input.addEventListener('input', function() {
+                                                    updateDisplayWithCommas(this, display);
+                                                });
+                                            });
+
+                                            // Format QTY (no decimals)
+                                            document.querySelectorAll('.computed-total-qty').forEach((input, index) => {
+                                                const display = document.querySelectorAll('.total-qty-display')[index];
+                                                if (input && display) {
+                                                    let rawValue = input.value;
+                                                    let numericValue = parseInt(rawValue) || 0;
+                                                    display.textContent = numericValue.toLocaleString();
+
+                                                    input.addEventListener('input', function() {
+                                                        let val = parseInt(this.value) || 0;
+                                                        display.textContent = val.toLocaleString();
+                                                    });
+                                                }
+                                            });
+                                        </script>
                                     </div>
                                     <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
                                         <table

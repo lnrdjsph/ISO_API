@@ -363,59 +363,60 @@ class OracleTransferController extends Controller
         }
     }
 
+    /**
+     * API endpoint — wraps resolveItemStatus() with a JSON response.
+     * Returns cached result when available; falls back to last cached value on WMS error.
+     */
     public function getItemStatus($storeOrderNo, $sku)
     {
+        $data = $this->resolveItemStatus($storeOrderNo, $sku);
+
+        $httpStatus = ($data['status'] === 'Error' && !($data['from_cache'] ?? false)) ? 500 : 200;
+
+        return response()->json($data, $httpStatus);
+    }
+
+    /**
+     * Resolve the WMS status for a single item.
+     * Caches successful results for 10 minutes.
+     * On WMS error: returns last cached value (stale) if available, otherwise Error.
+     */
+    protected function resolveItemStatus(string $storeOrderNo, string $sku): array
+    {
+        if (empty($storeOrderNo)) {
+            return ['status' => 'N/A', 'bol_number' => null, 'store_order_no' => $storeOrderNo];
+        }
+
+        $cacheKey = 'item_status_' . md5($storeOrderNo . '_' . $sku);
+
         try {
-            // Log the incoming request
-            Log::info('Order status request received', ['store_order_no' => $storeOrderNo, 'sku' => $sku]);
-
-            // Check if store order number is blank or null
-            if (empty($storeOrderNo)) {
-                Log::warning('Empty store order number received');
-                return response()->json([
-                    'status' => 'N/A',
-                    'bol_number' => null
-                ], 200);
-            }
-
-            // Step 1: Check oracle_rms database - tsfhead table
-            Log::info('Checking tsfhead table', ['store_order_no' => $storeOrderNo]);
+            // Step 1: tsfhead
             $tsfHead = DB::connection('oracle_rms')
                 ->table('tsfhead')
                 ->where('tsf_no', $storeOrderNo)
                 ->first();
 
             if (!$tsfHead) {
-                Log::info('Order not found in tsfhead', ['store_order_no' => $storeOrderNo]);
-                return response()->json([
-                    'status' => 'Not Found',
-                    'bol_number' => null
-                ], 200);
+                $result = ['status' => 'Not Found', 'bol_number' => null, 'store_order_no' => $storeOrderNo];
+                \Cache::put($cacheKey, $result, now()->addMinutes(10));
+                return $result;
             }
 
-            // If found in tsfhead, default status is Processing
-            $status = 'Processing';
+            $status    = 'Processing';
             $bolNumber = null;
-            Log::info('Order found in tsfhead, status: Processing', ['store_order_no' => $storeOrderNo]);
 
-            // Step 1.5: Check oracle_wms database - pick_directive table
-            Log::info('Checking pick_directive table', ['store_order_no' => $storeOrderNo]);
+            // Step 1.5: WMS pick / container
             $pickDirective = DB::connection('oracle_wms')
                 ->table('rwms.pick_directive')
                 ->where('distro_nbr', $storeOrderNo)
                 ->first();
 
-            $containerItem = null;
-            $container = null;
-
-            // Check container_item/container
-            Log::info('Checking container_item table', ['store_order_no' => $storeOrderNo]);
             $containerItem = DB::connection('oracle_wms')
                 ->table('rwms.container_item')
                 ->where('distro_nbr', $storeOrderNo)
                 ->first();
 
-            // If container_item exists, check container by container_id for BOL
+            $container = null;
             if ($containerItem) {
                 $container = DB::connection('oracle_wms')
                     ->table('rwms.container')
@@ -428,92 +429,94 @@ class OracleTransferController extends Controller
                 }
             }
 
-            // Multiple indicators of picking status (ANY can trigger):
-            // 1. Pick_directive exists
-            // 2. Container_item exists
-            // 3. Container has BOL number
             if ($pickDirective || $containerItem || $container) {
                 $status = 'Picking';
-
-                // Log which indicator triggered
-                if ($pickDirective) {
-                    Log::info('Order is picking (found in pick_directive)', ['store_order_no' => $storeOrderNo]);
-                }
-                if ($containerItem || $container) {
-                    Log::info('Order is picking (found in container_item or has BOL)', ['store_order_no' => $storeOrderNo]);
-                }
             }
 
-            // Step 2: Now check shipped status - ALL indicators required
+            // Step 2: Shipped
             $shipped = false;
-
-            // ALL indicators must be present for shipped status:
-            // 1. Container_item exists
-            // 2. Container has BOL number
-            // 3. tsfhead.status is 'S' (Shipped) or 'C' (Closed/Complete)
-            if ($containerItem && $container && ($tsfHead && in_array($tsfHead->status, ['S', 'C']))) {
+            if ($containerItem && $container && $tsfHead && in_array($tsfHead->status, ['S', 'C'])) {
                 $shipped = true;
-                $status = 'Shipped';
-
-                Log::info('Order shipped', [
-                    'store_order_no' => $storeOrderNo,
-                    'tsf_status' => $tsfHead->status,
-                    'bol_number' => $bolNumber
-                ]);
+                $status  = 'Shipped';
             }
 
-            // Step 3: If shipped, check for received status
-            if ($shipped) {
-                // Check if SKU is empty
-                if (empty($sku)) {
-                    return response()->json([
-                        'status' => 'N/A',
-                        'bol_number' => $bolNumber
-                    ], 200);
-                }
-
-                // Check shipsku for received qty
-                Log::info('Checking shipsku table', ['store_order_no' => $storeOrderNo, 'sku' => $sku]);
-                $shipSku = DB::connection('oracle_rms')
+            // Step 3: Received
+            if ($shipped && !empty($sku)) {
+                $received = DB::connection('oracle_rms')
                     ->table('shipsku')
                     ->where('distro_no', $storeOrderNo)
                     ->where('item', $sku)
                     ->whereRaw('NVL(qty_received,0) > 0')
                     ->exists();
 
-                // If qty_received > 0, status becomes Received
-                if ($shipSku) {
+                if ($received) {
                     $status = 'Received';
-                    Log::info('Order received, status: Received', ['store_order_no' => $storeOrderNo]);
                 }
             }
 
-            Log::info('Final status determined', [
-                'store_order_no' => $storeOrderNo,
-                'status' => $status,
-                'bol_number' => $bolNumber
-            ]);
+            $result = ['status' => $status, 'bol_number' => $bolNumber, 'store_order_no' => $storeOrderNo];
+            \Cache::put($cacheKey, $result, now()->addMinutes(10));
 
-            return response()->json([
-                'status' => $status,
-                'bol_number' => $bolNumber,
-                'store_order_no' => $storeOrderNo
-            ], 200);
+            Log::info('Item status resolved', ['tsf' => $storeOrderNo, 'sku' => $sku, 'status' => $status]);
+
+            return $result;
+
         } catch (\Exception $e) {
-            Log::error('Order status error', [
+            Log::error('Item status error', [
                 'store_order_no' => $storeOrderNo,
-                'sku' => $sku,
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'sku'            => $sku,
+                'error'          => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'status' => 'Error',
-                'bol_number' => null,
-                'store_order_no' => $storeOrderNo
-            ], 500);
+            // Return last cached value if available (stale-on-error)
+            $cached = \Cache::get($cacheKey);
+            if ($cached) {
+                Log::info('Returning cached item status after error', ['tsf' => $storeOrderNo, 'status' => $cached['status']]);
+                return array_merge($cached, ['from_cache' => true]);
+            }
+
+            return ['status' => 'Error', 'bol_number' => null, 'store_order_no' => $storeOrderNo];
         }
+    }
+
+    /**
+     * Aggregate WMS statuses for all active items in a given order.
+     * Called by the orders list page to show per-order item status summary.
+     * Returns a tally: { "Received": 2, "Shipped": 1, "Processing": 0, ... }
+     */
+    public function getOrderItemsStatusSummary($orderId)
+    {
+        $order = Order::with('items')->find($orderId);
+
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        $activeItems = $order->items->filter(
+            fn($item) => !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled'
+        );
+
+        if ($activeItems->isEmpty()) {
+            return response()->json(['statuses' => [], 'total' => 0]);
+        }
+
+        // Cache the aggregated summary for 5 minutes.
+        // Individual item statuses have their own 10-minute cache inside resolveItemStatus().
+        $summaryCacheKey = 'order_items_status_summary_' . $orderId;
+
+        $tally = \Cache::remember($summaryCacheKey, now()->addMinutes(5), function () use ($activeItems) {
+            $tally = [];
+            foreach ($activeItems as $item) {
+                $result = $this->resolveItemStatus($item->store_order_no, $item->sku);
+                $status = $result['status'] ?? 'Unknown';
+                $tally[$status] = ($tally[$status] ?? 0) + 1;
+            }
+            return $tally;
+        });
+
+        return response()->json([
+            'statuses' => $tally,
+            'total'    => $activeItems->count(),
+        ]);
     }
 }

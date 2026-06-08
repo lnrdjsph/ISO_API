@@ -101,6 +101,7 @@ Route::get('/order-status/{storeOrderNo}/{sku}', [
     'getItemStatus'
 ])->name('order.status');
 
+
 Route::get('/order-bol/{tsf}/{sku}', [
     OracleTransferController::class,
     'getBolNumber'

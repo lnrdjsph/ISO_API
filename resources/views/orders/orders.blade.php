@@ -487,6 +487,12 @@
 
             window.addEventListener('popstate', () => fetchOrders(window.location.href));
 
+            // When restored from bfcache (back/forward), re-fetch so the table
+            // matches the URL (e.g. ?page=2) instead of showing stale cached content.
+            window.addEventListener('pageshow', (e) => {
+                if (e.persisted) fetchOrders(window.location.href);
+            });
+
             renderChips(getState());
             setTimeout(() => {
                 const paginationElem = document.querySelector('#orders-table .pagination-info-text');

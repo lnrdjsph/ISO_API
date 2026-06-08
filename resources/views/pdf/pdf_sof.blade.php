@@ -370,9 +370,15 @@
                         @if (!empty($approval_signature))
                             <img
                                 src="data:image/png;base64,{{ $approval_signature }}"
-                                style="max-height:55px; max-width:200px; object-fit:contain; display:block;">
+                                style="max-height:55px; max-width:200px; object-fit:contain; display:block; margin-bottom:50px;">
                         @endif
                     </div>
+                    @php $approvalDate = $approved_at ?? null; @endphp
+                    @if ($approvalDate)
+                        <div style="margin-bottom:2px; font-size:8px; color:#555;">
+                            {{ \Carbon\Carbon::parse($approvalDate)->format('M d, Y h:i A') }}
+                        </div>
+                    @endif
                     <span style="font-size:10px; text-transform:uppercase; display:block; margin-bottom:2px;">
                         {{ strtoupper($approver_name ?? ($order->approver_name ?? 'N/A')) }}
                     </span>

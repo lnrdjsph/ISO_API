@@ -1,66 +1,187 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MarengEms — B2B2C Order Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**MarengEms** is Metro Retail's Order Management System for handling store-to-warehouse B2B orders and WooCommerce e-commerce orders end-to-end — from order creation and approval, through inventory allocation, to fulfillment tracking.
 
-## About Laravel
+Built on Laravel 9. The project is named `ISO_Ordering_API` for historical reasons (its first integration was an ISO API), but the OMS is the core product.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What It Does
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### B2B Store Ordering
+Store staff submit purchase orders against warehouse inventory. Each order goes through a regional approval workflow before fulfillment.
 
-## Learning Laravel
+- Orders belong to a requesting store, reference a warehouse, and contain line items with pricing, quantity, and scheme (freebie/discount) details
+- Approval is routed automatically based on the requesting store's region via `LocationConfig`
+- Order status lifecycle: `new order → pending → processing → completed`
+- Full notes/comment thread per order (`OrderNote`)
+- PDF and Excel export for order documents
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### E-Commerce Order Ingestion (WooCommerce)
+Online orders placed on MarengEms Online (WooCommerce) are pushed here via webhook and processed as OMS orders in real time.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- Store and warehouse are resolved from order metadata (`_pickup_store`)
+- Stock is validated before the order is committed — insufficient stock throws an error back to WooCommerce
+- Freebie schemes (`12+1` buy-get-free) are calculated per item, payment-mode aware (`po15_scheme` vs `cash_bank_card_scheme`)
+- Discount schemes (percentage or fixed amount) are applied per product
+- Duplicate orders are rejected by SOF ID (`ATOM{order_number}-{YYYYMMDD}`)
+- Inventory (cases + WMS virtual allocation in pieces) is deducted atomically after commit
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Inventory & Stock Management
+- Per-store product tables (`products_{store_code}`) hold pricing, case pack, allocation, and scheme data
+- `product_wms_allocations` tracks live virtual stock per SKU per warehouse
+- Stock levels are updated in real time as orders are placed
 
-## Laravel Sponsors
+### Oracle RMS Inventory Sync
+Pulls live pricing and stock from Oracle RMS and pushes it to the WooCommerce storefront as CSV files over SSH — keeping the online catalog accurate.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+- Supermarket allocation logic: 50% of SOH (only if SOH > 31 units), otherwise out-of-stock
+- Department store: actual SOH
+- Promo pricing and sale dates from `rpm_future_retail` are included in the sync
 
-### Premium Partners
+### User & Role Management
+- Authentication via Laravel Fortify + Sanctum
+- Role-based access (store manager, approver, admin, etc.)
+- Store context switching (`SwitchUserContextController`, `SwitchRoleController`)
+- Activity logging on key actions via `LogsActivity` trait
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+---
 
-## Contributing
+## Integrations
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Integration | Purpose |
+|---|---|
+| Oracle RMS | Inventory, pricing, transfers, BOL lookup |
+| WooCommerce (Atom API) | Inbound e-commerce orders |
+| iCard / Metro Bonus Card | Loyalty points balance and transaction history |
+| OTP Service | Customer identity verification |
+| ECR Terminals | Payment data ingestion |
+| MRC Tender | Tender processing |
+| ISO 8583 | Card network communication (via `ISO8583Client`) |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Tech Stack
 
-## Security Vulnerabilities
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 9 (PHP 8.0+) |
+| Primary DB | MySQL |
+| ERP / Inventory | Oracle RMS (read-only via `yajra/laravel-oci8`) |
+| Auth | Laravel Fortify + Sanctum |
+| Background Jobs | Laravel Queues |
+| File Transfer | SSH/SFTP via `phpseclib3` |
+| Reports | `barryvdh/laravel-dompdf`, `phpoffice/phpspreadsheet` |
+| Payment Protocol | ISO 8583 (custom `ISO8583Client`) |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Project Structure
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+app/
+├── Console/Commands/       # Artisan commands (RMSSync, WmsMonitor, UpdateAllProductAllocations)
+├── Http/
+│   ├── Controllers/        # Feature controllers
+│   │   ├── Icard/          # Loyalty & transaction controllers
+│   │   ├── Auth/           # Account, password reset
+│   ├── Middleware/         # Auth, CSRF, API token verification, security headers
+│   ├── Requests/           # Form request validation
+│   └── Responses/          # Custom Fortify responses
+├── Jobs/                   # RMSSynchronizationJob, FetchAllocationJob, UpdateWmsAllocationsJob
+├── Models/
+│   ├── ISO_B2B/            # Order, OrderItem, OrderNote
+│   └── Settings/           # SettingsWarehouse, SettingsStore, SettingsRegion, etc.
+├── Services/               # OtpService, MRCTenderService, OracleRibXMLService
+├── Helpers/                # ISO8583Client, JAK8583, SortHelper
+├── Support/                # LocationConfig (store/warehouse mapping)
+└── Traits/                 # LogsActivity
+```
+
+---
+
+## API Routes Summary
+
+| Method | URI | Controller | Auth |
+|---|---|---|---|
+| GET | `/api/iso-api/test` | TestController | — |
+| POST | `/api/iso-api/get-user-data` | UserController | — |
+| POST | `/api/iso-api/otp-send` | OtpController | — |
+| POST | `/api/iso-api/otp-verify` | OtpController | — |
+| POST | `/api/iso-api/loyalty-points` | UserPointsController | — |
+| POST | `/api/iso-api/transactions` | TransactionHistoryController | — |
+| POST | `/api/payment-data` | ECRController | — |
+| POST | `/api/oracle-rms/item` | OracleRmsController | — |
+| POST | `/api/v1/rms-sync/synchronize` | RMSCommerceSynchronizationController | — |
+| GET | `/api/v1/rms-sync/status` | RMSCommerceSynchronizationController | — |
+| GET | `/api/v1/rms-sync/logs` | RMSCommerceSynchronizationController | — |
+| POST | `/api/mrc/tender` | MRCTenderController | — |
+| POST | `/api/atom-api/` | AtomController | `verify.api.token` |
+| POST | `/api/atom-api/test` | AtomController | — |
+| GET | `/api/order-status/{storeOrderNo}/{sku}` | OracleTransferController | — |
+| GET | `/api/order-bol/{tsf}/{sku}` | OracleTransferController | — |
+
+---
+
+## Environment Setup
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### Required `.env` Variables
+
+```env
+# Application
+APP_NAME=Laravel
+APP_ENV=local
+APP_URL=http://localhost
+
+# MySQL
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_db
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Oracle RMS (read-only)
+# Configure in config/database.php under 'oracle_rms'
+
+# SSH / SFTP for RMS sync uploads
+SFTP_HOST=
+SFTP_PORT=22
+SFTP_USER=
+SFTP_PASS=
+SFTP_DIR=/path/to/remote/csv/directory
+```
+
+---
+
+## Running Locally (XAMPP)
+
+```bash
+# Install dependencies
+composer install
+
+# Run migrations
+php artisan migrate
+
+# Start queue worker (for background jobs)
+php artisan queue:work
+
+# Run RMS sync manually
+php artisan rms:sync
+```
+
+---
+
+## Key Conventions
+
+- **Per-store product tables**: Products are stored in dynamic tables named `products_{store_code}` (e.g. `products_lz`, `products_stc`). Queries use `DB::table("products_{$storeCode}")`.
+- **WMS allocation**: `product_wms_allocations` tracks virtual stock in pieces per warehouse. Deducted after each committed order.
+- **SOF ID format**: `ATOM{woocommerce_order_number}-{YYYYMMDD}` for e-commerce orders.
+- **Freebie schemes**: Stored as strings like `"12+1"` (buy 12, get 1 free). Payment mode determines which scheme column to use (`po15_scheme` vs `cash_bank_card_scheme`).
+- **Location config**: All store-to-warehouse and store-to-region mappings live in `App\Support\LocationConfig`. Update here when adding new stores.
+- **Activity logging**: Use the `LogsActivity` trait on models where audit trail is needed.

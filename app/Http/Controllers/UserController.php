@@ -45,12 +45,19 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate(10)->withQueryString();
+        $perPage = in_array((int) $request->get('per_page', 10), [10, 15, 25, 50, 100])
+            ? (int) $request->get('per_page', 10)
+            : 10;
 
-        // Use LocationConfig instead of config()
+        $users = $query->orderBy('name')->paginate($perPage)->withQueryString();
+
         $storeLocations = LocationConfig::stores();
-        $regionLabels = LocationConfig::regionLabels();
-        $roles = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager'];
+        $regionLabels   = LocationConfig::regionLabels();
+        $roles          = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel', 'super admin', 'store manager'];
+
+        if ($request->ajax()) {
+            return view('users.partials.table', compact('users', 'storeLocations', 'regionLabels', 'roles'));
+        }
 
         return view('users.user_management', compact('users', 'storeLocations', 'regionLabels', 'roles'));
     }
@@ -92,12 +99,16 @@ class UserController extends Controller
 
         $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $user = User::create($validated);
         $this->logActivity(
             'user.created',
             "Created user {$validated['email']} with role {$validated['role']}",
             ['email' => $validated['email'], 'role' => $validated['role'], 'user_location' => $validated['user_location']]
         );
+
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'message' => "User {$user->name} created successfully."]);
+        }
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -146,6 +157,9 @@ class UserController extends Controller
         $user->update($validated);
         $this->logModelChange('user.updated', $user, $before, $user->fresh()->only(['name', 'email', 'role', 'user_location']));
 
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'message' => "User {$user->name} updated successfully."]);
+        }
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
@@ -153,7 +167,13 @@ class UserController extends Controller
     // Delete user
     public function destroy(User $user)
     {
+        $name = $user->name;
         $user->delete();
+
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'message' => "User {$name} deleted successfully."]);
+        }
+
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 

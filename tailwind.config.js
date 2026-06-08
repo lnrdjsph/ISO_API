@@ -7,6 +7,13 @@ export default {
         "./resources/*.blade.php",
         "./resources/**/*.js",
         "./resources/**/*.vue",
+        "./app/View/Components/**/*.php",
+    ],
+    safelist: [
+        // StockBadge — badge background + text
+        'border-red-200/60',    'bg-red-100/60',    'text-red-800',    'text-red-300',
+        'border-orange-200/60', 'bg-orange-100/60', 'text-orange-800', 'text-orange-300',
+        'border-green-300/60',  'bg-green-200/60',  'text-green-900',  'text-green-300',
     ],
     theme: {
         extend: {

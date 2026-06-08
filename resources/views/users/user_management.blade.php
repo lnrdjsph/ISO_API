@@ -1,652 +1,207 @@
 @extends('layouts.app')
 
+@section('title', 'User Management')
+
 @section('content')
-    @php
-        if (!auth()->user() || !auth()->user()->role) {
-            return redirect()->route('login')->send();
-        }
+<div class="mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
 
-        if (auth()->user()->role !== 'super admin') {
-            return redirect('/403')->send();
-        }
-    @endphp
-
-    <div class="">
-        <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            <!-- Header Section -->
-            <div class="mb-8 flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div class="rounded-xl bg-gradient-to-br from-gray-900 to-indigo-900 p-3 shadow-lg">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-8 w-8 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12zM4.5 21a7.5 7.5 0 0115 0v.75H4.5V21z" />
-                        </svg>
-
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-                        <p class="mt-1 text-gray-600">Manage system users, roles, and permissions</p>
-                    </div>
-                </div>
-
+    {{-- Header --}}
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="rounded-xl bg-gradient-to-br from-slate-800 to-indigo-900 p-3 shadow-lg">
+                <svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
             </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 sm:text-3xl">User Management</h1>
+                <p class="text-xs text-gray-500 sm:text-sm">Manage system users, roles, and permissions</p>
+            </div>
+        </div>
+        <button id="openAddUserModal"
+            class="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add User
+        </button>
+    </div>
 
-            <!-- Alert Messages -->
-            @if (session('success'))
-                <div class="animate-fade-in mb-6 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4 shadow-sm">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="rounded-full bg-green-100 p-1">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 text-green-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-green-800">Success!</h3>
-                            <p class="mt-1 text-sm text-green-700">{{ session('success') }}</p>
-                        </div>
-                    </div>
+    {{-- Filter bar --}}
+    <div class="rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Search --}}
+            <div class="relative min-w-0 flex-1 sm:max-w-xs">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                 </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="animate-fade-in mb-6 rounded-xl border border-red-200 bg-gradient-to-r from-red-50 to-pink-50 p-4 shadow-sm">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="rounded-full bg-red-100 p-1">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5 text-red-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
-                            <ul class="mt-2 space-y-1 text-sm text-red-700">
-                                @foreach ($errors->all() as $error)
-                                    <li class="flex items-center space-x-2">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            class="h-3 w-3"
-                                            fill="currentColor"
-                                            viewBox="0 0 8 8">
-                                            <circle
-                                                cx="4"
-                                                cy="4"
-                                                r="3" />
-                                        </svg>
-                                        <span>{{ $error }}</span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            @endif
-            <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <form
-                    method="GET"
-                    action="{{ route('users.index') }}"
-                    class="flex flex-wrap items-center gap-3">
-
-                    <!-- Search -->
-                    <input
-                        type="text"
-                        name="search"
-                        placeholder="Search name or email"
-                        value="{{ request('search') }}"
-                        class="w-72 rounded border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                    <!-- Role Filter -->
-                    <select
-                        name="role"
-                        class="rounded border border-gray-300 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="">All Roles</option>
-                        @foreach ($roles as $role)
-                            <option
-                                value="{{ $role }}"
-                                {{ request('role') == $role ? 'selected' : '' }}>
-                                {{ ucwords($role) }}
-                            </option>
-                        @endforeach
-                    </select>
-
-
-                    <!-- Location Filter -->
-                    <select
-                        name="user_location"
-                        class="rounded border border-gray-300 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="">All Locations</option>
-                        <optgroup label="Regions">
-                            @foreach ($regionLabels as $regionCode => $regionName)
-                                <option value="{{ $regionCode }}" {{ request('user_location') == $regionCode ? 'selected' : '' }}>
-                                    Region: {{ $regionName }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-                        <optgroup label="Individual Stores">
-                            @foreach ($storeLocations as $code => $label)
-                                <option value="{{ $code }}" {{ request('user_location') == $code ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </optgroup>
-                    </select>
-
-
-                    <!-- Buttons -->
-                    <button
-                        type="submit"
-                        class="rounded bg-gray-800 px-4 py-2 text-white hover:bg-indigo-700">
-                        Filter
-                    </button>
-
-                    <a
-                        href="{{ route('users.index') }}"
-                        class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400">
-                        Clear
-                    </a>
-                </form>
-
-                <!-- Add User -->
-                <button
-                    id="openAddUserModal"
-                    class="inline-flex items-center rounded bg-gray-800 px-4 py-2 font-semibold text-white shadow-md transition hover:bg-indigo-700">
-                    + Add User
+                <input type="text" id="user-search" value="{{ request('search') }}"
+                    placeholder="Search name or email…"
+                    class="h-8 w-full rounded-md border border-gray-300 pl-9 pr-8 text-xs shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:h-9" />
+                <button type="button" id="clear-search-btn"
+                    class="{{ request('search') ? '' : 'hidden' }} absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400 hover:text-gray-600">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
 
+            {{-- Role filter --}}
+            <select id="role-filter"
+                class="h-8 rounded-md border border-gray-300 px-2 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:h-9">
+                <option value="">All Roles</option>
+                @foreach ($roles as $role)
+                    <option value="{{ $role }}" {{ request('role') == $role ? 'selected' : '' }}>
+                        {{ ucwords($role) }}
+                    </option>
+                @endforeach
+            </select>
 
-            <!-- Users Table -->
-            <div class="overflow-hidden rounded-2xl border border-white/20 bg-white shadow-xl backdrop-blur-sm">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gradient-to-r from-gray-900 to-blue-900">
-                        <tr>
-                            <th class="px-4 py-3 text-left font-semibold text-white">Name</th>
-                            <th class="px-4 py-3 text-left font-semibold text-white">Email</th>
-                            <th class="px-4 py-3 text-left font-semibold text-white">Role</th>
-                            <th class="px-4 py-3 text-left font-semibold text-white">Location</th>
-                            <th class="py-3 pe-12 text-right font-semibold text-white">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($users as $user)
-                            <tr class="hover:bg-indigo-50">
-                                <td class="px-4 py-4">{{ $user->name }}</td>
-                                <td class="px-4 py-4">{{ $user->email }}</td>
-                                <td class="px-4 py-4 capitalize">{{ $user->role }}</td>
-                                <td class="px-4 py-4">
-                                    {{ $regionLabels[$user->user_location] ?? ($storeLocations[$user->user_location] ?? $user->user_location) }}
-                                </td>
-                                <td class="space-x-2 px-6 py-4 text-right">
-                                    <button
-                                        class="openEditUserModal text-blue-600 hover:underline"
-                                        data-id="{{ $user->id }}"
-                                        data-name="{{ $user->name }}"
-                                        data-email="{{ $user->email }}"
-                                        data-role="{{ $user->role }}"
-                                        data-location="{{ $user->user_location }}">
-                                        Edit
-                                    </button>
-                                    <form
-                                        action="{{ route('users.destroy', $user) }}"
-                                        method="POST"
-                                        class="delete-user-form inline"
-                                        data-user-id="{{ $user->id }}"
-                                        data-user-name="{{ $user->name }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button
-                                            type="button"
-                                            class="delete-user-btn text-red-600 hover:underline"
-                                            data-user-id="{{ $user->id }}"
-                                            data-user-name="{{ $user->name }}">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
+            {{-- Location filter --}}
+            <select id="location-filter"
+                class="h-8 rounded-md border border-gray-300 px-2 text-xs shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:h-9">
+                <option value="">All Locations</option>
+                <optgroup label="Regions">
+                    @foreach ($regionLabels as $regionCode => $regionName)
+                        <option value="{{ $regionCode }}" {{ request('user_location') == $regionCode ? 'selected' : '' }}>
+                            Region: {{ $regionName }}
+                        </option>
+                    @endforeach
+                </optgroup>
+                <optgroup label="Individual Stores">
+                    @foreach ($storeLocations as $code => $label)
+                        <option value="{{ $code }}" {{ request('user_location') == $code ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </optgroup>
+            </select>
 
-                        @empty
-                            <tr>
-                                <td
-                                    colspan="5"
-                                    class="px-6 py-8 text-center text-gray-500">No users found.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <button type="button" id="clear-filters-btn"
+                class="h-8 rounded-md border border-gray-300 bg-white px-3 text-xs font-medium text-gray-600 transition hover:bg-gray-50 sm:h-9">
+                Clear
+            </button>
+        </div>
+    </div>
 
-                <!-- Pagination -->
-                <div class="p-4">
-                    {{ $users->links() }}
-                </div>
+    {{-- Table card --}}
+    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div id="users-table-wrapper" class="relative">
+            <div id="users-loading"
+                class="absolute inset-0 z-20 hidden items-center justify-center bg-white/70 backdrop-blur-[1px]">
+                <div class="h-7 w-7 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600"></div>
+            </div>
+            <div id="users-table-container">
+                @include('users.partials.table')
             </div>
         </div>
     </div>
 
-    <!-- Add User Modal -->
-    <div
-        id="addUserModal"
-        class="modal pointer-events-none invisible fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 opacity-0 transition-opacity duration-300">
-        <div class="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl">
-            <h2 class="mb-6 text-2xl font-bold text-gray-900">Create New User</h2>
-            <form
-                action="{{ route('users.store') }}"
-                method="POST"
-                class="space-y-6">
-                @csrf
-                <div>
-                    <label
-                        for="add_name"
-                        class="mb-1 block font-medium text-gray-700">Name</label>
-                    <input
-                        placeholder="Enter Full Name"
-                        id="add_name"
-                        name="name"
-                        type="text"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label
-                        for="add_email"
-                        class="mb-1 block font-medium text-gray-700">Email</label>
-                    <input
-                        placeholder="Enter Email Address"
-                        id="add_email"
-                        name="email"
-                        type="email"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label
-                        for="add_password"
-                        class="mb-1 block font-medium text-gray-700">Password</label>
-                    <input
-                        placeholder="Enter Password"
-                        id="add_password"
-                        name="password"
-                        type="password"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label
-                        for="add_password_confirmation"
-                        class="mb-1 block font-medium text-gray-700">Confirm Password</label>
-                    <input
-                        placeholder="Confirm Password"
-                        id="add_password_confirmation"
-                        name="password_confirmation"
-                        type="password"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
+</div>
 
-
-                <div>
-                    <label
-                        for="add_role"
-                        class="mb-1 block font-medium text-gray-700">Role</label>
-                    <select
-                        id="add_role"
-                        name="role"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option
-                            value=""
-                            disabled
-                            selected>Select Role</option>
-                        @foreach ($roles as $role)
-                            <option value="{{ $role }}">{{ ucwords($role) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
-                <div>
-                    <label
-                        for="add_location"
-                        class="mb-1 block font-medium text-gray-700">
-                        User Location
-                    </label>
-                    <select
-                        id="add_location"
-                        name="user_location"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="" disabled selected>Select Location</option>
-                        <optgroup label="Regions">
-                            @foreach ($regionLabels as $regionCode => $regionName)
-                                <option value="{{ $regionCode }}">Region: {{ $regionName }}</option>
-                            @endforeach
-                        </optgroup>
-                        <optgroup label="Individual Stores">
-                            @foreach ($storeLocations as $code => $label)
-                                <option value="{{ $code }}">{{ $label }}</option>
-                            @endforeach
-                        </optgroup>
-                    </select>
-                </div>
-
-                <div class="flex justify-end space-x-4 pt-4">
-                    <button
-                        type="button"
-                        id="closeAddUserModal"
-                        class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400">Cancel</button>
-                    <button
-                        type="submit"
-                        class="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Create User</button>
-                </div>
-            </form>
+{{-- ── Add User Modal ── --}}
+<div id="addUserModal" class="user-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Create New User</h2>
+            <button class="modal-close rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
+        <form id="addUserForm" class="space-y-4 px-6 py-5">
+            @csrf
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    @include('users.partials.form-field', ['id' => 'add_name', 'name' => 'name', 'label' => 'Full Name', 'type' => 'text', 'placeholder' => 'Enter full name', 'required' => true])
+                </div>
+                <div class="col-span-2">
+                    @include('users.partials.form-field', ['id' => 'add_email', 'name' => 'email', 'label' => 'Email Address', 'type' => 'email', 'placeholder' => 'user@example.com', 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-field', ['id' => 'add_password', 'name' => 'password', 'label' => 'Password', 'type' => 'password', 'placeholder' => '••••••••', 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-field', ['id' => 'add_password_confirmation', 'name' => 'password_confirmation', 'label' => 'Confirm Password', 'type' => 'password', 'placeholder' => '••••••••', 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-select', ['id' => 'add_role', 'name' => 'role', 'label' => 'Role', 'placeholder' => 'Select role', 'options' => $roles, 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-location', ['id' => 'add_location', 'name' => 'user_location', 'label' => 'Location'])
+                </div>
+            </div>
+            <div id="add-form-errors" class="hidden rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"></div>
+            <div class="flex justify-end gap-3 border-t border-gray-100 pt-4">
+                <button type="button" class="modal-close h-9 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="submit" id="add-submit-btn"
+                    class="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+                    Create User
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- Edit User Modal -->
-    <div
-        id="editUserModal"
-        class="modal pointer-events-none invisible fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 opacity-0 transition-opacity duration-300">
-        <div class="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl">
-            <h2 class="mb-6 text-2xl font-bold text-gray-900">Edit User</h2>
-            <form
-                id="editUserForm"
-                method="POST"
-                class="space-y-6">
-                @csrf
-                @method('PUT')
-                <div>
-                    <label
-                        for="edit_name"
-                        class="mb-1 block font-medium text-gray-700">Name</label>
-                    <input
-                        id="edit_name"
-                        name="name"
-                        type="text"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label
-                        for="edit_email"
-                        class="mb-1 block font-medium text-gray-700">Email</label>
-                    <input
-                        id="edit_email"
-                        name="email"
-                        type="email"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label
-                        for="edit_password"
-                        class="mb-1 block font-medium text-gray-700">Password <span class="text-sm font-normal text-gray-500">(leave blank to keep current)</span></label>
-                    <input
-                        id="edit_password"
-                        name="password"
-                        type="password"
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        placeholder="••••••••">
-                </div>
-
-                {{-- confirm password --}}
-                <div>
-                    <label
-                        for="edit_password_confirmation"
-                        class="mb-1 block font-medium text-gray-700">Confirm Password</label>
-                    <input
-                        id="edit_password_confirmation"
-                        name="password_confirmation"
-                        type="password"
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        placeholder="••••••••">
-                </div>
-
-                <div>
-                    <label
-                        for="edit_role"
-                        class="mb-1 block font-medium text-gray-700">Role</label>
-                    <select
-                        id="edit_role"
-                        name="role"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500">
-                        <option
-                            value=""
-                            disabled>Select Role</option>
-                        @foreach ($roles as $role)
-                            <option value="{{ $role }}">{{ ucwords($role) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
-                <div>
-                    <label
-                        for="edit_location"
-                        class="mb-1 block font-medium text-gray-700">
-                        User Location
-                    </label>
-                    <select
-                        id="edit_location"
-                        name="user_location"
-                        required
-                        class="w-full rounded border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="" disabled>Select Location</option>
-                        <optgroup label="Regions">
-                            @foreach ($regionLabels as $regionCode => $regionName)
-                                <option value="{{ $regionCode }}">Region: {{ $regionName }}</option>
-                            @endforeach
-                        </optgroup>
-                        <optgroup label="Individual Stores">
-                            @foreach ($storeLocations as $code => $label)
-                                <option value="{{ $code }}">{{ $label }}</option>
-                            @endforeach
-                        </optgroup>
-                    </select>
-                </div>
-
-                <div class="flex justify-end space-x-4 pt-4">
-                    <button
-                        type="button"
-                        id="closeEditUserModal"
-                        class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400">Cancel</button>
-                    <button
-                        type="submit"
-                        class="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Update User</button>
-                </div>
-            </form>
+{{-- ── Edit User Modal ── --}}
+<div id="editUserModal" class="user-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">Edit User</h2>
+            <button class="modal-close rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
+        <form id="editUserForm" class="space-y-4 px-6 py-5">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_user_id">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    @include('users.partials.form-field', ['id' => 'edit_name', 'name' => 'name', 'label' => 'Full Name', 'type' => 'text', 'placeholder' => 'Enter full name', 'required' => true])
+                </div>
+                <div class="col-span-2">
+                    @include('users.partials.form-field', ['id' => 'edit_email', 'name' => 'email', 'label' => 'Email Address', 'type' => 'email', 'placeholder' => 'user@example.com', 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-field', ['id' => 'edit_password', 'name' => 'password', 'label' => 'New Password', 'type' => 'password', 'placeholder' => 'Leave blank to keep current', 'required' => false])
+                </div>
+                <div>
+                    @include('users.partials.form-field', ['id' => 'edit_password_confirmation', 'name' => 'password_confirmation', 'label' => 'Confirm Password', 'type' => 'password', 'placeholder' => '••••••••', 'required' => false])
+                </div>
+                <div>
+                    @include('users.partials.form-select', ['id' => 'edit_role', 'name' => 'role', 'label' => 'Role', 'placeholder' => 'Select role', 'options' => $roles, 'required' => true])
+                </div>
+                <div>
+                    @include('users.partials.form-location', ['id' => 'edit_location', 'name' => 'user_location', 'label' => 'Location'])
+                </div>
+            </div>
+            <div id="edit-form-errors" class="hidden rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"></div>
+            <div class="flex justify-end gap-3 border-t border-gray-100 pt-4">
+                <button type="button" class="modal-close h-9 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="submit" id="edit-submit-btn"
+                    class="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+                    Save Changes
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
-    {{-- @push('scripts') --}}
-    <script nonce="{{ $cspNonce ?? '' }}">
-        document.addEventListener('DOMContentLoaded', function() {
-            // Modal elements
-            const addUserModal = document.getElementById('addUserModal');
-            const editUserModal = document.getElementById('editUserModal');
+{{-- Config for JS --}}
+<script nonce="{{ $cspNonce ?? '' }}">
+    window.userMgmtConfig = {
+        indexUrl:  @json(route('users.index')),
+        storeUrl:  @json(route('users.store')),
+        usersBase: @json(url('users')),
+        csrfToken: @json(csrf_token()),
+    };
+</script>
 
-            // Add User Modal
-            if (document.getElementById('openAddUserModal')) {
-                document.getElementById('openAddUserModal').addEventListener('click', () => {
-                    addUserModal.classList.add('show');
-                });
-            }
-
-            if (document.getElementById('closeAddUserModal')) {
-                document.getElementById('closeAddUserModal').addEventListener('click', () => {
-                    addUserModal.classList.remove('show');
-                });
-            }
-
-            if (document.getElementById('closeEditUserModal')) {
-                document.getElementById('closeEditUserModal').addEventListener('click', () => {
-                    editUserModal.classList.remove('show');
-                });
-            }
-
-            // Edit User Modal
-            document.addEventListener('click', function(e) {
-                if (e.target && e.target.classList.contains('openEditUserModal')) {
-                    const button = e.target;
-                    const id = button.dataset.id;
-                    const name = button.dataset.name;
-                    const email = button.dataset.email;
-                    const role = button.dataset.role;
-                    const location = button.dataset.location;
-
-                    const form = document.getElementById('editUserForm');
-                    const baseUrl = "{{ url('users') }}";
-                    form.action = `${baseUrl}/${id}`;
-
-                    document.getElementById('edit_name').value = name;
-                    document.getElementById('edit_email').value = email;
-                    document.getElementById('edit_role').value = role;
-                    document.getElementById('edit_location').value = location;
-                    document.getElementById('edit_password').value = '';
-
-                    editUserModal.classList.add('show');
-                }
-            });
-
-            // Delete User with SweetAlert2 Countdown
-            const deleteButtons = document.querySelectorAll('.delete-user-btn');
-
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    const form = this.closest('.delete-user-form');
-                    const userName = this.dataset.userName || 'this user';
-                    const userId = this.dataset.userId;
-
-                    let countdown = 5;
-                    let timerInterval;
-
-                    Swal.fire({
-                        title: '⚠️ Delete User',
-                        html: `
-                        <div class="text-left">
-                            <p class="mb-3">Are you sure you want to delete <strong class="text-red-600">${userName}</strong>?</p>
-                            <p class="mb-2 text-sm text-gray-600">This action cannot be undone!</p>
-                            <div class="mt-4 p-3 bg-red-50 rounded-lg">
-                                <p class="text-sm font-semibold text-red-700">⚠️ Security Check</p>
-                                <p class="text-sm text-red-600">Wait <strong id="countdown">${countdown}</strong> seconds before confirming deletion...</p>
-                            </div>
-                        </div>
-                    `,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: `Delete (${countdown}s)`,
-                        cancelButtonText: 'Cancel',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        showConfirmButton: true,
-                        showCancelButton: true,
-                        didOpen: () => {
-                            const confirmButton = Swal.getConfirmButton();
-                            confirmButton.disabled = true;
-
-                            timerInterval = setInterval(() => {
-                                countdown--;
-
-                                if (countdown > 0) {
-                                    confirmButton.innerHTML = `Delete (${countdown}s)`;
-                                    const countdownElement = document.getElementById('countdown');
-                                    if (countdownElement) {
-                                        countdownElement.textContent = countdown;
-                                    }
-                                } else {
-                                    clearInterval(timerInterval);
-                                    confirmButton.disabled = false;
-                                    confirmButton.innerHTML = 'Confirm Delete';
-                                    confirmButton.style.backgroundColor = '#d33';
-
-                                    const countdownElement = document.getElementById('countdown');
-                                    if (countdownElement) {
-                                        countdownElement.parentElement.innerHTML = 'You can now confirm deletion.';
-                                    }
-                                }
-                            }, 1000);
-                        },
-                        willClose: () => {
-                            clearInterval(timerInterval);
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Show loading state
-                            Swal.fire({
-                                title: 'Deleting...',
-                                text: 'Please wait while we delete the user.',
-                                icon: 'info',
-                                showConfirmButton: false,
-                                allowOutsideClick: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-                                }
-                            });
-
-                            // Submit the form
-                            form.submit();
-                        }
-                    });
-                });
-            });
-
-            // Close modals when clicking outside
-            window.addEventListener('click', (e) => {
-                if (e.target === addUserModal) {
-                    addUserModal.classList.remove('show');
-                }
-                if (e.target === editUserModal) {
-                    editUserModal.classList.remove('show');
-                }
-            });
-        });
-    </script>
-    {{-- @endpush --}}
-
-    <style nonce="{{ $cspNonce ?? '' }}">
-        .modal {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal.show {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-    </style>
+@vite(['resources/js/pages/users/index.js'])
 @endsection

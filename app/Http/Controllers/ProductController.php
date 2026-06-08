@@ -40,13 +40,17 @@ class ProductController extends Controller
                 throw new \Exception("The database table '{$tableName}' does not exist.");
             }
 
-            $warehouseMap     = LocationConfig::warehouses();
-            $isPersonnel      = str_contains(strtolower($user->role ?? ''), 'personnel');
+            $userRole         = strtolower($user->role ?? '');
+            $userLocation     = $user->user_location ?? '';
+            $isPersonnel      = str_contains($userRole, 'personnel');
+            $isSuperAdmin     = $userRole === 'super admin';
             $currentWarehouse = $this->getWarehouseCode($request);
+            $warehouseMap     = LocationConfig::warehouses();
 
             $sort      = $request->get('sort', 'description');
             $direction = $request->get('direction', 'asc');
-            $sort      = in_array(strtolower($sort), ['sku', 'description']) ? $sort : 'sku';
+            $allowedSorts = ['sku', 'description', 'warehouse_actual_allocation', 'warehouse_allocation', 'allocation_per_case'];
+            $sort      = in_array(strtolower($sort), $allowedSorts) ? $sort : 'description';
             $direction = in_array(strtolower($direction), ['asc', 'desc']) ? $direction : 'asc';
 
             $search = strtolower($request->get('query', ''));
@@ -87,9 +91,21 @@ class ProductController extends Controller
                 });
             }
 
-            $perPage  = $request->get('per_page', 10);
+            // Map sort keys to actual DB column references
+            $sortColumnMap = [
+                'warehouse_actual_allocation' => 'wms.wms_actual_allocation',
+                'warehouse_allocation'        => 'wms.wms_virtual_allocation',
+                'allocation_per_case'         => "$tableName.allocation_per_case",
+                'sku'                         => "$tableName.sku",
+                'description'                 => "$tableName.description",
+            ];
+            $sortColumn = $sortColumnMap[$sort] ?? "$tableName.description";
+
+            $perPage  = in_array((int) $request->get('per_page', 10), [10, 15, 25, 50, 100])
+                ? (int) $request->get('per_page', 10)
+                : 10;
             $products = $productsQuery
-                ->orderBy($sort, $direction)
+                ->orderBy($sortColumn, $direction)
                 ->paginate($perPage)
                 ->appends($request->query())
                 ->appends(['warehouse' => $currentWarehouse]);
@@ -102,15 +118,38 @@ class ProductController extends Controller
                 $product->freebie_description = $freebieDescriptions[$product->freebie_sku] ?? null;
             }
 
-            return view('products.index', [
-                'products'         => $products,
-                'warehouseMap'     => $warehouseMap,
-                'currentWarehouse' => $currentWarehouse,
-                'isPersonnel'      => $isPersonnel,
-                'totalProducts'    => $products->total(),
-                'currentStore'     => $tableStoreCode,
-                'storeMap'         => LocationConfig::accessibleStores($user->role ?? '', $user->user_location ?? ''),
-            ]);
+            $accessibleStores      = LocationConfig::accessibleStores($userRole, $userLocation);
+            $accessibleWarehouses  = $this->resolveAccessibleWarehouses($userRole, $userLocation, $warehouseMap, $currentWarehouse);
+            $hasMultipleStores     = count($accessibleStores) > 1;
+            $hasMultipleWarehouses = count($accessibleWarehouses) > 1;
+            $singleStoreCode       = !$hasMultipleStores ? array_key_first($accessibleStores) : null;
+            $singleStoreName       = $singleStoreCode ? ($accessibleStores[$singleStoreCode] ?? $singleStoreCode) : null;
+            $singleWhCode          = !$hasMultipleWarehouses ? array_key_first($accessibleWarehouses) : null;
+            $singleWhName          = $singleWhCode ? ($accessibleWarehouses[$singleWhCode] ?? $singleWhCode) : null;
+
+            $viewData = [
+                'products'             => $products,
+                'currentWarehouse'     => $currentWarehouse,
+                'currentStore'         => $tableStoreCode,
+                'isPersonnel'          => $isPersonnel,
+                'isSuperAdmin'         => $isSuperAdmin,
+                'totalProducts'        => $products->total(),
+                'accessibleStores'     => $accessibleStores,
+                'accessibleWarehouses' => $accessibleWarehouses,
+                'hasMultipleStores'    => $hasMultipleStores,
+                'hasMultipleWarehouses'=> $hasMultipleWarehouses,
+                'singleStoreCode'      => $singleStoreCode,
+                'singleStoreName'      => $singleStoreName,
+                'singleWhCode'         => $singleWhCode,
+                'singleWhName'         => $singleWhName,
+            ];
+
+            // AJAX request — return only the swappable table partial
+            if ($request->ajax()) {
+                return view('products.partials.table-content', $viewData);
+            }
+
+            return view('products.index', $viewData);
         } catch (\Exception $e) {
             return view('errors.db_error', ['error' => $e->getMessage()]);
         }
@@ -366,9 +405,9 @@ class ProductController extends Controller
     }
 
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('products.create');
+        return view('products.create', $this->storeViewData($request));
     }
 
     public function scheme()
@@ -442,6 +481,15 @@ class ProductController extends Controller
                 'skus'          => array_column($insertData, 'sku'),
             ]
         );
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => count($insertData) . ' product(s) added successfully.',
+                'count'   => count($insertData),
+                'redirectUrl' => route('products.index'),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Products added successfully.');
     }
@@ -638,6 +686,16 @@ class ProductController extends Controller
                 ]
             );
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success'  => true,
+                    'message'  => "Import complete: {$insertCount} inserted, {$updateCount} updated.",
+                    'inserted' => $insertCount,
+                    'updated'  => $updateCount,
+                    'errors'   => $errors,
+                ]);
+            }
+
             return redirect()->back()
                 ->with('import_success', "Import complete: {$insertCount} inserted, {$updateCount} updated.")
                 ->with('import_errors', $errors);
@@ -647,6 +705,11 @@ class ProductController extends Controller
                 "CSV import failed: " . $e->getMessage(),
                 ['error' => $e->getMessage()]
             );
+
+            if (request()->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Import failed: ' . $e->getMessage()], 500);
+            }
+
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
     }
@@ -660,9 +723,9 @@ class ProductController extends Controller
         ]);
     }
 
-    public function showImport()
+    public function showImport(Request $request)
     {
-        return view('products.import');
+        return view('products.import', $this->storeViewData($request));
     }
 
     public function validateCsv(Request $request)
@@ -721,7 +784,77 @@ class ProductController extends Controller
         }
     }
 
+    // ── View helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Build the store-selector variables shared by create / import views.
+     */
+    protected function storeViewData(Request $request): array
+    {
+        $user         = auth()->user();
+        $userRole     = strtolower($user->role ?? '');
+        $userLocation = $user->user_location ?? '';
+        $currentStore = $this->resolveTableStoreCode($request->get('store'));
+        $accessibleStores  = LocationConfig::accessibleStores($userRole, $userLocation);
+        $hasMultipleStores = count($accessibleStores) > 1;
+        $singleStoreCode   = !$hasMultipleStores ? array_key_first($accessibleStores) : null;
+        $singleStoreName   = $singleStoreCode ? ($accessibleStores[$singleStoreCode] ?? $singleStoreCode) : null;
+
+        return compact('currentStore', 'accessibleStores', 'hasMultipleStores', 'singleStoreCode', 'singleStoreName');
+    }
+
     // ── Location helpers ──────────────────────────────────────────────────
+
+    /**
+     * Resolve the list of warehouses accessible to the current user,
+     * mirroring the role logic that was previously duplicated in the view.
+     */
+    protected function resolveAccessibleWarehouses(
+        string $userRole,
+        string $userLocation,
+        array  $allWarehouses,
+        ?string $currentWarehouse
+    ): array {
+        $isPersonnel    = str_contains($userRole, 'personnel');
+        $isSuperAdmin   = $userRole === 'super admin';
+        $isManager      = $userRole === 'store manager';
+        $isWarehouseRole = str_contains($userRole, 'warehouse');
+
+        $warehouses = [];
+
+        if ($isSuperAdmin) {
+            $warehouses = $allWarehouses;
+        } elseif ($isWarehouseRole && $userLocation && isset($allWarehouses[$userLocation])) {
+            $warehouses = [$userLocation => $allWarehouses[$userLocation]];
+        } elseif (($isManager || $isPersonnel) && $userLocation) {
+            $regionStores = LocationConfig::regionStores($userLocation);
+            if (!empty($regionStores)) {
+                foreach ($regionStores as $storeCode) {
+                    $wh = LocationConfig::warehouseForStore($storeCode);
+                    if ($wh && isset($allWarehouses[$wh])) {
+                        $warehouses[$wh] = $allWarehouses[$wh];
+                    }
+                }
+            } else {
+                $wh = LocationConfig::warehouseForStore($userLocation);
+                if ($wh && isset($allWarehouses[$wh])) {
+                    $warehouses = [$wh => $allWarehouses[$wh]];
+                }
+            }
+        } elseif ($userLocation) {
+            $wh = LocationConfig::warehouseForStore($userLocation);
+            if ($wh && isset($allWarehouses[$wh])) {
+                $warehouses = [$wh => $allWarehouses[$wh]];
+            }
+        }
+
+        // Fallback: ensure current warehouse is always shown
+        if (empty($warehouses) && $currentWarehouse && isset($allWarehouses[$currentWarehouse])) {
+            $warehouses = [$currentWarehouse => $allWarehouses[$currentWarehouse]];
+        }
+
+        return $warehouses;
+    }
 
     /**
      * Resolve to an actual store code (never a region key).

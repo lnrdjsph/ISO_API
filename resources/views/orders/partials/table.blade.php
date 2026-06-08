@@ -138,7 +138,7 @@
                 @endif
                 <th class="px-4 py-3 font-medium text-gray-700">Order Date</th>
                 <th class="px-4 py-3 font-medium text-gray-700">Channel</th>
-                <th class="px-4 py-3 font-medium text-gray-700">Status</th>
+                <th class="px-4 py-3 font-medium text-gray-700">Order Status</th>
                 <th class="px-4 py-3 text-center font-medium text-gray-700">Actions</th>
             </tr>
         </thead>
@@ -180,19 +180,62 @@
                         @php
                             $status = ucwords(strtolower($order->order_status ?? 'New Order'));
                             $statusClass = match ($status) {
-                                'Completed' => 'bg-green-200 text-green-800',
-                                'Archived' => 'bg-gray-200 text-gray-800',
-                                'Cancelled' => 'bg-red-200 text-red-800',
-                                'Pending' => 'bg-yellow-200 text-yellow-800',
-                                'Rejected' => 'bg-orange-200 text-orange-800',
+                                'Completed'    => 'bg-green-200 text-green-800',
+                                'Archived'     => 'bg-gray-200 text-gray-800',
+                                'Cancelled'    => 'bg-red-200 text-red-800',
+                                'Pending'      => 'bg-yellow-200 text-yellow-800',
+                                'Rejected'     => 'bg-orange-200 text-orange-800',
                                 'For Approval' => 'bg-purple-100 text-purple-800',
-                                'Approved' => 'bg-green-100 text-green-800',
-                                default => 'bg-blue-100 text-blue-800',
+                                'Approved'     => 'bg-green-100 text-green-800',
+                                default        => 'bg-blue-100 text-blue-800',
                             };
+
+                            $allItems       = $order->items ?? collect();
+                            $cancelledItems = $allItems->filter(fn($i) => $i->remarks === 'Item Cancelled')->count();
+                            $activeItems    = $allItems->filter(fn($i) => $i->remarks !== 'Item Cancelled');
+                            $activeCount    = $activeItems->count();
+                            $hasDispatched  = $activeItems->contains(fn($i) => !empty($i->store_order_no));
+                            $pendingCount   = $activeItems->filter(fn($i) => empty($i->store_order_no))->count();
+                            $isApproved     = strtolower($order->order_status) === 'approved';
                         @endphp
-                        <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
-                            {{ $status }}
-                        </span>
+
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            {{-- Order status badge --}}
+                            <span class="{{ $statusClass }} inline-block rounded-lg px-2 py-1 text-xs font-medium">
+                                {{ $status }}
+                            </span>
+
+                            @if ($isApproved)
+                                {{-- WMS statuses — lazy-loaded for items that have transfer numbers --}}
+                                @if ($hasDispatched)
+                                    <span class="item-status-badges"
+                                        data-order-id="{{ $order->id }}"
+                                        data-url="{{ route('orders.items.status.summary', $order->id) }}">
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                                            <svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                            </svg>
+                                        </span>
+                                    </span>
+                                @endif
+
+                                {{-- Pending dispatch — shown from DB without WMS call --}}
+                                @if ($pendingCount > 0)
+                                    <div class="group relative">
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-gray-300"></span>
+                                            {{ $pendingCount }} pending
+                                        </span>
+                                        <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-[11px] text-white shadow-lg group-hover:block">
+                                            {{ $pendingCount }} item{{ $pendingCount !== 1 ? 's' : '' }} — no transfer number yet
+                                            <div class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endif
+
+                        </div>
                     </td>
                     <td class="px-4 py-3 text-center" data-label="Actions">
                         <a href="{{ route('orders.show', $order->id) }}" class="inline-block font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
@@ -213,3 +256,56 @@
 <div class="flex flex-wrap items-center justify-end gap-2 p-4">
     {{ $orders->links('pagination::tailwind') }}
 </div>
+
+<script>
+(function () {
+    // Dot color per WMS status (subtle indicator only)
+    const statusConfig = {
+        'Received':   { dot: '#86efac', label: 'Received' },
+        'Shipped':    { dot: '#bfdbfe', label: 'Shipped' },
+        'Processing': { dot: '#fde68a', label: 'Processing' },
+        'Picking':    { dot: '#fed7aa', label: 'Picking' },
+        'Pending':    { dot: '#ddd6fe', label: 'Pending' },
+        'Not Found':  { dot: '#e5e7eb', label: 'Not Found' },
+        'Error':      { dot: '#fca5a5', label: 'Error' },
+    };
+
+    function buildBadge(statusLabel, count) {
+        const cfg = statusConfig[statusLabel] ?? { dot: '#e5e7eb', label: statusLabel };
+        return `<div class="group relative">
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#9ca3af;">
+                <span style="display:inline-block;width:6px;height:6px;border-radius:9999px;background:${cfg.dot};flex-shrink:0;"></span>
+                ${count} ${cfg.label}
+            </span>
+            <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-[11px] text-white shadow-lg group-hover:block">
+                ${count} item${count !== 1 ? 's' : ''} — ${cfg.label}
+                <div class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+        </div>`;
+    }
+
+    document.querySelectorAll('.item-status-badges').forEach(container => {
+        const url = container.dataset.url;
+        if (!url) return;
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                const statuses = data.statuses ?? {};
+                const badges = Object.entries(statuses)
+                    .filter(([, count]) => count > 0)
+                    .sort(([a], [b]) => {
+                        const order = ['Received', 'Shipped', 'Processing', 'Picking', 'Pending', 'Not Found', 'Error'];
+                        return order.indexOf(a) - order.indexOf(b);
+                    })
+                    .map(([status, count]) => buildBadge(status, count))
+                    .join('');
+
+                container.innerHTML = badges || '';
+            })
+            .catch(() => {
+                container.innerHTML = '';
+            });
+    });
+})();
+</script>

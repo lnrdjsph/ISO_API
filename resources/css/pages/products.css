@@ -1,0 +1,119 @@
+/* ── Products index ──────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+
+/* Sticky header drop-shadow */
+.products-table thead.sticky { box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+
+/* Desktop row hover */
+.products-tr { border-bottom: 1px solid #f1f5f9; transition: background .12s; }
+.products-tr:hover { background: #f5f7ff; }
+
+/* WMS progress bar */
+@keyframes shimmer {
+    0%   { background-position: -1000px 0; }
+    100% { background-position:  1000px 0; }
+}
+#progressBar {
+    background: linear-gradient(90deg,#4f46e5 0%,#6366f1 50%,#4f46e5 100%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Select arrow */
+select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right .5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2rem;
+}
+select::-ms-expand { display: none; }
+
+/* Search dropdown scroll */
+#product-list { max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+#product-list::-webkit-scrollbar       { width: 5px; }
+#product-list::-webkit-scrollbar-track { background: transparent; }
+#product-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+#product-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Mobile card layout ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    .products-table thead { display: none !important; }
+
+    /* Each row becomes a card */
+    .products-table tbody { display: flex; flex-direction: column; gap: 10px; padding: 10px; background: #f8fafc; }
+
+    .products-tr {
+        display: block;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid var(--status-color, #e2e8f0);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px 12px 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .products-tr:hover { background: #f5f7ff; }
+
+    /* Product cell — header of the card */
+    .products-tr td[data-label="Product"] {
+        display: block;
+        padding: 0 0 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 6px;
+        border-left: none;
+    }
+
+    /* All other cells — label + value rows */
+    .products-tr td {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 3px 0;
+        font-size: 12px;
+        border: none !important;
+        border-bottom: 1px dashed #f1f5f9 !important;
+        white-space: normal;
+        border-left: none !important;
+    }
+    .products-tr td:last-child { border-bottom: none !important; }
+
+    /* Label pseudo-element */
+    .products-tr td[data-label]:not([data-label="Product"])::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        min-width: 62px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        line-height: 1.2;
+    }
+
+    /* Hide empty-label cell (checkbox hidden visually but keep for bulk select) */
+    .products-tr td[data-label=""] {
+        justify-content: flex-end;
+        border-bottom: none !important;
+        padding-bottom: 2px;
+    }
+    .products-tr td[data-label=""]::before { display: none; }
+
+    /* Hide rows where value is just a dash  */
+    .products-tr td[data-label="C/BC"]:has(span[style*="d1d5db"]),
+    .products-tr td[data-label="PO15%"]:has(span[style*="d1d5db"]),
+    .products-tr td[data-label="Discount"]:has(span[style*="d1d5db"]),
+    .products-tr td[data-label="Freebie"]:has(span[style*="d1d5db"]),
+    .products-tr td[data-label="Case Pack"]:has(span[style*="d1d5db"]) {
+        display: none;
+    }
+
+    /* Tooltips: disable on touch */
+    .products-tr .group > div:not(:first-child) { display: none !important; }
+}
