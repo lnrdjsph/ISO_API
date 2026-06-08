@@ -5,7 +5,7 @@
     <p class="text-sm leading-relaxed text-gray-600">
         Your home base. The Dashboard opens the moment you sign in and shows, at a glance, how your orders are doing,
         the money involved, and anything that needs your attention. <strong>The panels you see — and even which
-        summary cards appear — depend on your role.</strong> The overview below shows exactly what's on
+            summary cards appear — depend on your role.</strong> The overview below shows exactly what's on
         <em>your</em> dashboard.
     </p>
 
@@ -33,8 +33,8 @@
     @php
         $layouts = [
             'personnel' => ['Time Range filter', 'Summary cards (5)', 'Quick Actions', 'Attention Required', 'Inventory Snapshot', 'Recent Orders'],
-            'manager'   => ['Time Range filter', 'Summary cards (5)', 'Quick Actions', 'Attention Required', 'Recent Orders'],
-            'admin'     => ['Time Range filter', 'Summary cards (5)', 'Revenue strip', 'Quick Actions', 'Store Performance', 'Recent Orders', 'Activity Feed', 'Cancelled / Rejected alert'],
+            'manager' => ['Time Range filter', 'Summary cards (5)', 'Quick Actions', 'Attention Required', 'Recent Orders'],
+            'admin' => ['Time Range filter', 'Summary cards (5)', 'Revenue strip', 'Quick Actions', 'Store Performance', 'Recent Orders', 'Activity Feed', 'Cancelled / Rejected alert'],
             'whmanager' => ['Time Range filter', 'Summary cards (3)', 'Quick Actions', 'Recent Orders'],
         ];
         $layouts['whpersonnel'] = $layouts['whmanager'];
@@ -65,8 +65,10 @@
         cards differs by role:
     </p>
     @php
-        $dot = fn($c, $l) =>
-            "<span class='inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700'><span class='$c inline-block h-2 w-2 rounded-full'></span>$l</span>";
+        $dot = fn(
+            $c,
+            $l,
+        ) => "<span class='inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700'><span class='$c inline-block h-2 w-2 rounded-full'></span>$l</span>";
     @endphp
     <div data-roles="personnel">
         <x-guide.table :headers="['Card', 'Shows']" :rows="[
@@ -123,8 +125,7 @@
             Shows the orders that need your action as cards you can click, each with a one-line "what to do next." Only
             statuses that actually have orders show up. (Super admins and warehouse accounts don't see this panel.)
         </p>
-        <x-guide.screenshot src="dashboard-attention-required.png" height="h-48" placeholder
-            caption="Attention Required — order cards with a next-step note" />
+
         <div class="mt-3" data-roles="personnel">
             <x-guide.table :headers="['Card', 'Means']" :rows="[
                 ['New Orders', 'Submitted orders not yet sent for approval.'],
@@ -151,8 +152,8 @@
             <strong>Low Stock</strong>, and <strong>Out of Stock</strong>, with the warehouse name and when stock was
             last updated.
         </p>
-        <x-guide.screenshot src="dashboard-inventory-snapshot.png" height="h-48" placeholder
-            caption="Inventory Snapshot — stock summary and when it was last updated" />
+        {{-- <x-guide.screenshot src="dashboard-inventory-snapshot.png" height="h-48" placeholder
+            caption="Inventory Snapshot — stock summary and when it was last updated" /> --}}
     </div>
 
     {{-- ── Recent Orders & Activity ── --}}
