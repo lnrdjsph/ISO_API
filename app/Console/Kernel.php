@@ -15,16 +15,27 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // Product allocation sync
         $schedule->command('products:update-allocations')->dailyAt('08:00');
         $schedule->command('products:update-allocations')->dailyAt('10:00');
-        // $schedule->command('products:update-allocations')->dailyAt('08:35');
-        // $schedule->command('products:update-allocations')->dailyAt('08:55');
-        // $schedule->command('products:update-allocations')->everyTenMinutes()->when(function () {
-        //     $hour = now()->hour;
-        //     return $hour == 11; // Only in the 10:00 hour
-        // });
-        // $schedule->command('products:update-allocations')->dailyAt('12:00');
         $schedule->command('products:update-allocations')->dailyAt('14:45');
+
+        // Order Processing Agent
+        $schedule->command('order:process', ['--limit' => 100])
+            ->everyFiveMinutes()
+            ->onSuccess(function () {
+                \Illuminate\Support\Facades\Log::channel('order_agent')->info('Scheduled order processing executed successfully');
+            })
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::channel('order_agent')->error('Scheduled order processing failed');
+            });
+
+        // Order SLA Check
+        $schedule->command('order:check-sla')
+            ->hourly()
+            ->onSuccess(function () {
+                \Illuminate\Support\Facades\Log::channel('order_agent')->info('Scheduled SLA check executed');
+            });
     }
 
     /**

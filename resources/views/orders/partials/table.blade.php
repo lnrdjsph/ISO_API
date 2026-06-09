@@ -298,8 +298,8 @@
                 label: statusLabel
             };
             return `<div class="group relative">
-            <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#9ca3af;">
-                <span style="display:inline-block;width:6px;height:6px;border-radius:9999px;background:${cfg.dot};flex-shrink:0;"></span>
+            <span class="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                <span class="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style="background:${cfg.dot};"></span>
                 ${count} ${cfg.label}
             </span>
             <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-[11px] text-white shadow-lg group-hover:block">

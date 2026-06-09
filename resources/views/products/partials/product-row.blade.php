@@ -2,8 +2,7 @@
     Reusable product row.
     Variables: $rowIndex (int|string), $isFirst (bool)
 --}}
-<div class="product-row relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-    style="border-left: 3px solid #6366f1"
+<div class="product-row relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm border-l-[3px] border-l-indigo-500"
     data-row="{{ $rowIndex }}">
 
     {{-- Remove button — top right --}}

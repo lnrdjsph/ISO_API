@@ -9,15 +9,17 @@
             return !empty($item->store_order_no) && $item->remarks !== 'Item Cancelled';
         });
 
+        $userRole = Auth::user()?->role ?? '';
+
         $partialUnlock =
             in_array(strtolower($order->order_status), ['approved', 'for approval']) &&
             !$hasAnyTransferNo &&
-            !str_contains(strtolower(Auth::user()->role), 'warehouse') &&
-            Auth::user()->role !== 'super admin';
+            !str_contains(strtolower($userRole), 'warehouse') &&
+            $userRole !== 'super admin';
 
         $isFullyLocked =
-            (in_array(strtolower($order->order_status), ['approved', 'completed', 'for approval', 'cancelled']) && Auth::user()->role !== 'super admin') ||
-            str_contains(strtolower(Auth::user()->role), 'warehouse') ||
+            (in_array(strtolower($order->order_status), ['approved', 'completed', 'for approval', 'cancelled']) && $userRole !== 'super admin') ||
+            str_contains(strtolower($userRole), 'warehouse') ||
             $hasAnyTransferNo;
 
         $isInfoLocked = $isFullyLocked && !$partialUnlock;
@@ -25,10 +27,10 @@
         // (new order, "for approval"). They lock once the order is approved,
         // completed/cancelled, has a transfer number, or for warehouse users.
         $itemsLocked =
-            (in_array(strtolower($order->order_status), ['approved', 'completed', 'cancelled']) && Auth::user()->role !== 'super admin') ||
-            str_contains(strtolower(Auth::user()->role), 'warehouse') ||
+            (in_array(strtolower($order->order_status), ['approved', 'completed', 'cancelled']) && $userRole !== 'super admin') ||
+            str_contains(strtolower($userRole), 'warehouse') ||
             $hasAnyTransferNo;
-        if (Auth::user()->role === 'super admin') {
+        if ($userRole === 'super admin') {
             $itemsLocked = false;
         }
     @endphp
@@ -615,7 +617,7 @@
                                 Remember to <strong>Complete the Order</strong> once all items have been released to the customer.
                             </p>
                         </div>
-                        <button type="button" onclick="this.closest('#received-reminder').classList.add('hidden')"
+                        <button type="button" id="dismiss-received-reminder"
                             class="flex-shrink-0 rounded-lg p-1 text-amber-400 hover:bg-amber-100 hover:text-amber-600">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -627,6 +629,13 @@
                         (function() {
                             const banner = document.getElementById('received-reminder');
                             if (!banner) return;
+
+                            const dismissBtn = document.getElementById('dismiss-received-reminder');
+                            if (dismissBtn) {
+                                dismissBtn.addEventListener('click', function () {
+                                    banner.classList.add('hidden');
+                                });
+                            }
 
                             function checkForReceived() {
                                 const hasReceived = [...document.querySelectorAll('td[data-item-status]')]
@@ -721,8 +730,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Mode of Payment</p>
                                         <select
                                             name="mode_payment"
-                                            class="w-full appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="background-image: none;">
+                                            class="w-full appearance-none border-none bg-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0">
                                             <option
                                                 value=""
                                                 disabled
@@ -746,8 +754,7 @@
                                             name="payment_date"
                                             id="payment_date_inline"
                                             value="{{ $order->payment_date ? \Carbon\Carbon::parse($order->payment_date)->format('Y-m-d') : '' }}"
-                                            class="payment-date relative w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="padding-right: 50%;">
+                                            class="payment-date relative w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-[50%] text-xs font-medium text-gray-900 focus:ring-0">
                                     </div>
 
                                     <script nonce="{{ $cspNonce ?? '' }}">
@@ -858,8 +865,7 @@
                                             name="delivery_date"
                                             id="delivery_date_inline"
                                             value="{{ $order->delivery_date ? \Carbon\Carbon::parse($order->delivery_date)->format('Y-m-d') : '' }}"
-                                            class="delivery-date w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0"
-                                            style="padding-right: 50%;">
+                                            class="delivery-date w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-[50%] text-xs font-medium text-gray-900 focus:ring-0">
                                     </div>
 
                                     <script nonce="{{ $cspNonce ?? '' }}">
@@ -1117,36 +1123,33 @@
                                     ];
 
                                     function badge(s) {
-                                        return `<span style="display:inline-block;min-width:84px;text-align:center;background:${s.bg};color:${s.fg};font-size:11px;font-weight:600;padding:3px 8px;border-radius:9999px;">${s.name}</span>`;
+                                        return `<span class="inline-block min-w-[84px] rounded-full px-2 py-0.5 text-center text-[11px] font-semibold" style="background:${s.bg};color:${s.fg};">${s.name}</span>`;
                                     }
 
                                     function row(s) {
-                                        return `
-                                            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;text-align:left;">
-                                                <div style="flex-shrink:0;margin-top:1px;">${badge(s)}</div>
-                                                <div style="font-size:12.5px;color:#475569;line-height:1.4;">${s.desc}</div>
-                                            </div>`;
+                                        return `<div class="flex items-start gap-2.5 border-b border-slate-100 py-2 text-left">
+                                                    <div class="shrink-0 mt-0.5">${badge(s)}</div>
+                                                    <div class="text-[12.5px] leading-snug text-slate-500">${s.desc}</div>
+                                                </div>`;
                                     }
 
                                     btn.addEventListener('click', function() {
                                         if (typeof Swal === 'undefined') return;
 
-                                        const arrow = '<span style="color:#94a3b8;font-size:13px;padding:0 2px;">&rarr;</span>';
+                                        const arrow = '<span class="text-[13px] text-slate-400 px-0.5">&rarr;</span>';
                                         const flow = STATUSES
-                                            .map(s => `<span style="display:inline-block;margin:2px 0;">${badge(s)}</span>`)
+                                            .map(s => `<span class="my-0.5 inline-block">${badge(s)}</span>`)
                                             .join(arrow);
 
                                         const html = `
-                                            <div style="text-align:left;">
-                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;">Normal Flow</p>
-                                                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:16px;">
+                                            <div class="text-left">
+                                                <p class="mb-2 text-[12px] font-semibold uppercase tracking-wide text-slate-700">Normal Flow</p>
+                                                <div class="mb-4 flex flex-wrap items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
                                                     ${flow}
                                                 </div>
-
-                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px;">What each status means</p>
+                                                <p class="mb-1 text-[12px] font-semibold uppercase tracking-wide text-slate-700">What each status means</p>
                                                 ${STATUSES.map(row).join('')}
-
-                                                <p style="font-size:12px;font-weight:600;color:#334155;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 4px;">Other states</p>
+                                                <p class="mb-1 mt-3.5 text-[12px] font-semibold uppercase tracking-wide text-slate-700">Other states</p>
                                                 ${OTHER.map(row).join('')}
                                             </div>`;
 
@@ -1222,8 +1225,8 @@
                                     $itemsLocked =
                                         in_array(strtolower($order->order_status), ['approved', 'for approval', 'completed', 'cancelled']) ||
                                         $hasAnyTransferNo ||
-                                        str_contains(strtolower(Auth::user()->role), 'warehouse');
-                                    if (Auth::user()->role === 'super admin') {
+                                        str_contains(strtolower($userRole), 'warehouse');
+                                    if ($userRole === 'super admin') {
                                         $itemsLocked = false;
                                     }
                                 @endphp
@@ -1259,12 +1262,10 @@
                                                 contenteditable="false"
                                                 data-field="sku"
                                                 data-label="SKU"
-                                                contenteditable-search="true"
-                                                style="position: relative;">
+                                                contenteditable-search="true">
                                                 {{ $item->sku }}
                                                 <ul
-                                                    class="search-results absolute z-50 hidden max-h-60 overflow-y-auto rounded border bg-white shadow"
-                                                    style="min-width: 250px; max-width: 400px; white-space: nowrap; top: 100%; left: 0;">
+                                                    class="search-results absolute z-50 hidden max-h-60 min-w-[250px] max-w-[400px] whitespace-nowrap top-full left-0 overflow-y-auto rounded border bg-white shadow">
                                                 </ul>
 
                                                 <input
@@ -1279,12 +1280,10 @@
                                                 contenteditable="false"
                                                 data-field="item_description"
                                                 data-label="Description"
-                                                contenteditable-search="true"
-                                                style="position: relative;">
+                                                contenteditable-search="true">
                                                 {{ $item->item_description }}
                                                 <ul
-                                                    class="search-results absolute z-50 hidden max-h-60 overflow-y-auto rounded border bg-white shadow"
-                                                    style="min-width: 250px; max-width: 400px; white-space: nowrap; top: 100%; left: 0;">
+                                                    class="search-results absolute z-50 hidden max-h-60 min-w-[250px] max-w-[400px] whitespace-nowrap top-full left-0 overflow-y-auto rounded border bg-white shadow">
                                                 </ul>
 
                                                 <input
@@ -1973,7 +1972,7 @@
                                     });
                                 @endphp
 
-                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
+                                @if ($order->order_status === 'approved' && $hasEmptyStoreOrderNo && !str_contains(strtolower($userRole), 'warehouse'))
                                     <button
                                         type="button"
                                         id="generateSOButton"
@@ -2001,13 +2000,13 @@
                                         Order Actions
                                     </label>
 
-                                    @if ($order->order_status !== 'completed' && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
+                                    @if ($order->order_status !== 'completed' && !str_contains(strtolower($userRole), 'warehouse'))
                                         <select
                                             id="orderAction"
                                             class="w-full rounded-md border-gray-300 px-3 py-2 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                             <option value="">-- Select Action --</option>
 
-                                            @if (!str_contains(strtolower(Auth::user()->role), 'store manager') && !str_contains(strtolower(Auth::user()->role), 'warehouse'))
+                                            @if (!str_contains(strtolower($userRole), 'store manager') && !str_contains(strtolower($userRole), 'warehouse'))
                                                 @if (!in_array($order->order_status, ['cancelled', 'completed', 'for approval', 'approved']))
                                                     <option value="cancel">Cancel Order</option>
                                                 @endif
@@ -2022,7 +2021,7 @@
 
                                                 {{-- approved order status and all item status is received or shipped --}}
                                                 @if ($order->order_status === 'approved')
-                                                    <option value="complete" id="complete-order-option" style="display: none;">Complete Order</option>
+                                                    <option value="complete" id="complete-order-option" hidden>Complete Order</option>
                                                 @endif
 
                                                 {{-- @if ($order->order_status !== 'processing')
@@ -2034,7 +2033,7 @@
 																						@endif --}}
                                             @endif
 
-                                            @if (in_array(Auth::user()->role, ['store manager', 'super admin']))
+                                            @if (in_array($userRole, ['store manager', 'super admin']))
                                                 @if (in_array($order->order_status, ['for approval', 'rejected']))
                                                     <option value="approve">Approve Order</option>
                                                 @endif
@@ -2177,7 +2176,7 @@
                                             </div>
                                         @endif
 
-                                        @if (Auth::user()->role !== 'store manager' || (isset($partialUnlock) && $partialUnlock))
+                                        @if ($userRole !== 'store manager' || (isset($partialUnlock) && $partialUnlock))
                                             <div
                                                 id="changesCounter"
                                                 class="mt-3 hidden text-center text-xs text-gray-600">
@@ -2233,7 +2232,7 @@
                                                             <span class="font-medium text-gray-700">{{ strtoupper($note->status) }}</span>
                                                             <span class="text-gray-400">{{ $note->created_at->diffForHumans() }}</span>
                                                         </div>
-                                                        <p class="mt-1 text-gray-600">{!! $note->note ?? '—' !!}</p>
+                                                        <p class="mt-1 text-gray-600">{!! $note->note ? nl2br(e($note->note)) : '—' !!}</p>
                                                         <p class="mt-1 italic text-gray-400">By: {{ $note->user->name ?? 'System' }}</p>
                                                     </div>
                                                 @empty
@@ -2830,14 +2829,14 @@
 
         <!-- Enhanced JavaScript System -->
         <script nonce="{{ $cspNonce ?? '' }}">
-            $(document).ready(function() {
+            document.addEventListener('DOMContentLoaded', function() {
                 // ========================================
                 // CONSTANTS & CONFIGURATION
                 // ========================================
-                const $container = $('.order-details-component');
+                const container = document.querySelector('.order-details-component');
                 const LOCK_STATUSES = ["approved", "completed", "for approval", "cancelled"];
                 const ORDER_STATUS = "{{ $order->order_status }}".toLowerCase();
-                const USER_ROLE = "{{ Auth::user()->role }}".toLowerCase();
+                const USER_ROLE = "{{ $userRole }}".toLowerCase();
 
                 // Does any non-cancelled item already have a transfer number?
                 // @php
@@ -2879,10 +2878,12 @@
                 // ANYTHING — that includes PARTIAL_UNLOCK (e.g. an approved order where
                 // store personnel may still edit the info panel before a transfer no).
                 // Without this, edit-mode styling never applies to approved orders.
-                if (!IS_LOCKED || PARTIAL_UNLOCK) {
-                    $container.addClass('editable');
-                } else {
-                    $container.removeClass('editable');
+                if (container) {
+                    if (!IS_LOCKED || PARTIAL_UNLOCK) {
+                        container.classList.add('editable');
+                    } else {
+                        container.classList.remove('editable');
+                    }
                 }
                 // Change Detection Variables
                 let hasChanges = false;
@@ -2891,18 +2892,27 @@
                 // action, so the "unsaved changes" prompt is suppressed for intentional
                 // navigation. Exposed on window so action scripts in other scopes can set it.
                 window.isLeavingIntentionally = window.isLeavingIntentionally || false;
-                const submitButton = $('#submitButton');
-                const submitButtonText = $('#submitButtonText');
-                const changesCounter = $('#changesCounter');
-                const changesCountElement = $('#changesCount');
+                const submitButton = document.getElementById('submitButton');
+                const submitButtonText = document.getElementById('submitButtonText');
+                const changesCounter = document.getElementById('changesCounter');
+                const changesCountElement = document.getElementById('changesCount');
 
                 // console.log('🚀 Initializing order page');
                 // console.log('📊 Order Status:', ORDER_STATUS);
                 // console.log('🔒 Is Locked:', IS_LOCKED);
 
-                // ========================================
-                // ORDER CALCULATION SYSTEM
-                // ========================================
+                // Check if jQuery is available before running calculation system
+                if (typeof $ === 'undefined' || typeof jQuery === 'undefined') {
+                    console.warn('jQuery not available - order calculation system skipped');
+                    return;
+                }
+
+                // Convert DOM elements to jQuery objects for jQuery method compatibility
+                const $submitButton = $(submitButton);
+                const $submitButtonText = $(submitButtonText);
+                const $changesCounter = $(changesCounter);
+                const $changesCountElement = $(changesCountElement);
+                const $container = $(container);
                 class OrderCalculationSystem {
 
                     constructor() {
@@ -3528,10 +3538,10 @@
 
                     // Submit button
                     if (PARTIAL_UNLOCK || !IS_LOCKED) {
-                        submitButton.removeClass('hidden');
+                        $submitButton.removeClass('hidden');
                     } else {
-                        submitButton.prop('disabled', true).addClass('hidden');
-                        changesCounter.addClass('hidden');
+                        $submitButton.prop('disabled', true).addClass('hidden');
+                        $changesCounter.addClass('hidden');
                     }
                 }
 
@@ -3565,18 +3575,18 @@
                     if (IS_LOCKED && !PARTIAL_UNLOCK) return;
 
                     if (hasChanges && changesCount > 0) {
-                        submitButton.prop('disabled', false)
+                        $submitButton.prop('disabled', false)
                             .removeClass('bg-blue-600 hover:bg-blue-700')
                             .addClass('bg-green-600 hover:bg-green-700');
-                        submitButtonText.text('Update');
-                        changesCounter.removeClass('hidden');
-                        changesCountElement.text(changesCount);
+                        $submitButtonText.text('Update');
+                        $changesCounter.removeClass('hidden');
+                        $changesCountElement.text(changesCount);
                     } else {
-                        submitButton.prop('disabled', true)
+                        $submitButton.prop('disabled', true)
                             .removeClass('bg-green-600 hover:bg-green-700')
                             .addClass('bg-blue-600 hover:bg-blue-700');
-                        submitButtonText.text('Update');
-                        changesCounter.addClass('hidden');
+                        $submitButtonText.text('Update');
+                        $changesCounter.addClass('hidden');
                     }
                 }
 
@@ -3973,9 +3983,9 @@
 
                     hasChanges = false;
 
-                    submitButton.prop('disabled', true);
-                    submitButtonText.text('Saving...');
-                    submitButton.prepend(
+                    $submitButton.prop('disabled', true);
+                    $submitButtonText.text('Saving...');
+                    $submitButton.prepend(
                         '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>'
                     );
 
@@ -4103,7 +4113,7 @@
                         // View mode: prevent keyboard focus / interaction.
                         editableFields.attr('tabindex', '-1');
 
-                        submitButton.addClass('hidden');
+                        $submitButton.addClass('hidden');
                         cancelEditButton.addClass('hidden');
                         $container.removeClass('edit-mode');
 
@@ -4119,7 +4129,7 @@
 
                             editButton.addClass('hidden');
                             cancelEditButton.removeClass('hidden');
-                            submitButton.removeClass('hidden');
+                            $submitButton.removeClass('hidden');
                             updateSubmitButtonState();
                             // console.log('✏️  Edit mode ON');
                         }
@@ -4140,7 +4150,7 @@
 
                     // console.log('✅ Initialization complete');
                 }, 150);
-            });
+            }); // End jQuery check
 
             // ========================================
             // GENERATE SO BUTTON (Outside document.ready - uses addEventListener)
@@ -4382,8 +4392,8 @@
             `,
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
+                        confirmButtonColor: '#4f46e5',
+                        cancelButtonColor: '#6b7280',
                         confirmButtonText: 'Yes, proceed',
                         cancelButtonText: 'Cancel'
                     });
@@ -4422,8 +4432,6 @@
         </script>
 
 
-
-        <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
         <!-- Enhanced CSS for better visual feedback -->
         <style nonce="{{ $cspNonce ?? '' }}">

@@ -1023,8 +1023,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         step="0.01"
                                                         name="orders[{{ $i }}][price_per_pc]"
                                                         value="{{ old("orders.$i.price_per_pc") }}"
-                                                        class="price-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-                                                        style="text-align: left;"
+                                                        class="price-per-pc w-full rounded border border-gray-300 p-2 text-left focus:border-gray-300 focus:outline-none focus:ring-gray-900"
                                                         placeholder="0.00" />
                                                 </div>
 
@@ -1035,8 +1034,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         type="text"
                                                         name="orders[{{ $i }}][qty_per_pc]"
                                                         value="{{ old("orders.$i.qty_per_pc") }}"
-                                                        class="qty-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-                                                        style="text-align: left;"
+                                                        class="qty-per-pc w-full rounded border border-gray-300 p-2 text-left focus:border-gray-300 focus:outline-none focus:ring-gray-900"
                                                         placeholder="0" />
                                                     <ul class="glow-effect qty-results absolute z-10 mt-1 flex hidden flex-wrap gap-2 rounded border border-gray-200 bg-white p-2 shadow"></ul>
 
@@ -1050,9 +1048,8 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         x-model="qty"
                                                         :class="qty === '' ? 'bg-yellow-50' : 'bg-white'"
                                                         name="orders[{{ $i }}][qty_per_cs]"
-                                                        class="qty-cs w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
+                                                        class="qty-cs w-full rounded border border-gray-300 p-2 text-left focus:border-gray-300 focus:outline-none focus:ring-gray-900"
                                                         placeholder="0"
-                                                        style="text-align: left;"
                                                         value="{{ old("orders.$i.qty_per_cs") }}">
                                                 </div>
                                                 <!-- Discount Field -->
@@ -1179,8 +1176,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         type="text"
                                                         name="orders[{{ $i }}][freebie_qty_per_pc]"
                                                         value="{{ old("orders.$i.freebie_qty_per_pc") }}"
-                                                        class="qty-pcs freebie-qty-per-pc w-full rounded border border-gray-300 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-                                                        style="text-align: left;"
+                                                        class="qty-pcs freebie-qty-per-pc w-full rounded border border-gray-300 p-2 text-left focus:border-gray-300 focus:outline-none focus:ring-gray-900"
                                                         placeholder="0" />
                                                     <ul class="glow-effect qty-results absolute z-10 mt-1 flex hidden flex-wrap gap-2 rounded border border-gray-200 bg-white p-2 shadow"></ul>
                                                 </div>
@@ -1192,8 +1188,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         type="text"
                                                         name="orders[{{ $i }}][freebies_per_cs]"
                                                         value="{{ old("orders.$i.freebies_per_cs") }}"
-                                                        class="computed-freebies w-full rounded border border-gray-300 bg-green-50 p-2 text-right focus:border-gray-300 focus:outline-none focus:ring-gray-900"
-                                                        style="text-align: left; cursor: not-allowed;"
+                                                        class="computed-freebies w-full cursor-not-allowed rounded border border-gray-300 bg-green-50 p-2 text-left focus:border-gray-300 focus:outline-none focus:ring-gray-900"
                                                         placeholder="0"
                                                         readonly />
                                                 </div>

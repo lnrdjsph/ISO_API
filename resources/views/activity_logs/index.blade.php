@@ -102,7 +102,7 @@
                 </div>
 
                 {{-- Single grouped Action dropdown — replaces Category + Action --}}
-                <select name="action" onchange="document.getElementById('filterForm').submit()"
+                <select name="action" data-autosubmit="filterForm"
                     class="rounded-xl border-0 bg-white py-3 pl-3.5 pr-9 text-sm text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-indigo-500">
                     <option value="">All activity</option>
                     @foreach ($groupedActions as $cat => $catActions)
@@ -114,7 +114,7 @@
                     @endforeach
                 </select>
 
-                <select name="user_id" onchange="document.getElementById('filterForm').submit()"
+                <select name="user_id" data-autosubmit="filterForm"
                     class="rounded-xl border-0 bg-white py-3 pl-3.5 pr-9 text-sm text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-indigo-500">
                     <option value="">All users</option>
                     @foreach ($users as $u)
@@ -208,7 +208,7 @@
                             <tr class="transition-colors hover:bg-gray-50">
                                 <td class="px-4 py-3">
                                     <button type="button"
-                                        onclick="toggleDetails('log-{{ $log->id }}')"
+                                        data-toggle-details="log-{{ $log->id }}"
                                         class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                                         title="View details">
                                         <svg id="icon-log-{{ $log->id }}" class="h-4 w-4 transition-transform"
@@ -285,13 +285,24 @@
 
     </div>
 
-    {{-- Toggle script for expandable rows --}}
     <script @if (isset($cspNonce)) nonce="{{ $cspNonce }}" @endif>
-        function toggleDetails(rowId) {
-            const row = document.getElementById(rowId);
-            const icon = document.getElementById('icon-' + rowId);
-            if (!row || !icon) return;
+        // Delegate filter-select auto-submit
+        document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
+            el.addEventListener('change', function () {
+                var formId = el.getAttribute('data-autosubmit');
+                var form = document.getElementById(formId);
+                if (form) form.submit();
+            });
+        });
 
+        // Delegate expandable row toggle
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-toggle-details]');
+            if (!btn) return;
+            var rowId = btn.getAttribute('data-toggle-details');
+            var row  = document.getElementById(rowId);
+            var icon = document.getElementById('icon-' + rowId);
+            if (!row || !icon) return;
             if (row.classList.contains('hidden')) {
                 row.classList.remove('hidden');
                 icon.style.transform = 'rotate(90deg)';
@@ -299,6 +310,6 @@
                 row.classList.add('hidden');
                 icon.style.transform = 'rotate(0deg)';
             }
-        }
+        });
     </script>
 @endsection

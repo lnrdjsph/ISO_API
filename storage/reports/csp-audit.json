@@ -1,0 +1,2474 @@
+[32mStarting CSP compliance audit...[39m
+
+{
+    "timestamp": "2026-06-09T08:51:30+08:00",
+    "headers_audit": [
+        {
+            "directive": "style-src",
+            "issue": "Contains 'unsafe-inline'",
+            "severity": "HIGH",
+            "description": "style-src 'unsafe-inline' defeats CSP for styles. Use Tailwind classes or external stylesheets.",
+            "file": "C:\\xampp\\htdocs\\ISO_Ordering_API\\app\\Http/Middleware/ContentSecurityPolicy.php"
+        }
+    ],
+    "template_violations": [
+        {
+            "file": "\\resources\\views\\activity_logs\\index.blade.php",
+            "line": 105,
+            "violation_type": "event_handler",
+            "code": "onchange=\"document.getElementById(...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\activity_logs\\index.blade.php",
+            "line": 117,
+            "violation_type": "event_handler",
+            "code": "onchange=\"document.getElementById(...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\activity_logs\\index.blade.php",
+            "line": 211,
+            "violation_type": "event_handler",
+            "code": "onclick=\"toggleDetails(...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\auth\\account.blade.php",
+            "line": 206,
+            "violation_type": "inline_style",
+            "code": "style=\"width:0%...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\auth\\reset-password.blade.php",
+            "line": 35,
+            "violation_type": "event_handler",
+            "code": "onclick=\"togglePassword(...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\index.blade.php",
+            "line": 613,
+            "violation_type": "event_handler",
+            "code": "onclick=\"window.location=...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 129,
+            "violation_type": "inline_style",
+            "code": "style=\"background-image: linear-gradient(#fff 1px, transp...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 306,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($s[...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 312,
+            "violation_type": "inline_style",
+            "code": "style=\"background:{{ $s[...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 353,
+            "violation_type": "event_handler",
+            "code": "onclick=\"window.location=...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 404,
+            "violation_type": "inline_style",
+            "code": "style=\"width: {{ $maxStore > 0 ? ($st->total / $maxStore)...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 449,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($totalStoreAllocation / $maxBar) * 100 }...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 456,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($wmsVirtualTotal / $maxBar) * 100 }}%...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 467,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($healthyStockCount / $totalProducts) * 1...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 468,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($lowStockCount / $totalProducts) * 100 }...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\dashboard\\indexCOPY.blade.php",
+            "line": 469,
+            "violation_type": "inline_style",
+            "code": "style=\"width:{{ ($outOfStockCount / $totalProducts) * 100...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\documents\\xlsx-editor.blade.php",
+            "line": 138,
+            "violation_type": "inline_style",
+            "code": "style=\"max-height: 65vh;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 9,
+            "violation_type": "inline_style",
+            "code": "style=\"margin:0; padding:0; font-family:Arial, sans-serif...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 17,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#ffffff; border-radius:8px; overflow:hi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 21,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:24px 20px 0; background:#ffffff;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 26,
+            "violation_type": "inline_style",
+            "code": "style=\"display:block; height:auto; max-width:180px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 33,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#FFA900; padding:16px 20px; color:#ffff...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 40,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:28px 28px 8px; font-size:14px; color:#3333...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 49,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:24px 20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 52,
+            "violation_type": "inline_style",
+            "code": "style=\"border-radius:6px; padding:12px 32px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 53,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#ffffff; font-family:Arial,sans-serif; font-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 63,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:0 28px 24px; font-size:13px; color:#555555...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 72,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:16px 28px 24px; border-top:1px solid #e5e7...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 75,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#004362; word-break:break-all;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\auth\\reset_password.blade.php",
+            "line": 81,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:16px 20px; font-size:12px; color:#6b7280; ...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 9,
+            "violation_type": "inline_style",
+            "code": "style=\"margin:0; padding:0; font-family: Arial, sans-seri...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 17,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#ffffff; border-radius:8px; overflow:hi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 21,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:24px 20px 16px; background:#ffffff;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 26,
+            "violation_type": "inline_style",
+            "code": "style=\"display:block; height:auto; max-width:180px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 33,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#004362;padding:16px 20px; color:#fffff...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 41,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:20px; font-size:14px; color:#333;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 49,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:0 20px 20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 54,
+            "violation_type": "inline_style",
+            "code": "style=\"border-collapse:collapse; font-size:14px; color:#3...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 55,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 56,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 57,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 60,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 61,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 63,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 64,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 65,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 68,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 69,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 71,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 72,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 73,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 76,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 77,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 79,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 80,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 81,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 89,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 92,
+            "violation_type": "inline_style",
+            "code": "style=\"border-radius:6px; padding:12px 32px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 94,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#ffffff; font-family:Arial,sans-serif; font-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approval.blade.php",
+            "line": 103,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:15px; font-size:12px; color:#6b7280; text-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 9,
+            "violation_type": "inline_style",
+            "code": "style=\"margin:0; padding:0; font-family: Arial, sans-seri...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 17,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#ffffff; border-radius:8px; overflow:hi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 21,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:24px 20px 16px; background:#ffffff;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 26,
+            "violation_type": "inline_style",
+            "code": "style=\"display:block; height:auto; max-width:180px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 32,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#296D38; padding:16px 20px; color:#ffff...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 39,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:20px; font-size:14px; color:#333;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 48,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:0 20px 20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 53,
+            "violation_type": "inline_style",
+            "code": "style=\"border-collapse:collapse; font-size:14px; color:#3...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 54,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 55,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 56,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 59,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 60,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 62,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 63,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 64,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 67,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 68,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 70,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 71,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 72,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 75,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 76,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 78,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#f1f5f9;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 79,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 80,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:8px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 88,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 91,
+            "violation_type": "inline_style",
+            "code": "style=\"border-radius:6px; padding:12px 32px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 93,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#ffffff; font-family:Arial,sans-serif; font-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\emails\\orders\\approved.blade.php",
+            "line": 102,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:15px; font-size:12px; color:#6b7280; text-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\filemanager\\index.blade.php",
+            "line": 27,
+            "violation_type": "event_handler",
+            "code": "onclick=\"openModal(...)...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\filemanager\\index.blade.php",
+            "line": 257,
+            "violation_type": "event_handler",
+            "code": "onclick=\"closeModal(...)...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\forms\\sof.blade.php",
+            "line": 1027,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\forms\\sof.blade.php",
+            "line": 1039,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\forms\\sof.blade.php",
+            "line": 1055,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\forms\\sof.blade.php",
+            "line": 1183,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\forms\\sof.blade.php",
+            "line": 1196,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left; cursor: not-allowed;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\layouts\\app.blade copy.php",
+            "line": 664,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\layouts\\app.blade copy.php",
+            "line": 668,
+            "violation_type": "event_handler",
+            "code": "onclick=\"this.parentElement.submit(); return fals...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\orders\\partials\\table.blade.php",
+            "line": 302,
+            "violation_type": "inline_style",
+            "code": "style=\"background:${cfg.dot};...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 1124,
+            "violation_type": "inline_style",
+            "code": "style=\"background:${s.bg};color:${s.fg};...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 1264,
+            "violation_type": "inline_style",
+            "code": "style=\"position: relative;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 1268,
+            "violation_type": "inline_style",
+            "code": "style=\"min-width: 250px; max-width: 400px; white-space: n...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 1284,
+            "violation_type": "inline_style",
+            "code": "style=\"position: relative;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 1288,
+            "violation_type": "inline_style",
+            "code": "style=\"min-width: 250px; max-width: 400px; white-space: n...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2026,
+            "violation_type": "inline_style",
+            "code": "style=\"display: none;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2075,
+            "violation_type": "inline_style",
+            "code": "style=\"max-height:400px;width:auto;cursor:zoom-in;display...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2115,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#ef4444;text-align:center;margin-top:8px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2320,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align:left;font-size:13px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2321,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:12px;color:#6b7280;margin-bottom:14px;te...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2327,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:22px;margin-bottom:6px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2328,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:13px;font-weight:600;color:#111...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2329,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;color:#9ca3af;margin-top:2px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2332,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:22px;margin-bottom:6px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2333,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:13px;font-weight:600;color:#111...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2334,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;color:#9ca3af;margin-top:2px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2342,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:22px;margin-bottom:4px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2343,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:13px;font-weight:500;color:#2563EB...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2344,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;color:#9ca3af;margin-top:2px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2345,
+            "violation_type": "inline_style",
+            "code": "style=\"display:none...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2371,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:22px;margin-bottom:4px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2372,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:13px;font-weight:500;color:#2563EB...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2373,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;color:#9ca3af;margin-top:2px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2374,
+            "violation_type": "inline_style",
+            "code": "style=\"display:none...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 2376,
+            "violation_type": "inline_style",
+            "code": "style=\"display:none...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4162,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4201,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left; max-height: 500px; overflow-y: a...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4202,
+            "violation_type": "inline_style",
+            "code": "style=\"background: #f8f9fa; padding: 15px; border-radius:...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4203,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 0 0 10px 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4204,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4205,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; color: #28a745;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4206,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; color: #dc3545;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4244,
+            "violation_type": "inline_style",
+            "code": "style=\"border: 2px solid ${statusColor}; border-radius: 8...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4245,
+            "violation_type": "inline_style",
+            "code": "style=\"display: flex; justify-content: space-between; ali...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4246,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 0; color: ${statusColor};...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4249,
+            "violation_type": "inline_style",
+            "code": "style=\"background: ${statusColor}; color: white; padding:...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4253,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 10px 0; padding: 10px; background: #f8f9fa...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4254,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 3px 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4255,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 3px 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4261,
+            "violation_type": "inline_style",
+            "code": "style=\"margin-top: 10px; padding: 10px; background: #d4ed...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4263,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; padding-left: 20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4264,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size: 13px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4272,
+            "violation_type": "inline_style",
+            "code": "style=\"margin-top: 10px; padding: 10px; background: #f8d7...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4274,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; padding-left: 20px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4275,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size: 13px; margin: 5px 0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4283,
+            "violation_type": "inline_style",
+            "code": "style=\"margin-top: 10px; padding: 10px; background: #fff3...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4285,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; font-size: 13px;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4286,
+            "violation_type": "inline_style",
+            "code": "style=\"margin: 5px 0; font-size: 13px; color: #856404;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4342,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4358,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\orders\\show.blade.php",
+            "line": 4377,
+            "violation_type": "inline_style",
+            "code": "style=\"text-align: left;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 51,
+            "violation_type": "inline_style",
+            "code": "style=\"min-height:160px;display:flex;align-items:center;j...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 101,
+            "violation_type": "inline_style",
+            "code": "style=\"width:0%...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 137,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#1e293b...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 140,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:9px 10px;text-align:left;font-size:9px;fon...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 170,
+            "violation_type": "inline_style",
+            "code": "style=\"list-style-type:upper-alpha...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\import.blade.php",
+            "line": 234,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\loader.blade.php",
+            "line": 30,
+            "violation_type": "inline_style",
+            "code": "style=\"width: 0%...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\product-row.blade.php",
+            "line": 6,
+            "violation_type": "inline_style",
+            "code": "style=\"border-left: 3px solid #6366f1...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-content.blade.php",
+            "line": 52,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;flex-wrap:wrap;align-items:center;jus...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-content.blade.php",
+            "line": 53,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;align-items:center;gap:8px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-content.blade.php",
+            "line": 54,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:12px;color:#6b7280...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-content.blade.php",
+            "line": 56,
+            "violation_type": "inline_style",
+            "code": "style=\"-webkit-appearance:none;-moz-appearance:none;appea...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 15,
+            "violation_type": "inline_style",
+            "code": "style=\"transform:rotate(180deg)...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 24,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#1e293b...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 27,
+            "violation_type": "inline_style",
+            "code": "style=\"width:36px;padding:10px 8px 10px 12px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 32,
+            "violation_type": "inline_style",
+            "code": "style=\"width:36px;padding:10px 8px;text-align:center;font...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 36,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 12px;text-align:left;min-width:200px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 37,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;align-items:center;gap:10px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 39,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:3px;fon...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 42,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#374151;font-size:9px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 44,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:3px;fon...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 51,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 54,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 58,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 60,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:3px;col...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 65,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 67,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:3px;col...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 73,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 75,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:3px;col...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 79,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 80,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 83,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 84,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 85,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-head.blade.php",
+            "line": 88,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 12px 10px 10px;text-align:left;font-s...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 25,
+            "violation_type": "inline_style",
+            "code": "style=\"animation-delay:{{ ($loop->index % 25) * 30 }}ms;-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 29,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 8px 10px 12px;width:36px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 35,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 8px;width:36px;text-align:center;font...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 41,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 12px;border-left:2px solid #e0e7ff...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 42,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;flex-direction:column;gap:2px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 43,
+            "violation_type": "inline_style",
+            "code": "style=\"font-family:var(--font-mono,monospace);font-size:1...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 44,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;font-weight:500;color:#111827;line-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 49,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 50,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;flex-direction:column;gap:1px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 51,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:10px;font-weight:600;color:#374151...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 53,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:9px;color:#9ca3af;line-height:1.3...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 59,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 60,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 67,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap;border-left:1...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 73,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap;{{ $isSuperAd...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 78,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;border-left:1px solid #f1f5f9...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 79,
+            "violation_type": "inline_style",
+            "code": "style=\"position:relative;display:inline-block...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 82,
+            "violation_type": "inline_style",
+            "code": "style=\"position:absolute;bottom:calc(100% + 6px);left:50%...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 83,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;gap:12px;margin-bottom:5px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 84,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#94a3b8...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 85,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#94a3b8...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 87,
+            "violation_type": "inline_style",
+            "code": "style=\"border-top:1px solid #1e293b;padding-top:5px;font-...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 90,
+            "violation_type": "inline_style",
+            "code": "style=\"position:absolute;left:50%;top:100%;transform:tran...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 96,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 97,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 103,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 105,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 109,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#d1d5db;font-size:11px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 114,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap;border-left:1...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 116,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;font-weight:500;color:#6d28d9...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 118,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#d1d5db;font-size:11px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 121,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 123,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;font-weight:500;color:#6d28d9...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 125,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#d1d5db;font-size:11px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 128,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 10px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 130,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;font-weight:500;color:#6d28d9...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 132,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#d1d5db;font-size:11px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 137,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:10px 12px 10px 10px;border-left:1px solid ...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 139,
+            "violation_type": "inline_style",
+            "code": "style=\"position:relative;display:inline-block...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 140,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 145,
+            "violation_type": "inline_style",
+            "code": "style=\"position:absolute;bottom:calc(100% + 6px);right:0;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 147,
+            "violation_type": "inline_style",
+            "code": "style=\"position:absolute;right:10px;top:100%;border:5px s...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\products\\partials\\table-row.blade.php",
+            "line": 152,
+            "violation_type": "inline_style",
+            "code": "style=\"color:#d1d5db;font-size:11px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 214,
+            "violation_type": "event_handler",
+            "code": "onclick=\"document.getElementById(...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 223,
+            "violation_type": "event_handler",
+            "code": "onclick=\"if(event.target===this)this.classList.re...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 224,
+            "violation_type": "inline_style",
+            "code": "style=\"max-height: calc(100vh - 7rem);...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 241,
+            "violation_type": "inline_style",
+            "code": "style=\"max-height: {{ count($availableRoles) > 1 ? ...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 277,
+            "violation_type": "inline_style",
+            "code": "style=\"position:relative;...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\user_guide\\document.blade.php",
+            "line": 286,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;width:auto;border-radius:6px;paddin...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 23,
+            "violation_type": "inline_style",
+            "code": "style=\"background:#1e293b...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 25,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:11px 16px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 26,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:11px 14px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 27,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:11px 14px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 28,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:11px 14px;text-align:left;font-size:9px;fo...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 29,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:11px 16px;text-align:right;font-size:9px;f...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 32,
+            "violation_type": "inline_style",
+            "code": "style=\"divide-y divide-gray-100...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 41,
+            "violation_type": "inline_style",
+            "code": "style=\"border-bottom:1px solid #f1f5f9;transition:backgro...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 42,
+            "violation_type": "event_handler",
+            "code": "onmouseover=\"this.style.background=...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 45,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:12px 16px;white-space:nowrap...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 46,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;align-items:center;gap:10px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 47,
+            "violation_type": "inline_style",
+            "code": "style=\"width:34px;height:34px;border-radius:50%;backgroun...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 48,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:11px;font-weight:700;color:#fff;letter-s...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 50,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:13px;font-weight:500;color:#111827...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 55,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:12px 14px;font-size:12px;color:#6b7280...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 58,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:12px 14px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 59,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;border-radi...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 65,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:12px 14px;font-size:12px;color:#374151...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 68,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:12px 16px;text-align:right;white-space:now...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 70,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:4px;pad...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 71,
+            "violation_type": "event_handler",
+            "code": "onmouseover=\"this.style.background=...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 81,
+            "violation_type": "inline_style",
+            "code": "style=\"display:inline-flex;align-items:center;gap:4px;pad...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 82,
+            "violation_type": "event_handler",
+            "code": "onmouseover=\"this.style.background=...\"",
+            "severity": "HIGH",
+            "description": "Event handlers require script-src 'unsafe-inline'",
+            "fix": "Move handler to external JS file, use addEventListener()"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 93,
+            "violation_type": "inline_style",
+            "code": "style=\"padding:60px 24px;text-align:center...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 94,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;flex-direction:column;align-items:cen...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 95,
+            "violation_type": "inline_style",
+            "code": "style=\"width:52px;height:52px;border-radius:50%;backgroun...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 98,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:14px;font-weight:500;color:#374151...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 99,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:12px;color:#9ca3af...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 109,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;flex-wrap:wrap;align-items:center;jus...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 110,
+            "violation_type": "inline_style",
+            "code": "style=\"display:flex;align-items:center;gap:8px...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 111,
+            "violation_type": "inline_style",
+            "code": "style=\"font-size:12px;color:#6b7280...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        },
+        {
+            "file": "\\resources\\views\\users\\partials\\table.blade.php",
+            "line": 113,
+            "violation_type": "inline_style",
+            "code": "style=\"-webkit-appearance:none;-moz-appearance:none;appea...\"",
+            "severity": "MEDIUM",
+            "description": "Inline style= attributes require style-src 'unsafe-inline'",
+            "fix": "Use Tailwind CSS classes or external CSS classes"
+        }
+    ],
+    "library_issues": [
+        {
+            "package": "apexcharts",
+            "version": "^5.10.4",
+            "csp_safe": false,
+            "severity": "HIGH",
+            "issue": "Uses 'unsafe-eval' directive",
+            "description": "This library requires script-src 'unsafe-eval' (not CSP-safe)",
+            "workaround": "Add 'unsafe-eval' or 'unsafe-inline' to script-src (not recommended)",
+            "recommendation": "Consider alternative libraries; check if library has CSP-compatible versions"
+        },
+        {
+            "package": "jquery",
+            "version": "^4.0.0",
+            "csp_safe": false,
+            "severity": "HIGH",
+            "issue": "Uses 'unsafe-eval' directive",
+            "description": "This library requires script-src 'unsafe-eval' (not CSP-safe)",
+            "workaround": "Add 'unsafe-eval' or 'unsafe-inline' to script-src (not recommended)",
+            "recommendation": "Consider alternative libraries; check if library has CSP-compatible versions"
+        },
+        {
+            "package": "sweetalert2",
+            "version": "^11.26.23",
+            "csp_safe": true,
+            "severity": "LOW",
+            "status": "OK"
+        },
+        {
+            "package": "axios",
+            "version": "^1.1.2",
+            "csp_safe": true,
+            "severity": "LOW",
+            "status": "OK"
+        },
+        {
+            "package": "tailwindcss",
+            "version": "^3.4.3",
+            "csp_safe": true,
+            "severity": "LOW",
+            "status": "OK"
+        }
+    ],
+    "summary": {
+        "total_violations": 270,
+        "high_severity": 17,
+        "critical_severity": 0,
+        "risk_level": "HIGH"
+    },
+    "recommendations": [
+        "Replace 253 inline style(s) with Tailwind utility classes",
+        "Review 2 CSP-unsafe library(ies); consider updates or alternatives"
+    ],
+    "should_fail": true
+}
+[37;41mBuild failed: CSP violations detected at HIGH severity or above[39;49m

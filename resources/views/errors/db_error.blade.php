@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.guest-error')
 
 @section('content')
     <div class="flex justify-center items-center bg-gray-50">

@@ -39,11 +39,11 @@ class ContentSecurityPolicy
             if ($isDocumentRequest) {
                 $csp = implode('; ', [
                     "default-src 'self'",
-                    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k=' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+                    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k='",
+                    "style-src 'self' 'unsafe-inline'",
+                    "font-src 'self' data:",
                     "img-src 'self' data: blob:",
-                    "connect-src 'self' https://cdn.jsdelivr.net",
+                    "connect-src 'self'",
                     "frame-ancestors 'self'",  // Changed from 'none' to 'self'
                     "form-action 'self'",
                     "object-src 'self'",  // Changed from 'none' to allow PDF objects
@@ -59,11 +59,11 @@ class ContentSecurityPolicy
                 // Strict CSP for other routes
                 $csp = implode('; ', [
                     "default-src 'self'",
-                    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k=' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com",
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-                    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+                    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'sha256-IfnVKjJJSxCjbxejvAj6OflFqLGfwVDrmy+RDMXiE6k='",
+                    "style-src 'self' 'unsafe-inline'",
+                    "font-src 'self' data:",
                     "img-src 'self' data: blob:",
-                    "connect-src 'self' https://cdn.jsdelivr.net",
+                    "connect-src 'self'",
                     "frame-ancestors 'self'",
                     "form-action 'self'",
                     "object-src 'self'",

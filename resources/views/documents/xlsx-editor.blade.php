@@ -135,7 +135,7 @@
                 class="flex gap-1 overflow-x-auto border-b border-gray-100 bg-gray-50 px-4 py-2"></div>
 
             {{-- Table wrapper --}}
-            <div class="overflow-auto" style="max-height: 65vh;">
+            <div class="max-h-[65vh] overflow-auto">
                 <table id="xlsxTable" class="min-w-full border-collapse text-sm">
                     <thead id="xlsxThead" class="sticky top-0 z-10"></thead>
                     <tbody id="xlsxTbody"></tbody>
@@ -322,10 +322,7 @@
         }
     </style>
 
-    {{-- ─── SheetJS ────────────────────────────────────────── --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (function() {
             'use strict';
 

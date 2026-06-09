@@ -49,11 +49,11 @@
 </div>
 
 {{-- Pagination footer --}}
-<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-top:1px solid #f1f5f9;background:#fff">
-    <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;color:#6b7280">Rows per page:</span>
+<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white px-4 py-2.5">
+    <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500">Rows per page:</span>
         <select id="per-page-select"
-            style="-webkit-appearance:none;-moz-appearance:none;appearance:none;height:32px;border:1px solid #d1d5db;border-radius:6px;padding:0 28px 0 8px;font-size:12px;color:#374151;background:#fff url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3E%3Cpath stroke=%27%236b7280%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3E%3C/svg%3E') right 6px center / 1.1em no-repeat;cursor:pointer">
+            class="h-8 appearance-none cursor-pointer rounded-md border border-gray-300 bg-white py-0 pl-2 pr-7 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400">
             @foreach ([10, 15, 25, 50, 100] as $size)
                 <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
                     {{ $size }}

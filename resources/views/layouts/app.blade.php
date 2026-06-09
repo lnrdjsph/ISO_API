@@ -9,8 +9,6 @@
     <meta name="theme-color" content="#0f172a" />
     <title>ISO B2B2C Ordering System</title>
     <link rel="icon" type="image/png" href="{{ asset('images/MarengEms_Logo.png') }}">
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style nonce="{{ $cspNonce ?? '' }}">
@@ -522,8 +520,8 @@
                 $allowedIds = [1, 2, 3];
                 $currentUserId = Auth::id();
                 $switchableRoles = ['super admin', 'store personnel', 'store manager', 'warehouse personnel', 'warehouse manager'];
-                $currentRole = session('switched_role') ?? Auth::user()->role;
-                $currentLocation = session('switched_location') ?? Auth::user()->user_location;
+                $currentRole = session('switched_role') ?? Auth::user()?->role;
+                $currentLocation = session('switched_location') ?? Auth::user()?->user_location;
                 $storeLocations = LocationConfig::stores();
                 $regionLabels = LocationConfig::regionLabels();
                 $locationOptions = [];
@@ -547,7 +545,7 @@
                     @endforeach
                 </select>
             @endif
-            <span class="hidden max-w-[10rem] truncate text-sm text-white/90 sm:inline lg:max-w-none">Howdy, {{ Auth::user()->name }}
+            <span class="hidden max-w-[10rem] truncate text-sm text-white/90 sm:inline lg:max-w-none">Howdy, {{ Auth::user()?->name }}
                 ({{ $storeLocations[$currentLocation] ?? ($regionLabels[$currentLocation] ?? $currentLocation) }})</span>
         </div>
     </div>

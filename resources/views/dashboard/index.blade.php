@@ -610,7 +610,7 @@
                         <tbody class="divide-y divide-blue-50">
                             @foreach ($recentOrders as $order)
                                 @php $cls = $statusBadgeClasses[strtolower($order->order_status)] ?? 'bg-gray-100 text-gray-600'; @endphp
-                                <tr onclick="window.location='{{ route('orders.show', $order->id) }}'"
+                                <tr data-href="{{ route('orders.show', $order->id) }}"
                                     class="group cursor-pointer transition-colors hover:bg-blue-50/30">
                                     <td class="px-5 py-2.5 font-mono font-medium text-gray-800">{{ $order->sof_id }}</td>
                                     @if ($isAdmin || $isMgr)
@@ -736,4 +736,10 @@
         @endif
 
     </div>
+    <script nonce="{{ $cspNonce ?? '' }}">
+        document.addEventListener('click', function (e) {
+            var row = e.target.closest('tr[data-href]');
+            if (row) window.location = row.getAttribute('data-href');
+        });
+    </script>
 @endsection

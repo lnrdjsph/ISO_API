@@ -236,7 +236,6 @@
                         <select
                             name="per_page"
                             id="per_page"
-                            onchange="this.form.submit()"
                             class="rounded border-0 px-8 py-1 text-sm">
                             <option
                                 value="10"
@@ -264,4 +263,9 @@
 
         </div>
     </div>
+    <script nonce="{{ $cspNonce ?? '' }}">
+        document.getElementById('per_page').addEventListener('change', function () {
+            this.closest('form').submit();
+        });
+    </script>
 @endsection

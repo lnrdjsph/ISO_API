@@ -3,8 +3,13 @@ import laravel from "laravel-vite-plugin";
 
 export default defineConfig({
     server: {
-        host: "127.0.0.1",
+        host: "0.0.0.0",
         port: 5173,
+        origin: "http://10.190.2.110:5173",
+        cors: true,
+        hmr: {
+            host: "10.190.2.110",
+        },
     },
     plugins: [
         laravel({
@@ -37,6 +42,7 @@ export default defineConfig({
                 manualChunks: {
                     vendor: ["axios", "lodash"],
                     charts: ["apexcharts"],
+                    xlsx: ["xlsx"],
                 },
             },
         },

@@ -124,6 +124,20 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => 14,
         ],
+
+        'order_agent' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/order-agent.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 30,
+        ],
+
+        'csp_agent' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/csp-agent.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 30,
+        ],
     ],
 
 ];

@@ -203,7 +203,7 @@
                             @enderror
                             <div class="mt-2">
                                 <div class="h-1.5 w-full rounded-full bg-gray-200">
-                                    <div id="strength-bar" class="h-1.5 rounded-full bg-gray-300 transition-all duration-300" style="width:0%"></div>
+                                    <div id="strength-bar" class="h-1.5 w-0 rounded-full bg-gray-300 transition-all duration-300"></div>
                                 </div>
                                 <p id="strength-label" class="mt-1 text-xs text-gray-400">Enter a password</p>
                             </div>

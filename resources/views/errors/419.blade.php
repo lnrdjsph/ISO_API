@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.guest-error')
 
 @section('content')
 		<div class="flex h-screen items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-red-100 px-4 sm:px-6 lg:px-8">

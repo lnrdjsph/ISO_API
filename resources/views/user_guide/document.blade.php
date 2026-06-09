@@ -210,8 +210,7 @@
         </div>
 
         {{-- ═══ MOBILE TOGGLE ═══ --}}
-        <button class="mobile-toggle mb-4 flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200"
-            onclick="document.getElementById('guideSidebarCol').classList.toggle('open')">
+        <button id="guideMobileToggle" class="mobile-toggle mb-4 flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200">
             <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             {{ count($availableRoles) > 1 ? 'Menu & Switch Role' : 'Navigation' }}
         </button>
@@ -219,9 +218,8 @@
         <div class="relative flex gap-6">
 
             {{-- ═══ SIDEBAR ═══ --}}
-            <div class="guide-sidebar-col w-60 flex-shrink-0 self-stretch" id="guideSidebarCol"
-                onclick="if(event.target===this)this.classList.remove('open')">
-                <div class="sticky top-24 w-60 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100" style="max-height: calc(100vh - 7rem);">
+            <div class="guide-sidebar-col w-60 flex-shrink-0 self-stretch" id="guideSidebarCol">
+                <div class="sticky top-24 w-60 max-h-[calc(100vh-7rem)] overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
                     @if (count($availableRoles) > 1)
                         <div class="border-b border-gray-100 px-3 py-3">
                             <p class="mb-2 px-2 text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400">Switch view</p>
@@ -237,8 +235,7 @@
                             </div>
                         </div>
                     @endif
-                    <nav class="guide-sidebar-scroll overflow-y-auto p-2" id="guideSidebar"
-                        style="max-height: {{ count($availableRoles) > 1 ? 'calc(100vh - 16rem)' : 'calc(100vh - 8rem)' }};"></nav>
+                    <nav class="guide-sidebar-scroll overflow-y-auto p-2 {{ count($availableRoles) > 1 ? 'max-h-[calc(100vh-16rem)]' : 'max-h-[calc(100vh-8rem)]' }}" id="guideSidebar"></nav>
                 </div>
             </div>
 
@@ -274,7 +271,7 @@
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 1l12 12M13 1L1 13" /></svg>
             </button>
             {{-- Zoom/drag viewport --}}
-            <div class="lightbox-viewport" id="lightboxViewport" style="position:relative;">
+            <div class="lightbox-viewport relative" id="lightboxViewport">
                 <div class="lightbox-img-wrap" id="lightboxImgWrap">
                     <img id="lightboxImg" src="" alt="">
                 </div>
@@ -283,7 +280,7 @@
                     <button id="lbZoomOut" title="Zoom out">−</button>
                     <span class="lb-zoom-label" id="lbZoomLabel">100%</span>
                     <button id="lbZoomIn" title="Zoom in">+</button>
-                    <button id="lbZoomReset" title="Reset" style="font-size:11px;width:auto;border-radius:6px;padding:0 8px;">Reset</button>
+                    <button id="lbZoomReset" title="Reset" class="!w-auto !rounded-md !px-2 !text-[11px]">Reset</button>
                 </div>
             </div>
             {{-- Caption --}}
@@ -293,6 +290,18 @@
 
     {{-- ═══ JS ═══ --}}
     <script nonce="{{ $cspNonce ?? '' }}">
+        // Mobile sidebar toggle
+        var _guideToggleBtn     = document.getElementById('guideMobileToggle');
+        var _guideSidebarCol    = document.getElementById('guideSidebarCol');
+        if (_guideToggleBtn && _guideSidebarCol) {
+            _guideToggleBtn.addEventListener('click', function () {
+                _guideSidebarCol.classList.toggle('open');
+            });
+            _guideSidebarCol.addEventListener('click', function (e) {
+                if (e.target === _guideSidebarCol) _guideSidebarCol.classList.remove('open');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const availableRoles = @json($availableRoles);
             const sidebarConfig  = @json($sidebars);

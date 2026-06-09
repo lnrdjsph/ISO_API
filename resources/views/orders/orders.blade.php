@@ -139,7 +139,7 @@
                     @include('orders.partials.table')
                 </div>
 
-                <div class="flex items-center justify-between p-4" style="margin-top:-65px;">
+                <div class="flex items-center justify-between p-4 -mt-[65px]">
                     <form method="GET" action="{{ route('orders.index') }}" class="ajax-form flex items-center space-x-2">
                         @foreach (request()->except('per_page', 'page') as $key => $value)
                             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
@@ -157,8 +157,69 @@
         </div>
     </div>
 
-    {{-- SweetAlert2 CDN --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- Hidden template for the Status Flow modal — avoids inline styles in JS strings --}}
+    <div id="status-flow-template" class="hidden">
+        <div class="font-sans">
+            <div class="flow-steps mb-4 flex flex-wrap items-center justify-center gap-2">
+                {{-- New Order (Blue) --}}
+                <div class="step flex min-w-[90px] flex-1 flex-col items-center rounded-2xl bg-blue-50 px-1.5 py-2.5 shadow-sm">
+                    <div class="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 shadow">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    </div>
+                    <div class="text-sm font-bold text-blue-900">New Order</div>
+                    <div class="text-[0.7rem] text-blue-500">Pending review</div>
+                </div>
+                <div class="arrow text-xl font-light text-slate-400">→</div>
+                {{-- For Approval (Purple) --}}
+                <div class="step flex min-w-[90px] flex-1 flex-col items-center rounded-2xl bg-purple-50 px-1.5 py-2.5 shadow-sm">
+                    <div class="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 shadow">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="text-sm font-bold text-purple-900">For Approval</div>
+                    <div class="text-[0.7rem] text-purple-600">Awaiting manager</div>
+                </div>
+                <div class="arrow text-xl font-light text-slate-400">→</div>
+                {{-- Approved (Green) --}}
+                <div class="step flex min-w-[90px] flex-1 flex-col items-center rounded-2xl bg-green-100 px-1.5 py-2.5 shadow-sm">
+                    <div class="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-green-500 shadow">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="text-sm font-bold text-green-900">Approved</div>
+                    <div class="text-[0.7rem] text-green-600">Cleared for processing</div>
+                </div>
+                <div class="arrow text-xl font-light text-slate-400">→</div>
+                {{-- Completed (Emerald) --}}
+                <div class="step flex min-w-[90px] flex-1 flex-col items-center rounded-2xl bg-emerald-100 px-1.5 py-2.5 shadow-sm">
+                    <div class="mb-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 shadow">
+                        <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="text-sm font-bold text-emerald-900">Completed</div>
+                    <div class="text-[0.7rem] text-emerald-600">Fulfilled & closed</div>
+                </div>
+            </div>
+            {{-- Terminal statuses --}}
+            <div class="border-t border-slate-200 pt-3">
+                <div class="flex flex-wrap justify-center gap-4">
+                    {{-- Rejected (Orange) --}}
+                    <div class="flex min-w-[100px] flex-col items-center rounded-2xl bg-orange-50 px-4 py-1.5">
+                        <div class="mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 shadow">
+                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </div>
+                        <div class="text-[0.8rem] font-semibold text-orange-900">Rejected</div>
+                        <div class="text-[0.65rem] text-orange-700">Order declined by manager</div>
+                    </div>
+                    {{-- Cancelled (Red) --}}
+                    <div class="flex min-w-[100px] flex-col items-center rounded-2xl bg-red-50 px-4 py-1.5">
+                        <div class="mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 shadow">
+                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="text-[0.8rem] font-semibold text-red-900">Cancelled</div>
+                        <div class="text-[0.65rem] text-red-700">Order voided or archived</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script nonce="{{ $cspNonce ?? '' }}">
         // ========== Enhanced Status Flow Modal ==========
@@ -168,79 +229,10 @@
         });
 
         function showStatusFlowModal() {
+            var tpl = document.getElementById('status-flow-template');
             Swal.fire({
                 title: 'Order Status Flow',
-                html: `
-            <div class="status-flow-container" style="font-family: system-ui, -apple-system, sans-serif;">
-                <!-- Main flow -->
-                <div class="flow-steps" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.5rem; margin: 0.5rem 0 1rem;">
-                    <!-- New Order (Blue) -->
-                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #eff6ff; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                        <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(59,130,246,0.2);">
-                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                        </div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #1e3a8a;">New Order</div>
-                        <div style="font-size: 0.7rem; color: #3b82f6;">Pending review</div>
-                    </div>
-                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
-                    <!-- For Approval (Purple) -->
-                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #f3e8ff; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                        <div style="width: 40px; height: 40px; background: #9333ea; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(147,51,234,0.2);">
-                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #4c1d95;">For Approval</div>
-                        <div style="font-size: 0.7rem; color: #9333ea;">Awaiting manager</div>
-                    </div>
-                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
-                    <!-- Approved (Green) -->
-                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #dcfce7; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                        <div style="width: 40px; height: 40px; background: #22c55e; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(34,197,94,0.2);">
-                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #14532d;">Approved</div>
-                        <div style="font-size: 0.7rem; color: #16a34a;">Cleared for processing</div>
-                    </div>
-                    <div class="arrow" style="color: #94a3b8; font-size: 1.2rem; font-weight: 300;">→</div>
-                    <!-- Completed (Dark Green) -->
-                    <div class="step" style="flex: 1; min-width: 90px; text-align: center; background: #bbf7d0; border-radius: 1rem; padding: 0.6rem 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                        <div style="width: 40px; height: 40px; background: #059669; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px auto; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
-                            <svg style="width: 22px; height: 22px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: #064e3b;">Completed</div>
-                        <div style="font-size: 0.7rem; color: #059669;">Fulfilled & closed order</div>
-                    </div>
-                </div>
-
-                <!-- Terminal statuses (Rejected / Cancelled) -->
-                <div style="border-top: 1px solid #e2e8f0; margin: 0.5rem 0 0.5rem; padding-top: 0.8rem;">
-                    <div style="display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap;">
-                        <!-- Rejected (Orange) -->
-                        <div style="text-align: center; background: #ffedd5; border-radius: 1rem; padding: 0.4rem 1rem; min-width: 100px;">
-                            <div style="width: 34px; height: 34px; background: #f97316; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; box-shadow: 0 2px 4px rgba(249,115,22,0.2);">
-                                <svg style="width: 18px; height: 18px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </div>
-                            <div style="font-weight: 600; font-size: 0.8rem; color: #9a3412;">Rejected</div>
-                            <div style="font-size: 0.65rem; color: #c2410c;">Order declined by manager</div>
-                        </div>
-                        <!-- Cancelled (Red) -->
-                        <div style="text-align: center; background: #fee2e2; border-radius: 1rem; padding: 0.4rem 1rem; min-width: 100px;">
-                            <div style="width: 34px; height: 34px; background: #ef4444; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px auto; box-shadow: 0 2px 4px rgba(239,68,68,0.2);">
-                                <svg style="width: 18px; height: 18px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-                            <div style="font-weight: 600; font-size: 0.8rem; color: #991b1b;">Cancelled</div>
-                            <div style="font-size: 0.65rem; color: #dc2626;">Order voided or archived</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <style>
-                @media (max-width: 550px) {
-                    .flow-steps { flex-direction: column; gap: 0.25rem !important; }
-                    .arrow { transform: rotate(90deg); margin: 0.25rem 0; }
-                    .step { width: 80%; margin: 0 auto; }
-                }
-            </style>
-        `,
+                html: tpl ? tpl.innerHTML : '',
                 showCloseButton: true,
                 showConfirmButton: false,
                 width: 'auto',
@@ -248,26 +240,6 @@
                     popup: 'compact-swal rounded-2xl',
                     title: 'text-lg font-bold'
                 },
-                didOpen: () => {
-                    const style = document.createElement('style');
-                    style.textContent = `
-                @media (max-width: 480px) {
-                    .compact-swal {
-                        width: 92% !important;
-                        max-width: 400px !important;
-                        padding: 1rem !important;
-                    }
-                    .compact-swal .swal2-title {
-                        font-size: 1.2rem !important;
-                        padding-bottom: 0 !important;
-                    }
-                    .compact-swal .swal2-html-container {
-                        padding: 0 !important;
-                    }
-                }
-            `;
-                    document.head.appendChild(style);
-                }
             });
         }
 

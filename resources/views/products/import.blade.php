@@ -47,8 +47,7 @@
 
             {{-- Drop zone --}}
             <div id="drop-zone"
-                class="relative cursor-pointer rounded-xl border-2 border-dashed border-gray-300 transition-colors duration-200 hover:border-indigo-400 hover:bg-indigo-50/40"
-                style="min-height:160px;display:flex;align-items:center;justify-content:center">
+                class="relative flex min-h-[160px] cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-gray-300 transition-colors duration-200 hover:border-indigo-400 hover:bg-indigo-50/40"
 
                 <input type="file" id="csv-file" accept=".csv" class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
 
@@ -97,8 +96,7 @@
                 </div>
                 <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                     <div id="upload-progress-bar"
-                        class="h-full rounded-full bg-indigo-600 transition-all duration-300"
-                        style="width:0%"></div>
+                        class="h-full w-0 rounded-full bg-indigo-600 transition-all duration-300"></div>
                 </div>
             </div>
 
@@ -134,10 +132,10 @@
         </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-full text-xs">
-                <thead style="background:#1e293b">
+                <thead class="bg-slate-800">
                     <tr>
                         @foreach (['#','SKU','Description','Allocation','Case Pack','SRP','C/BC','PO15%','Discount','Freebie','Status'] as $col)
-                            <th style="padding:9px 10px;text-align:left;font-size:9px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">{{ $col }}</th>
+                            <th class="whitespace-nowrap px-2.5 py-2 text-left text-[9px] font-semibold uppercase tracking-[.07em] text-slate-400">{{ $col }}</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -167,7 +165,7 @@
                 {{-- Column rules --}}
                 <div>
                     <p class="mb-3 text-xs text-gray-500">Your CSV must have exactly <strong class="text-gray-700">9 columns</strong> in this order:</p>
-                    <ol class="space-y-1.5 pl-4 text-xs text-gray-600" style="list-style-type:upper-alpha">
+                    <ol class="list-[upper-alpha] space-y-1.5 pl-4 text-xs text-gray-600">
                         @foreach ([
                             ['SKU', 'Required. Numbers only (e.g. 102806178).'],
                             ['Description', 'Required. Product name/details.'],
@@ -231,7 +229,8 @@
                             ['Invalid', '#fef2f2', '#fca5a5', '#991b1b'],
                             ['Duplicate', '#fff7ed', '#fed7aa', '#9a3412'],
                         ] as [$label, $bg, $border, $color])
-                            <span style="display:inline-flex;align-items:center;border-radius:9999px;padding:2px 10px;font-size:11px;font-weight:600;background:{{ $bg }};border:1px solid {{ $border }};color:{{ $color }}">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                style="background:{{ $bg }};border:1px solid {{ $border }};color:{{ $color }}">
                                 {{ $label }}
                             </span>
                         @endforeach

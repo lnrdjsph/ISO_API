@@ -32,7 +32,7 @@
                         <input type="password" name="password" id="password"
                             class="w-full rounded-md border-gray-300 pr-10 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                             required>
-                        <button type="button" onclick="togglePassword('password')"
+                        <button type="button" id="toggle-password-btn"
                             class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
                             <svg id="eye-password" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -63,10 +63,10 @@
 
         </div>
     </div>
-    <script>
-        function togglePassword(fieldId) {
-            const field = document.getElementById(fieldId);
+    <script nonce="{{ $cspNonce ?? '' }}">
+        document.getElementById('toggle-password-btn').addEventListener('click', function () {
+            var field = document.getElementById('password');
             field.type = field.type === 'password' ? 'text' : 'password';
-        }
+        });
     </script>
 </x-guest-layout>

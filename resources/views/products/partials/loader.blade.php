@@ -27,7 +27,7 @@
 
         <div class="mt-4 w-full">
             <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200">
-                <div id="progressBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                <div id="progressBar" class="h-full w-0 bg-blue-500 transition-all duration-500"></div>
             </div>
         </div>
     </div>
