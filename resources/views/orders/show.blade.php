@@ -167,11 +167,11 @@
         }
 
         /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                                                                                       INFO SECTIONS — uniform mobile layout
-                                                                                                                                                                                                                                                                                                                                                                                                       Below 768 px: sections stack cleanly; each
-                                                                                                                                                                                                                                                                                                                                                                                                       field becomes a horizontal label → value row
-                                                                                                                                                                                                                                                                                                                                                                                                       with a subtle underline separator.
-                                                                                                                                                                                                                                                                                                                                                                                                       ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                               INFO SECTIONS — uniform mobile layout
+                                                                                                                                                                                                                                                                                                                                                                                                               Below 768 px: sections stack cleanly; each
+                                                                                                                                                                                                                                                                                                                                                                                                               field becomes a horizontal label → value row
+                                                                                                                                                                                                                                                                                                                                                                                                               with a subtle underline separator.
+                                                                                                                                                                                                                                                                                                                                                                                                               ══════════════════════════════════════════════ */
         @media (max-width: 767px) {
 
             /* Strip desktop right-padding & left-border from sections */
@@ -384,7 +384,7 @@
         }
 
         /* Underline effect when component is editable.
-                                                                               Exclude checkboxes/radios — they should keep their native look. */
+                                                                                       Exclude checkboxes/radios — they should keep their native look. */
         .order-details-component.editable input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable select:not(#orderAction),
         .order-details-component.editable textarea,
@@ -423,18 +423,18 @@
         }
 
         /* ══════════════════════════════════════════════════════════
-                                   VIEW MODE vs EDIT MODE
-                                   An editable order (.editable) still loads in VIEW mode: all
-                                   fields look and behave like static read-only values until the
-                                   user clicks "Edit Order", which adds .edit-mode and reveals
-                                   the editable styling below. The PHP-level locks ($isInfoLocked,
-                                   $itemsLocked) are unchanged — this is a presentation gate on
-                                   top of them.
-                                   ══════════════════════════════════════════════════════════ */
+                                           VIEW MODE vs EDIT MODE
+                                           An editable order (.editable) still loads in VIEW mode: all
+                                           fields look and behave like static read-only values until the
+                                           user clicks "Edit Order", which adds .edit-mode and reveals
+                                           the editable styling below. The PHP-level locks ($isInfoLocked,
+                                           $itemsLocked) are unchanged — this is a presentation gate on
+                                           top of them.
+                                           ══════════════════════════════════════════════════════════ */
 
         /* --- VIEW MODE: editable fields render as plain read-only text ---
-                                   #orderAction (Order Actions) is excluded everywhere — it is NOT an
-                                   editable order field and must stay a normal, always-active dropdown. */
+                                           #orderAction (Order Actions) is excluded everywhere — it is NOT an
+                                           editable order field and must stay a normal, always-active dropdown. */
         .order-details-component.editable:not(.edit-mode) input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable:not(.edit-mode) select:not(#orderAction),
         .order-details-component.editable:not(.edit-mode) textarea {
@@ -466,8 +466,8 @@
         }
 
         /* --- EDIT MODE: editable fields read as real, bordered input boxes ---
-                                   Non-minimalist but professional: solid border, soft fill, rounded
-                                   corners and a clear focus ring. Uses the app's indigo accent. */
+                                           Non-minimalist but professional: solid border, soft fill, rounded
+                                           corners and a clear focus ring. Uses the app's indigo accent. */
         .order-details-component.editable.edit-mode input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
         .order-details-component.editable.edit-mode select:not(#orderAction),
         .order-details-component.editable.edit-mode textarea {
@@ -632,7 +632,7 @@
 
                             const dismissBtn = document.getElementById('dismiss-received-reminder');
                             if (dismissBtn) {
-                                dismissBtn.addEventListener('click', function () {
+                                dismissBtn.addEventListener('click', function() {
                                     banner.classList.add('hidden');
                                 });
                             }
@@ -730,7 +730,7 @@
                                         <p class="mb-0.5 text-xs text-gray-600">Mode of Payment</p>
                                         <select
                                             name="mode_payment"
-                                            class="w-full appearance-none border-none bg-none bg-transparent p-0 text-xs font-medium text-gray-900 focus:ring-0">
+                                            class="w-full appearance-none border-none bg-transparent bg-none p-0 text-xs font-medium text-gray-900 focus:ring-0">
                                             <option
                                                 value=""
                                                 disabled
@@ -1265,7 +1265,7 @@
                                                 contenteditable-search="true">
                                                 {{ $item->sku }}
                                                 <ul
-                                                    class="search-results absolute z-50 hidden max-h-60 min-w-[250px] max-w-[400px] whitespace-nowrap top-full left-0 overflow-y-auto rounded border bg-white shadow">
+                                                    class="search-results absolute left-0 top-full z-50 hidden max-h-60 min-w-[250px] max-w-[400px] overflow-y-auto whitespace-nowrap rounded border bg-white shadow">
                                                 </ul>
 
                                                 <input
@@ -1283,7 +1283,7 @@
                                                 contenteditable-search="true">
                                                 {{ $item->item_description }}
                                                 <ul
-                                                    class="search-results absolute z-50 hidden max-h-60 min-w-[250px] max-w-[400px] whitespace-nowrap top-full left-0 overflow-y-auto rounded border bg-white shadow">
+                                                    class="search-results absolute left-0 top-full z-50 hidden max-h-60 min-w-[250px] max-w-[400px] overflow-y-auto whitespace-nowrap rounded border bg-white shadow">
                                                 </ul>
 
                                                 <input
@@ -2007,7 +2007,7 @@
                                             <option value="">-- Select Action --</option>
 
                                             @if (!str_contains(strtolower($userRole), 'store manager') && !str_contains(strtolower($userRole), 'warehouse'))
-                                                @if (!in_array($order->order_status, ['cancelled', 'completed', 'for approval', 'approved']))
+                                                @if (!in_array($order->order_status, ['cancelled', 'completed', 'approved']))
                                                     <option value="cancel">Cancel Order</option>
                                                 @endif
 
@@ -4546,12 +4546,12 @@
             }
 
             /* ══════════════════════════════════════════════
-                                                                                                                                                                                                                                                                                                                                                                                                           MOBILE CARD LAYOUT — items table (2-column grid)
-                                                                                                                                                                                                                                                                                                                                                                                                           Below 1024 px: table rows become cards with a 2-column
-                                                                                                                                                                                                                                                                                                                                                                                                           form-like grid. Labels sit above their values, aligned
-                                                                                                                                                                                                                                                                                                                                                                                                           left. All JS (data-field, contenteditable, hidden inputs)
-                                                                                                                                                                                                                                                                                                                                                                                                           is untouched — only CSS display changes.
-                                                                                                                                                                                                                                                                                                                                                                                                           ══════════════════════════════════════════════ */
+                                                                                                                                                                                                                                                                                                                                                                                                                   MOBILE CARD LAYOUT — items table (2-column grid)
+                                                                                                                                                                                                                                                                                                                                                                                                                   Below 1024 px: table rows become cards with a 2-column
+                                                                                                                                                                                                                                                                                                                                                                                                                   form-like grid. Labels sit above their values, aligned
+                                                                                                                                                                                                                                                                                                                                                                                                                   left. All JS (data-field, contenteditable, hidden inputs)
+                                                                                                                                                                                                                                                                                                                                                                                                                   is untouched — only CSS display changes.
+                                                                                                                                                                                                                                                                                                                                                                                                                   ══════════════════════════════════════════════ */
             @media (max-width: 1023px) {
 
                 /* ── 1. Kill horizontal scroll; table fills width ── */
