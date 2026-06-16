@@ -9,6 +9,12 @@
     <meta name="theme-color" content="#0f172a" />
     <title>ISO B2B2C Ordering System</title>
     <link rel="icon" type="image/png" href="{{ asset('images/MarengEms_Logo.png') }}">
+
+    {{-- jQuery must load SYNCHRONOUSLY (classic script) before the deferred Vite
+         module bundle, because many page views use $(...) at the top level of
+         inline <script> blocks that run at parse time. Self-hosted for CSP. --}}
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}" nonce="{{ $cspNonce ?? '' }}"></script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style nonce="{{ $cspNonce ?? '' }}">
@@ -576,6 +582,8 @@
                         </a>
                     </li>
 
+                    {{-- Merchandiser is catalog-only: hide Orders & Reports --}}
+                    @if (auth()->user()->role !== 'merchandiser')
                     <!-- Orders & Forms (merged) -->
                     <li class="accordion-item" data-accordion="orders">
                         <button class="nav-parent w-full text-left" aria-expanded="false">
@@ -623,10 +631,12 @@
                             <li><a href="{{ route('reports.payments') }}" class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }}">Mode of Payments</a></li>
                         </ul>
                     </li>
+                    @endif
+                    {{-- end merchandiser order/report hide --}}
 
                     <!-- Inventory (Products) conditional -->
                     @auth
-                        @if (in_array(auth()->user()->role, ['super admin', 'store personnel']))
+                        @if (in_array(auth()->user()->role, ['super admin', 'store personnel', 'merchandiser']))
                             <li class="section-label"><span>Inventory</span></li>
                             <li class="accordion-item" data-accordion="products">
                                 <button class="nav-parent w-full text-left" aria-expanded="false">
@@ -645,6 +655,10 @@
                                         <li><a href="{{ route('products.create') }}" class="sub-item {{ request()->routeIs('products.create') ? 'active' : '' }}">Add Product</a></li>
                                         <li><a href="{{ route('products.import.show') }}" class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">Import CSV</a>
                                         </li>
+                                    @endif
+                                    @if (in_array(auth()->user()->role, ['super admin', 'merchandiser']))
+                                        <li><a href="{{ route('products.presets.index') }}" class="sub-item {{ request()->routeIs('products.presets.*') ? 'active' : '' }}">Monthly Presets</a></li>
+                                        <li><a href="{{ route('products.history') }}" class="sub-item {{ request()->routeIs('products.history') ? 'active' : '' }}">Import History</a></li>
                                     @endif
                                 </ul>
                             </li>

@@ -53,7 +53,7 @@ class UserController extends Controller
 
         $storeLocations = LocationConfig::stores();
         $regionLabels   = LocationConfig::regionLabels();
-        $roles          = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel', 'super admin', 'store manager'];
+        $roles          = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel', 'super admin', 'store manager', 'merchandiser'];
 
         if ($request->ajax()) {
             return view('users.partials.table', compact('users', 'storeLocations', 'regionLabels', 'roles'));
@@ -67,7 +67,7 @@ class UserController extends Controller
     {
         $storeLocations = LocationConfig::stores();
         $regionLabels = LocationConfig::regionLabels();
-        $roles = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager'];
+        $roles = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager', 'merchandiser'];
 
         return view('users.user_create', compact('storeLocations', 'regionLabels', 'roles'));
     }
@@ -79,7 +79,7 @@ class UserController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:6|confirmed',
-            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager'])],
+            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager', 'merchandiser'])],
             'user_location' => [
                 'required',
                 'string',
@@ -118,7 +118,7 @@ class UserController extends Controller
     {
         $storeLocations = LocationConfig::stores();
         $regionLabels = LocationConfig::regionLabels();
-        $roles = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager'];
+        $roles = ['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager', 'merchandiser'];
 
         return view('users.edit', compact('user', 'storeLocations', 'regionLabels', 'roles'));
     }
@@ -130,7 +130,7 @@ class UserController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => ['required', 'email', Rule::unique('users')->ignore($user->id)],
             'password'      => 'nullable|string|min:4|confirmed',
-            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager'])],
+            'role'          => ['required', Rule::in(['store admin', 'store personnel', 'warehouse manager', 'warehouse personnel',  'super admin', 'store manager', 'merchandiser'])],
             'user_location' => [
                 'required',
                 'string',

@@ -131,6 +131,9 @@
                                         readonly
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
                                         placeholder="Requesting Store" />
+                                    <label for="requesting_store" class="absolute left-3 top-1.5 text-xs text-gray-500">
+                                        Requesting Store
+                                    </label>
                                 @endif
                             </div>
                             <div class="relative mb-6 w-full">
@@ -213,7 +216,7 @@ $warehouseMap = $hasRegion
     ? LocationConfig::warehousesForRegion($userLocation)
     : ($isSuperAdmin
         ? LocationConfig::warehouses()
-        : array_filter(LocationConfig::warehouses(), fn($code) => $code === LocationConfig::warehouseForStore($userLocation), ARRAY_FILTER_USE_KEY));
+        : array_filter(LocationConfig::warehouses(), fn($code) => (string) $code === (string) LocationConfig::warehouseForStore($userLocation), ARRAY_FILTER_USE_KEY));
 
 $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($userLocation));
                             @endphp
@@ -233,7 +236,7 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                                     <input type="hidden" name="warehouse" value="{{ $selectedWarehouseCode }}" />
                                     <input
                                         id="warehouse_display"
-                                        value="{{ $selectedWarehouseCode ? $warehouseMap[$selectedWarehouseCode] ?? $selectedWarehouseCode : '' }}"
+                                        value="{{ $selectedWarehouseCode ? ($warehouseMap[$selectedWarehouseCode] ?? LocationConfig::warehouseName($selectedWarehouseCode)) : '' }}"
                                         type="text"
                                         readonly
                                         class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-indigo-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -764,14 +767,14 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                         Select Mode of Dispatch
                                     </option>
                                     <option
-                                        value="Delivery to Store"
-                                        {{ old('mode_dispatching') === 'Delivery to Store' ? 'selected' : '' }}>
-                                        Delivery to Store
-                                    </option>
-                                    <option
                                         value="Delivery Direct to Customer"
                                         {{ old('mode_dispatching') === 'Delivery Direct to Customer' ? 'selected' : '' }}>
                                         Delivery Direct to Customer
+                                    </option>
+                                    <option
+                                        value="Delivery to Store"
+                                        {{ old('mode_dispatching') === 'Delivery to Store' ? 'selected' : '' }}>
+                                        Delivery to Store
                                     </option>
                                     <option
                                         value="Pick-up at Warehouse"
@@ -2245,8 +2248,24 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 return;
             }
 
-            const requestingStore = $('select[name="requesting_store"]').val() ||
-                $('input[name="requesting_store"]').val();
+            // Resolve the active requesting store: the dropdown value (region /
+            // super admin) OR the hidden input (store personnel locked to one store).
+            const requestingStore = (
+                $('select[name="requesting_store"]').val() ||
+                $('input[name="requesting_store"]').val() ||
+                ''
+            ).trim();
+
+            // Guard: no store resolved yet (e.g. dropdown still on "Select Store").
+            // Searching with an empty store_code would silently fall back to the
+            // wrong products table server-side — prompt the user instead.
+            if (!requestingStore) {
+                $input.removeClass('animate-pulse');
+                resultList.removeClass('hidden').html(`
+        <li class="px-6 py-4 text-center text-amber-600">Please select a requesting store first.</li>
+    `);
+                return;
+            }
 
             $input.addClass('animate-pulse');
             resultList.removeClass('hidden').html(`

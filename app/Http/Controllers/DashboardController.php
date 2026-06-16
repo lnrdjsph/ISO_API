@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ISO_B2B\Order;
+use App\Models\ActivityLog;
+use App\Models\ProductImportPreset;
 use App\Support\LocationConfig;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,11 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
+
+        // Merchandising role gets a product-centric dashboard (no order scoping).
+        if (strtolower($user->role ?? '') === 'merchandiser') {
+            return $this->merchandising($user);
+        }
 
         // Get time range from request (for KPI only)
         $timeRange = request()->get('time_range', 'all_time');
@@ -363,5 +370,88 @@ class DashboardController extends Controller
             'timeRange',
             'pipelineCounts',  // Add this
         )));
+    }
+
+    /**
+     * Product-centric dashboard for the Merchandising role. Aggregates across
+     * every products_{store} table (guarded by hasTable) plus staged presets
+     * and the product audit trail.
+     */
+    private function merchandising($user)
+    {
+        $startOfMonth = Carbon::now()->startOfMonth();
+
+        $stores = LocationConfig::stores();   // [code => name]
+
+        $totalActive   = 0;
+        $totalArchived = 0;
+        $addedThisMonth   = 0;
+        $updatedThisMonth = 0;
+        $withScheme    = 0;
+        $perStore      = [];   // ['label' => ..., 'active' => ...]
+
+        foreach ($stores as $code => $name) {
+            $table = 'products_' . strtolower($code);
+            if (!Schema::connection('mysql')->hasTable($table)) {
+                continue;
+            }
+
+            $base = DB::connection('mysql')->table($table);
+
+            $active   = (clone $base)->whereNull('archived_at')->count();
+            $archived = (clone $base)->whereNotNull('archived_at')->count();
+
+            $totalActive   += $active;
+            $totalArchived += $archived;
+
+            $addedThisMonth   += (clone $base)->where('created_at', '>=', $startOfMonth)->count();
+            $updatedThisMonth += (clone $base)
+                ->where('updated_at', '>=', $startOfMonth)
+                ->whereColumn('updated_at', '>', 'created_at')
+                ->count();
+
+            $withScheme += (clone $base)->whereNull('archived_at')
+                ->where(function ($q) {
+                    $q->where('cash_bank_card_scheme', '<>', '')
+                      ->orWhere('po15_scheme', '<>', '')
+                      ->orWhere('discount_scheme', '<>', '');
+                })->count();
+
+            $perStore[] = [
+                'code'   => strtoupper($code),
+                'label'  => $name,
+                'active' => $active,
+            ];
+        }
+
+        // Sort stores by product count (desc) for the chart.
+        usort($perStore, fn($a, $b) => $b['active'] <=> $a['active']);
+
+        $schemeCoverage = $totalActive > 0 ? round(($withScheme / $totalActive) * 100, 1) : 0;
+
+        $pendingPresets = ProductImportPreset::where('status', 'draft')->count();
+        $appliedThisMonth = ProductImportPreset::where('status', 'applied')
+            ->where('applied_at', '>=', $startOfMonth)->count();
+
+        $recentPresets = ProductImportPreset::with('creator')
+            ->latest()->limit(5)->get();
+
+        $recentActivity = ActivityLog::with('user')
+            ->where('action', 'like', 'product.%')
+            ->latest()->limit(10)->get();
+
+        return view('dashboard.merchandising', compact(
+            'user',
+            'totalActive',
+            'totalArchived',
+            'addedThisMonth',
+            'updatedThisMonth',
+            'schemeCoverage',
+            'pendingPresets',
+            'appliedThisMonth',
+            'perStore',
+            'recentPresets',
+            'recentActivity'
+        ));
     }
 }

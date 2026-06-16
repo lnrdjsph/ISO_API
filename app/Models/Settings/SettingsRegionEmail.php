@@ -27,7 +27,7 @@ class SettingsRegionEmail extends Model
         return $this->belongsTo(SettingsRegion::class, 'region_key', 'region_key');
     }
 
-    // ── Scopes ─────────────────────────────────────────────────
+// ── Scopes ─────────────────────────────────────────────────
 
     public function scopeActive($query)
     {

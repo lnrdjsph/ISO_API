@@ -40,7 +40,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\PreventTimeout::class,
-            // \App\Http\Middleware\ContentSecurityPolicy::class, // ✅ ADDED
+            \App\Http\Middleware\ContentSecurityPolicy::class, // ✅ ADDED
         ],
 
         'api' => [

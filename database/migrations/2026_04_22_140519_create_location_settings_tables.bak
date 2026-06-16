@@ -6,26 +6,64 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
+    public function up(): void
     {
-        Schema::create('location_settings_tables', function (Blueprint $table) {
-            $table->id();
+        // ── Warehouses ────────────────────────────────────────────────
+        Schema::create('settings_warehouses', function (Blueprint $table) {
+            $table->string('warehouse_code', 10)->primary();
+            $table->string('name');
+            $table->string('facility_id', 5);
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+        });
+
+        // ── Regions ───────────────────────────────────────────────────
+        Schema::create('settings_regions', function (Blueprint $table) {
+            $table->string('region_key', 10)->primary();
+            $table->string('label');
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+        });
+
+        // ── Stores ────────────────────────────────────────────────────
+        Schema::create('settings_stores', function (Blueprint $table) {
+            $table->string('store_code', 10)->primary();
+            $table->string('display_name');
+            $table->string('short_name');
+            $table->string('warehouse_code', 10)->nullable();
+            $table->string('region_key', 10)->nullable();
+            $table->enum('status', ['active', 'pending', 'inactive'])->default('active');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+
+            $table->foreign('warehouse_code')
+                  ->references('warehouse_code')->on('settings_warehouses')->nullOnDelete();
+
+            $table->foreign('region_key')
+                  ->references('region_key')->on('settings_regions')->nullOnDelete();
+        });
+
+        // ── Audit Log ─────────────────────────────────────────────────
+        Schema::create('settings_audit_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('entity_type');   // 'store' | 'warehouse' | 'region'
+            $table->string('entity_id');
+            $table->string('action');        // 'created' | 'updated' | 'deactivated'
+            $table->json('before')->nullable();
+            $table->json('after')->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('location_settings_tables');
+        Schema::dropIfExists('settings_audit_logs');
+        Schema::dropIfExists('settings_stores');
+        Schema::dropIfExists('settings_regions');
+        Schema::dropIfExists('settings_warehouses');
     }
 };

@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\ProductImportPreset;
+use App\Models\ActivityLog;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Exception;
@@ -518,153 +522,19 @@ class ProductController extends Controller
             $file       = $request->file('csv_file');
             $csvContent = file_get_contents($file->getRealPath());
 
-            $lines = array_filter(
-                preg_split('/\r\n|\r|\n/', trim($csvContent)),
-                fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
-            );
+            $parsed = $this->buildProductRows($tableName, $csvContent);
 
-            if (count($lines) < 2) {
+            if (!$parsed['has_min_rows']) {
                 return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.']);
             }
 
-            $dataLines        = array_slice($lines, 1);
-            $errors           = [];
-            $allData          = [];
-            $existingProducts = DB::table($tableName)->select('sku', 'case_pack')->get()
-                ->keyBy(fn($row) => strtoupper($row->sku));
-            $seenCsvSkus = [];
-
-            foreach ($dataLines as $lineNumber => $line) {
-                $rowNumber = $lineNumber + 2;
-                $columns   = str_getcsv(trim($line));
-
-                if (count($columns) < 9) {
-                    $errors[] = "Row {$rowNumber}: Missing required columns.";
-                    continue;
-                }
-
-                [
-                    $sku,
-                    $description,
-                    $allocationPerCase,
-                    $casePackRaw,
-                    $srpRaw,
-                    $cashBankCardScheme,
-                    $po15Scheme,
-                    $discountScheme,
-                    $freebieSkuRaw
-                ] =
-                    array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
-
-                $formattedSku = strtoupper($sku);
-
-                if (!$sku || !preg_match('/^\d+$/', $sku)) {
-                    $errors[] = "Row {$rowNumber}: SKU must be numeric.";
-                    continue;
-                }
-                if (in_array($formattedSku, $seenCsvSkus)) {
-                    $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' in CSV.";
-                    continue;
-                }
-                $seenCsvSkus[] = $formattedSku;
-                if (!$description) {
-                    $errors[] = "Row {$rowNumber}: Description is required.";
-                    continue;
-                }
-                if ($allocationPerCase === '' || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
-                    $errors[] = "Row {$rowNumber}: Store Allocation must be > 0.";
-                    continue;
-                }
-
-                $casePackNumbers = [];
-                if ($casePackRaw !== '') {
-                    $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
-                    foreach ($casePackNumbers as $num) {
-                        if (!is_numeric($num) || $num <= 0) {
-                            $errors[] = "Row {$rowNumber}: Invalid Case Pack '{$num}'.";
-                            continue 2;
-                        }
-                    }
-                }
-
-                $casePack = '';
-                if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
-                    $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
-                    $casePack = implode(' | ', array_unique(array_merge($existingNumbers, $casePackNumbers)));
-                } else {
-                    $casePack = implode(' | ', $casePackNumbers);
-                }
-
-                $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
-                if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
-                    $errors[] = "Row {$rowNumber}: SRP must be > 0.";
-                    continue;
-                }
-                if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
-                    $errors[] = "Row {$rowNumber}: CBC Scheme must be 'number+number'.";
-                    continue;
-                }
-                if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
-                    $errors[] = "Row {$rowNumber}: PO15 Scheme must be 'number+number'.";
-                    continue;
-                }
-                if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
-                    $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
-                    continue;
-                }
-
-                $freebieSku = trim($freebieSkuRaw);
-                if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
-                    $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric.";
-                    continue;
-                }
-
-                $oracleData = DB::connection('oracle_rms')->selectOne("
-                    SELECT item_master.dept AS department_code, deps.dept_name AS department_name
-                    FROM item_master
-                    LEFT JOIN deps ON deps.dept = item_master.dept
-                    WHERE item_master.item_parent = ? AND ROWNUM = 1
-                ", [$sku]);
-
-                $allData[] = [
-                    'sku' => $formattedSku,
-                    'description' => $description,
-                    'department_code' => $oracleData->department_code ?? null,
-                    'department'      => $oracleData->department_name ?? null,
-                    'case_pack'       => $casePack !== '' ? $casePack : null,
-                    'srp'             => floatval($srp),
-                    'allocation_per_case'         => intval($allocationPerCase),
-                    'initial_allocation_per_case' => intval($allocationPerCase),
-                    'cash_bank_card_scheme' => $cashBankCardScheme,
-                    'po15_scheme'           => $po15Scheme,
-                    'discount_scheme'       => $discountScheme,
-                    'freebie_sku'           => $freebieSku,
-                    'archived_at' => null,
-                    'archived_by' => null,
-                    'archive_reason' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
+            $allData          = $parsed['rows'];
+            $errors           = $parsed['errors'];
+            $existingProducts = $parsed['existing'];
+            $dataLineCount    = $parsed['data_line_count'];
 
             if (!empty($allData)) {
-                DB::table($tableName)->upsert($allData, ['sku'], [
-                    'description',
-                    'department_code',
-                    'department',
-                    'case_pack',
-                    'srp',
-                    'allocation_per_case',
-                    'initial_allocation_per_case',
-                    'cash_bank_card_scheme',
-                    'po15_scheme',
-                    'discount_scheme',
-                    'freebie_sku',
-                    'archived_at',
-                    'archived_by',
-                    'archive_reason',
-                    'updated_at',
-                ]);
+                DB::table($tableName)->upsert($allData, ['sku'], $this->productUpsertColumns());
             }
 
             $insertCount = 0;
@@ -682,7 +552,7 @@ class ProductController extends Controller
                     'inserted'      => $insertCount,
                     'updated'       => $updateCount,
                     'error_count'   => count($errors),
-                    'total_rows'    => count($dataLines),
+                    'total_rows'    => $dataLineCount,
                 ]
             );
 
@@ -712,6 +582,184 @@ class ProductController extends Controller
 
             return redirect()->back()->with('import_errors', ['Import failed: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Columns updated on upsert conflict. Shared by direct import() and
+     * staged preset apply so both paths write identical product data.
+     */
+    private function productUpsertColumns(): array
+    {
+        return [
+            'description',
+            'department_code',
+            'department',
+            'case_pack',
+            'srp',
+            'allocation_per_case',
+            'initial_allocation_per_case',
+            'cash_bank_card_scheme',
+            'po15_scheme',
+            'discount_scheme',
+            'freebie_sku',
+            'archived_at',
+            'archived_by',
+            'archive_reason',
+            'updated_at',
+        ];
+    }
+
+    /**
+     * Parse + validate a product CSV against the target table, producing
+     * upsert-ready rows. Extracted verbatim from import() so the staged
+     * preset flow validates and builds rows identically.
+     *
+     * @return array{rows: array, errors: array, existing: \Illuminate\Support\Collection, data_line_count: int, has_min_rows: bool}
+     */
+    private function buildProductRows(string $tableName, string $csvContent): array
+    {
+        $lines = array_filter(
+            preg_split('/\r\n|\r|\n/', trim($csvContent)),
+            fn($line) => count(array_filter(str_getcsv(trim($line)), fn($col) => trim($col) !== '')) > 0
+        );
+
+        if (count($lines) < 2) {
+            return [
+                'rows'            => [],
+                'errors'          => [],
+                'existing'        => collect(),
+                'data_line_count' => 0,
+                'has_min_rows'    => false,
+            ];
+        }
+
+        $dataLines        = array_slice($lines, 1);
+        $errors           = [];
+        $allData          = [];
+        $existingProducts = DB::table($tableName)->select('sku', 'case_pack')->get()
+            ->keyBy(fn($row) => strtoupper($row->sku));
+        $seenCsvSkus = [];
+
+        foreach ($dataLines as $lineNumber => $line) {
+            $rowNumber = $lineNumber + 2;
+            $columns   = str_getcsv(trim($line));
+
+            if (count($columns) < 9) {
+                $errors[] = "Row {$rowNumber}: Missing required columns.";
+                continue;
+            }
+
+            [
+                $sku,
+                $description,
+                $allocationPerCase,
+                $casePackRaw,
+                $srpRaw,
+                $cashBankCardScheme,
+                $po15Scheme,
+                $discountScheme,
+                $freebieSkuRaw
+            ] =
+                array_map(fn($col) => preg_replace('#[^a-zA-Z0-9./+% | ()]#', '', trim($col)), $columns);
+
+            $formattedSku = strtoupper($sku);
+
+            if (!$sku || !preg_match('/^\d+$/', $sku)) {
+                $errors[] = "Row {$rowNumber}: SKU must be numeric.";
+                continue;
+            }
+            if (in_array($formattedSku, $seenCsvSkus)) {
+                $errors[] = "Row {$rowNumber}: Duplicate SKU '{$sku}' in CSV.";
+                continue;
+            }
+            $seenCsvSkus[] = $formattedSku;
+            if (!$description) {
+                $errors[] = "Row {$rowNumber}: Description is required.";
+                continue;
+            }
+            if ($allocationPerCase === '' || !is_numeric($allocationPerCase) || $allocationPerCase <= 0) {
+                $errors[] = "Row {$rowNumber}: Store Allocation must be > 0.";
+                continue;
+            }
+
+            $casePackNumbers = [];
+            if ($casePackRaw !== '') {
+                $casePackNumbers = array_filter(array_map('trim', explode('|', $casePackRaw)));
+                foreach ($casePackNumbers as $num) {
+                    if (!is_numeric($num) || $num <= 0) {
+                        $errors[] = "Row {$rowNumber}: Invalid Case Pack '{$num}'.";
+                        continue 2;
+                    }
+                }
+            }
+
+            $casePack = '';
+            if (isset($existingProducts[$formattedSku]) && $existingProducts[$formattedSku]->case_pack) {
+                $existingNumbers = array_map('trim', explode('|', $existingProducts[$formattedSku]->case_pack));
+                $casePack = implode(' | ', array_unique(array_merge($existingNumbers, $casePackNumbers)));
+            } else {
+                $casePack = implode(' | ', $casePackNumbers);
+            }
+
+            $srp = preg_replace('/[^0-9.]/', '', $srpRaw);
+            if ($srp === '' || !is_numeric($srp) || $srp <= 0) {
+                $errors[] = "Row {$rowNumber}: SRP must be > 0.";
+                continue;
+            }
+            if ($cashBankCardScheme && !preg_match('/^\d+\+\d+$/', $cashBankCardScheme)) {
+                $errors[] = "Row {$rowNumber}: CBC Scheme must be 'number+number'.";
+                continue;
+            }
+            if ($po15Scheme && !preg_match('/^\d+\+\d+$/', $po15Scheme)) {
+                $errors[] = "Row {$rowNumber}: PO15 Scheme must be 'number+number'.";
+                continue;
+            }
+            if ($discountScheme && !preg_match('/^\d+%?$/', $discountScheme)) {
+                $errors[] = "Row {$rowNumber}: Discount must be numeric with optional '%'.";
+                continue;
+            }
+
+            $freebieSku = trim($freebieSkuRaw);
+            if ($freebieSku && !preg_match('/^\d+([\/|\|\s]+\d+)*$/', $freebieSku)) {
+                $errors[] = "Row {$rowNumber}: Freebie SKU must be numeric.";
+                continue;
+            }
+
+            $oracleData = DB::connection('oracle_rms')->selectOne("
+                SELECT item_master.dept AS department_code, deps.dept_name AS department_name
+                FROM item_master
+                LEFT JOIN deps ON deps.dept = item_master.dept
+                WHERE item_master.item_parent = ? AND ROWNUM = 1
+            ", [$sku]);
+
+            $allData[] = [
+                'sku' => $formattedSku,
+                'description' => $description,
+                'department_code' => $oracleData->department_code ?? null,
+                'department'      => $oracleData->department_name ?? null,
+                'case_pack'       => $casePack !== '' ? $casePack : null,
+                'srp'             => floatval($srp),
+                'allocation_per_case'         => intval($allocationPerCase),
+                'initial_allocation_per_case' => intval($allocationPerCase),
+                'cash_bank_card_scheme' => $cashBankCardScheme,
+                'po15_scheme'           => $po15Scheme,
+                'discount_scheme'       => $discountScheme,
+                'freebie_sku'           => $freebieSku,
+                'archived_at' => null,
+                'archived_by' => null,
+                'archive_reason' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        return [
+            'rows'            => $allData,
+            'errors'          => $errors,
+            'existing'        => $existingProducts,
+            'data_line_count' => count($dataLines),
+            'has_min_rows'    => true,
+        ];
     }
 
     public function downloadTemplate()
@@ -952,6 +1000,232 @@ class ProductController extends Controller
             'processed' => "wms_processed_{$warehouseCode}",
             'failed'    => "wms_failed_{$warehouseCode}",
         ];
+    }
+
+    // ── Monthly Product Presets (staged import) ───────────────────────────
+    //
+    // A preset is a DRAFT batch of product adds/updates prepared ahead of a
+    // target month. Building a preset validates the CSV with the exact same
+    // logic as a live import (buildProductRows) but writes NOTHING to the
+    // products_{store} tables until it is explicitly Applied.
+
+    /** Roles permitted to manage presets / view product history. */
+    private function canManagePresets(): bool
+    {
+        return in_array(strtolower(auth()->user()->role ?? ''), ['super admin', 'merchandiser'], true);
+    }
+
+    public function presetIndex(Request $request)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        $query = ProductImportPreset::with('creator', 'applier')->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('store')) {
+            $query->where('store_code', strtolower($request->store));
+        }
+
+        $presets = $query->paginate(20)->withQueryString();
+
+        return view('products.presets.index', array_merge(
+            $this->storeViewData($request),
+            ['presets' => $presets]
+        ));
+    }
+
+    public function presetStore(Request $request)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        $request->validate([
+            'name'         => 'required|string|max:255',
+            'target_month' => 'required|date',
+            'csv_file'     => 'required|file|mimes:csv,txt|max:2048',
+            'notes'        => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $storeCode = $this->resolveTableStoreCode($request->get('store'));
+            $tableName = "products_{$storeCode}";
+
+            $csvContent = file_get_contents($request->file('csv_file')->getRealPath());
+            $parsed     = $this->buildProductRows($tableName, $csvContent);
+
+            if (!$parsed['has_min_rows']) {
+                return redirect()->back()->with('import_errors', ['CSV must have header + at least 1 data row.'])->withInput();
+            }
+
+            $existing    = $parsed['existing'];
+            $insertCount = 0;
+            $updateCount = 0;
+            foreach ($parsed['rows'] as $record) {
+                isset($existing[$record['sku']]) ? $updateCount++ : $insertCount++;
+            }
+
+            $preset = ProductImportPreset::create([
+                'name'         => $request->name,
+                'store_code'   => $storeCode,
+                'target_month' => Carbon::parse($request->target_month)->startOfMonth(),
+                'status'       => 'draft',
+                'rows'         => $parsed['rows'],
+                'insert_count' => $insertCount,
+                'update_count' => $updateCount,
+                'error_count'  => count($parsed['errors']),
+                'errors'       => $parsed['errors'],
+                'notes'        => $request->notes,
+                'created_by'   => auth()->id(),
+            ]);
+
+            $this->logActivity(
+                'product.preset_created',
+                "Preset '{$preset->name}' staged for {$tableName}: {$insertCount} new, {$updateCount} updates",
+                [
+                    'preset_id'   => $preset->id,
+                    'table'       => $tableName,
+                    'target_month' => $preset->target_month->format('Y-m'),
+                    'inserted'    => $insertCount,
+                    'updated'     => $updateCount,
+                    'error_count' => count($parsed['errors']),
+                ]
+            );
+
+            return redirect()->route('products.presets.show', $preset->id)
+                ->with('success', "Preset staged: {$insertCount} new, {$updateCount} updates. Review and Apply when ready.");
+        } catch (\Exception $e) {
+            return redirect()->back()->with('import_errors', ['Failed to stage preset: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    public function presetShow(ProductImportPreset $preset)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        $existingSkus = [];
+        $tableName    = "products_{$preset->store_code}";
+        if (Schema::connection('mysql')->hasTable($tableName)) {
+            $skus = array_column($preset->rows ?? [], 'sku');
+            if (!empty($skus)) {
+                $existingSkus = DB::connection('mysql')->table($tableName)
+                    ->whereIn('sku', $skus)->pluck('sku')
+                    ->map(fn($s) => strtoupper($s))->flip()->toArray();
+            }
+        }
+
+        return view('products.presets.show', compact('preset', 'existingSkus'));
+    }
+
+    public function presetApply(ProductImportPreset $preset)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        if (!$preset->isDraft()) {
+            return redirect()->route('products.presets.show', $preset->id)
+                ->with('import_errors', ['This preset has already been ' . $preset->status . '.']);
+        }
+
+        try {
+            $tableName = "products_{$preset->store_code}";
+
+            if (!Schema::connection('mysql')->hasTable($tableName)) {
+                throw new \Exception("Target table '{$tableName}' does not exist.");
+            }
+
+            $rows = array_map(function ($row) {
+                // Refresh the timestamp so Applied rows reflect the apply moment.
+                $row['updated_at'] = now();
+                return $row;
+            }, $preset->rows ?? []);
+
+            if (!empty($rows)) {
+                DB::table($tableName)->upsert($rows, ['sku'], $this->productUpsertColumns());
+            }
+
+            $preset->update([
+                'status'     => 'applied',
+                'applied_by' => auth()->id(),
+                'applied_at' => now(),
+            ]);
+
+            $this->logActivity(
+                'product.preset_applied',
+                "Preset '{$preset->name}' applied to {$tableName}: {$preset->insert_count} new, {$preset->update_count} updates",
+                [
+                    'preset_id'   => $preset->id,
+                    'table'       => $tableName,
+                    'inserted'    => $preset->insert_count,
+                    'updated'     => $preset->update_count,
+                ]
+            );
+
+            return redirect()->route('products.presets.show', $preset->id)
+                ->with('success', "Preset applied: {$preset->insert_count} new, {$preset->update_count} updates written to {$tableName}.");
+        } catch (\Exception $e) {
+            $this->logActivity(
+                'product.preset_apply_failed',
+                "Preset '{$preset->name}' apply failed: " . $e->getMessage(),
+                ['preset_id' => $preset->id, 'error' => $e->getMessage()]
+            );
+            return redirect()->route('products.presets.show', $preset->id)
+                ->with('import_errors', ['Apply failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function presetDiscard(ProductImportPreset $preset)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        if (!$preset->isDraft()) {
+            return redirect()->route('products.presets.index')
+                ->with('import_errors', ['Only draft presets can be discarded.']);
+        }
+
+        $preset->update(['status' => 'discarded']);
+
+        $this->logActivity(
+            'product.preset_discarded',
+            "Preset '{$preset->name}' discarded",
+            ['preset_id' => $preset->id]
+        );
+
+        return redirect()->route('products.presets.index')
+            ->with('success', "Preset '{$preset->name}' discarded.");
+    }
+
+    // ── Product audit / import history ────────────────────────────────────
+
+    public function history(Request $request)
+    {
+        abort_unless($this->canManagePresets(), 403);
+
+        $query = ActivityLog::with('user')
+            ->where('action', 'like', 'product.%')
+            ->latest();
+
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+        if ($request->filled('search')) {
+            $query->where('description', 'like', '%' . $request->search . '%');
+        }
+
+        $logs    = $query->paginate(25)->withQueryString();
+        $actions = ActivityLog::select('action')->where('action', 'like', 'product.%')
+            ->distinct()->orderBy('action')->pluck('action');
+        $users   = User::orderBy('name')->get(['id', 'name', 'email', 'role']);
+
+        return view('products.history', compact('logs', 'actions', 'users'));
     }
 
     // ── WMS ───────────────────────────────────────────────────────────────

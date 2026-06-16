@@ -98,11 +98,23 @@ Route::prefix('b2b2c')->middleware(['auth', 'session.expired'])->group(function 
 
         Route::get('/skus', [ProductController::class, 'getSkus'])->name('get-skus');
 
+        // Merchandising: product audit / import history
+        Route::get('/history', [ProductController::class, 'history'])->name('history');
+
         Route::prefix('import')->name('import.')->group(function () {
             Route::get('/', [ProductController::class, 'showImport'])->name('show');
             Route::post('/', [ProductController::class, 'import'])->name('upload');
             Route::get('/template', [ProductController::class, 'downloadTemplate'])->name('template');
             Route::get('/validate', [ProductController::class, 'validateCsv'])->name('validate');
+        });
+
+        // Merchandising: staged monthly product presets (draft → review → apply)
+        Route::prefix('presets')->name('presets.')->group(function () {
+            Route::get('/', [ProductController::class, 'presetIndex'])->name('index');
+            Route::post('/', [ProductController::class, 'presetStore'])->name('store');
+            Route::get('/{preset}', [ProductController::class, 'presetShow'])->name('show');
+            Route::post('/{preset}/apply', [ProductController::class, 'presetApply'])->name('apply');
+            Route::post('/{preset}/discard', [ProductController::class, 'presetDiscard'])->name('discard');
         });
     });
 });

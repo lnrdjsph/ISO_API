@@ -3,8 +3,10 @@ import "./bootstrap";
 import Swal from 'sweetalert2';
 window.Swal = Swal;
 
-import $ from 'jquery';
-window.$ = window.jQuery = $;
+// NOTE: jQuery is intentionally NOT bundled here. It is loaded as a classic,
+// synchronous <script> in the layout <head> so that $ is available to the many
+// parse-time inline scripts (e.g. $(document).ready) across the app. Bundling it
+// in this deferred module made $ undefined when those inline scripts ran.
 
 import ApexCharts from 'apexcharts';
 window.ApexCharts = ApexCharts;

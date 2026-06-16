@@ -333,8 +333,8 @@ class LocationConfig
     {
         $all = self::stores();
 
-        // Super admin sees everything
-        if ($role === 'super admin') {
+        // Super admin and merchandiser see everything (company-wide catalog owners)
+        if ($role === 'super admin' || strtolower($role) === 'merchandiser') {
             return $all;
         }
 
