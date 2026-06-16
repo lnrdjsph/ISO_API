@@ -109,13 +109,16 @@
     <h3 class="mt-6 text-sm font-semibold text-gray-900">Quick Actions</h3>
     <p class="mt-1 text-sm text-gray-500">Shortcut buttons to the areas you use most. Your set:</p>
     <div data-roles="personnel">
-        <p class="mt-2 text-sm text-gray-600">New Sales Order · Sales Orders · Products · Sales Overview · Orders Report · Payments</p>
+        {{-- <p class="mt-2 text-sm text-gray-600">New Sales Order · Sales Orders · Products · Sales Overview · Orders Report · Payments</p> --}}
+        <p class="mt-2 text-sm text-gray-600">New Sales Order · Sales Orders · Products </p>
     </div>
     <div data-roles="manager whmanager whpersonnel">
-        <p class="mt-2 text-sm text-gray-600">Sales Orders · Sales Overview · Orders Report · Payments</p>
+        {{-- <p class="mt-2 text-sm text-gray-600">Sales Orders · Sales Overview · Orders Report · Payments</p> --}}
+        <p class="mt-2 text-sm text-gray-600">Sales Orders </p>
     </div>
     <div data-roles="admin">
-        <p class="mt-2 text-sm text-gray-600">Sales Orders · Products · Sales Overview · Orders Report · Payments · User Management · Settings</p>
+        {{-- <p class="mt-2 text-sm text-gray-600">Sales Orders · Products · Sales Overview · Orders Report · Payments · User Management · Settings</p> --}}
+        <p class="mt-2 text-sm text-gray-600">Sales Orders · Products · User Management · Settings</p>
     </div>
 
     {{-- ── Attention Required (personnel + manager only) ── --}}

@@ -584,36 +584,36 @@
 
                     {{-- Merchandiser is catalog-only: hide Orders & Reports --}}
                     @if (auth()->user()->role !== 'merchandiser')
-                    <!-- Orders & Forms (merged) -->
-                    <li class="accordion-item" data-accordion="orders">
-                        <button class="nav-parent w-full text-left" aria-expanded="false">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                            </svg>
-                            <span class="nav-text">Transactions</span>
-                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                                <polygon points="8,5 16,12 8,19" />
-                            </svg>
-                            <div class="tooltip">Transactions</div>
-                        </button>
-                        <ul class="submenu-accordion">
-                            <li><a href="{{ route('orders.index') }}" class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">Sales Order List</a></li>
-                            @auth
-                                @if (!in_array(auth()->user()->role, ['store manager', 'warehouse personnel', 'warehouse manager']))
-                                    <li><a href="{{ route('forms.sof') }}" class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">Sales Order Form</a></li>
+                        <!-- Orders & Forms (merged) -->
+                        <li class="accordion-item" data-accordion="orders">
+                            <button class="nav-parent w-full text-left" aria-expanded="false">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 7M7 13l-2 4h13M10 17a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                </svg>
+                                <span class="nav-text">Transactions</span>
+                                <svg class="arrow-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                    <polygon points="8,5 16,12 8,19" />
+                                </svg>
+                                <div class="tooltip">Transactions</div>
+                            </button>
+                            <ul class="submenu-accordion">
+                                <li><a href="{{ route('orders.index') }}" class="sub-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">Sales Order List</a></li>
+                                @auth
+                                    @if (!in_array(auth()->user()->role, ['store manager', 'warehouse personnel', 'warehouse manager']))
+                                        <li><a href="{{ route('forms.sof') }}" class="sub-item {{ request()->routeIs('forms.sof') ? 'active' : '' }}">Sales Order Form</a></li>
+                                    @endif
+                                @endauth
+                                @if (preg_match('/orders\/\d+$/', request()->path()))
+                                    <li><a href="{{ url()->current() }}" class="sub-item active">Order Details</a></li>
                                 @endif
-                            @endauth
-                            @if (preg_match('/orders\/\d+$/', request()->path()))
-                                <li><a href="{{ url()->current() }}" class="sub-item active">Order Details</a></li>
-                            @endif
-                        </ul>
-                    </li>
+                            </ul>
+                        </li>
 
 
-                    <!-- Analytics (Reports) -->
-                    <li class="section-label"><span>Analytics</span></li>
-                    <li class="accordion-item" data-accordion="reports">
+                        <!-- Analytics (Reports) -->
+                        {{-- <li class="section-label"><span>Analytics</span></li> --}}
+                        {{-- <li class="accordion-item" data-accordion="reports">
                         <button class="nav-parent w-full text-left" aria-expanded="false">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h16M4 4v16" />
@@ -630,7 +630,7 @@
                             <li><a href="{{ route('reports.orders') }}" class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }}">Orders Report</a></li>
                             <li><a href="{{ route('reports.payments') }}" class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }}">Mode of Payments</a></li>
                         </ul>
-                    </li>
+                    </li> --}}
                     @endif
                     {{-- end merchandiser order/report hide --}}
 
@@ -657,7 +657,8 @@
                                         </li>
                                     @endif
                                     @if (in_array(auth()->user()->role, ['super admin', 'merchandiser']))
-                                        <li><a href="{{ route('products.presets.index') }}" class="sub-item {{ request()->routeIs('products.presets.*') ? 'active' : '' }}">Monthly Presets</a></li>
+                                        <li><a href="{{ route('products.presets.index') }}" class="sub-item {{ request()->routeIs('products.presets.*') ? 'active' : '' }}">Monthly
+                                                Presets</a></li>
                                         <li><a href="{{ route('products.history') }}" class="sub-item {{ request()->routeIs('products.history') ? 'active' : '' }}">Import History</a></li>
                                     @endif
                                 </ul>

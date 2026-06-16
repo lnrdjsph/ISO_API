@@ -240,34 +240,38 @@
                 $quickActions = [
                     ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
                     ['Products', route('products.index'), $ic['cube'], 'bg-green-50 text-green-600', null],
-                    ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
-                    ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
-                    ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
+                    // Reports hidden — Sales Overview · Orders Report · Payments
+                    // ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
+                    // ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
+                    // ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                     ['User Management', route('users.index'), $ic['users'], 'bg-purple-50 text-purple-600', null],
                     ['Settings', route('settings.index'), $ic['gear'], 'bg-gray-100 text-gray-500', null],
                 ];
             } elseif ($isMgr) {
                 $quickActions = [
                     ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
-                    ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
-                    ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
-                    ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
+                    // Reports hidden — Sales Overview · Orders Report · Payments
+                    // ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
+                    // ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
+                    // ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                 ];
             } elseif ($isWarehouse) {
                 $quickActions = [
                     ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
-                    ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
-                    ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
-                    ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
+                    // Reports hidden — Sales Overview · Orders Report · Payments
+                    // ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
+                    // ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
+                    // ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                 ];
             } else {
                 $quickActions = [
                     ['New Sales Order', route('forms.sof'), $ic['plus'], 'bg-indigo-50 text-indigo-600', null],
                     ['Sales Orders', route('orders.index'), $ic['list'], 'bg-blue-50 text-blue-600', null],
                     ['Products', route('products.index'), $ic['cube'], 'bg-green-50 text-green-600', null],
-                    ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
-                    ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
-                    ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
+                    // Reports hidden — Sales Overview · Orders Report · Payments
+                    // ['Sales Overview', route('reports.sales'), $ic['bars'], 'bg-orange-50 text-orange-600', null],
+                    // ['Orders Report', route('reports.orders'), $ic['doc'], 'bg-orange-50 text-orange-600', null],
+                    // ['Payments', route('reports.payments'), $ic['card'], 'bg-orange-50 text-orange-600', null],
                 ];
             }
         @endphp
