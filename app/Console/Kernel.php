@@ -20,15 +20,18 @@ class Kernel extends ConsoleKernel
         $schedule->command('products:update-allocations')->dailyAt('10:00');
         $schedule->command('products:update-allocations')->dailyAt('14:45');
 
-        // Order Processing Agent
-        $schedule->command('order:process', ['--limit' => 100])
-            ->everyFiveMinutes()
-            ->onSuccess(function () {
-                \Illuminate\Support\Facades\Log::channel('order_agent')->info('Scheduled order processing executed successfully');
-            })
-            ->onFailure(function () {
-                \Illuminate\Support\Facades\Log::channel('order_agent')->error('Scheduled order processing failed');
-            });
+        // Order Processing Agent — AUTOMATIC PROCESSING DISABLED.
+        // The scheduled auto-approval run is turned off. The `order:process`
+        // command still exists and can be run manually if ever needed.
+        // To re-enable automatic processing, uncomment the block below.
+        // $schedule->command('order:process', ['--limit' => 100])
+        //     ->everyFiveMinutes()
+        //     ->onSuccess(function () {
+        //         \Illuminate\Support\Facades\Log::channel('order_agent')->info('Scheduled order processing executed successfully');
+        //     })
+        //     ->onFailure(function () {
+        //         \Illuminate\Support\Facades\Log::channel('order_agent')->error('Scheduled order processing failed');
+        //     });
 
         // Order SLA Check
         $schedule->command('order:check-sla')

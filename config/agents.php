@@ -7,7 +7,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'order_processor' => [
-        'enabled' => env('ORDER_AGENT_ENABLED', true),
+        'enabled' => env('ORDER_AGENT_ENABLED', false),
 
         // Risk scoring threshold (0-100)
         'auto_approve_threshold' => env('ORDER_AGENT_RISK_THRESHOLD', 50),

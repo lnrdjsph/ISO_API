@@ -392,7 +392,7 @@ cat storage/reports/csp-audit.json | php -r "echo json_encode(json_decode(file_g
 
 ```env
 # Order Agent
-ORDER_AGENT_ENABLED=true
+ORDER_AGENT_ENABLED=false
 ORDER_AGENT_RISK_THRESHOLD=50
 ORDER_AGENT_SLA_HOURS=24
 ORDER_AGENT_NOTIFICATION_EMAIL=true
