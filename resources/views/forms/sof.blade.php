@@ -930,7 +930,7 @@ $defaultPaymentCenter = $hasRegion || $isSuperAdmin ? '' : $userLocation;
                                                         name="orders[{{ $i }}][sale_type]"
                                                         class="sale-type w-full rounded border border-gray-300 p-2 focus:border-gray-300 focus:outline-none focus:ring-gray-900">
                                                         @php
-                                                            $selectedSaleType = old("orders.$i.sale_type", $order['sale_type'] ?? '');
+                                                            $selectedSaleType = old("orders.$i.sale_type", $order['sale_type'] ?? 'Freebie');
                                                         @endphp
                                                         <option
                                                             value=""
@@ -1634,10 +1634,10 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                             remarksSelect.name = remarksSelect.name.replace(/\[\d+]/g, `[${rowIndex}]`);
                         }
 
-                        // Reset sale type select
+                        // Reset sale type select — default new rows to "Freebie"
                         const saleTypeSelect = newRow.querySelector('select[name^="orders"][name$="[sale_type]"]');
                         if (saleTypeSelect) {
-                            saleTypeSelect.selectedIndex = 0; // Reset to first option
+                            saleTypeSelect.value = 'Freebie'; // default sale type
                             saleTypeSelect.name = saleTypeSelect.name.replace(/\[\d+]/g, `[${rowIndex}]`);
                         }
 
@@ -1929,10 +1929,13 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
                 lastValue = this.value;
             });
 
-            // 🔹 Only fire change if no value (new row)
-            if (!select.value) {
-                select.dispatchEvent(new Event('change'));
-            }
+            // 🔹 Always sync the visible sections to the current sale type on load.
+            // This handles brand-new rows AND old() repopulation after a validation
+            // error: without this, a row whose sale type is already "Freebie" keeps
+            // the freebie-grid hidden, so the remembered freebie values (incl. the
+            // hidden freebie_sku / freebie_description inputs) are never shown.
+            // lastValue === select.value here, so this never clears existing values.
+            select.dispatchEvent(new Event('change'));
         }
 
 
@@ -3037,9 +3040,15 @@ document.getElementById('order-form').addEventListener('submit', function (e) {
             updateCounter();
             updateRowNumbers();
 
-            $('.freebie-search').each(function() {
-                triggerFreebieSearch($(this));
-            });
+            // Re-run the freebie search for pre-filled inputs on load — but NOT
+            // when the page was re-rendered after a server validation error, where
+            // the freebie-search fields are repopulated from old() input. Auto-
+            // triggering there would pop the freebie results dropdown open on load.
+            @if (!$errors->any())
+                $('.freebie-search').each(function() {
+                    triggerFreebieSearch($(this));
+                });
+            @endif
 
             function formatAmount(value) {
                 // Remove any existing ₱ symbol, commas, and trim whitespace

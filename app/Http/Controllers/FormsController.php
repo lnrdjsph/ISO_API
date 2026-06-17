@@ -117,7 +117,7 @@ class FormsController extends Controller
                     'freebie_price' => 'nullable|numeric',
                     'freebie_qty_per_pc' => 'nullable|numeric',
 
-                    'sale_type' => 'nullable|string',
+                    'sale_type' => 'required|string',
                     'discount' => 'nullable|string',
                 ],
                 [
@@ -136,6 +136,8 @@ class FormsController extends Controller
                     'amount.required' => "Amount is required for item no. " . ($index + 1),
                     'amount.numeric' => "Amount must be a number for item no. " . ($index + 1),
                     'remarks.required' => "Remarks are required for item no. " . ($index + 1),
+                    'sale_type.required' => "Sale type is required for item no. " . ($index + 1),
+                    'sale_type.string' => "Sale type is invalid for item no. " . ($index + 1),
                 ]
             )->validate();
         }
