@@ -533,7 +533,7 @@ Log::channel('datadog')->info('Order processed', $data);
 cp .env.example .env
 
 # Configure agents in .env
-ORDER_AGENT_ENABLED=true
+ORDER_AGENT_ENABLED=false
 ORDER_AGENT_RISK_THRESHOLD=50
 CSP_AGENT_ENABLED=true
 CSP_AGENT_FAIL_SEVERITY=HIGH
