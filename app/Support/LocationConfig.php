@@ -21,6 +21,15 @@ class LocationConfig
     const CACHE_KEY = 'location_settings';
     const CACHE_TTL = 60 * 60 * 24; // 24 hours
 
+    /**
+     * Virtual "All Visayas" super-region key. A user whose user_location is set
+     * to this key (e.g. the cross-region approver) sees every store across all
+     * real regions for order visibility/approval — WITHOUT any store's actual
+     * region_key being changed. Real regions and per-region approver routing
+     * (regionForStore) are therefore unaffected.
+     */
+    const ALL_REGIONS_KEY = 'allvis';
+
     // ── Internal ──────────────────────────────────────────────────────────
 
     private static function payload(): array
@@ -278,6 +287,18 @@ class LocationConfig
 
     public static function regionStores(string $region): array
     {
+        // All-Visayas super-region: union of every store across all real
+        // regions. Lets a user assigned here (the cross-region approver) see
+        // and approve orders from every region, without changing any store's
+        // real region_key. See self::ALL_REGIONS_KEY.
+        if (strtolower($region) === self::ALL_REGIONS_KEY) {
+            $all = [];
+            foreach (self::payload()['regionsMap'] as $stores) {
+                $all = array_merge($all, $stores);
+            }
+            return array_values(array_unique($all));
+        }
+
         return self::payload()['regionsMap'][$region] ?? [];
     }
 
