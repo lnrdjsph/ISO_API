@@ -17,6 +17,7 @@
         ];
 
         $regionColors = [
+            'allvis' => ['pill' => 'bg-teal-100 text-teal-800', 'card' => 'bg-teal-50 border-teal-200'],
             'lz' => ['pill' => 'bg-amber-100 text-amber-800', 'card' => 'bg-amber-50 border-amber-200'],
             'ntc' => ['pill' => 'bg-blue-100 text-blue-800', 'card' => 'bg-blue-50 border-blue-200'],
             'stc' => ['pill' => 'bg-green-100 text-green-800', 'card' => 'bg-green-50 border-green-200'],

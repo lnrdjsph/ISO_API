@@ -83,9 +83,10 @@
                     {{-- Location (read-only) --}}
                     <div>
                         @php
-                            $locationMap = [
-                                'lz' => 'LZ - Luzon',
-                                'vs' => 'VS - Visayas',
+                            // Regions are data-driven from LocationConfig so any region
+                            // (incl. All Visayas, and any future one) shows naturally,
+                            // just like the others. Store labels keep their friendly prefixes.
+                            $locationMap = \App\Support\LocationConfig::regionLabels() + [
                                 '4002' => 'F2 - Metro Wholesalemart Colon',
                                 '2010' => 'S10 - Metro Maasin',
                                 '2017' => 'S17 - Metro Tacloban',
