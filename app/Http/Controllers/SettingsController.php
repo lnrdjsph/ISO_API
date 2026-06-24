@@ -211,16 +211,18 @@ class SettingsController extends Controller
         abort_unless(auth()->user()->role === 'super admin', 403);
 
         $data = $request->validate([
-            'region_key'    => 'required|string|max:10|unique:settings_regions,region_key',
-            'region_label'  => 'required|string|max:100',
-            'store_codes'   => 'nullable|array',
-            'store_codes.*' => 'string|exists:settings_stores,store_code',
+            'region_key'       => 'required|string|max:10|unique:settings_regions,region_key',
+            'region_label'     => 'required|string|max:100',
+            'mobile_pos_store' => 'nullable|string|exists:settings_stores,store_code',
+            'store_codes'      => 'nullable|array',
+            'store_codes.*'    => 'string|exists:settings_stores,store_code',
         ]);
 
         $region = SettingsRegion::create([
-            'region_key' => $data['region_key'],
-            'label'      => $data['region_label'],
-            'created_by' => auth()->id(),
+            'region_key'       => $data['region_key'],
+            'label'            => $data['region_label'],
+            'mobile_pos_store' => $data['mobile_pos_store'] ?? null,
+            'created_by'       => auth()->id(),
         ]);
 
         if (!empty($data['store_codes'])) {
@@ -248,13 +250,18 @@ class SettingsController extends Controller
         ];
 
         $data = $request->validate([
-            'region_label'  => 'sometimes|string|max:100',
-            'store_codes'   => 'nullable|array',
-            'store_codes.*' => 'string|exists:settings_stores,store_code',
+            'region_label'     => 'sometimes|string|max:100',
+            'mobile_pos_store' => 'nullable|string|exists:settings_stores,store_code',
+            'store_codes'      => 'nullable|array',
+            'store_codes.*'    => 'string|exists:settings_stores,store_code',
         ]);
 
         if (isset($data['region_label'])) {
             $region->update(['label' => $data['region_label']]);
+        }
+
+        if ($request->has('mobile_pos_store')) {
+            $region->update(['mobile_pos_store' => $data['mobile_pos_store'] ?: null]);
         }
 
         SettingsStore::where('region_key', $key)

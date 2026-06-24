@@ -37,8 +37,11 @@ class OracleTransferController extends Controller
                 ], 400);
             }
 
-            // ✅ Get store products table dynamically
-            $storeTable = "products_" . strtolower($order->requesting_store);
+            // ✅ Get store products table dynamically — use the assigned mobile-POS
+            // store (Visayas → 4002, Luzon → 6012), falling back to requesting_store
+            // for any pre-backfill order.
+            $posStore   = $order->mobile_pos_store ?: $order->requesting_store;
+            $storeTable = "products_" . strtolower($posStore);
 
             if (!DB::getSchemaBuilder()->hasTable($storeTable)) {
                 throw new Exception("Store table {$storeTable} does not exist.");
@@ -185,7 +188,7 @@ class OracleTransferController extends Controller
                     'from_loc_type' => 'W',
                     'from_loc' => $order->warehouse,
                     'to_loc_type' => 'S',
-                    'to_loc' => $order->requesting_store,
+                    'to_loc' => $posStore,
                     'delivery_date' => $order->delivery_date,
                     'dept' => $dept,
                     'freight_code' => 'N',

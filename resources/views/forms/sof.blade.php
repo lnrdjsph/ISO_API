@@ -136,6 +136,7 @@
                                     </label>
                                 @endif
                             </div>
+
                             <div class="relative mb-6 w-full">
                                 <input
                                     id="requested_by"
@@ -250,85 +251,87 @@ $selectedWarehouseCode = old('warehouse', LocationConfig::warehouseForStore($use
                             </div>
 
 
-                            <div class="relative w-full">
+                            {{-- Mobile POS / Receiving Store — replaces the old visible
+                                 Date & Time of Order field. Date & Time is always "now" at
+                                 the moment of submit (see hidden #time_order + JS stamp
+                                 below), so showing/editing it added nothing for the user.
+                                 Always readonly, DISPLAY ONLY: the real value is computed
+                                 server-side in FormsController::sof_submit() from
+                                 requesting_store at submission time, so a stale/spoofed
+                                 display value here can never desync what actually gets
+                                 saved/transferred. --}}
+                            <div class="relative mb-6 w-full">
+                                @php
+                                    $mobilePosByStore = [];
+                                    foreach ($dropdownStores ?? [] as $code => $name) {
+                                        $posCode = \App\Support\LocationConfig::mobilePosStoreFor($code);
+                                        $mobilePosByStore[$code] = $posCode
+                                            ? $posCode . ' - ' . ($locationMap[$posCode] ?? $posCode)
+                                            : '—';
+                                    }
+                                    // Mirror the SAME fallback the requesting-store field itself
+                                    // uses: $selectedRequestingStore only carries a real value for
+                                    // the dropdown branch (super admin / region). For the readonly
+                                    // branch (store personnel locked to one store) the effective
+                                    // value is $userLocation, exactly like $storeValue above.
+                                    $effectiveRequestingStore = old('requesting_store') ?: (
+                                        ($isSuperAdmin || $hasRegion) ? $selectedRequestingStore : $userLocation
+                                    );
+                                    $initialPosCode = $effectiveRequestingStore
+                                        ? \App\Support\LocationConfig::mobilePosStoreFor($effectiveRequestingStore)
+                                        : null;
+                                    $initialPosLabel = $initialPosCode
+                                        ? $initialPosCode . ' - ' . ($locationMap[$initialPosCode] ?? $initialPosCode)
+                                        : '—';
+                                @endphp
                                 <input
-                                    value="{{ old('time_order', date('Y-m-d\TH:i')) }}"
-                                    type="datetime-local"
-                                    name="time_order"
-                                    id="time_order"
-                                    class="datepicker required-input peer block w-full appearance-none rounded-md border border-gray-300 px-3 pb-2 pt-6 text-sm text-gray-900 placeholder-transparent focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                                    placeholder=" " />
-                                <label
-                                    class="absolute left-3 top-1.5 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-gray-600">
-                                    Date & Time of Order
+                                    id="mobile_pos_store_view"
+                                    value="{{ $initialPosLabel }}"
+                                    type="text"
+                                    readonly
+                                    class="peer w-full cursor-not-allowed rounded-md border border-gray-300 bg-gray-50 p-3 pt-5 text-sm text-gray-700 placeholder-transparent focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    placeholder="Mobile POS / Receiving Store" />
+                                <label for="mobile_pos_store_view" class="absolute left-3 top-1.5 text-xs text-gray-500">
+                                    Mobile POS / Receiving Store
                                 </label>
                             </div>
 
+                            {{-- Date & Time of Order — no longer shown to the user. Always
+                                 set to the actual moment of submission (NOT page-load time),
+                                 stamped right before the form is sent. PHP now() is just the
+                                 no-JS fallback. --}}
+                            <input type="hidden" id="time_order" name="time_order"
+                                value="{{ old('time_order', now()->format('Y-m-d\TH:i')) }}" />
+
                             <script nonce="{{ $cspNonce ?? '' }}">
-                                (function() {
-                                    const datetimeInput = document.getElementById('time_order');
-                                    if (!datetimeInput) return;
-
-                                    // Get today's date in YYYY-MM-DD format (ignoring time)
-                                    const today = new Date();
-                                    const year = today.getFullYear();
-                                    const month = String(today.getMonth() + 1).padStart(2, '0');
-                                    const day = String(today.getDate()).padStart(2, '0');
-                                    const todayFormatted = `${year}-${month}-${day}`;
-
-                                    // Set the min attribute to today's date (disables past dates in picker UI)
-                                    datetimeInput.setAttribute('min', `${todayFormatted}T00:00`);
-
-                                    // Store the last valid value
-                                    let lastValidValue = datetimeInput.value;
-
-                                    // Function to check if date portion is valid (today or future) - ignores time
-                                    function isValidDate(dateTimeValue) {
-                                        if (!dateTimeValue) return true;
-                                        const datePart = dateTimeValue.split('T')[0];
-                                        return datePart >= todayFormatted;
-                                    }
-
-                                    // Validate when leaving the input (blur event) with SweetAlert
-                                    datetimeInput.addEventListener('blur', function() {
-                                        if (datetimeInput.value && !isValidDate(datetimeInput.value)) {
-                                            Swal.fire({
-                                                icon: 'error',
-                                                title: 'Invalid Date',
-                                                text: 'Please select today or a future date. Past dates are not allowed.',
-                                                confirmButtonColor: '#3085d6',
-                                                confirmButtonText: 'OK'
-                                            });
-                                            datetimeInput.value = lastValidValue;
-                                        } else {
-                                            lastValidValue = datetimeInput.value;
-                                        }
-                                    });
-
-                                    // Update last valid value on change (when user picks from datetime picker)
-                                    datetimeInput.addEventListener('change', function() {
-                                        if (datetimeInput.value && isValidDate(datetimeInput.value)) {
-                                            lastValidValue = datetimeInput.value;
-                                        }
-                                    });
-
-                                    // Initial validation in case the pre-filled value is a past date
-                                    if (datetimeInput.value && !isValidDate(datetimeInput.value)) {
-                                        Swal.fire({
-                                            icon: 'warning',
-                                            title: 'Invalid Pre-filled Date',
-                                            text: 'The pre-filled order date is in the past. Please select a valid date.',
-                                            confirmButtonColor: '#3085d6',
-                                            confirmButtonText: 'OK'
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const map = @json($mobilePosByStore);
+                                    const select = document.getElementById('requesting_store');
+                                    const view = document.getElementById('mobile_pos_store_view');
+                                    if (select && view) {
+                                        select.addEventListener('change', function() {
+                                            view.value = map[this.value] || '—';
                                         });
-                                        datetimeInput.value = '';
-                                        lastValidValue = '';
                                     }
+                                });
+
+                                (function() {
+                                    const form = document.getElementById('order-form');
+                                    const timeInput = document.getElementById('time_order');
+                                    if (!form || !timeInput) return;
+
+                                    function stampNow() {
+                                        const d = new Date();
+                                        const pad = (n) => String(n).padStart(2, '0');
+                                        timeInput.value =
+                                            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                    }
+
+                                    // Stamp the true submit-time moment right before the
+                                    // browser sends the form (more accurate than page load).
+                                    form.addEventListener('submit', stampNow);
                                 })();
                             </script>
-
-
-
                         </div>
                     </section>
 

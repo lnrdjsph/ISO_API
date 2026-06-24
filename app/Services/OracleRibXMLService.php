@@ -13,13 +13,19 @@ class OracleRibXMLService
 {
     public static function sendTransfer(array $data): array
     {
-        try {
-            $tsfNo = $data['tsf_no'];
+        $maxRetries = 5;           // safety limit
+        $attempt    = 0;
+        $tsfNo      = $data['tsf_no'];
+        $original   = $tsfNo;
 
-            // 1️⃣ Generate XML
+        while ($attempt < $maxRetries) {
+            $attempt++;
+
+            // 1️⃣ Generate XML (current TSF)
+            $data['tsf_no'] = $tsfNo;
             $filePath = self::generateXML($data);
             $fileName = basename($filePath);
-            Log::info("📝 [XML] Generated file: {$fileName}");
+            Log::info("📝 [XML] Attempt {$attempt} – Generated file: {$fileName}");
 
             // 2️⃣ Upload via SFTP
             if (!self::uploadToSFTP($filePath, $fileName)) {
@@ -30,60 +36,68 @@ class OracleRibXMLService
 
             // 3️⃣ Run RIB script
             $scriptResult = ['success' => true, 'message' => 'SSH skipped'];
-
             if (env('ORACLE_RIB_EXECUTE_SSH', true)) {
                 $scriptResult = self::runRemoteShellScript($fileName);
-
                 if (!$scriptResult['success']) {
                     Log::warning("⚠️ [SSH] Script polling failed for {$fileName}. Falling through to DB verification.");
                 }
-            } else {
-                Log::info("⏭️ [SSH] Execution skipped (feature flag disabled)");
             }
 
             // 4️⃣ Check for RIB Message Failures
             $commentDesc = $data['comment_desc'] ?? null;
             $errors = self::fetchRibCleanErrors($tsfNo, $commentDesc);
 
-            if (!empty($errors)) {
-                foreach ($errors as $err) {
-                    Log::warning("⚠️ [OracleRibXMLService] RIB error for TSF {$tsfNo}: " . ($err['CLEAN_ERROR'] ?? json_encode($err)));
+            if (empty($errors)) {
+                // 5️⃣ Verify TSF in TSFHEAD
+                $verificationResult = self::verifyTsfInDatabase($tsfNo);
+                if ($verificationResult['exists']) {
+                    Log::info("✅ [VERIFICATION] TSF {$tsfNo} confirmed in TSFHEAD table");
+                    return [
+                        'success'      => true,
+                        'message'      => 'XML successfully processed by Oracle RIB and TSF created.',
+                        'tsf_no'       => $tsfNo,
+                        'verification' => $verificationResult,
+                        'details'      => $scriptResult
+                    ];
                 }
 
-                return [
-                    'success' => false,
-                    'message' => "RIB returned errors for TSF No {$tsfNo}",
-                    'errors' => $errors
-                ];
-            }
-
-            // 5️⃣ ✨ NEW: Verify TSF was actually created in TSFHEAD table
-            $verificationResult = self::verifyTsfInDatabase($tsfNo);
-
-            if (!$verificationResult['exists']) {
                 Log::warning("⚠️ [OracleRibXMLService] TSF {$tsfNo} not found in TSFHEAD after processing");
-
                 return [
-                    'success' => false,
-                    'message' => "TSF {$tsfNo} was not created in Oracle database",
+                    'success'      => false,
+                    'message'      => "TSF {$tsfNo} was not created in Oracle database",
                     'verification' => $verificationResult
                 ];
             }
 
-            Log::info("✅ [VERIFICATION] TSF {$tsfNo} confirmed in TSFHEAD table");
+            // 🔁 Check if the ONLY error is "Transfer number already exists"
+            $duplicateOnly = true;
+            foreach ($errors as $err) {
+                $msg = $err['CLEAN_ERROR'] ?? '';
+                if (stripos($msg, 'Transfer number already exists') === false) {
+                    $duplicateOnly = false;
+                    break;
+                }
+            }
 
-            // All checks passed -> success
-            return [
-                'success' => true,
-                'message' => 'XML successfully processed by Oracle RIB and TSF created.',
-                'tsf_no' => $tsfNo,
-                'verification' => $verificationResult,
-                'details' => $scriptResult
-            ];
-        } catch (Exception $e) {
-            Log::error("🔥 [OracleRibXMLService] " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            if (!$duplicateOnly) {
+                // Other errors → stop retrying, return failure
+                return [
+                    'success' => false,
+                    'message' => "RIB returned errors for TSF No {$tsfNo}",
+                    'errors'  => $errors
+                ];
+            }
+
+            // ✅ Duplicate only → increment TSF and retry
+            Log::info("🔄 [OracleRibXMLService] Duplicate TSF {$tsfNo} – retrying with incremented number");
+            $tsfNo = (string) ((int) $tsfNo + 1);
         }
+
+        // Exhausted all attempts
+        return [
+            'success' => false,
+            'message' => "Could not create a unique TSF after {$maxRetries} attempts (original: {$original})"
+        ];
     }
 
     /**

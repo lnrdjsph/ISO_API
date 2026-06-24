@@ -144,8 +144,17 @@ class FormsController extends Controller
 
         try {
             DB::beginTransaction();
-            // Save main order info
-            $this->checkAllocationStock($validated['orders'], $validated['warehouse'], $validated['requesting_store']);
+
+            // Resolve the assigned mobile-POS receiving store (Visayas → 4002,
+            // Luzon → 6012). Transfers and inventory/allocation key off this,
+            // NOT the requesting store. requesting_store stays for region/approver.
+            $mobilePos = LocationConfig::mobilePosStoreFor($validated['requesting_store']);
+            if (!$mobilePos) {
+                throw new \Exception("No mobile POS store is configured for the region of store {$validated['requesting_store']}.");
+            }
+
+            // Save main order info — allocation is checked against the POS store.
+            $this->checkAllocationStock($validated['orders'], $validated['warehouse'], $mobilePos);
 
 
             // === Generate SOF ID monthly ===
@@ -178,6 +187,7 @@ class FormsController extends Controller
 
                 // Save customer + request info
                 'requesting_store' => $validated['requesting_store'],
+                'mobile_pos_store' => $mobilePos,
                 'requested_by' => $validated['requested_by'],
                 'mbc_card_no' => $validated['mbc_card_no'],
                 'customer_name' => $validated['customer_name'],
@@ -290,7 +300,7 @@ class FormsController extends Controller
                 }
             }
 
-            $this->deductAllocationStock($order->id, $validated['warehouse'], $validated['requesting_store']);
+            $this->deductAllocationStock($order->id, $validated['warehouse'], $mobilePos);
 
 
             DB::commit();
@@ -340,6 +350,11 @@ class FormsController extends Controller
 
         // ✅ Resolve region to actual store code if needed
         $storeCode = $this->resolveStoreCodeForTable($storeCode);
+
+        // ✅ Search the mobile-POS catalog the order will actually draw from
+        // (Visayas → 4002, Luzon → 6012), so users only pick SKUs that exist
+        // in the POS table that allocation/transfer use.
+        $storeCode = LocationConfig::mobilePosStoreFor($storeCode) ?? $storeCode;
 
         $tableName = 'products_' . strtolower($storeCode);
 

@@ -1000,6 +1000,19 @@
                                         </p>
                                     </div>
                                     <div>
+                                        <p class="mb-0.5 text-xs text-gray-600">Mobile POS / Receiving Store</p>
+                                        <p class="text-xs font-medium text-gray-900">
+                                            @php
+                                                $mobilePosCode = $order->mobile_pos_store;
+                                            @endphp
+                                            @if ($mobilePosCode)
+                                                {{ $mobilePosCode }} - {{ \App\Support\LocationConfig::storeName($mobilePosCode, $mobilePosCode) }}
+                                            @else
+                                                <span class="text-gray-400">— not set —</span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <div>
                                         <p class="mb-0.5 text-xs text-gray-600">Date & Time of Order</p>
                                         <p class="text-xs font-medium text-gray-900">
                                             {{ \Carbon\Carbon::parse($order->time_order)->format('F j, Y - h:i A') }}</p>

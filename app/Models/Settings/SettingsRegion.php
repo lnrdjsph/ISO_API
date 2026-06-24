@@ -13,6 +13,7 @@ class SettingsRegion extends Model
     protected $fillable = [
         'region_key',
         'label',
+        'mobile_pos_store',
         'is_active',
         'created_by',
     ];

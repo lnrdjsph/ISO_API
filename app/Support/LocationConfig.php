@@ -59,6 +59,7 @@ class LocationConfig
         $regionsMap        = [];
         $regionLabels      = [];
         $regionApprovers   = [];
+        $regionMobilePos   = [];
 
         foreach ($warehouses as $w) {
             $whMap[$w->warehouse_code]        = $w->name;
@@ -87,6 +88,7 @@ class LocationConfig
             $regionsMap[$r->region_key]      = [];
             $sentinelLabel                   = $approverRows->get($r->region_key)?->label;
             $regionApprovers[$r->region_key] = $sentinelLabel ? (int) $sentinelLabel : null;
+            $regionMobilePos[$r->region_key] = $r->mobile_pos_store ?? null;
         }
 
         foreach ($stores as $s) {
@@ -104,7 +106,8 @@ class LocationConfig
             'whToFacility',
             'regionsMap',
             'regionLabels',
-            'regionApprovers'
+            'regionApprovers',
+            'regionMobilePos'
         );
     }
 
@@ -199,6 +202,14 @@ class LocationConfig
             'vs' => null,
         ];
 
+        // Static fallback for region mobile-POS receiving stores.
+        $regionMobilePos = [
+            'lz' => '6012',   // Luzon  → Super Metro Antipolo
+            'ntc' => '4002',  // Visayas → Metro Wholesalemart Colon
+            'stc' => '4002',
+            'vs' => '4002',
+        ];
+
         return compact(
             'storesMap',
             'storeNameToCode',
@@ -208,7 +219,8 @@ class LocationConfig
             'whToFacility',
             'regionsMap',
             'regionLabels',
-            'regionApprovers'
+            'regionApprovers',
+            'regionMobilePos'
         );
     }
 
@@ -334,6 +346,26 @@ class LocationConfig
             }
         }
         return null;
+    }
+
+    /**
+     * Resolve the assigned mobile-POS receiving store for a store code OR a
+     * region key (Visayas → 4002, Luzon → 6012, per the configurable map).
+     * Returns null only if no mapping can be resolved.
+     */
+    public static function mobilePosStoreFor(string $storeOrRegion): ?string
+    {
+        $map = self::payload()['regionMobilePos'] ?? [];
+
+        // Passed value is already a region key.
+        if (array_key_exists($storeOrRegion, $map)) {
+            return $map[$storeOrRegion];
+        }
+
+        // Otherwise treat it as a store code and resolve its region.
+        $region = self::regionForStore($storeOrRegion);
+
+        return $region ? ($map[$region] ?? null) : null;
     }
 
     public static function resolveWarehouseCode(

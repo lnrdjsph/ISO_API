@@ -32,6 +32,7 @@
         $regionMap = $regions->keyBy('region_key');
         $whToStores = $stores->whereNotNull('warehouse_code')->groupBy('warehouse_code');
         $regionStoreCodes = $stores->groupBy('region_key')->map(fn($g) => $g->pluck('store_code'));
+        $regionMobilePosMap = $regions->pluck('mobile_pos_store', 'region_key');
     @endphp
 
     <style nonce="{{ $cspNonce ?? '' }}">
@@ -885,6 +886,18 @@
                             class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" /></div>
                 </div>
                 <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-700">Mobile POS Store
+                        <span class="ml-1 text-xs font-normal text-gray-400">(receiving store used for transfers &amp; allocation)</span>
+                    </label>
+                    <select id="regionMobilePos" name="mobile_pos_store"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <option value="">— none —</option>
+                        @foreach ($stores->whereIn('status', ['active', 'pending']) as $s)
+                            <option value="{{ $s->store_code }}">{{ $s->store_code }} — {{ $s->display_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-700">Assign Stores</label>
                     <div class="max-h-52 space-y-1.5 overflow-y-auto rounded-lg border border-gray-200 p-3">
                         @foreach ($stores->whereIn('status', ['active', 'pending']) as $s)
@@ -908,6 +921,7 @@
     {{-- ══════════ SCRIPTS ══════════ --}}
     <script nonce="{{ $cspNonce ?? '' }}">
         window.regionStoreCodes = @json($regionStoreCodes);
+        window.regionMobilePos = @json($regionMobilePosMap);
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1008,6 +1022,7 @@
                 document.getElementById('regionKey').value = '';
                 document.getElementById('regionKey').readOnly = false;
                 document.getElementById('regionLabel').value = '';
+                document.getElementById('regionMobilePos').value = '';
                 document.getElementById('regionMethodField').innerHTML = '';
                 document.getElementById('regionForm').action = "{{ route('settings.regions.store') }}";
                 document.querySelectorAll('.region-store-check').forEach(cb => cb.checked = false);
@@ -1020,6 +1035,7 @@
                 document.getElementById('regionKey').value = key;
                 document.getElementById('regionKey').readOnly = true;
                 document.getElementById('regionLabel').value = label;
+                document.getElementById('regionMobilePos').value = (window.regionMobilePos && window.regionMobilePos[key]) || '';
                 document.getElementById('regionMethodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
                 document.getElementById('regionForm').action = '/settings/regions/' + key;
                 const codes = window.regionStoreCodes[key] || [];

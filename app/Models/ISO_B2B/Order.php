@@ -29,6 +29,7 @@ class Order extends Model
         'landmark',
         'comment',
         'requesting_store',
+        'mobile_pos_store',
         'requested_by',
         'mbc_card_no',
         'customer_name',
