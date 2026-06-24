@@ -443,6 +443,10 @@ class OrderController extends Controller
     {
         $requestingStore = $orderItem->order->requesting_store ?? auth()->user()->user_location;
         $storeCode = $this->resolveStoreCodeForTable($requestingStore);
+        // Allocation lives on the assigned mobile-POS store (Visayas → 4002,
+        // Luzon → 6012), NOT the requesting store — must match how the order's
+        // allocation was originally deducted at creation (FormsController::sof_submit).
+        $storeCode = LocationConfig::mobilePosStoreFor($storeCode) ?? $storeCode;
         $tableName = 'products_' . $storeCode;
 
         // === MAIN ITEM ADJUSTMENT ===
@@ -992,6 +996,9 @@ class OrderController extends Controller
         $requestingStore = $order->requesting_store ?? auth()->user()->user_location;
         if (!$requestingStore) return false;
         $storeCode     = $this->resolveStoreCodeForTable($requestingStore);
+        // Allocation lives on the assigned mobile-POS store, NOT the requesting
+        // store — must match how it was originally deducted at creation.
+        $storeCode     = LocationConfig::mobilePosStoreFor($storeCode) ?? $storeCode;
         $tableName     = 'products_' . $storeCode;
         $warehouseCode = $order->warehouse ?? LocationConfig::warehouseForStore($requestingStore);
 
@@ -1081,6 +1088,9 @@ class OrderController extends Controller
         $order = Order::with('items')->findOrFail($orderId);
         $requestingStore = $order->requesting_store ?? auth()->user()->user_location;
         $storeCode       = $this->resolveStoreCodeForTable($requestingStore);
+        // Allocation lives on the assigned mobile-POS store, NOT the requesting
+        // store — must match how it was originally deducted at creation.
+        $storeCode       = LocationConfig::mobilePosStoreFor($storeCode) ?? $storeCode;
         $tableName       = 'products_' . $storeCode;
         $warehouseCode   = $order->warehouse ?? LocationConfig::warehouseForStore($requestingStore);
 
