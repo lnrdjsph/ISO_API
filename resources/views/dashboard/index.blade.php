@@ -204,7 +204,7 @@
                     ['Today', number_format($ordersToday), 'orders'],
                     ['This Week', number_format($ordersThisWeek), 'orders'],
                     ['All-time Revenue', '₱' . number_format($totalRevenue, 2), 'approved + completed'],
-                    ['MTD Revenue', '₱' . number_format($mtdRevenue, 2), $month, $mIc['peso'], true, null],
+                    ['MTD Revenue', '₱' . number_format($mtdRevenue, 2), ' ', $mIc['peso'], true, null],
                     ['MTD Freebies Value', '₱' . number_format($mtdFreebiesValue, 2), $month],
                 ];
             @endphp
