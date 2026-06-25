@@ -16,6 +16,9 @@ cells:
 
       ;"
     languageId: oracle-sql
+  - kind: 1
+    value: ""
+    languageId: markdown
   - kind: 2
     value: "SELECT store_name3, store_name10, store_name, store\r
 

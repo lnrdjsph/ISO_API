@@ -204,7 +204,7 @@
                     ['Today', number_format($ordersToday), 'orders'],
                     ['This Week', number_format($ordersThisWeek), 'orders'],
                     ['All-time Revenue', '₱' . number_format($totalRevenue, 2), 'approved + completed'],
-                    ['MTD Revenue', '₱' . number_format($mtdRevenue, 2), 'border-emerald-400', $mIc['peso'], true, null],
+                    ['MTD Revenue', '₱' . number_format($mtdRevenue, 2), $month, $mIc['peso'], true, null],
                     ['MTD Freebies Value', '₱' . number_format($mtdFreebiesValue, 2), $month],
                 ];
             @endphp
@@ -741,7 +741,7 @@
 
     </div>
     <script nonce="{{ $cspNonce ?? '' }}">
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             var row = e.target.closest('tr[data-href]');
             if (row) window.location = row.getAttribute('data-href');
         });
