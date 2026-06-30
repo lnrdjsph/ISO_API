@@ -656,11 +656,11 @@
                                         <li><a href="{{ route('products.import.show') }}" class="sub-item {{ request()->routeIs('products.import.show') ? 'active' : '' }}">Import CSV</a>
                                         </li>
                                     @endif
-                                    @if (in_array(auth()->user()->role, ['super admin', 'merchandiser']))
+                                    {{-- @if (in_array(auth()->user()->role, ['super admin', 'merchandiser']))
                                         <li><a href="{{ route('products.presets.index') }}" class="sub-item {{ request()->routeIs('products.presets.*') ? 'active' : '' }}">Monthly
                                                 Presets</a></li>
                                         <li><a href="{{ route('products.history') }}" class="sub-item {{ request()->routeIs('products.history') ? 'active' : '' }}">Import History</a></li>
-                                    @endif
+                                    @endif --}}
                                 </ul>
                             </li>
                         @endif
