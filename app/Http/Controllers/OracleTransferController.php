@@ -205,9 +205,13 @@ class OracleTransferController extends Controller
                 // 🚀 Send payload to Oracle RIB
                 $response = OracleRibXMLService::sendTransfer($data);
 
+                // The service may have internally incremented tsf_no to avoid duplicates;
+                // use the actual TSF it submitted, not the originally planned one.
+                $actualTsf = $response['tsf_no'] ?? $nextTsf;
+
                 // 📊 Build detailed response structure
                 $deptResponse = [
-                    'tsf_no' => $nextTsf,
+                    'tsf_no' => $actualTsf,
                     'department' => $dept,
                     'item_count' => count($consolidatedItems), // Count unique SKUs
                     'original_item_count' => $deptItems->count(), // Original count before consolidation
@@ -244,16 +248,16 @@ class OracleTransferController extends Controller
                     DB::table('order_items')
                         ->where('order_id', $order->id)
                         ->whereIn('sku', $deptItems->pluck('sku')->toArray())
-                        ->update(['store_order_no' => $nextTsf]);
+                        ->update(['store_order_no' => $actualTsf]);
 
                     OrderNote::create([
                         'order_id' => $order->id,
                         'user_id' => auth()->id() ?? null,
                         'status' => 'updated',
-                        'note' => "✅ Transfer successfully sent to Oracle RIB for Dept {$dept} with TSF#: {$nextTsf}.",
+                        'note' => "✅ Transfer successfully sent to Oracle RIB for Dept {$dept} with TSF#: {$actualTsf}.",
                     ]);
 
-                    Log::info("✅ Oracle RIB success for Dept {$dept}. TSF#: {$nextTsf}");
+                    Log::info("✅ Oracle RIB success for Dept {$dept}. TSF#: {$actualTsf}");
                 } elseif ($hasRibErrors) {
                     // ⚠️ RIB Message Failures
                     $deptResponse['status'] = 'rib_errors';

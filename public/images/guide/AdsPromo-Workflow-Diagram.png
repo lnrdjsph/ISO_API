@@ -1,0 +1,227 @@
+<svg viewBox="0 0 850 1250" xmlns="http://www.w3.org/2000/svg" role="img" font-family="sans-serif">
+<title>Multi-Promo Spend-Based Reward — End-to-End Flow (Setup → Sale → Output → Redemption)</title>
+<desc>Orthogonal flowchart: marketing configures promos (web), tills run the sale and decide whether coupons print, and the Claim Logger records redemptions later in time. All connectors use right-angle routing.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
+  </marker>
+</defs>
+
+<rect width="850" height="1250" fill="#ffffff"/>
+
+<!-- Title -->
+<text x="425" y="26" text-anchor="middle" fill="#1f2937" font-size="15" font-weight="700">Multi-Promo Spend-Based Reward — End-to-End Flow</text>
+<text x="425" y="44" text-anchor="middle" fill="#9ca3af" font-size="9.5">Marketing configures (web) → tills run the sale &amp; decide → Claim Logger records redemptions later · adspromo.&lt;id&gt;.* namespaced config</text>
+
+<!-- ══ PHASE TABS ══ -->
+<rect x="6" y="72" width="20" height="92" rx="3" fill="#4a4a8a"/>
+<text transform="translate(17,118) rotate(-90)" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" letter-spacing="0.5">SETUP · WEB</text>
+<rect x="6" y="232" width="20" height="92" rx="3" fill="#2f6f6e"/>
+<text transform="translate(17,278) rotate(-90)" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" letter-spacing="0.5">SALE · POS</text>
+<rect x="6" y="392" width="20" height="92" rx="3" fill="#9c6b1f"/>
+<text transform="translate(17,438) rotate(-90)" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" letter-spacing="0.5">OUTPUT</text>
+<rect x="6" y="552" width="20" height="92" rx="3" fill="#6d28d9"/>
+<text transform="translate(17,598) rotate(-90)" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" letter-spacing="0.5">REDEEM · WEB</text>
+
+<!-- ══ ORTHOGONAL CONNECTORS ══ -->
+<g stroke="#6b7280" stroke-width="1.5" fill="none">
+  <!-- Row A horizontals -->
+  <line x1="178" y1="118" x2="198" y2="118" marker-end="url(#arrow)"/>
+  <line x1="344" y1="118" x2="364" y2="118" marker-end="url(#arrow)"/>
+  <line x1="510" y1="118" x2="530" y2="118" marker-end="url(#arrow)"/>
+  <line x1="676" y1="118" x2="696" y2="118" marker-end="url(#arrow)"/>
+  <!-- A5 → B5 serpentine turn (vertical) -->
+  <line x1="769" y1="164" x2="769" y2="232" marker-end="url(#arrow)"/>
+  <!-- Row B horizontals (leftward) -->
+  <line x1="696" y1="278" x2="678" y2="278" marker-end="url(#arrow)"/>
+  <line x1="530" y1="278" x2="512" y2="278" marker-end="url(#arrow)"/>
+  <line x1="364" y1="278" x2="346" y2="278" marker-end="url(#arrow)"/>
+  <!-- Receipt (B@C2) → Decision diamond (vertical) -->
+  <line x1="271" y1="324" x2="271" y2="392" marker-end="url(#arrow)"/>
+  <!-- Decision NO → terminal (left) -->
+  <line x1="223" y1="438" x2="180" y2="438" marker-end="url(#arrow)"/>
+  <!-- Decision YES → coupon (right) -->
+  <line x1="319" y1="438" x2="362" y2="438" marker-end="url(#arrow)"/>
+  <!-- Coupon → Customer Returns (time gap, dashed orthogonal) -->
+  <polyline points="437,484 437,518 105,518 105,552" stroke-dasharray="7,4" marker-end="url(#arrow)"/>
+  <!-- Row D horizontals -->
+  <line x1="178" y1="598" x2="198" y2="598" marker-end="url(#arrow)"/>
+  <line x1="344" y1="598" x2="364" y2="598" marker-end="url(#arrow)"/>
+  <line x1="510" y1="598" x2="530" y2="598" marker-end="url(#arrow)"/>
+</g>
+
+<!-- Branch labels -->
+<text x="200" y="430" fill="#b91c1c" font-size="10" font-weight="700">No</text>
+<text x="328" y="430" fill="#15803d" font-size="10" font-weight="700">Yes</text>
+<text x="118" y="512" fill="#9ca3af" font-size="9" font-style="italic">later — customer returns with the coupon slip</text>
+
+<!-- Decision diamond -->
+<polygon points="271,392 319,438 271,484 223,438" fill="#fffbeb" stroke="#9c6b1f" stroke-width="1.5"/>
+<text x="271" y="433" text-anchor="middle" fill="#1f2937" font-size="9.5" font-weight="700">Coupons</text>
+<text x="271" y="446" text-anchor="middle" fill="#1f2937" font-size="9.5" font-weight="700">approved?</text>
+
+<!-- ══ ROW A: SETUP (y=72) ══ -->
+<rect x="32" y="72" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="32" y="72" width="6" height="92" fill="#4a4a8a"/>
+<text x="46" y="92" fill="#1f2937" font-size="11.5" font-weight="700">1. Create Promo(s)</text>
+<text x="46" y="109" fill="#4b5563" font-size="9.5">Name, dates, status;</text>
+<text x="46" y="123" fill="#4b5563" font-size="9.5">build the plugin JAR</text>
+<text x="46" y="140" fill="#9ca3af" font-size="8.5">ads-promo-jar.php</text>
+<text x="46" y="152" fill="#9ca3af" font-size="8.5">→ promoId · slug · SHA-1</text>
+
+<rect x="198" y="72" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="198" y="72" width="6" height="92" fill="#4a4a8a"/>
+<text x="212" y="92" fill="#1f2937" font-size="11.5" font-weight="700">2. Reward Tiers</text>
+<text x="212" y="109" fill="#4b5563" font-size="9.5">Set T1 / T2 spend</text>
+<text x="212" y="123" fill="#4b5563" font-size="9.5">levels per promo</text>
+<text x="212" y="140" fill="#9ca3af" font-size="8.5">tier_min · tier_value</text>
+<text x="212" y="152" fill="#9ca3af" font-size="8.5">tier_count (independent)</text>
+
+<rect x="364" y="72" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="364" y="72" width="6" height="92" fill="#4a4a8a"/>
+<text x="378" y="92" fill="#1f2937" font-size="11.5" font-weight="700">3. Qualifying SKUs</text>
+<text x="378" y="109" fill="#4b5563" font-size="9.5">List products that</text>
+<text x="378" y="123" fill="#4b5563" font-size="9.5">count toward total</text>
+<text x="378" y="140" fill="#9ca3af" font-size="8.5">validation mode:</text>
+<text x="378" y="152" fill="#9ca3af" font-size="8.5">cart / qualifying / presence</text>
+
+<rect x="530" y="72" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="530" y="72" width="6" height="92" fill="#4a4a8a"/>
+<text x="544" y="92" fill="#1f2937" font-size="11.5" font-weight="700">4. Coverage + Rules</text>
+<text x="544" y="109" fill="#4b5563" font-size="9.5">Stores in scope,</text>
+<text x="544" y="123" fill="#4b5563" font-size="9.5">stacking &amp; priority</text>
+<text x="544" y="140" fill="#9ca3af" font-size="8.5">AllowStacking · Priority</text>
+<text x="544" y="152" fill="#9ca3af" font-size="8.5">MaxCoupons · SkuConflict</text>
+
+<rect x="696" y="72" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="696" y="72" width="6" height="92" fill="#4a4a8a"/>
+<text x="710" y="92" fill="#1f2937" font-size="11.5" font-weight="700">5. Sync to Tills</text>
+<text x="710" y="109" fill="#4b5563" font-size="9.5">Push config to POS</text>
+<text x="710" y="123" fill="#4b5563" font-size="9.5">as namespaced keys</text>
+<text x="710" y="140" fill="#9ca3af" font-size="8.5">adspromo.&lt;id&gt;.* keys</text>
+<text x="710" y="152" fill="#9ca3af" font-size="8.5">additive — install.sh</text>
+
+<!-- ══ ROW B: SALE (y=232) R→L ══ -->
+<rect x="696" y="232" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="696" y="232" width="6" height="92" fill="#2f6f6e"/>
+<text x="710" y="252" fill="#1f2937" font-size="11.5" font-weight="700">6. Till Loads Promos</text>
+<text x="710" y="269" fill="#4b5563" font-size="9.5">All active promos</text>
+<text x="710" y="283" fill="#4b5563" font-size="9.5">cached locally</text>
+<text x="710" y="300" fill="#9ca3af" font-size="8.5">per-promo doc types</text>
+<text x="710" y="312" fill="#9ca3af" font-size="8.5">MetroCoupon_&lt;promoId&gt;</text>
+
+<rect x="530" y="232" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="530" y="232" width="6" height="92" fill="#2f6f6e"/>
+<text x="544" y="252" fill="#1f2937" font-size="11.5" font-weight="700">7. Checkout</text>
+<text x="544" y="269" fill="#4b5563" font-size="9.5">Items scanned in a</text>
+<text x="544" y="283" fill="#4b5563" font-size="9.5">normal sale</text>
+<text x="544" y="300" fill="#9ca3af" font-size="8.5">all promos evaluated</text>
+<text x="544" y="312" fill="#9ca3af" font-size="8.5">at tender</text>
+
+<rect x="364" y="232" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="364" y="232" width="6" height="92" fill="#2f6f6e"/>
+<text x="378" y="252" fill="#1f2937" font-size="11.5" font-weight="700">8. Evaluate Promos</text>
+<text x="378" y="269" fill="#4b5563" font-size="9.5">Per-promo tier match</text>
+<text x="378" y="283" fill="#4b5563" font-size="9.5">+ stacking / priority</text>
+<text x="378" y="300" fill="#9ca3af" font-size="8.5">MaxCouponsPerTxn cap</text>
+<text x="378" y="312" fill="#9ca3af" font-size="8.5">SkuConflictMode resolve</text>
+
+<rect x="198" y="232" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="198" y="232" width="6" height="92" fill="#2f6f6e"/>
+<text x="212" y="252" fill="#1f2937" font-size="11.5" font-weight="700">9. Receipt Prints</text>
+<text x="212" y="269" fill="#4b5563" font-size="9.5">Main receipt prints</text>
+<text x="212" y="283" fill="#4b5563" font-size="9.5">first, unmodified</text>
+<text x="212" y="300" fill="#9ca3af" font-size="8.5">always — no promo</text>
+<text x="212" y="312" fill="#9ca3af" font-size="8.5">data bundled in</text>
+
+<!-- ══ ROW C: OUTPUT (y=392) ══ -->
+<!-- NO terminal (C1) -->
+<rect x="32" y="400" width="148" height="76" rx="38" fill="#f3f4f6" stroke="#cbd5e1"/>
+<text x="106" y="430" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">Receipt only</text>
+<text x="106" y="447" text-anchor="middle" fill="#64748b" font-size="9">Sale ends —</text>
+<text x="106" y="460" text-anchor="middle" fill="#64748b" font-size="9">no coupon issued</text>
+
+<!-- YES coupon (C3) -->
+<rect x="362" y="392" width="148" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="362" y="392" width="6" height="92" fill="#9c6b1f"/>
+<text x="376" y="412" fill="#1f2937" font-size="11.5" font-weight="700">10. Coupon(s) Print</text>
+<text x="376" y="429" fill="#4b5563" font-size="9.5">One slip per approved</text>
+<text x="376" y="443" fill="#4b5563" font-size="9.5">promo, after receipt</text>
+<text x="376" y="460" fill="#9ca3af" font-size="8.5">separate print job,</text>
+<text x="376" y="472" fill="#9ca3af" font-size="8.5">in priority order</text>
+
+<!-- ══ ROW D: REDEMPTION (y=552) L→R ══ -->
+<rect x="32" y="552" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="32" y="552" width="6" height="92" fill="#6d28d9"/>
+<text x="46" y="572" fill="#1f2937" font-size="11.5" font-weight="700">11. Customer Returns</text>
+<text x="46" y="589" fill="#4b5563" font-size="9.5">Brings receipt + coupon</text>
+<text x="46" y="603" fill="#4b5563" font-size="9.5">to the counter</text>
+<text x="46" y="620" fill="#9ca3af" font-size="8.5">staff opens claim-log.php</text>
+<text x="46" y="632" fill="#9ca3af" font-size="8.5">picks promo / branch</text>
+
+<rect x="198" y="552" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="198" y="552" width="6" height="92" fill="#6d28d9"/>
+<text x="212" y="572" fill="#1f2937" font-size="11.5" font-weight="700">12. Verify Receipt</text>
+<text x="212" y="589" fill="#4b5563" font-size="9.5">12-digit receipt →</text>
+<text x="212" y="603" fill="#4b5563" font-size="9.5">live POS lookup</text>
+<text x="212" y="620" fill="#9ca3af" font-size="8.5">parse_receipt()</text>
+<text x="212" y="632" fill="#9ca3af" font-size="8.5">terminal · TRN · uat_s6</text>
+
+<rect x="364" y="552" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="364" y="552" width="6" height="92" fill="#6d28d9"/>
+<text x="378" y="572" fill="#1f2937" font-size="11.5" font-weight="700">13. Auto-Detect Tier</text>
+<text x="378" y="589" fill="#4b5563" font-size="9.5">Qual total computed;</text>
+<text x="378" y="603" fill="#4b5563" font-size="9.5">form pre-fills tier</text>
+<text x="378" y="620" fill="#9ca3af" font-size="8.5">detect_tier() +</text>
+<text x="378" y="632" fill="#9ca3af" font-size="8.5">get_qualifying_total()</text>
+
+<rect x="530" y="552" width="146" height="92" rx="6" fill="#fff" stroke="#d1d5db"/><rect x="530" y="552" width="6" height="92" fill="#6d28d9"/>
+<text x="544" y="572" fill="#1f2937" font-size="11.5" font-weight="700">14. Log Claim</text>
+<text x="544" y="589" fill="#4b5563" font-size="9.5">Insert record; view</text>
+<text x="544" y="603" fill="#4b5563" font-size="9.5">in Claim History</text>
+<text x="544" y="620" fill="#9ca3af" font-size="8.5">promo_claim_logs</text>
+<text x="544" y="632" fill="#9ca3af" font-size="8.5">claim-log-history.php</text>
+
+<!-- ══ LEGEND ══ -->
+<rect x="32" y="664" width="13" height="13" rx="2" fill="#4a4a8a"/><text x="51" y="675" font-size="10" fill="#374151">Setup (web)</text>
+<rect x="150" y="664" width="13" height="13" rx="2" fill="#2f6f6e"/><text x="169" y="675" font-size="10" fill="#374151">Sale (POS)</text>
+<rect x="262" y="664" width="13" height="13" rx="2" fill="#9c6b1f"/><text x="281" y="675" font-size="10" fill="#374151">Output</text>
+<rect x="350" y="664" width="13" height="13" rx="2" fill="#6d28d9"/><text x="369" y="675" font-size="10" fill="#374151">Redeem (web)</text>
+<polygon points="470,664 480,670.5 470,677 460,670.5" fill="#fffbeb" stroke="#9c6b1f"/><text x="488" y="675" font-size="10" fill="#374151">Decision</text>
+<line x1="560" y1="670" x2="588" y2="670" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/><text x="594" y="675" font-size="10" fill="#374151">Flow</text>
+<line x1="640" y1="670" x2="668" y2="670" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow)"/><text x="674" y="675" font-size="10" fill="#374151">Time gap</text>
+
+<!-- ══ TECHNICAL NOTES ══ -->
+<text x="20" y="704" fill="#1f2937" font-size="13" font-weight="700">Technical Notes</text>
+
+<rect x="20" y="714" width="400" height="96" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+<circle cx="42" cy="736" r="9" fill="#4a4a8a"/><text x="42" y="739" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">1</text>
+<text x="60" y="740" fill="#1f2937" font-size="11" font-weight="700">Validation modes</text>
+<text x="60" y="759" fill="#4b5563" font-size="10">cart = whole basket value · qualifying = sum of</text>
+<text x="60" y="775" fill="#4b5563" font-size="10">listed SKUs only · presence = listed SKUs just</text>
+<text x="60" y="791" fill="#4b5563" font-size="10">need to appear in the cart.</text>
+
+<rect x="430" y="714" width="400" height="96" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+<circle cx="452" cy="736" r="9" fill="#2f6f6e"/><text x="452" y="739" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">2</text>
+<text x="470" y="740" fill="#1f2937" font-size="11" font-weight="700">Tier matching (per promo)</text>
+<text x="470" y="759" fill="#4b5563" font-size="10">Each promo is evaluated independently. Best</text>
+<text x="470" y="775" fill="#4b5563" font-size="10">match where tier_min ≤ total ≤ tier_max wins.</text>
+<text x="470" y="791" fill="#4b5563" font-size="10">T1/T2 auto-labeled ascending by tier_min.</text>
+
+<rect x="20" y="820" width="400" height="72" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+<circle cx="42" cy="842" r="9" fill="#9c6b1f"/><text x="42" y="845" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">3</text>
+<text x="60" y="846" fill="#1f2937" font-size="11" font-weight="700">No server dependency at the till</text>
+<text x="60" y="865" fill="#4b5563" font-size="10">Tier matching reads only the till's local config —</text>
+<text x="60" y="881" fill="#4b5563" font-size="10">no back-office call needed to decide or print.</text>
+
+<rect x="430" y="820" width="400" height="72" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+<circle cx="452" cy="842" r="9" fill="#4338ca"/><text x="452" y="845" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">4</text>
+<text x="470" y="846" fill="#1f2937" font-size="11" font-weight="700">Namespaced config (adspromo.&lt;id&gt;.*)</text>
+<text x="470" y="865" fill="#4b5563" font-size="10">Each promo lives under its own key prefix; the</text>
+<text x="470" y="881" fill="#4b5563" font-size="10">installer is additive and never removes keys.</text>
+
+<rect x="20" y="902" width="810" height="118" rx="6" fill="#eef2ff" stroke="#c7d2fe"/>
+<circle cx="42" cy="924" r="9" fill="#4338ca"/><text x="42" y="927" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">5</text>
+<text x="60" y="928" fill="#1f2937" font-size="11" font-weight="700">Multi-promo stacking — 5 new Base parameters (ORPOS application.properties)</text>
+<text x="60" y="948" fill="#4b5563" font-size="10">AdsPromotionRunning — master on/off switch. Per-promo toggle via adspromo.&lt;id&gt;.enabled (independent of the global switch).</text>
+<text x="60" y="964" fill="#4b5563" font-size="10">AdsPromotionAllowStacking — if false, only the highest-priority qualifying promo issues a coupon; the rest are suppressed.</text>
+<text x="60" y="980" fill="#4b5563" font-size="10">AdsPromotionPriority — integer; lower = evaluated first. Sets winner order when stacking is off or the cap is reached.</text>
+<text x="60" y="996" fill="#4b5563" font-size="10">AdsPromotionMaxCouponsPerTxn — hard cap on total coupon slips per transaction, regardless of the stacking setting.</text>
+<text x="60" y="1012" fill="#4b5563" font-size="10">AdsPromotionSkuConflictMode — block / allow / first-wins when one SKU qualifies multiple promos at the same time.</text>
+
+<rect x="20" y="1030" width="810" height="118" rx="6" fill="#f5f3ff" stroke="#ddd6fe"/>
+<circle cx="42" cy="1052" r="9" fill="#6d28d9"/><text x="42" y="1055" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">6</text>
+<text x="60" y="1056" fill="#1f2937" font-size="11" font-weight="700">Claim Logger — separate web tool, runs later in time (claim-log.php)</text>
+<text x="60" y="1076" fill="#4b5563" font-size="10">Lives in the digital_egc web app, not the till. Staff reach it via the Promo Logger sidebar; it never touches the ORPOS plugin.</text>
+<text x="60" y="1092" fill="#4b5563" font-size="10">Receipt verification reuses redeem.php's Oracle POS query (parse_receipt → terminal/TRN lookup via the uat_s6 connection).</text>
+<text x="60" y="1108" fill="#4b5563" font-size="10">On verify, tier &amp; qualifying total auto-fill; staff add customer name, contact and optional notes, then submit.</text>
+<text x="60" y="1124" fill="#4b5563" font-size="10">Validation: 12-digit receipt, no future date, name ≥ 2 chars, valid PH mobile/email, qual_total &gt; 0, notes ≤ 300 chars.</text>
+<text x="60" y="1140" fill="#4b5563" font-size="10">Rows saved to promo_claim_logs; claim-log-history.php gives filters, stat cards (total claims / spend) and CSV export.</text>
+</svg>
