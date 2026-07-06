@@ -16,9 +16,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Product allocation sync
-        $schedule->command('products:update-allocations')->dailyAt('08:00');
-        $schedule->command('products:update-allocations')->dailyAt('10:00');
-        $schedule->command('products:update-allocations')->dailyAt('14:45');
+        $schedule->command('products:update-allocations')->dailyAt('06:00');
+        // $schedule->command('products:update-allocations')->dailyAt('10:00');
+        // $schedule->command('products:update-allocations')->dailyAt('14:45');
 
         // Order Processing Agent — AUTOMATIC PROCESSING DISABLED.
         // The scheduled auto-approval run is turned off. The `order:process`
