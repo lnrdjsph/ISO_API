@@ -1,7 +1,7 @@
 {{-- Action buttons — export, add, update WMS --}}
 <div class="flex flex-wrap items-center gap-1.5">
 
-    <a href="{{ route('products.export', request()->query()) }}"
+    <a id="export-link" href="{{ route('products.export', request()->query()) }}"
         class="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 text-xs font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 sm:h-9">
         <svg class="h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
