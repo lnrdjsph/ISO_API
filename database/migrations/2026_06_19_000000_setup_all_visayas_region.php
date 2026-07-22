@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Support\LocationConfig;
 
 /**
@@ -19,6 +20,10 @@ use App\Support\LocationConfig;
 return new class extends Migration {
     public function up(): void
     {
+        if (!Schema::hasTable('settings_regions')) {
+            return;
+        }
+
         // 1. Ensure the virtual region exists (for display + user_location validity).
         DB::table('settings_regions')->updateOrInsert(
             ['region_key' => LocationConfig::ALL_REGIONS_KEY],

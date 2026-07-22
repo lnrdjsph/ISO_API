@@ -18,13 +18,15 @@ return new class extends Migration {
     public function up(): void
     {
         // 1. Per-region mobile-POS store (configurable in Settings).
-        Schema::connection('mysql')->table('settings_regions', function (Blueprint $table) {
-            $table->string('mobile_pos_store', 20)->nullable()->after('label');
-        });
+        if (Schema::hasTable('settings_regions') && !Schema::hasColumn('settings_regions', 'mobile_pos_store')) {
+            Schema::connection('mysql')->table('settings_regions', function (Blueprint $table) {
+                $table->string('mobile_pos_store', 20)->nullable()->after('label');
+            });
 
-        // Seed: default every region to the Visayas POS (4002); Luzon overrides to 6012.
-        DB::table('settings_regions')->update(['mobile_pos_store' => '4002']);
-        DB::table('settings_regions')->where('region_key', 'lz')->update(['mobile_pos_store' => '6012']);
+            // Seed: default every region to the Visayas POS (4002); Luzon overrides to 6012.
+            DB::table('settings_regions')->update(['mobile_pos_store' => '4002']);
+            DB::table('settings_regions')->where('region_key', 'lz')->update(['mobile_pos_store' => '6012']);
+        }
 
         // 2. Snapshot on the order.
         Schema::connection('mysql')->table('orders', function (Blueprint $table) {
