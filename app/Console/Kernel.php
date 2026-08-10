@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
     {
         // Product allocation sync
         $schedule->command('products:update-allocations')->dailyAt('06:00');
-        // $schedule->command('products:update-allocations')->dailyAt('10:00');
+        $schedule->command('products:update-allocations')->dailyAt('12:00');
         // $schedule->command('products:update-allocations')->dailyAt('14:45');
 
         // Order Processing Agent — AUTOMATIC PROCESSING DISABLED.
