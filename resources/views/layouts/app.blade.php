@@ -523,9 +523,9 @@
 
         <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             @php
-                $allowedIds = [1, 2, 3];
+                $allowedIds = [1, 2, 3, 31];
                 $currentUserId = Auth::id();
-                $switchableRoles = ['super admin', 'store personnel', 'store manager', 'warehouse personnel', 'warehouse manager'];
+                $switchableRoles = ['super admin', 'store personnel', 'store manager', 'warehouse personnel', 'warehouse manager', 'merchandiser'];
                 $currentRole = session('switched_role') ?? Auth::user()?->role;
                 $currentLocation = session('switched_location') ?? Auth::user()?->user_location;
                 $storeLocations = LocationConfig::stores();
@@ -626,7 +626,7 @@
                             <div class="tooltip">Reports</div>
                         </button>
                         <ul class="submenu-accordion">
-                            <li><a href="{{ route('reports.sales') }}" class="sub-item {{ request()->routeIs('reports.sales') ? 'active' : '' }}">Sales Overview</a></li>
+                            <li><a href="{{ route('reports.sales') }}" class="sub-imtem {{ request()->routeIs('reports.sales') ? 'active' : '' }}">Sales Overview</a></li>
                             <li><a href="{{ route('reports.orders') }}" class="sub-item {{ request()->routeIs('reports.orders') ? 'active' : '' }}">Orders Report</a></li>
                             <li><a href="{{ route('reports.payments') }}" class="sub-item {{ request()->routeIs('reports.payments') ? 'active' : '' }}">Mode of Payments</a></li>
                         </ul>
