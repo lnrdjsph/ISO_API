@@ -26,7 +26,13 @@ class OracleTransferController extends Controller
                 ->where(function ($q) {
                     $q->whereNull('store_order_no')->orWhere('store_order_no', '');
                 })
-                ->where('remarks', '!=', 'Item Cancelled')
+                // remarks is nullable and NULL for any item without a note.
+                // A bare `!= 'Item Cancelled'` drops those rows, because in SQL
+                // NULL != 'x' is NULL rather than true — which left orders
+                // reporting "No items to process" with nothing cancelled.
+                ->where(function ($q) {
+                    $q->whereNull('remarks')->orWhere('remarks', '!=', 'Item Cancelled');
+                })
                 ->get();
 
             if ($items->isEmpty()) {
@@ -387,8 +393,12 @@ class OracleTransferController extends Controller
      * Resolve the WMS status for a single item.
      * Caches successful results for 10 minutes.
      * On WMS error: returns last cached value (stale) if available, otherwise Error.
+     *
+     * Public because OrderController calls it to verify every line is Received
+     * before allowing an order to be completed. A stale result carries
+     * 'from_cache' => true, which callers enforcing a hard gate must reject.
      */
-    protected function resolveItemStatus(string $storeOrderNo, string $sku): array
+    public function resolveItemStatus(string $storeOrderNo, string $sku): array
     {
         if (empty($storeOrderNo)) {
             return ['status' => 'N/A', 'bol_number' => null, 'store_order_no' => $storeOrderNo];
@@ -467,7 +477,6 @@ class OracleTransferController extends Controller
             Log::info('Item status resolved', ['tsf' => $storeOrderNo, 'sku' => $sku, 'status' => $status]);
 
             return $result;
-
         } catch (\Exception $e) {
             Log::error('Item status error', [
                 'store_order_no' => $storeOrderNo,
