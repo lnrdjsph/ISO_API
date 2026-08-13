@@ -12,7 +12,7 @@ class SwitchRoleController extends Controller
         $user = Auth::user();
 
         // Only users 1,2,3 can switch
-        if (!in_array($user->id, [1, 2, 3])) {
+        if (!in_array($user->id, [1, 2, 3, 31])) {
             abort(403);
         }
 
